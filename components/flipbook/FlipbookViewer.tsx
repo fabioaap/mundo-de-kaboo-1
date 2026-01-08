@@ -1,8 +1,8 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { Document, pdfjs } from 'react-pdf';
 import { TransformWrapper } from 'react-zoom-pan-pinch';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import Flipbook from './Flipbook';
 import { cn } from '../../lib/utils';
 

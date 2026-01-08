@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
         },
         dedupe: ['react', 'react-dom']
       },
+      assetsInclude: ['**/*.css'],
       optimizeDeps: {
         include: ['react-pdf', 'pdfjs-dist'],
         esbuildOptions: {
