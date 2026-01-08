@@ -6,11 +6,10 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import Flipbook from './Flipbook';
 import { cn } from '../../lib/utils';
 
-// Configure PDF.js worker - use the worker from the installed package to ensure version matching
+// Configure PDF.js worker - use local worker file from public directory
+// This ensures the worker is bundled with the app and version matches
 if (typeof window !== 'undefined') {
-  // Use the version from the installed pdfjs-dist package to ensure compatibility
-  // This ensures the worker version matches the API version
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+  pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 }
 
 interface FlipbookViewerProps {
