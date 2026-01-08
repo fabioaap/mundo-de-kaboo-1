@@ -13,7 +13,7 @@
     "canvas-confetti": "1.9.2",
     "clsx": "^2.1.0",
     "lucide-react": "^0.561.0",
-    "pdfjs-dist": "3.11.174",
+    "pdfjs-dist": "5.4.296",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-pageflip": "^2.0.3",
