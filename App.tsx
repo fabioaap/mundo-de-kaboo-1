@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { NavState, ScreenName, Collection } from './types';
 import { api } from './lib/api';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
@@ -274,6 +275,8 @@ const App: React.FC = () => {
         onClose={closeModal}
         onNavigate={navigate}
       />
+
+      <Analytics />
     </div>
   );
 };

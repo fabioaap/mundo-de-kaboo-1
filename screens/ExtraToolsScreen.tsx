@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection, CollectionResource } from '../types';
 import { api } from '../lib/api';
+import { CollectionCoverSection } from '../components/CollectionCoverSection';
 
 interface ExtraToolsScreenProps {
   collection: Collection;
@@ -11,8 +12,6 @@ interface ExtraToolsScreenProps {
 export const ExtraToolsScreen: React.FC<ExtraToolsScreenProps> = ({ collection, onBack }) => {
   const [resources, setResources] = useState<CollectionResource[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const themeColor = collection.color_theme || '#5D1F58';
 
   useEffect(() => {
     api.getCollectionResources(collection.id).then(data => {
@@ -22,44 +21,14 @@ export const ExtraToolsScreen: React.FC<ExtraToolsScreenProps> = ({ collection, 
   }, [collection.id]);
 
   return (
-    <div className="flex flex-col h-full bg-white overflow-hidden relative md:flex-row">
+    <div className="flex flex-col md:flex-row bg-white relative h-full w-full">
       
       {/* DESKTOP: LEFT SIDE (Cover & Aesthetics) / MOBILE: TOP HEADER */}
-      <div className="relative md:w-1/3 md:h-full md:shrink-0">
-          {/* Animated Background Container */}
-          <div className="absolute top-0 left-0 right-0 h-64 md:h-full z-0 overflow-hidden">
-             
-             {/* 1. Base Solid Color */}
-             <div 
-               className="absolute inset-0 transition-colors duration-500"
-               style={{ backgroundColor: themeColor }}
-             />
-             
-             {/* 2. Floating Blobs (Lava Lamp Effect) */}
-             <div className="absolute inset-0 opacity-40 mix-blend-overlay">
-                <div 
-                  className="absolute -top-24 -left-24 w-72 h-72 bg-white rounded-full mix-blend-overlay filter blur-3xl animate-blob"
-                  style={{ animationDelay: '0s', animationDuration: '25s' }}
-                ></div>
-                <div 
-                  className="absolute top-0 -right-20 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl animate-blob"
-                  style={{ animationDelay: '2s', animationDuration: '45s' }}
-                ></div>
-                <div 
-                  className="absolute -bottom-32 -left-20 w-80 h-80 bg-white rounded-full mix-blend-overlay filter blur-3xl animate-blob"
-                  style={{ animationDelay: '4s', animationDuration: '35s' }}
-                ></div>
-             </div>
-             
-             {/* 3. Glass Texture / Noise Overlay */}
-             <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px]" />
-             
-             {/* 4. Shadow Gradient */}
-             <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/5" />
-          </div>
-
-          {/* Navigation Header */}
-          <div className="relative z-20 px-6 pt-12 pb-4 md:p-8 flex justify-between items-center text-white">
+      <CollectionCoverSection
+        collection={collection}
+        headerPaddingTop="pt-6"
+        headerContent={
+          <div className="flex justify-between items-center w-full">
             <button 
               onClick={onBack}
               className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-colors"
@@ -69,18 +38,8 @@ export const ExtraToolsScreen: React.FC<ExtraToolsScreenProps> = ({ collection, 
             <span className="font-bold text-lg opacity-90 md:hidden">Materiais</span>
             <div className="w-10" /> {/* Spacer for centering on mobile */}
           </div>
-          
-          {/* Main Cover (Mobile & Desktop) */}
-          <div className="px-6 flex flex-col items-center md:justify-center md:h-[calc(100%-80px)] relative z-10">
-              <div className="w-48 h-48 md:w-64 md:h-64 rounded-3xl shadow-2xl mb-6 md:mb-0 relative group">
-                <img 
-                  src={collection.cover_image} 
-                  alt={collection.title}
-                  className="w-full h-full object-cover rounded-3xl border-4 border-white bg-gray-200"
-                />
-              </div>
-          </div>
-      </div>
+        }
+      />
 
       {/* DESKTOP: RIGHT SIDE (Content) / MOBILE: BOTTOM CARD */}
       <div className="flex-1 overflow-y-auto z-10 no-scrollbar bg-white rounded-t-[2.5rem] md:rounded-none -mt-12 md:mt-0 relative shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none">

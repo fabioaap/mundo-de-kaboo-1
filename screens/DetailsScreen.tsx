@@ -6,6 +6,7 @@ import { offlineManager } from '../lib/offline';
 import { api } from '../lib/api';
 import { FilePreviewModal } from '../components/FilePreviewModal';
 import { extractOriginalFileName } from '../lib/storage';
+import { CollectionCoverSection } from '../components/CollectionCoverSection';
 
 interface DetailsScreenProps {
   collection: Collection;
@@ -169,35 +170,15 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ collection, onNavi
     <div className="flex flex-col md:flex-row bg-white relative h-full w-full">
       
       {/* DESKTOP: LEFT SIDE (Cover & Aesthetics) / MOBILE: TOP HEADER */}
-      <div className="relative md:w-1/3 h-64 md:h-full md:shrink-0 flex-shrink-0">
-          {/* Solid Background Container - Fills entire left column */}
-          <div 
-            className="absolute inset-0 z-0"
-            style={{ backgroundColor: themeColor }}
-          />
-          
-          {/* Navigation Header - Absolute positioned */}
-          <div className="absolute top-0 left-0 right-0 z-20 px-6 pt-12 pb-4 md:p-8 flex justify-center items-center text-white flex-shrink-0">
+      <CollectionCoverSection
+        collection={collection}
+        isOffline={isOffline}
+        headerContent={
+          <div className="flex justify-center items-center w-full">
             <span className="font-bold text-lg opacity-90 md:hidden">Detalhes</span>
           </div>
-          
-          {/* Main Cover (Mobile & Desktop) - Full height container */}
-          <div className="relative h-full flex flex-col items-center justify-center px-6 py-6 z-30">
-            <div className="w-48 h-48 md:w-64 md:h-64 rounded-3xl shadow-2xl relative group border-4 border-white/20 overflow-hidden shrink-0 mx-auto">
-              <img 
-                src={collection.cover_image} 
-                alt={collection.title}
-                className="w-full h-full object-cover bg-gray-200"
-              />
-              {/* Offline Badge on Cover */}
-              {isOffline && (
-                <div className="absolute top-3 right-3 bg-kaboo-green text-white p-1.5 rounded-full shadow-md z-10 animate-in zoom-in duration-300">
-                  <Icons.Download size={14} strokeWidth={3} />
-                </div>
-              )}
-            </div>
-          </div>
-      </div>
+        }
+      />
 
       {/* DESKTOP: RIGHT SIDE (Content) / MOBILE: BOTTOM CARD */}
       <div className="flex-1 overflow-y-auto z-10 no-scrollbar bg-white rounded-t-[2.5rem] md:rounded-none mt-0 relative shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none md:h-full">
