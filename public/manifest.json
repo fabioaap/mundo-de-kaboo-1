@@ -1,0 +1,30 @@
+{
+  "name": "Mundo de Kaboo",
+  "short_name": "Kaboo",
+  "description": "Mundo de Kaboo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F9F5F9",
+  "theme_color": "#5D1F58",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
