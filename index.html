@@ -88,6 +88,47 @@
         justify-content: center;
         align-items: center;
       }
+      
+      /* Faster modal animations */
+      @keyframes fast-fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      
+      .fast-fade-in {
+        animation: fast-fade-in 0.1s ease-out forwards;
+      }
+      
+      /* Smooth content fade-in for modal */
+      @keyframes content-fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      
+      .content-fade-in {
+        animation: content-fade-in 0.25s ease-out forwards;
+      }
+      
+      @keyframes skeleton-fade-out {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+      
+      .skeleton-fade-out {
+        animation: skeleton-fade-out 0.2s ease-in forwards;
+      }
     </style>
 </head>
   <body>

@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icons } from './Icons';
 import { Collection, ScreenName } from '../types';
 import { DetailsScreen } from '../screens/DetailsScreen';
+import { ModalSkeleton } from './ModalSkeleton';
 
 interface CollectionModalProps {
   collection: Collection | null;
@@ -16,6 +17,9 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
   onClose,
   onNavigate
 }) => {
+  const [showContent, setShowContent] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(true);
+
   // Close on Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -28,6 +32,9 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       document.addEventListener('keydown', handleEscape);
       // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
+      // Reset states when modal opens
+      setShowSkeleton(true);
+      setShowContent(false);
     }
 
     return () => {
@@ -36,7 +43,25 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen || !collection) return null;
+  // Handle smooth transition from skeleton to content
+  useEffect(() => {
+    if (collection) {
+      // Small delay to ensure smooth transition
+      const timer = setTimeout(() => {
+        setShowSkeleton(false);
+        // Show content after skeleton starts fading
+        setTimeout(() => {
+          setShowContent(true);
+        }, 100);
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      setShowContent(false);
+      setShowSkeleton(true);
+    }
+  }, [collection]);
+
+  if (!isOpen) return null;
 
   return (
     <div 
@@ -49,10 +74,10 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-100" />
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-6xl h-[90vh] md:h-[95vh] bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+      <div className="relative w-full max-w-6xl h-[90vh] md:h-[95vh] bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-100 flex flex-col">
         {/* Close Button - Always visible on all screen sizes */}
         <button
           onClick={onClose}
@@ -63,18 +88,30 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
         </button>
 
         {/* Modal Body - Full Height Container */}
-        <div className="flex-1 overflow-hidden flex min-h-0">
-          <DetailsScreen 
-            collection={collection} 
-            onNavigate={(screen, params) => {
-              // Close modal when navigating to player screens
-              if (['player_book', 'player_audio', 'player_video'].includes(screen)) {
-                onClose();
-              }
-              onNavigate(screen, params);
-            }}
-            onBack={onClose}
-          />
+        <div className="flex-1 overflow-hidden flex min-h-0 relative">
+          {/* Skeleton - fades out when content loads */}
+          {showSkeleton && (
+            <div className={`absolute inset-0 ${collection ? 'skeleton-fade-out' : ''}`}>
+              <ModalSkeleton />
+            </div>
+          )}
+          
+          {/* Content - fades in when ready */}
+          {collection && showContent && (
+            <div className="flex-1 content-fade-in">
+              <DetailsScreen 
+                collection={collection} 
+                onNavigate={(screen, params) => {
+                  // Close modal when navigating to player screens
+                  if (['player_book', 'player_audio', 'player_video'].includes(screen)) {
+                    onClose();
+                  }
+                  onNavigate(screen, params);
+                }}
+                onBack={onClose}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

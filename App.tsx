@@ -237,7 +237,8 @@ const App: React.FC = () => {
   };
 
   const showNav = ['home', 'search', 'support', 'profile', 'my_data', 'admin_collections'].includes(navState.currentScreen);
-  const isModalOpen = !!currentCollection && navState.params?.collectionId && ['home', 'search'].includes(navState.currentScreen);
+  // Modal opens immediately when collectionId is present, even if collection is still loading
+  const isModalOpen = !!navState.params?.collectionId && ['home', 'search'].includes(navState.currentScreen);
 
   return (
     <div className="bg-white min-h-screen w-full flex flex-col md:flex-row overflow-hidden">

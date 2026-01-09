@@ -102,26 +102,31 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
 
     // Request permission on user interaction (iOS requires this)
     const requestPermissionOnInteraction = async (e: Event) => {
-      e.stopPropagation(); // Prevent card click if permission dialog appears
+      // Don't stop propagation - let the click event bubble to the parent onClick
+      // Only request permission if not already active
       if (!isOrientationListenerActive) {
         console.log('User interaction detected, requesting permission...');
-        await requestIOSPermission();
+        // Use setTimeout to avoid blocking the click event
+        setTimeout(async () => {
+          await requestIOSPermission();
+        }, 0);
       }
     };
 
     // Add interaction listeners to request permission
     const cardElement = cardRef.current;
     if (cardElement) {
-      // Use capture phase to catch interaction early
-      cardElement.addEventListener('touchstart', requestPermissionOnInteraction, { once: true, passive: true, capture: true });
-      cardElement.addEventListener('click', requestPermissionOnInteraction, { once: true, capture: true });
+      // Use capture phase but don't stop propagation - let click work normally
+      // Use passive: true to avoid blocking touch events
+      cardElement.addEventListener('touchstart', requestPermissionOnInteraction, { once: true, passive: true, capture: false });
+      // Don't add click listener - it interferes with the parent onClick
+      // Permission will be requested on touchstart which is sufficient
     }
 
     return () => {
       orientationListeners.delete(handleOrientationUpdate);
       if (cardElement) {
         cardElement.removeEventListener('touchstart', requestPermissionOnInteraction);
-        cardElement.removeEventListener('click', requestPermissionOnInteraction);
       }
     };
   }, [isMobile]);
@@ -155,7 +160,8 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
     <div 
       key={collection.id}
       onClick={() => onCollectionClick(collection)}
-      className="cursor-pointer active:scale-95 transition-transform"
+      className="cursor-pointer active:scale-95 transition-transform touch-manipulation"
+      style={{ touchAction: 'manipulation' }}
     >
       <div 
         ref={cardRef}
@@ -167,6 +173,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
           transition: isMobile 
             ? 'transform 0.1s ease-out' 
             : (tilt.x === 0 && tilt.y === 0 ? 'transform 0.5s ease-out' : 'transform 0.1s ease-out'),
+          touchAction: 'manipulation',
         }}
         onMouseMove={!isMobile ? handleMouseMove : undefined}
         onMouseLeave={!isMobile ? handleMouseLeave : undefined}
