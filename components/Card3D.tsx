@@ -179,6 +179,35 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
             transform: 'translateZ(20px)',
           }}
         />
+        {/* Light reflection effect - moves based on tilt */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `linear-gradient(${
+              135 + (tilt.y * 2)
+            }deg, 
+              transparent 0%, 
+              rgba(255, 255, 255, 0.3) ${50 + (tilt.x * 0.5) + (tilt.y * 0.5)}%, 
+              transparent 100%
+            )`,
+            transform: `translateZ(25px) translateX(${tilt.y * 2}px) translateY(${tilt.x * 2}px)`,
+            transition: 'background 0.1s ease-out, transform 0.1s ease-out',
+            mixBlendMode: 'overlay',
+          }}
+        />
+        {/* Secondary light reflection for more realism */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse at ${50 + (tilt.y * 1.5)}% ${50 + (tilt.x * 1.5)}%, 
+              rgba(255, 255, 255, 0.4) 0%, 
+              transparent 60%
+            )`,
+            transform: 'translateZ(30px)',
+            transition: 'background 0.1s ease-out',
+            mixBlendMode: 'soft-light',
+          }}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         
         {collection.level && (
