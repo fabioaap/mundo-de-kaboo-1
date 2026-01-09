@@ -7,6 +7,61 @@ interface Card3DProps {
   onCollectionClick: (collection: Collection) => void;
 }
 
+// Global state for device orientation (shared across all cards)
+let globalOrientation: { beta: number; gamma: number } | null = null;
+let orientationListeners: Set<(orientation: { beta: number; gamma: number }) => void> = new Set();
+let isOrientationListenerActive = false;
+let orientationHandler: ((e: DeviceOrientationEvent) => void) | null = null;
+
+const setupGlobalOrientationListener = () => {
+  if (isOrientationListenerActive || orientationHandler) return;
+
+  orientationHandler = (e: DeviceOrientationEvent) => {
+    if (e.beta === null || e.gamma === null) return;
+    
+    globalOrientation = { beta: e.beta, gamma: e.gamma };
+    
+    // Notify all listeners
+    orientationListeners.forEach(listener => {
+      listener(globalOrientation!);
+    });
+  };
+
+  // For Android and older iOS (no permission needed)
+  if (typeof DeviceOrientationEvent !== 'undefined') {
+    window.addEventListener('deviceorientation', orientationHandler, { passive: true });
+    isOrientationListenerActive = true;
+    console.log('Device orientation listener activated');
+  }
+};
+
+const requestIOSPermission = async (): Promise<boolean> => {
+  if (typeof DeviceOrientationEvent === 'undefined') {
+    console.log('DeviceOrientationEvent not available');
+    return false;
+  }
+  
+  if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+    try {
+      console.log('Requesting device orientation permission...');
+      const response = await (DeviceOrientationEvent as any).requestPermission();
+      console.log('Permission response:', response);
+      if (response === 'granted') {
+        setupGlobalOrientationListener();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.log('Device orientation permission error:', error);
+      return false;
+    }
+  } else {
+    // No permission needed, setup directly
+    setupGlobalOrientationListener();
+    return true;
+  }
+};
+
 export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
@@ -16,16 +71,13 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
   useEffect(() => {
     if (!isMobile) return;
 
-    const handleDeviceOrientation = (e: DeviceOrientationEvent) => {
-      if (e.beta === null || e.gamma === null) return;
-      
+    const handleOrientationUpdate = (orientation: { beta: number; gamma: number }) => {
       // Convert device orientation to card tilt
       // beta: -180 to 180 (front-back tilt, 0 = flat)
       // gamma: -90 to 90 (left-right tilt, 0 = centered)
       // Normalize and apply subtle rotation (max 12 degrees for mobile)
-      // Clamp beta to -90 to 90 range for more natural feel
-      const normalizedBeta = Math.max(-90, Math.min(90, e.beta));
-      const normalizedGamma = Math.max(-90, Math.min(90, e.gamma));
+      const normalizedBeta = Math.max(-90, Math.min(90, orientation.beta));
+      const normalizedGamma = Math.max(-90, Math.min(90, orientation.gamma));
       
       const rotateX = (normalizedBeta / 90) * -12; // Invert for natural feel
       const rotateY = (normalizedGamma / 90) * 12;
@@ -36,25 +88,40 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
       });
     };
 
-    // Request permission for iOS 13+
-    if (typeof DeviceOrientationEvent !== 'undefined' && 
-        typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-      (DeviceOrientationEvent as any).requestPermission()
-        .then((response: string) => {
-          if (response === 'granted') {
-            window.addEventListener('deviceorientation', handleDeviceOrientation);
-          }
-        })
-        .catch(() => {
-          // Permission denied or not available - silent fail
-        });
-    } else {
-      // For Android and older iOS
-      window.addEventListener('deviceorientation', handleDeviceOrientation);
+    // Register this card's listener
+    orientationListeners.add(handleOrientationUpdate);
+
+    // Try to setup listener (works for Android immediately)
+    setupGlobalOrientationListener();
+
+    // If we already have orientation data, use it immediately
+    if (globalOrientation) {
+      handleOrientationUpdate(globalOrientation);
+    }
+
+    // Request permission on user interaction (iOS requires this)
+    const requestPermissionOnInteraction = async (e: Event) => {
+      e.stopPropagation(); // Prevent card click if permission dialog appears
+      if (!isOrientationListenerActive) {
+        console.log('User interaction detected, requesting permission...');
+        await requestIOSPermission();
+      }
+    };
+
+    // Add interaction listeners to request permission
+    const cardElement = cardRef.current;
+    if (cardElement) {
+      // Use capture phase to catch interaction early
+      cardElement.addEventListener('touchstart', requestPermissionOnInteraction, { once: true, passive: true, capture: true });
+      cardElement.addEventListener('click', requestPermissionOnInteraction, { once: true, capture: true });
     }
 
     return () => {
-      window.removeEventListener('deviceorientation', handleDeviceOrientation);
+      orientationListeners.delete(handleOrientationUpdate);
+      if (cardElement) {
+        cardElement.removeEventListener('touchstart', requestPermissionOnInteraction);
+        cardElement.removeEventListener('click', requestPermissionOnInteraction);
+      }
     };
   }, [isMobile]);
 
