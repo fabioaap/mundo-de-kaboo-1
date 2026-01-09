@@ -1,108 +1,233 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  <img src="./assets/images/logo-kaboo.png" alt="Mundo de Kaboo Logo" width="200" />
+  
+  # Mundo de Kaboo
+  
+  *Plataforma educacional para professores do Ensino Fundamental*
 </div>
 
-# Mundo de Kaboo
+## 📚 Sobre o Mundo de Kaboo
 
-A React-based educational platform for managing and viewing collections of books, audio, and video content.
+**Mundo de Kaboo** é uma plataforma educacional web desenvolvida para professores do Ensino Fundamental, oferecendo acesso organizado a uma vasta coleção de recursos educacionais digitais. A aplicação permite que educadores explorem, organizem e utilizem livros, audiobooks e vídeos educacionais de forma intuitiva e eficiente.
 
-## Run Locally
+### 🎯 Principais Funcionalidades
 
-**Prerequisites:** Node.js 18+ and npm
+- **📖 Biblioteca Digital**: Acesso a livros em PDF com visualizador interativo estilo flipbook
+- **🎧 Audiobooks**: Player de áudio integrado para conteúdo educacional em formato de áudio
+- **🎥 Vídeos Educacionais**: Player de vídeo para recursos audiovisuais
+- **🔍 Busca Avançada**: Sistema de busca para encontrar conteúdo rapidamente
+- **📁 Organização por Coleções**: Organize conteúdo por categorias e temas
+- **👤 Perfil Personalizado**: Sistema de autenticação e perfis de usuário
+- **📱 Design Responsivo**: Interface otimizada para desktop e dispositivos móveis
+- **🎨 Temas Personalizados**: Cada coleção pode ter sua própria cor de tema
+- **🏷️ Sistema de Tags**: Organize e filtre conteúdo com tags personalizadas
 
-1. Install dependencies:
+## 🚀 Como Executar Localmente
+
+### Pré-requisitos
+
+- **Node.js** 18 ou superior
+- **npm** (incluído com Node.js)
+- Conta no **Supabase** para backend e autenticação
+
+### Instalação
+
+1. **Clone o repositório** (se aplicável) ou navegue até o diretório do projeto:
+   ```bash
+   cd mundo-de-kaboo
+   ```
+
+2. **Instale as dependências**:
    ```bash
    npm install
    ```
 
-2. Create a `.env.local` file in the root directory:
+3. **Configure as variáveis de ambiente**:
+   
+   Crie um arquivo `.env.local` na raiz do projeto:
    ```bash
    cp .env.example .env.local
    ```
+   
+   Edite o arquivo `.env.local` e adicione suas credenciais do Supabase:
+   ```env
+   VITE_SUPABASE_URL=sua_url_do_supabase
+   VITE_SUPABASE_ANON_KEY=sua_chave_anonima_do_supabase
+   ```
+   
+   Você pode obter essas credenciais em: https://supabase.com/dashboard/project/_/settings/api
 
-3. Set your environment variables in `.env.local`:
-   - `VITE_SUPABASE_URL`: Your Supabase project URL
-   - `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous/public key
-   - `GEMINI_API_KEY`: (Optional) Your Gemini API key if using AI features
-
-   Get your Supabase credentials from: https://supabase.com/dashboard/project/_/settings/api
-
-4. Run the development server:
+4. **Execute o servidor de desenvolvimento**:
    ```bash
    npm run dev
    ```
+   
+   A aplicação estará disponível em `http://localhost:5173` (ou outra porta indicada no terminal)
 
-5. Build for production:
+5. **Build para produção**:
    ```bash
    npm run build
    ```
+   
+   Os arquivos de produção serão gerados na pasta `dist/`
 
-## Deploy to Vercel
+## 👨‍💻 Guia para Desenvolvedores
 
-### Option 1: Deploy via Vercel Dashboard
+### Estrutura do Projeto
 
-1. Push your code to GitHub/GitLab/Bitbucket
-2. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-3. Click "Add New Project"
-4. Import your repository
-5. Configure environment variables:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `GEMINI_API_KEY` (optional)
-6. Click "Deploy"
+```
+mundo-de-kaboo/
+├── assets/              # Recursos estáticos (imagens, etc.)
+│   └── images/          # Imagens do projeto
+├── components/          # Componentes React reutilizáveis
+│   ├── flipbook/       # Componentes do visualizador de PDF
+│   └── ...             # Outros componentes
+├── hooks/              # Custom React Hooks
+├── lib/                # Utilitários, clientes API e helpers
+│   ├── api.ts          # Cliente da API
+│   ├── auth.ts         # Lógica de autenticação
+│   ├── supabase.ts     # Configuração do Supabase
+│   └── ...             # Outros utilitários
+├── screens/            # Telas principais da aplicação
+│   ├── HomeScreen.tsx
+│   ├── BookReaderScreen.tsx
+│   ├── AudioPlayerScreen.tsx
+│   └── ...             # Outras telas
+├── types.ts            # Definições de tipos TypeScript
+├── constants.ts        # Constantes e configurações
+├── App.tsx             # Componente principal
+└── index.tsx           # Ponto de entrada
+```
 
-### Option 2: Deploy via Vercel CLI
+### Tecnologias Utilizadas
 
-1. Install Vercel CLI:
-   ```bash
-   npm i -g vercel
-   ```
+- **React 19** - Biblioteca JavaScript para construção de interfaces
+- **TypeScript** - Superset do JavaScript com tipagem estática
+- **Vite** - Build tool e dev server moderno
+- **Supabase** - Backend como serviço (BaaS) para autenticação e banco de dados
+- **Tailwind CSS** - Framework CSS utility-first
+- **React PDF** - Biblioteca para renderização de PDFs
+- **react-pageflip** - Biblioteca para criar efeito de flipbook
+- **react-zoom-pan-pinch** - Biblioteca para zoom e pan em imagens
+- **lucide-react** - Biblioteca de ícones
 
-2. Login to Vercel:
-   ```bash
-   vercel login
-   ```
+### Principais Componentes
 
-3. Deploy:
-   ```bash
-   vercel
-   ```
+#### Screens (Telas)
+- `HomeScreen` - Tela inicial com coleções
+- `BookReaderScreen` - Visualizador de livros em PDF
+- `AudioPlayerScreen` - Player de áudio
+- `VideoPlayerScreen` - Player de vídeo
+- `SearchScreen` - Tela de busca
+- `ProfileScreen` - Perfil do usuário
+- `AdminCollectionsScreen` - Administração de coleções
 
-4. Set environment variables:
-   ```bash
-   vercel env add VITE_SUPABASE_URL
-   vercel env add VITE_SUPABASE_ANON_KEY
-   vercel env add GEMINI_API_KEY
-   ```
+#### Componentes Importantes
+- `FlipbookViewer` - Visualizador de PDF com efeito flipbook
+- `BottomNav` - Navegação inferior (mobile) e lateral (desktop)
+- `CollectionModal` - Modal para visualizar detalhes de coleções
+- `FileUpload` - Componente para upload de arquivos
 
-5. Redeploy with environment variables:
-   ```bash
-   vercel --prod
-   ```
+### Hooks Customizados
 
-### Important Notes for Production
+- `useOrientation` - Detecta orientação do dispositivo (portrait/landscape)
+- `useIsMobile` - Detecta se o dispositivo é mobile
+- `useScreenSize` - Obtém dimensões da tela
+- `useDebounce` - Debounce de valores
+- `useToast` - Sistema de notificações toast
+- `useRefSize` - Obtém tamanho de elementos via ref
 
-- ✅ Environment variables are configured via Vercel dashboard
-- ✅ Build output directory is `dist` (configured in `vercel.json`)
-- ✅ All routes are handled by React Router (SPA routing configured)
-- ✅ Static assets are cached for optimal performance
-- ⚠️ Make sure your Supabase RLS policies are properly configured
-- ⚠️ Ensure your Supabase Storage bucket is set up and public
-- ⚠️ Test authentication flows before going live
+### Configuração do Supabase
 
-## Project Structure
+A aplicação requer as seguintes configurações no Supabase:
 
-- `/screens` - Main application screens
-- `/components` - Reusable React components
-- `/lib` - Utilities, API clients, and helpers
-- `/hooks` - Custom React hooks
-- `/assets` - Static assets (images, etc.)
+1. **Tabelas necessárias**:
+   - `collections` - Armazena as coleções de conteúdo
+   - `users` - Informações dos usuários (gerenciado pelo Supabase Auth)
 
-## Technologies
+2. **Storage Buckets**:
+   - Configurar bucket para armazenar PDFs, áudios e vídeos
+   - Configurar políticas de acesso apropriadas
 
-- React 19
-- TypeScript
-- Vite
-- Supabase (Backend & Auth)
-- Tailwind CSS
-- React PDF
+3. **Row Level Security (RLS)**:
+   - Configurar políticas RLS para proteger dados dos usuários
+   - Garantir que usuários só acessem seus próprios dados
+
+### Padrões de Código
+
+- **TypeScript**: Todo o código é tipado
+- **Componentes Funcionais**: Uso de React Hooks
+- **CSS**: Tailwind CSS para estilização
+- **Nomenclatura**: 
+  - Componentes em PascalCase
+  - Arquivos de componentes seguem o nome do componente
+  - Hooks começam com `use`
+
+### Fluxo de Autenticação
+
+1. Usuário acessa a tela de login
+2. Autenticação via Supabase Auth
+3. Após login bem-sucedido, redireciona para HomeScreen
+4. Tokens de autenticação são gerenciados automaticamente pelo Supabase
+
+### Adicionando Novas Funcionalidades
+
+1. **Nova Tela**:
+   - Criar arquivo em `screens/`
+   - Adicionar rota em `App.tsx`
+   - Adicionar tipo em `types.ts` (ScreenName)
+
+2. **Novo Componente**:
+   - Criar arquivo em `components/`
+   - Exportar componente
+   - Importar onde necessário
+
+3. **Novo Hook**:
+   - Criar arquivo em `hooks/`
+   - Seguir padrão de nomenclatura `use*`
+
+### Debugging
+
+- Use `console.log` para debug (será removido em produção)
+- React DevTools para inspecionar componentes
+- Network tab do navegador para verificar chamadas à API
+
+### Performance
+
+- Componentes pesados são lazy-loaded (ex: BookReaderScreen)
+- PDFs são carregados sob demanda
+- Imagens são otimizadas quando possível
+
+## 📝 Notas Importantes
+
+- ✅ A aplicação está configurada para produção
+- ✅ Build output directory é `dist/`
+- ✅ Todas as rotas são tratadas pelo React Router (SPA)
+- ⚠️ Certifique-se de que as políticas RLS do Supabase estão configuradas corretamente
+- ⚠️ Verifique se o bucket de Storage do Supabase está configurado e público
+- ⚠️ Teste os fluxos de autenticação antes de fazer deploy
+
+## 🤝 Contribuindo
+
+Para contribuir com o projeto:
+
+1. Faça um fork do repositório
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/nova-funcionalidade`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto é privado e proprietário.
+
+## 📧 Suporte
+
+Para suporte, entre em contato através de: suporte@mundodekaboo.com
+
+---
+
+<div align="center">
+  <p>Mundo de Kaboo © 2025</p>
+  <p>Versão 2.1</p>
+</div>
