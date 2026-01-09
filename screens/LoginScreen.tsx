@@ -12,6 +12,95 @@ interface LoginScreenProps {
 import backgroundImage from '../assets/images/background-login.jpg';
 const BG_IMAGE = backgroundImage;
 
+/**
+ * Helper function to create user profile
+ * This is called asynchronously to avoid blocking the signup flow
+ */
+async function createUserProfile(
+  userId: string, 
+  email: string, 
+  fullName: string, 
+  schoolName: string
+): Promise<void> {
+  try {
+    console.log('Creating profile for user:', userId);
+    
+    // First, check if profile already exists (might be created by trigger)
+    const { data: existingProfile, error: checkError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned, which is OK
+      console.error('Error checking existing profile:', checkError);
+      throw checkError;
+    }
+    
+    // Ensure we handle empty strings properly - convert to null
+    const cleanEmail = email?.trim() || null;
+    const cleanFullName = fullName?.trim() || null;
+    const cleanSchoolName = schoolName?.trim() || null;
+    
+    const profileData = {
+      id: userId,
+      email: cleanEmail,
+      full_name: cleanFullName,
+      school_name: cleanSchoolName,
+      role: 'viewer' as const,
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log('Profile data to insert:', profileData);
+    
+    if (existingProfile) {
+      // Profile already exists, just update it
+      console.log('Profile exists, updating...');
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          email: profileData.email,
+          full_name: profileData.full_name,
+          school_name: profileData.school_name,
+          updated_at: profileData.updated_at
+        })
+        .eq('id', userId);
+      
+      if (updateError) {
+        console.error('Error updating existing profile:', {
+          message: updateError.message,
+          code: updateError.code,
+          details: updateError.details,
+          hint: updateError.hint
+        });
+        throw updateError;
+      }
+      console.log('Profile updated successfully');
+    } else {
+      // Profile doesn't exist, create it
+      console.log('Profile does not exist, creating...');
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert(profileData);
+      
+      if (insertError) {
+        console.error('Error creating profile:', {
+          message: insertError.message,
+          code: insertError.code,
+          details: insertError.details,
+          hint: insertError.hint
+        });
+        throw insertError;
+      }
+      console.log('Profile created successfully');
+    }
+  } catch (error: any) {
+    console.error('createUserProfile error:', error);
+    // Don't throw - this is non-blocking
+    throw error;
+  }
+}
+
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -59,30 +148,50 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
         }
 
         // A. Create Auth User
+        // Note: We need to include metadata because the database function handle_new_user
+        // expects these values to create the profile automatically
+        console.log('Attempting to sign up user:', { email, hasPassword: !!password });
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
+          email: email.trim(),
+          password: password,
           options: {
             data: {
-              full_name: fullName,
-              school_name: schoolName,
+              full_name: fullName.trim() || null,
+              school_name: schoolName.trim() || null,
             },
           },
         });
 
-        if (signUpError) throw signUpError;
-        
-        // B. Manually Insert Profile
-        if (signUpData.user) {
-            await supabase.from('profiles').upsert({
-                id: signUpData.user.id,
-                email: email,
-                full_name: fullName,
-                school_name: schoolName,
-                role: 'viewer', // Explicitly set default role matching database structure
-                updated_at: new Date().toISOString()
-            });
+        if (signUpError) {
+          console.error('SignUp error details:', {
+            message: signUpError.message,
+            status: signUpError.status,
+            name: signUpError.name,
+            code: (signUpError as any).code,
+            details: (signUpError as any).details,
+            hint: (signUpError as any).hint,
+            fullError: signUpError
+          });
+          throw signUpError;
         }
+
+        if (!signUpData.user) {
+          throw new Error('Usuário não foi criado. Por favor, tente novamente.');
+        }
+
+        console.log('User created successfully:', signUpData.user.id);
+        
+        // B. Create/Update Profile (async, non-blocking)
+        // The database function handle_new_user should create the profile automatically,
+        // but we'll verify and update it if needed (in case the function failed or needs updates)
+        // Wait a bit for the database function to complete
+        setTimeout(() => {
+          createUserProfile(signUpData.user.id, email.trim(), fullName.trim(), schoolName.trim()).catch(err => {
+              console.error('Failed to create/update profile (non-blocking):', err);
+              // Profile should have been created by handle_new_user function
+              // If it failed, it will be created on first access
+          });
+        }, 500);
 
         // C. Auto-login Logic with Retry
         if (signUpData.session) {
@@ -90,8 +199,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
            return;
         } 
         
-        // Wait longer (1.5s) to ensure DB propagation before retrying login
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Wait longer (2s) to ensure DB propagation before retrying login
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Attempt manual login as fallback
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -99,9 +208,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
              password
         });
            
-        if (signInData.session) {
+        if (signInData?.session) {
              onNavigate('home', { isNewUser: true });
              return;
+        }
+        
+        if (signInError) {
+            console.error('Login retry error:', signInError);
+            // Don't throw here - account was created, just login failed
         }
 
         // D. GRACEFUL FAILURE:
@@ -126,16 +240,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
         }
       }
     } catch (error: any) {
-      console.error(error);
+      console.error('Auth error:', error);
       // Translate common errors
-      let msg = error.message;
-      if (msg === 'Invalid login credentials') msg = 'E-mail ou senha incorretos.';
-      if (msg === 'User already registered') msg = 'Este e-mail já está cadastrado.';
-      if (msg.includes('security purposes') || msg.includes('rate limit')) {
+      let msg = error.message || 'Ocorreu um erro. Tente novamente.';
+      
+      // Database/Profile errors
+      if (msg.includes('Database error saving new user')) {
+        msg = 'Erro ao salvar perfil do usuário. Por favor, tente novamente ou entre em contato com o suporte.';
+      } else if (msg.includes('duplicate key') || msg.includes('already exists')) {
+        msg = 'Este e-mail já está cadastrado.';
+      } else if (msg.includes('permission denied') || msg.includes('RLS')) {
+        msg = 'Erro de permissão. Por favor, entre em contato com o suporte.';
+      } else if (msg === 'Invalid login credentials') {
+        msg = 'E-mail ou senha incorretos.';
+      } else if (msg === 'User already registered') {
+        msg = 'Este e-mail já está cadastrado.';
+      } else if (msg.includes('security purposes') || msg.includes('rate limit')) {
         msg = 'Muitas tentativas. Por segurança, aguarde alguns instantes e tente novamente.';
       }
       
-      setErrorMsg(msg || 'Ocorreu um erro. Tente novamente.');
+      setErrorMsg(msg);
     } finally {
       if (!successMsg) setLoading(false); // Only stop loading if we didn't set success manually
     }

@@ -181,22 +181,37 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
       if (user) {
         const role = await getUserRole();
         setUserRole(role);
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         
         if (data) {
           setProfile(data);
         } else {
-           setProfile({
-              id: user.id,
-              full_name: user.user_metadata?.full_name || 'Professor(a)',
-              school_name: null,
-              email: user.email || null,
-              avatar_id: null
-           });
+          // Profile doesn't exist, create it from auth metadata
+          const profileData = {
+            id: user.id,
+            full_name: user.user_metadata?.full_name || 'Professor(a)',
+            school_name: user.user_metadata?.school_name || null,
+            email: user.email || null,
+            avatar_id: null,
+            role: 'viewer' as const,
+            updated_at: new Date().toISOString()
+          };
+          
+          // Try to create profile (non-blocking)
+          const { error: createError } = await supabase
+            .from('profiles')
+            .insert(profileData);
+          
+          if (createError) {
+            console.error('Error creating profile on load:', createError);
+            // Still set profile locally even if DB insert fails
+          }
+          
+          setProfile(profileData);
         }
       }
     } catch (error) {
