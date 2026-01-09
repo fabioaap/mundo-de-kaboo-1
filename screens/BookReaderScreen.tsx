@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection } from '../types';
 import FlipbookViewer from '../components/flipbook/FlipbookViewer';
+import useOrientation from '../hooks/useOrientation';
+import useIsMobile from '../hooks/useIsMobile';
 
 interface BookReaderScreenProps {
   collection: Collection;
@@ -15,6 +17,9 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const themeColor = collection.color_theme || '#5D1F58';
+  const isLandscape = useOrientation();
+  const isMobile = useIsMobile();
+  const isMobileLandscape = isMobile && isLandscape;
   
   // Helper function to get pagination text
   const getPaginationText = () => {
@@ -115,6 +120,53 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const rgb = hexToRgb(themeColor);
   const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 
+  // Show orientation overlay if in portrait mode
+  if (!isLandscape) {
+    return (
+      <div 
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden" 
+        style={{ 
+          height: '100vh', 
+          width: '100vw',
+          backgroundColor: bgColor
+        }}
+      >
+        <div className="text-center p-8 max-w-md mx-auto">
+          <style>{`
+            @keyframes rotatePhone {
+              0% {
+                transform: rotate(0deg);
+              }
+              50% {
+                transform: rotate(90deg);
+              }
+              100% {
+                transform: rotate(0deg);
+              }
+            }
+            .phone-rotate-animation {
+              animation: rotatePhone 3s ease-in-out infinite;
+              transform-origin: center center;
+            }
+          `}</style>
+          <div className="mb-6 flex justify-center">
+            <Icons.Smartphone 
+              size={80} 
+              className="text-white/90 phone-rotate-animation" 
+              strokeWidth={2}
+            />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-lg">
+            Gire seu dispositivo
+          </h2>
+          <p className="text-lg text-white/90 mb-6 drop-shadow-md">
+            Para uma melhor experiência de leitura, gire seu dispositivo para o modo horizontal.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       className="fixed inset-0 z-50 flex flex-col overflow-hidden" 
@@ -125,29 +177,45 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       }}
     >
 
-      {/* Header */}
-      <div className="relative z-20 p-4 flex items-center justify-between flex-shrink-0">
+      {/* Header - Hidden on mobile landscape */}
+      {!isMobileLandscape && (
+        <div className="relative z-20 p-4 flex items-center justify-between flex-shrink-0">
+          <button 
+            onClick={onBack}
+            className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30"
+            aria-label="Voltar"
+          >
+            <Icons.ChevronLeft size={24} strokeWidth={2.5} />
+          </button>
+          
+          <div className="flex-1 text-center">
+            <div className="inline-block bg-black/20 backdrop-blur-md px-6 py-2 rounded-full shadow-lg border border-white/10">
+              <h1 className="text-sm md:text-base font-bold text-white drop-shadow-sm">
+                {collection.title}
+              </h1>
+            </div>
+          </div>
+
+          <div className="w-12" />
+        </div>
+      )}
+
+      {/* Back button for mobile landscape - Floating top left */}
+      {isMobileLandscape && (
         <button 
           onClick={onBack}
-          className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30"
+          className="fixed top-4 left-4 z-30 w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30"
           aria-label="Voltar"
         >
           <Icons.ChevronLeft size={24} strokeWidth={2.5} />
         </button>
-        
-        <div className="flex-1 text-center">
-          <div className="inline-block bg-black/20 backdrop-blur-md px-6 py-2 rounded-full shadow-lg border border-white/10">
-            <h1 className="text-sm md:text-base font-bold text-white drop-shadow-sm">
-              {collection.title}
-            </h1>
-          </div>
-        </div>
+      )}
 
-        <div className="w-12" />
-      </div>
-
-      {/* Book Container */}
-      <div className="flex-1 relative z-10 overflow-hidden" style={{ minHeight: 0 }}>
+      {/* Book Container - Full screen centered for mobile landscape */}
+      <div 
+        className={`${isMobileLandscape ? 'fixed inset-0 flex items-center justify-center' : 'flex-1 relative z-10 overflow-hidden'}`} 
+        style={isMobileLandscape ? { minHeight: 0 } : { minHeight: 0 }}
+      >
         {error ? (
           <div className="text-center p-8 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl max-w-md mx-auto mt-20">
             <Icons.AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
@@ -187,29 +255,51 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       </div>
 
       {/* Navigation Controls */}
-      <div className="relative z-20 pb-6 pt-4 flex items-center justify-center gap-6 flex-shrink-0">
-        <button
-          onClick={flipPrev}
-          className="w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
-          aria-label="Página anterior"
-        >
-          <Icons.ChevronLeft size={28} strokeWidth={2.5} />
-        </button>
+      {isMobileLandscape ? (
+        <>
+          {/* Left Arrow - Center far left corner */}
+          <button
+            onClick={flipPrev}
+            className="fixed left-4 top-1/2 -translate-y-1/2 z-30 w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30"
+            aria-label="Página anterior"
+          >
+            <Icons.ChevronLeft size={28} strokeWidth={2.5} />
+          </button>
 
-        <div className="bg-black/40 backdrop-blur-md rounded-full px-6 py-2 shadow-lg border border-white/10">
-          <span className="text-sm font-bold text-white">
-            {getPaginationText()}
-          </span>
+          {/* Right Arrow - Center far right corner */}
+          <button
+            onClick={flipNext}
+            className="fixed right-4 top-1/2 -translate-y-1/2 z-30 w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30"
+            aria-label="Próxima página"
+          >
+            <Icons.ChevronLeft size={28} className="rotate-180" strokeWidth={2.5} />
+          </button>
+        </>
+      ) : (
+        <div className="relative z-20 pb-6 pt-4 flex items-center justify-center gap-6 flex-shrink-0">
+          <button
+            onClick={flipPrev}
+            className="w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
+            aria-label="Página anterior"
+          >
+            <Icons.ChevronLeft size={28} strokeWidth={2.5} />
+          </button>
+
+          <div className="bg-black/40 backdrop-blur-md rounded-full px-6 py-2 shadow-lg border border-white/10">
+            <span className="text-sm font-bold text-white">
+              {getPaginationText()}
+            </span>
+          </div>
+
+          <button
+            onClick={flipNext}
+            className="w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
+            aria-label="Próxima página"
+          >
+            <Icons.ChevronLeft size={28} className="rotate-180" strokeWidth={2.5} />
+          </button>
         </div>
-
-        <button
-          onClick={flipNext}
-          className="w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
-          aria-label="Próxima página"
-        >
-          <Icons.ChevronLeft size={28} className="rotate-180" strokeWidth={2.5} />
-        </button>
-      </div>
+      )}
     </div>
   );
 };
