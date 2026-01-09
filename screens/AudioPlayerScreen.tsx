@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection } from '../types';
+import { useThemeBackground } from '../hooks/useThemeBackground';
 
 interface AudioPlayerScreenProps {
   collection: Collection;
@@ -23,6 +24,9 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
 
   const themeColor = collection.color_theme || '#5D1F58';
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
+  
+  // Set browser background to match theme color
+  useThemeBackground(themeColor);
 
   // Convert hex color to RGB for background
   const hexToRgb = (hex: string) => {

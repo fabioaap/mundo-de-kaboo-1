@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection } from '../types';
+import { useThemeBackground } from '../hooks/useThemeBackground';
 
 interface VideoPlayerScreenProps {
   collection: Collection;
@@ -23,6 +24,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ collection
   const controlsTimeoutRef = useRef<any>(null);
 
   const themeColor = collection.color_theme || '#5D1F58';
+  
+  // Set browser background to black for video player
+  useThemeBackground('#000000');
 
   useEffect(() => {
     // Hide controls initially after 3 seconds

@@ -4,6 +4,7 @@ import { Collection } from '../types';
 import FlipbookViewer from '../components/flipbook/FlipbookViewer';
 import useOrientation from '../hooks/useOrientation';
 import useIsMobile from '../hooks/useIsMobile';
+import { useThemeBackground } from '../hooks/useThemeBackground';
 
 interface BookReaderScreenProps {
   collection: Collection;
@@ -20,6 +21,9 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const isLandscape = useOrientation();
   const isMobile = useIsMobile();
   const isMobileLandscape = isMobile && isLandscape;
+  
+  // Set browser background to match theme color
+  useThemeBackground(themeColor);
   
   // Helper function to get pagination text
   const getPaginationText = () => {

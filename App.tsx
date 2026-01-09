@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavState, ScreenName, Collection } from './types';
 import { api } from './lib/api';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { useThemeBackground } from './hooks/useThemeBackground';
 
 // Screens
 import { LoginScreen } from './screens/LoginScreen';
@@ -33,6 +34,21 @@ const App: React.FC = () => {
   const [currentCollection, setCurrentCollection] = useState<Collection | undefined>(undefined);
   // Store previous screen and collectionId before navigating to player screens
   const [previousScreenState, setPreviousScreenState] = useState<{ screen: ScreenName; collectionId?: string } | null>(null);
+  
+  // Reset background to default for non-player screens
+  // Player screens will set their own background via useThemeBackground hook
+  const isPlayerScreen = ['player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen);
+  useEffect(() => {
+    if (!isPlayerScreen) {
+      // Reset to default white background for regular screens
+      document.documentElement.style.backgroundColor = '#ffffff';
+      document.body.style.backgroundColor = '#ffffff';
+      const existingMeta = document.querySelector('meta[name="theme-color"]');
+      if (existingMeta) {
+        existingMeta.remove();
+      }
+    }
+  }, [isPlayerScreen]);
 
   // Auth Listener
   useEffect(() => {
