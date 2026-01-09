@@ -54,6 +54,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
   // Confetti Refs
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
   const confettiInstance = useRef<any>(null);
+  const [canvasReady, setCanvasReady] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -64,33 +65,64 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
   useEffect(() => {
     if (params?.isNewUser) {
         setShowWelcome(true);
+        setCanvasReady(false); // Reset canvas ready state
     }
   }, [params]);
+
+  // Reset canvas ready when modal closes
+  useEffect(() => {
+    if (!showWelcome) {
+      setCanvasReady(false);
+    }
+  }, [showWelcome]);
+
+  // Update canvas dimensions when window resizes
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      if (confettiCanvasRef.current && showWelcome) {
+        confettiCanvasRef.current.width = window.innerWidth;
+        confettiCanvasRef.current.height = window.innerHeight;
+      }
+    };
+
+    if (showWelcome) {
+      updateCanvasSize();
+      window.addEventListener('resize', updateCanvasSize);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateCanvasSize);
+    };
+  }, [showWelcome]);
 
   // Effect to handle confetti when modal opens
   useEffect(() => {
     let interval: any;
 
-    if (showWelcome && confettiCanvasRef.current) {
-       if (!confettiInstance.current) {
-         confettiInstance.current = confetti.create(confettiCanvasRef.current, {
-           resize: true,
-           useWorker: true
-         });
-       }
+    if (showWelcome && !isClosingWelcome && canvasReady && confettiCanvasRef.current) {
+      try {
+        // Create confetti instance with the canvas
+        if (!confettiInstance.current) {
+          confettiInstance.current = confetti.create(confettiCanvasRef.current, {
+            resize: true,
+            useWorker: false
+          });
+        }
 
-       const myConfetti = confettiInstance.current;
-       const colors = [
-         '#5D1F58', '#883E82', '#4EA8DE', '#70E000', '#FFD166', 
-         '#FF595E', '#FFCA3A', '#8AC926', '#1982C4', '#6A4C93', '#F72585', '#4CC9F0' 
-       ];
+        const colors = [
+          '#5D1F58', '#883E82', '#4EA8DE', '#70E000', '#FFD166', 
+          '#FF595E', '#FFCA3A', '#8AC926', '#1982C4', '#6A4C93', '#F72585', '#4CC9F0' 
+        ];
 
-       const fireConfetti = () => {
-          if (isClosingWelcome) return; 
+        const fireConfetti = () => {
+          if (isClosingWelcome || !showWelcome || !confettiInstance.current) {
+            if (interval) clearInterval(interval);
+            return;
+          }
 
           try {
-            myConfetti({
-                particleCount: 2,
+            confettiInstance.current({
+                particleCount: 3,
                 angle: 60,
                 spread: 55,
                 origin: { x: 0, y: 0.35 },
@@ -103,8 +135,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
                 disableForReducedMotion: true,
             });
 
-            myConfetti({
-                particleCount: 2,
+            confettiInstance.current({
+                particleCount: 3,
                 angle: 120,
                 spread: 55,
                 origin: { x: 1, y: 0.35 },
@@ -118,8 +150,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
             });
 
             if (Math.random() > 0.6) {
-                myConfetti({
-                    particleCount: 5,
+                confettiInstance.current({
+                    particleCount: 8,
                     angle: 90,
                     spread: 120,
                     origin: { x: 0.5, y: 0.4 },
@@ -133,12 +165,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
                 });
             }
           } catch (err) {
-             console.log(err);
+             console.error('Confetti error:', err);
           }
-       };
+        };
 
-       fireConfetti();
-       interval = setInterval(fireConfetti, 50); 
+        // Start firing confetti
+        fireConfetti();
+        interval = setInterval(fireConfetti, 50);
+      } catch (err) {
+        console.error('Failed to create confetti:', err);
+      }
+    }
+
+    // Stop confetti when closing
+    if (isClosingWelcome) {
+      if (interval) clearInterval(interval);
+      if (confettiInstance.current) {
+        try {
+          confettiInstance.current.reset();
+        } catch (e) {
+          console.error('Error resetting confetti:', e);
+        }
+      }
     }
 
     return () => {
@@ -146,11 +194,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
         if (!showWelcome && confettiInstance.current) {
             try {
                 confettiInstance.current.reset();
-            } catch (e) {}
+            } catch (e) {
+              console.error('Error resetting confetti on cleanup:', e);
+            }
             confettiInstance.current = null;
         }
     };
-  }, [showWelcome, isClosingWelcome]);
+  }, [showWelcome, isClosingWelcome, canvasReady]);
 
   const handleCloseWelcome = () => {
     setIsClosingWelcome(true);
@@ -753,18 +803,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
       
       {showWelcome && (
         <div 
-           className={`fixed inset-0 z-[70] flex items-center justify-center p-4 transition-all duration-300 ${isClosingWelcome ? 'opacity-0' : 'opacity-100'}`}
+           className={`fixed inset-0 z-[70] flex items-center justify-center p-4 transition-all duration-300 ease-in-out ${isClosingWelcome ? 'opacity-0' : 'opacity-100'}`}
         >
-           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={handleCloseWelcome}></div>
+           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-in-out" onClick={handleCloseWelcome}></div>
            
            <canvas 
-             ref={confettiCanvasRef}
-             width={window.innerWidth}
-             height={window.innerHeight}
-             className={`absolute inset-0 w-full h-full pointer-events-none z-[75] transition-opacity duration-300 ${isClosingWelcome ? 'opacity-0' : 'opacity-100'}`}
+             ref={(node) => {
+               confettiCanvasRef.current = node;
+               if (node && showWelcome) {
+                 // Set dimensions
+                 node.width = window.innerWidth;
+                 node.height = window.innerHeight;
+                 // Mark canvas as ready
+                 setTimeout(() => setCanvasReady(true), 50);
+               } else if (!showWelcome) {
+                 setCanvasReady(false);
+               }
+             }}
+             className={`absolute inset-0 w-full h-full pointer-events-none z-[75] transition-opacity duration-300 ease-in-out ${isClosingWelcome ? 'opacity-0' : 'opacity-100'}`}
+             style={{ display: 'block' }}
            />
    
-           <div className={`bg-white rounded-3xl p-8 w-full max-w-sm text-center relative z-[80] shadow-2xl transform transition-all duration-300 ${isClosingWelcome ? 'scale-95' : 'scale-100'}`}>
+           <div className={`bg-white rounded-3xl p-8 w-full max-w-sm text-center relative z-[80] shadow-2xl transform transition-all duration-300 ease-in-out ${isClosingWelcome ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}>
                <div className="mb-6 flex justify-center">
                     <img src={LOGO_URL} alt="Mundo de Kaboo" className="w-40 h-auto" />
                </div>
