@@ -37,7 +37,8 @@ import {
   Upload,
   ExternalLink,
   RotateCw,
-  Smartphone
+  Smartphone,
+  Image
 } from 'lucide-react';
 
 export const Icons = {
@@ -45,5 +46,5 @@ export const Icons = {
   Play, Pause, SkipBack, SkipForward, BookOpen, Book, Headphones, 
   Video, Paperclip, Download, FileText, Settings, LogOut,
   HelpCircle, Mail, Grid, Volume2, VolumeX, Maximize, Minimize,
-  Eye, EyeOff, X, Filter, Check, Plus, Edit, Trash2, AlertCircle, Upload, ExternalLink, RotateCw, Smartphone
+  Eye, EyeOff, X, Filter, Check, Plus, Edit, Trash2, AlertCircle, Upload, ExternalLink, RotateCw, Smartphone, Image
 };
