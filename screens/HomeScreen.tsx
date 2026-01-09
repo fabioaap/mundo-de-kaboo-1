@@ -7,8 +7,6 @@ import { getUserRole } from '../lib/auth';
 import { TABS, LOGO_URL, getCharacterImageUrl, getCharacterColor } from '../constants';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
-import { CollectionCarousel } from '../components/CollectionCarousel';
-import useIsMobile from '../hooks/useIsMobile';
 // @ts-ignore
 import confetti from 'canvas-confetti';
 
@@ -33,7 +31,6 @@ const INITIAL_FILTERS: FilterState = {
 };
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) => {
-  const isMobile = useIsMobile();
   // Data State
   const [collections, setCollections] = useState<Collection[]>([]);
   const [userProgress, setUserProgress] = useState<Record<string, number>>({});
@@ -559,7 +556,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
 
   return (
     <div className="flex flex-col h-full bg-white pb-24 md:pb-0 relative">
-      <div className="overflow-y-hidden no-scrollbar flex-1">
+      <div className="overflow-y-auto no-scrollbar flex-1">
         
         {/* MOBILE HEADER: Fixed background color, reduced padding, no top margin */}
         <div className="md:hidden px-6 py-4 flex justify-between items-center sticky top-0 bg-white z-30 transition-all border-b border-gray-50">
@@ -592,7 +589,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
            <PageHeader title="Coleções" className="!pb-4" rightContent={<ProfileHeaderSection />} />
         </div>
 
-        <div className="px-6 md:px-8 flex items-center justify-between gap-4 relative z-0" style={{ marginBottom: isMobile ? '12px' : '32px', marginTop: isMobile ? '4px' : '8px' }}>
+        <div className="px-6 md:px-8 mb-8 mt-2 flex items-center justify-between gap-4 relative z-0">
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 flex-1">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
@@ -691,9 +688,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           </div>
         )}
 
-        <div className="px-6 md:px-8" style={{ paddingBottom: isMobile ? '8px' : '48px' }}>
-          <div className="flex justify-between items-end" style={{ marginBottom: isMobile ? '12px' : '24px' }}>
-            <h2 className="text-xl font-bold text-gray-800" style={{ fontSize: isMobile ? '18px' : '20px' }}>
+        <div className="px-6 md:px-8 pb-12">
+          <div className="flex justify-between items-end mb-4">
+            <h2 className="text-xl font-bold text-gray-800">
                 {activeTab === 'all' && activeFilterCount === 0 ? 'Todas as Coleções' : 
                  activeFilterCount > 0 ? 'Resultados filtrados' :
                  activeTab === 'fund1' ? 'Fundamental I' : 'Fundamental II'}
@@ -704,11 +701,48 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           </div>
           
           {filteredCollections.length > 0 ? (
-            <div key={animationKey} className="animate-fade-in-up" style={{ marginTop: isMobile ? '0px' : '8px' }}>
-              <CollectionCarousel
-                collections={filteredCollections}
-                onCollectionClick={handleCollectionClick}
-              />
+            <div 
+                key={animationKey} 
+                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 animate-fade-in-up"
+            >
+              {filteredCollections.map((collection) => (
+                <div 
+                  key={collection.id}
+                  onClick={() => handleCollectionClick(collection)}
+                  className="cursor-pointer active:scale-95 transition-transform"
+                >
+                  <div 
+                     className="aspect-square mb-3 rounded-lg overflow-hidden relative group shadow-md shadow-gray-100"
+                     style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
+                  >
+                    <img src={collection.cover_image} alt={collection.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 bg-gray-200" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    
+                    {collection.level && (
+                      <div className="absolute bottom-2 right-2 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-lg text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50">
+                          {collection.level.replace('Fundamental ', 'Fund. ')}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-2">
+                    {collection.title}
+                  </h3>
+
+                  {collection.theme && (
+                    <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">
+                        {collection.theme}
+                    </p>
+                  )}
+
+                  {collection.progress! > 0 && (
+                    <div className="text-xs font-bold text-kaboo-light flex items-center gap-1 mt-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-kaboo-light" />
+                      Em andamento
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           ) : (
             <div className="py-20 text-center flex flex-col items-center">
