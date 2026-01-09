@@ -4,6 +4,7 @@ import { ScreenName, UserProfile } from '../types';
 import { supabase } from '../lib/supabase';
 import { getCharacterImageUrl, getCharacterColor } from '../constants';
 import { canEditCollections, getUserRole } from '../lib/auth';
+import { PageHeader } from '../components/PageHeader';
 
 interface ProfileScreenProps {
   onNavigate: (screen: ScreenName) => void;
@@ -69,17 +70,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
 
   return (
     <div className="flex flex-col h-full bg-white pb-24 md:pb-0">
-       {/* WHITE HEADER - Standardization */}
-       <div className="px-6 pt-12 pb-4 flex items-center justify-between bg-white border-b border-gray-50 sticky top-0 z-30">
-          <button 
-              onClick={() => onNavigate('home')}
-              className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-800 hover:bg-gray-100 transition-all active:scale-95"
-          >
-              <Icons.ChevronLeft size={24} />
-          </button>
-          <span className="font-black text-gray-800">Meu Perfil</span>
-          <div className="w-10" />
-       </div>
+       {/* Standard Header */}
+       <PageHeader title="Meu Perfil" onBack={() => onNavigate('home')} />
 
        {/* HERO SECTION - Standard White Background */}
        <div className="px-6 py-8 flex flex-col items-center gap-4 max-w-2xl mx-auto w-full">
