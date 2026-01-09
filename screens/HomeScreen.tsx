@@ -7,6 +7,7 @@ import { getUserRole } from '../lib/auth';
 import { TABS, LOGO_URL, getCharacterImageUrl, getCharacterColor } from '../constants';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
+import { Card3D } from '../components/Card3D';
 // @ts-ignore
 import confetti from 'canvas-confetti';
 
@@ -253,8 +254,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
     // Explicitly casting the mapped result to ensure correct type inference for filteredCollections
     return (collections.map(c => ({
         ...c,
-        progress: userProgress[c.id] || 0
-      })) as (Collection & { progress: number })[]).filter(c => {
+        progress: userProgress[c.id] || undefined
+      })) as (Collection & { progress?: number })[]).filter(c => {
         if (activeTab === 'fund1' && c.level !== 'Fundamental I') return false;
         if (activeTab === 'fund2' && c.level !== 'Fundamental II') return false;
 
@@ -703,45 +704,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           {filteredCollections.length > 0 ? (
             <div 
                 key={animationKey} 
-                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 animate-fade-in-up"
+                className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 animate-fade-in-up"
             >
               {filteredCollections.map((collection) => (
-                <div 
+                <Card3D
                   key={collection.id}
-                  onClick={() => handleCollectionClick(collection)}
-                  className="cursor-pointer active:scale-95 transition-transform"
-                >
-                  <div 
-                     className="aspect-square mb-3 rounded-lg overflow-hidden relative group shadow-md shadow-gray-100"
-                     style={{ WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
-                  >
-                    <img src={collection.cover_image} alt={collection.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 bg-gray-200" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    
-                    {collection.level && (
-                      <div className="absolute bottom-2 right-2 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-lg text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50">
-                          {collection.level.replace('Fundamental ', 'Fund. ')}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-2">
-                    {collection.title}
-                  </h3>
-
-                  {collection.theme && (
-                    <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">
-                        {collection.theme}
-                    </p>
-                  )}
-
-                  {collection.progress! > 0 && (
-                    <div className="text-xs font-bold text-kaboo-light flex items-center gap-1 mt-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-kaboo-light" />
-                      Em andamento
-                    </div>
-                  )}
-                </div>
+                  collection={collection}
+                  onCollectionClick={handleCollectionClick}
+                />
               ))}
             </div>
           ) : (
