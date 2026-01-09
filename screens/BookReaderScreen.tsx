@@ -131,6 +131,15 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
           backgroundColor: bgColor
         }}
       >
+        {/* Back Button */}
+        <button 
+          onClick={onBack}
+          className="absolute top-4 left-4 z-30 w-12 h-12 rounded-full bg-white/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-white/30 transition-all active:scale-95 border border-white/30"
+          aria-label="Voltar"
+        >
+          <Icons.ChevronLeft size={24} strokeWidth={2.5} />
+        </button>
+
         <div className="text-center p-8 max-w-md mx-auto">
           <style>{`
             @keyframes rotatePhone {
