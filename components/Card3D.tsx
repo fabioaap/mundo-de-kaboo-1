@@ -75,16 +75,17 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
       // Convert device orientation to card tilt
       // beta: -180 to 180 (front-back tilt, 0 = flat)
       // gamma: -90 to 90 (left-right tilt, 0 = centered)
-      // Normalize and apply subtle rotation (max 12 degrees for mobile)
+      // Increased rotation for more visible effect (max 25 degrees for mobile)
       const normalizedBeta = Math.max(-90, Math.min(90, orientation.beta));
       const normalizedGamma = Math.max(-90, Math.min(90, orientation.gamma));
       
-      const rotateX = (normalizedBeta / 90) * -12; // Invert for natural feel
-      const rotateY = (normalizedGamma / 90) * 12;
+      // More pronounced rotation for better visibility
+      const rotateX = (normalizedBeta / 90) * -25; // Invert for natural feel, increased from 12 to 25
+      const rotateY = (normalizedGamma / 90) * 25; // Increased from 12 to 25
       
       setTilt({ 
-        x: Math.max(-12, Math.min(12, rotateX)), 
-        y: Math.max(-12, Math.min(12, rotateY)) 
+        x: Math.max(-25, Math.min(25, rotateX)), 
+        y: Math.max(-25, Math.min(25, rotateY)) 
       });
     };
 
@@ -164,7 +165,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
           transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale3d(1, 1, 1)`,
           transformStyle: 'preserve-3d',
           transition: isMobile 
-            ? 'transform 0.15s ease-out' 
+            ? 'transform 0.1s ease-out' 
             : (tilt.x === 0 && tilt.y === 0 ? 'transform 0.5s ease-out' : 'transform 0.1s ease-out'),
         }}
         onMouseMove={!isMobile ? handleMouseMove : undefined}
