@@ -84,14 +84,28 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
   // Fallback timeout to ensure loading doesn't stay forever
   useEffect(() => {
     if (pdfDetails && !firstPageRendered) {
+      // Shorter timeout to show content faster
       const timeout = setTimeout(() => {
-        console.log('⏱️ FlipbookViewer: Timeout reached (4s), marking first page as rendered');
+        console.log('⏱️ FlipbookViewer: Timeout reached (1.5s), marking first page as rendered');
         setFirstPageRendered(true);
-      }, 4000); // 4 second fallback
+      }, 1500); // 1.5 second fallback
 
       return () => clearTimeout(timeout);
     }
   }, [pdfDetails, firstPageRendered]);
+  
+  // Also set firstPageRendered when pdfDetails is loaded (more aggressive fallback)
+  useEffect(() => {
+    if (pdfDetails && !firstPageRendered) {
+      // After a short delay, show content even if callback hasn't fired
+      const timeout = setTimeout(() => {
+        console.log('⏱️ FlipbookViewer: Aggressive fallback (2s), showing content');
+        setFirstPageRendered(true);
+      }, 2000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [pdfDetails]);
 
   // Notify parent when page changes
   useEffect(() => {
@@ -192,7 +206,7 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
         <Document 
           file={pdfUrl} 
           onLoadSuccess={onDocumentLoadSuccess} 
-          onLoadError={onDocumentLoadError} 
+          onLoadError={onDocumentLoadError}
           loading={
             <div className="absolute inset-0 flex items-center justify-center z-[9999]" style={{ backgroundColor: bgColor }}>
               {/* Dark overlay to darken background */}
@@ -203,13 +217,10 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
         >
           {pdfDetails && !pdfLoading ? (
             <div className="relative w-full h-full" style={{ position: 'relative', zIndex: 1 }}>
-              {/* Book content - always rendered but completely hidden until overlay disappears */}
+              {/* Book content - always visible, overlay will cover it during loading */}
               <div 
                 className="w-full h-full"
                 style={{ 
-                  opacity: firstPageRendered ? 1 : 0,
-                  pointerEvents: firstPageRendered ? 'auto' : 'none',
-                  visibility: firstPageRendered ? 'visible' : 'hidden',
                   position: 'relative',
                   zIndex: 1
                 }}
@@ -241,11 +252,10 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
                         setViewerStates({ ...viewerStates, currentPageIndex: currentPage });
                       }}
                       onFirstPageRendered={() => {
-                        // Add 2 second delay to ensure everything is fully loaded before hiding overlay
-                        setTimeout(() => {
-                          setFirstPageRendered(true);
-                          onLoadSuccess?.();
-                        }, 2000);
+                        // Show immediately when first page is ready - no artificial delay
+                        console.log('✅ FlipbookViewer: onFirstPageRendered called');
+                        setFirstPageRendered(true);
+                        onLoadSuccess?.();
                       }}
                     />
                   </div>
@@ -255,16 +265,14 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
               {/* Loading overlay that covers the book until first page is ready - MUST be last in DOM */}
               {!firstPageRendered && (
                 <div 
-                  className="absolute inset-0 flex items-center justify-center"
+                  className="absolute inset-0 flex items-center justify-center z-[9999]"
                   style={{ 
                     backgroundColor: bgColor,
-                    zIndex: 999999,
                     top: 0,
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    position: 'absolute',
-                    willChange: 'opacity'
+                    position: 'absolute'
                   }}
                 >
                   {/* Dark overlay to darken background */}

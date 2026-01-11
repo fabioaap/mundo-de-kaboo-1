@@ -29,9 +29,10 @@ const FlipbookLoader = forwardRef<any, FlipbookLoaderProps>(
     const firstPageRenderedRef = React.useRef(false);
 
     const handleFirstPageRender = React.useCallback(() => {
-      if (!firstPageRenderedRef.current && onFirstPageRendered) {
+      if (!firstPageRenderedRef.current) {
         firstPageRenderedRef.current = true;
-        onFirstPageRendered();
+        console.log('✅ FlipbookLoader: First page rendered, calling onFirstPageRendered');
+        onFirstPageRendered?.();
       }
     }, [onFirstPageRendered]);
 

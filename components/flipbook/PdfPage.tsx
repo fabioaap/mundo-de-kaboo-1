@@ -17,24 +17,20 @@ const PdfPage = forwardRef<HTMLDivElement, PdfPageProps>(
     const handleRenderSuccess = React.useCallback(() => {
       if (!isRendered && onRenderSuccess) {
         setIsRendered(true);
-        // Small delay to ensure page is fully painted
-        setTimeout(() => {
-          onRenderSuccess();
-        }, 150);
+        // Call immediately - no delay
+        onRenderSuccess();
       }
     }, [isRendered, onRenderSuccess]);
 
     const handleLoadSuccess = React.useCallback(() => {
       // Also trigger on load success as a fallback
       if (!isRendered && onRenderSuccess) {
-        setTimeout(() => {
-          setIsRendered(true);
-          onRenderSuccess();
-        }, 150);
+        setIsRendered(true);
+        onRenderSuccess();
       }
     }, [isRendered, onRenderSuccess]);
 
-    // Always render the PDF page to prevent black screens
+    // Render the PDF page - always render to prevent blank screens
     return (
       <div ref={ref} className="bg-transparent w-full h-full flex items-center justify-center">
         <Page
