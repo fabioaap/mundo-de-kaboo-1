@@ -260,6 +260,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
   };
 
   const handleDeleteClick = (id: string) => {
+    console.log('handleDeleteClick called with id:', id);
     if (!isAdminUser) {
       showToast('Apenas administradores podem excluir coleções.', 'error');
       return;
@@ -975,10 +976,12 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                         ref={(el) => {
                           actionsDropdownRefs.current[collection.id] = el;
                         }}
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            e.preventDefault();
                             setOpenActionsDropdown(openActionsDropdown === collection.id ? null : collection.id);
                           }}
                           className="w-8 h-8 rounded-full bg-white/90 hover:bg-white border border-gray-200 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
@@ -987,10 +990,29 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                         </button>
 
                         {openActionsDropdown === collection.id && (
-                          <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-fade-in-up origin-top-right actions-dropdown">
+                          <div 
+                            className="absolute top-full right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-[100] animate-fade-in-up origin-top-right actions-dropdown"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                            }}
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                            }}
+                          >
                             {isAdminUser && (
                               <button
-                                onClick={() => handleDeleteClick(collection.id)}
+                                type="button"
+                                onClick={(e) => {
+                                  console.log('Delete button clicked');
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  handleDeleteClick(collection.id);
+                                  setOpenActionsDropdown(null);
+                                }}
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                }}
                                 className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl text-red-500 hover:bg-red-50 font-medium"
                               >
                                 <Icons.Trash2 size={18} />
@@ -1008,8 +1030,15 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                         className="cursor-pointer active:scale-95 transition-transform touch-manipulation"
                         style={{ touchAction: 'manipulation' }}
                         onClick={(e) => {
-                          // Não abrir edição se clicar no botão de ações
-                          if ((e.target as HTMLElement).closest('.actions-button') || (e.target as HTMLElement).closest('.actions-dropdown')) {
+                          // Não abrir edição se clicar no botão de ações ou dropdown
+                          const target = e.target as HTMLElement;
+                          if (
+                            target.closest('.actions-button') || 
+                            target.closest('.actions-dropdown') || 
+                            target.tagName === 'BUTTON' ||
+                            target.closest('button')
+                          ) {
+                            e.stopPropagation();
                             return;
                           }
                           if (hasUnsavedChanges()) {
