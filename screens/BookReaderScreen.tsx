@@ -135,6 +135,9 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
           backgroundColor: bgColor
         }}
       >
+        {/* Dark overlay to darken background */}
+        <div className="absolute inset-0 bg-black/10 z-0" />
+        
         {/* Back Button */}
         <button 
           onClick={onBack}
@@ -189,6 +192,8 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
         backgroundColor: bgColor
       }}
     >
+      {/* Dark overlay to darken background */}
+      <div className="absolute inset-0 bg-black/10 z-0" />
 
       {/* Header - Hidden on mobile landscape */}
       {!isMobileLandscape && (

@@ -182,14 +182,16 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex flex-col overflow-hidden" 
-      style={{ 
-        height: '100vh', 
+    <div
+      className="fixed inset-0 z-50 flex flex-col overflow-hidden"
+      style={{
+        height: '100vh',
         width: '100vw',
         backgroundColor: bgColor
       }}
     >
+      {/* Dark overlay to darken background */}
+      <div className="absolute inset-0 bg-black/10 z-0" />
       {collection.audio_url && (
         <audio 
           ref={audioRef} 

@@ -153,6 +153,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ collection
         onTouchStart={resetControlsTimeout}
         onClick={() => setShowControls(!showControls)}
     >
+      {/* Dark overlay to darken background */}
+      <div className="absolute inset-0 bg-black/10 z-0" />
+      
       {/* Video Element */}
       {collection.video_url ? (
         <video

@@ -36,7 +36,7 @@ const PdfPage = forwardRef<HTMLDivElement, PdfPageProps>(
 
     // Always render the PDF page to prevent black screens
     return (
-      <div ref={ref} className="bg-white w-full h-full flex items-center justify-center">
+      <div ref={ref} className="bg-transparent w-full h-full flex items-center justify-center">
         <Page
           devicePixelRatio={
             isPageInView && zoomScale > 1.7
@@ -50,7 +50,7 @@ const PdfPage = forwardRef<HTMLDivElement, PdfPageProps>(
           onRenderSuccess={handleRenderSuccess}
           onLoadSuccess={handleLoadSuccess}
           loading={
-            <div className="w-full h-full bg-white flex items-center justify-center">
+            <div className="w-full h-full bg-transparent flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
             </div>
           }

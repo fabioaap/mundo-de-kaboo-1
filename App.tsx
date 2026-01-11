@@ -35,6 +35,8 @@ const App: React.FC = () => {
   const [currentCollection, setCurrentCollection] = useState<Collection | undefined>(undefined);
   // Store previous screen and collectionId before navigating to player screens
   const [previousScreenState, setPreviousScreenState] = useState<{ screen: ScreenName; collectionId?: string } | null>(null);
+  // Store collection theme color for loading screen
+  const [loadingCollectionTheme, setLoadingCollectionTheme] = useState<string | null>(null);
   
   // Reset background to default for non-player screens
   // Player screens will set their own background via useThemeBackground hook
@@ -99,21 +101,26 @@ const App: React.FC = () => {
     if (navState.params?.collectionId) {
       // Fetch collection for modal (home/search) or player screens
       if (['home', 'search', 'player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen)) {
+        // First, fetch just the theme color for loading screen
         api.getCollectionById(navState.params.collectionId).then(data => {
           if (data) {
             console.log('📦 App: Fetched collection for', navState.currentScreen, data);
             setCurrentCollection(data);
+            setLoadingCollectionTheme(data.color_theme || '#5D1F58');
           } else {
             console.warn('⚠️ App: Collection not found for ID:', navState.params.collectionId);
+            setLoadingCollectionTheme('#5D1F58'); // Default color
           }
         }).catch(error => {
           console.error('❌ App: Error fetching collection:', error);
+          setLoadingCollectionTheme('#5D1F58'); // Default color on error
         });
       }
     } else {
       // Only clear collection when explicitly navigating away from player screens
       if (!['player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen)) {
         setCurrentCollection(undefined);
+        setLoadingCollectionTheme(null);
       }
     }
   }, [navState.params?.collectionId, navState.currentScreen]);
@@ -198,19 +205,51 @@ const App: React.FC = () => {
 
       case 'player_book':
         if (!currentCollection) {
-          // Show loading while fetching collection
+          // Show loading while fetching collection - use collection theme color if available
+          const themeColor = loadingCollectionTheme || '#5D1F58';
+          const hexToRgb = (hex: string) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result
+              ? {
+                  r: parseInt(result[1], 16),
+                  g: parseInt(result[2], 16),
+                  b: parseInt(result[3], 16),
+                }
+              : { r: 93, g: 31, b: 88 };
+          };
+          const rgb = hexToRgb(themeColor);
+          const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+          
           return (
-            <div className="flex items-center justify-center h-screen bg-white">
-              <div className="text-center">
-                <div className="w-12 h-12 border-4 border-kaboo-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-kaboo-primary font-bold">Carregando livro...</p>
-                <p className="text-xs text-gray-500 mt-2">collectionId: {navState.params?.collectionId || 'não fornecido'}</p>
-              </div>
+            <div className="flex items-center justify-center h-screen relative" style={{ backgroundColor: bgColor }}>
+              {/* Dark overlay to darken background */}
+              <div className="absolute inset-0 bg-black/10 z-0" />
+              <div className="relative z-10 w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
             </div>
           );
         }
+        const themeColor = currentCollection?.color_theme || loadingCollectionTheme || '#5D1F58';
+        const hexToRgbForSuspense = (hex: string) => {
+          const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+          return result
+            ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16),
+              }
+            : { r: 93, g: 31, b: 88 };
+        };
+        const rgbForSuspense = hexToRgbForSuspense(themeColor);
+        const bgColorForSuspense = `rgb(${rgbForSuspense.r}, ${rgbForSuspense.g}, ${rgbForSuspense.b})`;
+        
         return (
-          <React.Suspense fallback={<div className="flex items-center justify-center h-screen bg-white"><div className="w-12 h-12 border-4 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div></div>}>
+          <React.Suspense fallback={
+            <div className="flex items-center justify-center h-screen relative" style={{ backgroundColor: bgColorForSuspense }}>
+              {/* Dark overlay to darken background */}
+              <div className="absolute inset-0 bg-black/10 z-0" />
+              <div className="relative z-10 w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+            </div>
+          }>
             <BookReaderScreen collection={currentCollection} onBack={goBack} />
           </React.Suspense>
         );

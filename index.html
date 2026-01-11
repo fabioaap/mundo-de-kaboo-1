@@ -92,18 +92,39 @@
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
+        background: transparent !important;
       }
       
       .react-pdf__Page {
         display: flex !important;
         justify-content: center;
         align-items: center;
+        background: transparent !important;
       }
       
       .react-pdf__Document {
         display: flex !important;
         justify-content: center;
         align-items: center;
+        background: transparent !important;
+      }
+      
+      .react-pdf__Document > div {
+        background: transparent !important;
+      }
+      
+      /* HTMLFlipBook (react-pageflip) transparent backgrounds */
+      .stf__parent,
+      .stf__wrapper,
+      .tf__parent,
+      .tf__wrapper {
+        background: transparent !important;
+      }
+      
+      /* react-zoom-pan-pinch transparent backgrounds */
+      .react-transform-wrapper,
+      .react-transform-component {
+        background: transparent !important;
       }
       
       /* Faster modal animations */

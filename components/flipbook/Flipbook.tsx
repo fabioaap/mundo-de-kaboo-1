@@ -102,7 +102,7 @@ const Flipbook = memo(({ viewerStates, setViewerStates, flipbookRef, pdfDetails,
           />
         </div>
       ) : (
-        <div className="text-center text-gray-600 bg-white p-8 rounded-xl shadow-lg">
+        <div className="text-center text-gray-600 bg-transparent p-8 rounded-xl shadow-lg">
           <p className="font-bold mb-2">Calculando dimensões...</p>
           <p className="text-xs">scale: {scale.toFixed(3)}, width: {width}, height: {height}</p>
           <p className="text-xs">pdfDetails: {pdfDetails ? `loaded (${pdfDetails.totalPages} pages, ${pdfDetails.width}x${pdfDetails.height})` : 'null'}</p>
@@ -118,8 +118,8 @@ const Flipbook = memo(({ viewerStates, setViewerStates, flipbookRef, pdfDetails,
       style={{ minHeight: '400px', minWidth: '300px', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
     >
       <TransformComponent
-        wrapperStyle={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-        contentStyle={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+        wrapperStyle={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'transparent' }}
+        contentStyle={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'transparent' }}
       >
         {content}
       </TransformComponent>

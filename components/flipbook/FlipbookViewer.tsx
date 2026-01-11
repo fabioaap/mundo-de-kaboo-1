@@ -133,8 +133,8 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
   return (
     <div
       ref={flipbookRef}
-      className={cn('relative h-full w-full bg-transparent overflow-hidden flex items-center justify-center', className)}
-      style={{ minHeight: '400px', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+      className={cn('relative h-full w-full bg-transparent overflow-hidden', className)}
+      style={{ minHeight: '400px', height: '100%', position: 'relative' }}
     >
       <style>{`
         .react-pdf__Document {
@@ -143,6 +143,7 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
           align-items: center !important;
           height: 100% !important;
           width: 100% !important;
+          background: transparent !important;
         }
         .react-pdf__Document > div {
           display: flex !important;
@@ -150,14 +151,32 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
           align-items: center !important;
           height: 100% !important;
           width: 100% !important;
+          background: transparent !important;
+        }
+        .react-pdf__Page {
+          background: transparent !important;
+        }
+        .react-pdf__Page__canvas {
+          background: transparent !important;
+        }
+        /* HTMLFlipBook (react-pageflip) transparent backgrounds */
+        .stf__parent,
+        .stf__wrapper,
+        .tf__parent,
+        .tf__wrapper {
+          background: transparent !important;
+        }
+        /* react-zoom-pan-pinch transparent backgrounds */
+        .react-transform-wrapper,
+        .react-transform-component {
+          background: transparent !important;
         }
       `}</style>
       {pdfLoading && (
-        <div className="absolute inset-0 flex items-center justify-center z-50 bg-white/80">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-700 font-bold">Carregando PDF...</p>
-          </div>
+        <div className="absolute inset-0 flex items-center justify-center z-[9999]" style={{ backgroundColor: bgColor }}>
+          {/* Dark overlay to darken background */}
+          <div className="absolute inset-0 bg-black/10 z-0" />
+          <div className="relative z-10 w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
         </div>
       )}
       
@@ -175,32 +194,26 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
           onLoadSuccess={onDocumentLoadSuccess} 
           onLoadError={onDocumentLoadError} 
           loading={
-            <div className="absolute inset-0 flex items-center justify-center z-40">
-              <div className="text-center">
-                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-700 font-bold">Carregando documento PDF...</p>
-              </div>
+            <div className="absolute inset-0 flex items-center justify-center z-[9999]" style={{ backgroundColor: bgColor }}>
+              {/* Dark overlay to darken background */}
+              <div className="absolute inset-0 bg-black/10 z-0" />
+              <div className="relative z-10 w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
             </div>
           }
         >
           {pdfDetails && !pdfLoading ? (
-            <>
-              {/* Loading overlay that fades out when first page is ready */}
+            <div className="relative w-full h-full" style={{ position: 'relative', zIndex: 1 }}>
+              {/* Book content - always rendered but completely hidden until overlay disappears */}
               <div 
-                className={`absolute inset-0 z-50 flex items-center justify-center transition-opacity duration-500 ${
-                  firstPageRendered ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                }`}
-                style={{ backgroundColor: bgColor }}
+                className="w-full h-full"
+                style={{ 
+                  opacity: firstPageRendered ? 1 : 0,
+                  pointerEvents: firstPageRendered ? 'auto' : 'none',
+                  visibility: firstPageRendered ? 'visible' : 'hidden',
+                  position: 'relative',
+                  zIndex: 1
+                }}
               >
-                <div className="text-center">
-                  <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-white font-bold">Abrindo o livro...</p>
-                  <p className="text-xs text-white/80 mt-2">Aguarde enquanto preparamos o livro</p>
-                </div>
-              </div>
-              
-              {/* Book content - always rendered but covered by overlay until ready */}
-              <div className="w-full h-full">
                 <TransformWrapper
                   doubleClick={{ disabled: true }}
                   pinch={{ step: 2 }}
@@ -238,10 +251,31 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
                   </div>
                 </TransformWrapper>
               </div>
-            </>
+              
+              {/* Loading overlay that covers the book until first page is ready - MUST be last in DOM */}
+              {!firstPageRendered && (
+                <div 
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{ 
+                    backgroundColor: bgColor,
+                    zIndex: 999999,
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    position: 'absolute',
+                    willChange: 'opacity'
+                  }}
+                >
+                  {/* Dark overlay to darken background */}
+                  <div className="absolute inset-0 bg-black/10 z-0" />
+                  <div className="relative z-10 w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center z-30">
-              <div className="text-center text-gray-600 bg-white/90 p-8 rounded-xl shadow-lg">
+              <div className="text-center text-gray-600 bg-transparent p-8 rounded-xl shadow-lg">
                 <p className="font-bold mb-2">Aguardando PDF...</p>
                 <p className="text-xs">pdfLoading: {pdfLoading ? 'true' : 'false'}</p>
                 <p className="text-xs">pdfDetails: {pdfDetails ? `loaded (${pdfDetails.totalPages} pages)` : 'null'}</p>
