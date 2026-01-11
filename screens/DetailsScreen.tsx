@@ -198,7 +198,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ collection, onNavi
 
       {/* DESKTOP: RIGHT SIDE (Content) / MOBILE: BOTTOM CARD */}
       <div className="flex-1 overflow-y-auto z-10 no-scrollbar bg-white rounded-t-[2.5rem] md:rounded-none mt-0 relative shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none md:h-full">
-          <div className="pt-16 px-6 pb-24 md:p-12 md:max-w-4xl md:mx-auto">
+          <div className="pt-9 px-6 pb-24 md:p-12 md:max-w-4xl md:mx-auto">
             
             {/* Back Button - Show when in Extra Tools view */}
             {showExtraTools && (
@@ -306,11 +306,6 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ collection, onNavi
                  </div>
                </div>
             ) : null}
-
-            {/* Description */}
-            <p className="text-gray-600 leading-relaxed text-center md:text-left mb-10 text-base md:text-lg">
-              {collection.description}
-            </p>
 
             {/* Actions Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
