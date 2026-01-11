@@ -700,22 +700,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
         {activeFilterCount > 0 && (
             <div className="px-6 md:px-8 mb-6 flex gap-2 flex-wrap animate-fade-in-up">
                  {activeFilters.characters.map(f => (
-                    <span key={f} onClick={() => toggleFilter('characters', f)} className="cursor-pointer px-3 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
+                    <span key={f} onClick={() => toggleFilter('characters', f)} className="cursor-pointer px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
                         {f} <Icons.X size={12} className="group-hover:scale-110"/>
                     </span>
                  ))}
                  {activeFilters.bncc.map(f => (
-                    <span key={f} onClick={() => toggleFilter('bncc', f)} className="cursor-pointer px-3 py-1 rounded-lg bg-green-50 text-green-700 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
+                    <span key={f} onClick={() => toggleFilter('bncc', f)} className="cursor-pointer px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
                         {f} <Icons.X size={12} className="group-hover:scale-110"/>
                     </span>
                  ))}
                  {activeFilters.casel.map(f => (
-                    <span key={f} onClick={() => toggleFilter('casel', f)} className="cursor-pointer px-3 py-1 rounded-lg bg-orange-50 text-orange-700 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
+                    <span key={f} onClick={() => toggleFilter('casel', f)} className="cursor-pointer px-3 py-1 rounded-full bg-orange-50 text-orange-700 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
                         {f} <Icons.X size={12} className="group-hover:scale-110"/>
                     </span>
                  ))}
                   {activeFilters.age.map(f => (
-                    <span key={f} onClick={() => toggleFilter('age', f)} className="cursor-pointer px-3 py-1 rounded-lg bg-teal-50 text-teal-700 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
+                    <span key={f} onClick={() => toggleFilter('age', f)} className="cursor-pointer px-3 py-1 rounded-full bg-teal-50 text-teal-700 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
                         {f} <Icons.X size={12} className="group-hover:scale-110"/>
                     </span>
                  ))}

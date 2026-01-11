@@ -219,7 +219,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
         
         {collection.level && (
           <div 
-            className="absolute bottom-2 right-2 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-lg text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50"
+            className="absolute bottom-2 right-2 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-full text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50"
             style={{
               transform: 'translateZ(30px)',
             }}

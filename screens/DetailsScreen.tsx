@@ -282,13 +282,27 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ collection, onNavi
               /* Main Content */
               <>
                 {/* Metadata Badges */}
-                <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
-                  <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wide">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-4">
+                  <span className="px-3 py-1 rounded-full bg-kaboo-primary/10 text-kaboo-primary text-xs font-bold uppercase tracking-wide">
                     {collection.level}
                   </span>
+                  {collection.age_grade && collection.age_grade.length > 0 && (
+                    <>
+                      <span className="text-kaboo-primary/40 text-xs font-bold">|</span>
+                      {collection.age_grade.map((item, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleTagClick(item)}
+                          className="px-3 py-1 rounded-full bg-kaboo-primary/10 text-kaboo-primary text-xs font-bold uppercase tracking-wide hover:bg-kaboo-primary/20 transition-colors cursor-pointer"
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </div>
 
-                <h1 className="text-2xl md:text-4xl font-black text-center md:text-left text-gray-800 mb-6 leading-tight">
+                <h1 className="text-2xl md:text-4xl font-black text-center md:text-left text-gray-800 mb-6 leading-tight mt-6">
                   {collection.title}
                 </h1>
 
@@ -349,7 +363,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ collection, onNavi
             {/* --- PEDAGOGICAL INFORMATION SECTION --- */}
             {(collection.theme || collection.learning_objectives || collection.characters || collection.bncc_skills || collection.casel_competencies || collection.age_grade) && (
               <div className="border-t border-gray-100 pt-8 space-y-6">
-                <h3 className="text-lg font-bold text-kaboo-primary flex items-center gap-2">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                    <Icons.BookOpen size={20} className="stroke-[2.5px]" />
                    Informações Pedagógicas
                 </h3>
@@ -380,7 +394,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ collection, onNavi
                              <button 
                                 key={i} 
                                 onClick={() => handleTagClick(char)}
-                                className="px-3 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold border border-indigo-100 hover:bg-indigo-100 transition-colors cursor-pointer text-left"
+                                className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold border border-indigo-100 hover:bg-indigo-100 transition-colors cursor-pointer text-left"
                              >
                                {char}
                              </button>
@@ -398,7 +412,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ collection, onNavi
                              <button 
                                 key={i} 
                                 onClick={() => handleTagClick(skill)}
-                                className="px-3 py-1 rounded-lg bg-green-50 text-green-700 text-xs font-bold border border-green-100 hover:bg-green-100 transition-colors cursor-pointer text-left" 
+                                className="px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-bold border border-green-100 hover:bg-green-100 transition-colors cursor-pointer text-left" 
                                 title="Buscar por esta habilidade"
                              >
                                {skill}
@@ -408,25 +422,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ collection, onNavi
                     </div>
                   )}
 
-                   {/* Idade-série */}
-                   {collection.age_grade && collection.age_grade.length > 0 && (
-                    <div>
-                       <h4 className="text-sm font-bold text-gray-800 mb-2">Idade-série</h4>
-                       <div className="flex flex-wrap gap-2">
-                          {collection.age_grade.map((item, i) => (
-                             <button 
-                                key={i} 
-                                onClick={() => handleTagClick(item)}
-                                className="px-3 py-1 rounded-lg bg-teal-50 text-teal-700 text-xs font-bold border border-teal-100 hover:bg-teal-100 transition-colors cursor-pointer text-left"
-                             >
-                               {item}
-                             </button>
-                          ))}
-                       </div>
-                    </div>
-                  )}
-
-                  {/* CASEL */}
+                   {/* CASEL */}
                   {collection.casel_competencies && collection.casel_competencies.length > 0 && (
                     <div>
                        <h4 className="text-sm font-bold text-gray-800 mb-2">Competências CASEL</h4>
@@ -435,7 +431,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({ collection, onNavi
                              <button 
                                 key={i} 
                                 onClick={() => handleTagClick(casel)}
-                                className="px-3 py-1 rounded-lg bg-orange-50 text-orange-600 text-xs font-bold border border-orange-100 hover:bg-orange-100 transition-colors cursor-pointer text-left"
+                                className="px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-bold border border-orange-100 hover:bg-orange-100 transition-colors cursor-pointer text-left"
                              >
                                {casel}
                              </button>
