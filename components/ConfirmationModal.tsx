@@ -10,6 +10,7 @@ interface ConfirmationModalProps {
   cancelText?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  danger?: boolean;
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -19,7 +20,8 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
   onConfirm,
-  onCancel
+  onCancel,
+  danger = false
 }) => {
   if (!isOpen) return null;
 
@@ -57,7 +59,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <Button variant="secondary" fullWidth onClick={onCancel}>
             {cancelText}
           </Button>
-          <Button variant="primary" fullWidth onClick={onConfirm}>
+          <Button variant={danger ? "danger" : "primary"} fullWidth onClick={onConfirm}>
             {confirmText}
           </Button>
         </div>
