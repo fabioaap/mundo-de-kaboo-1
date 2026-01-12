@@ -114,7 +114,7 @@ const Card3DCover: React.FC<{
               transform: 'translateZ(30px)',
             }}
           >
-            {level.replace('Fundamental ', 'Fund. ')}
+            {level.replace('Ensino Infantil', 'Ens. Infantil').replace('Fundamental ', 'Fund. ')}
           </div>
         )}
       </div>
@@ -144,7 +144,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const { toast, showToast, hideToast } = useToast();
   const [searchFilter, setSearchFilter] = useState('');
-  const [levelFilter, setLevelFilter] = useState<'all' | 'Fundamental I' | 'Fundamental II'>('all');
+  const [levelFilter, setLevelFilter] = useState<'all' | 'Ensino Infantil' | 'Fundamental I'>('all');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showLevelDropdown, setShowLevelDropdown] = useState(false);
@@ -160,7 +160,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
   const actionsDropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [formData, setFormData] = useState<Partial<Collection>>({
     title: '',
-    level: 'Fundamental I',
+    level: 'Ensino Infantil',
     cover_image: '/assets/images/image-placeholder.png',
     pdf_url: '',
     audio_url: '',
@@ -237,7 +237,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
   const handleEdit = (collection: Collection) => {
     const initialData = {
       title: collection.title || '',
-      level: collection.level || 'Fundamental I',
+      level: collection.level || 'Ensino Infantil',
       cover_image: collection.cover_image || '/assets/images/image-placeholder.png',
       pdf_url: collection.pdf_url || '',
       audio_url: collection.audio_url || '',
@@ -330,7 +330,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
   const resetForm = () => {
     setFormData({
       title: '',
-      level: 'Fundamental I',
+      level: 'Ensino Infantil',
       cover_image: '/assets/images/image-placeholder.png',
       pdf_url: '',
       audio_url: '',
@@ -481,7 +481,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                     setShowCreateForm(true);
                     setOriginalFormData({
                       title: '',
-                      level: 'Fundamental I',
+                      level: 'Ensino Infantil',
                       cover_image: '/assets/images/image-placeholder.png',
                       pdf_url: '',
                       audio_url: '',
@@ -501,7 +501,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                     setShowCreateForm(true);
                     setOriginalFormData({
                       title: '',
-                      level: 'Fundamental I',
+                      level: 'Ensino Infantil',
                       cover_image: '/assets/images/image-placeholder.png',
                       pdf_url: '',
                       audio_url: '',
@@ -621,10 +621,24 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-fade-in-up origin-top">
                           <button
                             onClick={() => {
-                              setFormData({ ...formData, level: 'Fundamental I' });
+                              setFormData({ ...formData, level: 'Ensino Infantil' });
                               setShowFormLevelDropdown(false);
                             }}
                             className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl ${
+                              formData.level === 'Ensino Infantil'
+                                ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                                : 'text-gray-700 hover:bg-gray-50 font-medium'
+                            }`}
+                          >
+                            <span>Ensino Infantil</span>
+                            {formData.level === 'Ensino Infantil' && <Icons.Check size={18} className="ml-auto" />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setFormData({ ...formData, level: 'Fundamental I' });
+                              setShowFormLevelDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${
                               formData.level === 'Fundamental I'
                                 ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
                                 : 'text-gray-700 hover:bg-gray-50 font-medium'
@@ -632,20 +646,6 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                           >
                             <span>Fundamental I</span>
                             {formData.level === 'Fundamental I' && <Icons.Check size={18} className="ml-auto" />}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setFormData({ ...formData, level: 'Fundamental II' });
-                              setShowFormLevelDropdown(false);
-                            }}
-                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${
-                              formData.level === 'Fundamental II'
-                                ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
-                                : 'text-gray-700 hover:bg-gray-50 font-medium'
-                            }`}
-                          >
-                            <span>Fundamental II</span>
-                            {formData.level === 'Fundamental II' && <Icons.Check size={18} className="ml-auto" />}
                           </button>
                         </div>
                       )}
@@ -840,10 +840,24 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                       </button>
                       <button
                         onClick={() => {
-                          setLevelFilter('Fundamental I');
+                          setLevelFilter('Ensino Infantil');
                           setShowLevelDropdown(false);
                         }}
                         className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                          levelFilter === 'Ensino Infantil'
+                            ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                            : 'text-gray-700 hover:bg-gray-50 font-medium'
+                        }`}
+                      >
+                        <span>Ensino Infantil</span>
+                        {levelFilter === 'Ensino Infantil' && <Icons.Check size={18} className="ml-auto" />}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setLevelFilter('Fundamental I');
+                          setShowLevelDropdown(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${
                           levelFilter === 'Fundamental I'
                             ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
                             : 'text-gray-700 hover:bg-gray-50 font-medium'
@@ -851,20 +865,6 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                       >
                         <span>Fundamental I</span>
                         {levelFilter === 'Fundamental I' && <Icons.Check size={18} className="ml-auto" />}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setLevelFilter('Fundamental II');
-                          setShowLevelDropdown(false);
-                        }}
-                        className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${
-                          levelFilter === 'Fundamental II'
-                            ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
-                            : 'text-gray-700 hover:bg-gray-50 font-medium'
-                        }`}
-                      >
-                        <span>Fundamental II</span>
-                        {levelFilter === 'Fundamental II' && <Icons.Check size={18} className="ml-auto" />}
                       </button>
                     </div>
                   )}
@@ -1029,7 +1029,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                             setPendingAction(() => () => {
                               const initialData = {
                                 title: collection.title || '',
-                                level: collection.level || 'Fundamental I',
+                                level: collection.level || 'Ensino Infantil',
                                 cover_image: collection.cover_image || '',
                                 pdf_url: collection.pdf_url || '',
                                 audio_url: collection.audio_url || '',

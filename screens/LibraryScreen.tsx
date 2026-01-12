@@ -94,7 +94,7 @@ export const LibraryScreen: React.FC<LibraryScreenProps> = ({ onNavigate }) => {
                   
                   <div className="flex items-center gap-2 mt-2">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                            collection.level === 'Fundamental I' ? 'bg-blue-50 text-blue-500' : 'bg-green-50 text-green-500'
+                            collection.level === 'Ensino Infantil' ? 'bg-blue-50 text-blue-500' : 'bg-green-50 text-green-500'
                         }`}>
                             {collection.level}
                         </span>

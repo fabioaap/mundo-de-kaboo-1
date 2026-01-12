@@ -52,6 +52,6 @@ export const COLLECTIONS: Collection[] = [];
 
 export const TABS = [
   { id: 'all', label: 'Todos' },
-  { id: 'fund1', label: 'Fund I' },
-  { id: 'fund2', label: 'Fund II' },
+  { id: 'fund1', label: 'Ens. Infantil' },
+  { id: 'fund2', label: 'Fund I' },
 ];
