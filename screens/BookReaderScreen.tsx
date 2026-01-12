@@ -311,11 +311,12 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             <Icons.ChevronLeft size={28} strokeWidth={2.5} />
           </button>
 
-          <div className="bg-black/40 backdrop-blur-md rounded-full px-6 py-2 shadow-lg border border-white/10">
+          {/* Pagination temporarily hidden */}
+          {/* <div className="bg-black/40 backdrop-blur-md rounded-full px-6 py-2 shadow-lg border border-white/10">
             <span className="text-sm font-bold text-white">
               {getPaginationText()}
             </span>
-          </div>
+          </div> */}
 
           <button
             onClick={flipNext}
