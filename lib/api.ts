@@ -2,11 +2,87 @@ import { supabase } from './supabase';
 import { Collection, CollectionResource } from '../types';
 import { logger } from './logger';
 
+// Cache management for collections
+const COLLECTIONS_CACHE_KEY = 'kaboo_collections_cache';
+const SESSION_KEY = 'kaboo_session_id';
+
+// Get or create session ID (unique per browser session)
+const getSessionId = (): string => {
+  if (typeof window === 'undefined') return '';
+  
+  let sessionId = sessionStorage.getItem(SESSION_KEY);
+  if (!sessionId) {
+    sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    sessionStorage.setItem(SESSION_KEY, sessionId);
+  }
+  return sessionId;
+};
+
+// Clear collections cache
+export const clearCollectionsCache = (): void => {
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(COLLECTIONS_CACHE_KEY);
+  }
+};
+
+// Get cached collections if available
+const getCachedCollections = (): Collection[] | null => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const cached = sessionStorage.getItem(COLLECTIONS_CACHE_KEY);
+    if (!cached) return null;
+    
+    const parsed = JSON.parse(cached);
+    // Verify it's from the current session
+    if (parsed.sessionId === getSessionId()) {
+      return parsed.collections;
+    }
+    // If session changed, clear old cache
+    sessionStorage.removeItem(COLLECTIONS_CACHE_KEY);
+    return null;
+  } catch (error) {
+    logger.error('Error reading collections cache:', error);
+    return null;
+  }
+};
+
+// Export function to get cached collections synchronously (for initial state)
+export const getCachedCollectionsSync = (): Collection[] | null => {
+  return getCachedCollections();
+};
+
+// Save collections to cache
+const saveCollectionsCache = (collections: Collection[]): void => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const cacheData = {
+      collections,
+      sessionId: getSessionId(),
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem(COLLECTIONS_CACHE_KEY, JSON.stringify(cacheData));
+  } catch (error) {
+    logger.error('Error saving collections cache:', error);
+  }
+};
+
 export const api = {
   /**
-   * Fetch all collections/books
+   * Fetch all collections/books (with cache support)
+   * @param forceRefresh - If true, bypass cache and fetch from server
    */
-  async getCollections(): Promise<Collection[]> {
+  async getCollections(forceRefresh: boolean = false): Promise<Collection[]> {
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = getCachedCollections();
+      if (cached) {
+        return cached;
+      }
+    }
+
+    // Fetch from server
     const { data, error } = await supabase
       .from('collections')
       .select('*')
@@ -16,7 +92,13 @@ export const api = {
       logger.error('Error fetching collections:', error);
       return [];
     }
-    return data || [];
+    
+    const collections = data || [];
+    
+    // Save to cache
+    saveCollectionsCache(collections);
+    
+    return collections;
   },
 
   /**
@@ -80,6 +162,10 @@ export const api = {
       logger.error('Error creating collection:', error);
       return null;
     }
+    
+    // Clear cache after creation
+    clearCollectionsCache();
+    
     return data;
   },
 
@@ -118,8 +204,14 @@ export const api = {
     if (!data) {
       logger.error('Update succeeded but no data returned. RLS might be blocking SELECT after UPDATE.');
       // Try to fetch the updated collection
-      return await this.getCollectionById(id);
+      const fetched = await this.getCollectionById(id);
+      // Clear cache after update
+      clearCollectionsCache();
+      return fetched;
     }
+    
+    // Clear cache after update
+    clearCollectionsCache();
     
     return data;
   },
@@ -137,6 +229,10 @@ export const api = {
       logger.error('Error deleting collection:', error);
       return false;
     }
+    
+    // Clear cache after deletion
+    clearCollectionsCache();
+    
     return true;
   }
 };

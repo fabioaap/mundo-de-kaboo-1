@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection, ScreenName, UserProfile } from '../types';
-import { api } from '../lib/api';
+import { api, clearCollectionsCache, getCachedCollectionsSync } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { getUserRole } from '../lib/auth';
 import { TABS, LOGO_URL, getCharacterImageUrl, getCharacterColor } from '../constants';
@@ -54,11 +54,16 @@ const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick }) =
 };
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) => {
+  // Initialize collections from cache if available
+  const cachedCollections = getCachedCollectionsSync();
+  
   // Data State
-  const [collections, setCollections] = useState<Collection[]>([]);
+  const [collections, setCollections] = useState<Collection[]>(cachedCollections || []);
   const [userProgress, setUserProgress] = useState<Record<string, number>>({});
   const [activeTab, setActiveTab] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
+  // Only show loading if we don't have cached data
+  const [loading, setLoading] = useState(!cachedCollections);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Filter State
   const [showFilters, setShowFilters] = useState(false);
@@ -79,8 +84,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
   const [canvasReady, setCanvasReady] = useState(false);
 
   useEffect(() => {
-    loadData();
+    // Only load data if we don't have cached collections
+    // If we have cache, load in background to check for updates, but don't show loading
+    if (!cachedCollections) {
+      loadData(false, true); // Show loading if no cache
+    } else {
+      // Load data in background to check for updates silently
+      // This ensures we have the latest data but doesn't show loading state
+      loadData(false, false); // Don't show loading if we have cache
+    }
     loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Listen for params changes (specifically for new user registration)
@@ -232,10 +246,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
     }, 300);
   };
 
-  const loadData = async () => {
+  const loadData = async (forceRefresh: boolean = false, showLoading: boolean = true) => {
     try {
+      if (showLoading) {
+        setLoading(true);
+      }
       const [cols, prog] = await Promise.all([
-        api.getCollections(),
+        api.getCollections(forceRefresh),
         api.getUserProgress()
       ]);
       setCollections(cols);
@@ -243,8 +260,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
+      setIsRefreshing(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    clearCollectionsCache();
+    await loadData(true, true); // Force refresh and show loading
   };
 
   const loadProfile = async () => {
@@ -638,8 +664,68 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
     </div>
   );
 
+  // Skeleton loader component
+  const HomeScreenSkeleton = () => (
+    <div className="flex flex-col h-full bg-white md:pb-0 relative" style={{ height: '100vh', minHeight: '100vh' }}>
+      <div className="flex flex-col flex-1 min-h-0" style={{ height: '100%', minHeight: 0, flex: '1 1 0%' }}>
+        
+        {/* MOBILE HEADER SKELETON */}
+        <div className="md:hidden px-6 py-4 flex justify-between items-center shrink-0 bg-white z-30 border-b border-gray-50">
+          <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
+          <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
+        </div>
+
+        {/* DESKTOP HEADER SKELETON */}
+        <div className="hidden md:block shrink-0 px-8 pt-6 pb-4">
+          <div className="flex justify-between items-center">
+            <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
+            <div className="flex items-center gap-4">
+              <div className="h-8 w-40 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-11 h-11 rounded-full bg-gray-200 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* TABS AND FILTERS SKELETON */}
+        <div className="px-6 md:px-8 mb-4 mt-2 flex items-center justify-between gap-4 shrink-0">
+          <div className="flex gap-3 flex-1">
+            <div className="h-10 w-24 bg-gray-200 rounded-full animate-pulse"></div>
+            <div className="h-10 w-32 bg-gray-200 rounded-full animate-pulse"></div>
+            <div className="h-10 w-32 bg-gray-200 rounded-full animate-pulse"></div>
+          </div>
+          <div className="h-11 w-20 bg-gray-200 rounded-2xl animate-pulse"></div>
+        </div>
+
+        {/* CONTENT AREA SKELETON */}
+        <div className="px-6 md:px-8 pt-2 md:pt-6 pb-6 flex-1 flex flex-col min-h-0">
+          {/* TITLE AND COUNT SKELETON */}
+          <div className="flex justify-between items-end mb-0 md:mb-4 shrink-0 pb-4 border-b border-gray-100">
+            <div className="h-7 w-48 bg-gray-200 rounded animate-pulse"></div>
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-8 bg-gray-200 rounded-lg animate-pulse"></div>
+              <div className="w-7 h-7 bg-gray-200 rounded-lg animate-pulse"></div>
+            </div>
+          </div>
+          
+          {/* GRID SKELETON */}
+          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
+              {[...Array(12)].map((_, i) => (
+                <div key={i} className="w-full animate-pulse">
+                  <div className="mb-3 rounded-lg overflow-hidden relative bg-gray-200 aspect-square"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
-     return <div className="flex h-full items-center justify-center text-gray-400">Carregando acervo...</div>;
+     return <HomeScreenSkeleton />;
   }
 
   return (
@@ -783,9 +869,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
                  activeFilterCount > 0 ? 'Resultados filtrados' :
                  activeTab === 'fund1' ? 'Educação Infantil' : 'Fundamental I'}
             </h2>
-            <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
-                {filteredCollections.length}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
+                  {filteredCollections.length}
+              </span>
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing || loading}
+                className="w-7 h-7 rounded-lg bg-gray-50 hover:bg-gray-100 active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Atualizar coleções"
+              >
+                <Icons.RotateCw 
+                  size={14} 
+                  className={`text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`} 
+                />
+              </button>
+            </div>
           </div>
           
           {filteredCollections.length > 0 ? (
