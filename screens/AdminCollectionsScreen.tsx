@@ -537,7 +537,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
           <div className="w-8 h-8 border-4 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : editingId || showCreateForm ? (
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-6 md:px-8 py-6">
           <div className="max-w-2xl mx-auto">
             <Tabs
               tabs={[
@@ -798,14 +798,14 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="flex-1 overflow-y-auto px-6 md:px-8 py-6">
           {collections.length === 0 ? (
             <div className="text-center py-12">
               <Icons.BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
               <p className="text-gray-500 font-bold">Nenhuma coleção encontrada.</p>
             </div>
           ) : (
-            <div className="space-y-4 max-w-4xl mx-auto">
+            <div className="space-y-4">
               {/* Filtros e Ordenação */}
               <div className="flex flex-col md:flex-row gap-3">
                 {/* Campo de Busca */}
@@ -968,7 +968,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                   <p className="text-gray-500 font-bold">Nenhuma coleção encontrada com os filtros aplicados.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
                   {getFilteredAndSortedCollections().map((collection) => {
                     const actionsButton = (
                       <div 
