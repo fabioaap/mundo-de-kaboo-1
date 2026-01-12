@@ -136,8 +136,8 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
           backgroundColor: bgColor
         }}
       >
-        {/* Galaxy Effect - Only show after book is loaded */}
-        {!isLoading && <GalaxyBackground />}
+        {/* Galaxy Effect - Only show after book is loaded and not on mobile */}
+        {!isLoading && !isMobile && <GalaxyBackground />}
         
         {/* Dark overlay to darken background */}
         <div className="absolute inset-0 bg-black/10" style={{ zIndex: 2 }} />
@@ -196,8 +196,8 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
         backgroundColor: bgColor
       }}
     >
-      {/* Galaxy Effect - Only show after book is loaded */}
-      {!isLoading && <GalaxyBackground />}
+      {/* Galaxy Effect - Only show after book is loaded and not on mobile */}
+      {!isLoading && !isMobile && <GalaxyBackground />}
       
       {/* Dark overlay to darken background */}
       <div className="absolute inset-0 bg-black/10" style={{ zIndex: 2 }} />
