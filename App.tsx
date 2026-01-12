@@ -26,18 +26,94 @@ import { BottomNav } from './components/BottomNav';
 import { PageHeader } from './components/PageHeader';
 import { CollectionModal } from './components/CollectionModal';
 
+// Storage keys
+const STORAGE_NAV_STATE = 'kaboo_nav_state';
+const STORAGE_PREVIOUS_STATE = 'kaboo_previous_state';
+
+// Helper functions for localStorage persistence
+const saveNavState = (state: NavState) => {
+  try {
+    localStorage.setItem(STORAGE_NAV_STATE, JSON.stringify(state));
+  } catch (error) {
+    console.warn('Failed to save nav state to localStorage:', error);
+  }
+};
+
+const loadNavState = (): NavState | null => {
+  try {
+    const saved = localStorage.getItem(STORAGE_NAV_STATE);
+    if (saved) {
+      return JSON.parse(saved) as NavState;
+    }
+  } catch (error) {
+    console.warn('Failed to load nav state from localStorage:', error);
+  }
+  return null;
+};
+
+const savePreviousState = (state: { screen: ScreenName; collectionId?: string } | null) => {
+  try {
+    if (state) {
+      localStorage.setItem(STORAGE_PREVIOUS_STATE, JSON.stringify(state));
+    } else {
+      localStorage.removeItem(STORAGE_PREVIOUS_STATE);
+    }
+  } catch (error) {
+    console.warn('Failed to save previous state to localStorage:', error);
+  }
+};
+
+const loadPreviousState = (): { screen: ScreenName; collectionId?: string } | null => {
+  try {
+    const saved = localStorage.getItem(STORAGE_PREVIOUS_STATE);
+    if (saved) {
+      return JSON.parse(saved) as { screen: ScreenName; collectionId?: string };
+    }
+  } catch (error) {
+    console.warn('Failed to load previous state from localStorage:', error);
+  }
+  return null;
+};
+
 const App: React.FC = () => {
-  const [navState, setNavState] = useState<NavState>({
-    currentScreen: 'login'
+  // Initialize state from localStorage if available
+  const [navState, setNavState] = useState<NavState>(() => {
+    const saved = loadNavState();
+    if (saved) {
+      // Don't restore player screens without collectionId - they'll be handled after session check
+      if (['player_audio', 'player_book', 'player_video', 'tools'].includes(saved.currentScreen)) {
+        if (!saved.params?.collectionId) {
+          return { currentScreen: 'login' };
+        }
+      }
+      // Don't restore login/forgot_password screens - let auth check handle it
+      if (saved.currentScreen === 'login' || saved.currentScreen === 'forgot_password') {
+        return { currentScreen: 'login' };
+      }
+      return saved;
+    }
+    return { currentScreen: 'login' };
   });
   const [sessionChecked, setSessionChecked] = useState(false);
   
   const [currentCollection, setCurrentCollection] = useState<Collection | undefined>(undefined);
   // Store previous screen and collectionId before navigating to player screens
-  const [previousScreenState, setPreviousScreenState] = useState<{ screen: ScreenName; collectionId?: string } | null>(null);
+  const [previousScreenState, setPreviousScreenState] = useState<{ screen: ScreenName; collectionId?: string } | null>(() => {
+    return loadPreviousState();
+  });
   // Store collection theme color for loading screen
   const [loadingCollectionTheme, setLoadingCollectionTheme] = useState<string | null>(null);
   
+  // Save navState to localStorage whenever it changes
+  useEffect(() => {
+    saveNavState(navState);
+  }, [navState]);
+
+  // Save previousScreenState to localStorage whenever it changes
+  useEffect(() => {
+    savePreviousState(previousScreenState);
+  }, [previousScreenState]);
+
   // Reset background to default for non-player screens
   // Player screens will set their own background via useThemeBackground hook
   const isPlayerScreen = ['player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen);
@@ -72,7 +148,30 @@ const App: React.FC = () => {
     // 1. Initial Check
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setNavState({ currentScreen: 'home' });
+        setNavState(prev => {
+          // Preserve current screen if user is on any valid authenticated screen
+          // Only redirect to home if on login/forgot_password screens
+          if (prev.currentScreen === 'login' || prev.currentScreen === 'forgot_password') {
+            return { currentScreen: 'home' };
+          }
+          // Preserve all other screens (home, search, profile, my_data, player screens, support, admin_collections, etc.)
+          // If restoring a player screen, ensure collectionId is present
+          if (['player_audio', 'player_book', 'player_video', 'tools'].includes(prev.currentScreen)) {
+            if (!prev.params?.collectionId) {
+              // If player screen but no collectionId, go to home
+              return { currentScreen: 'home' };
+            }
+          }
+          return prev;
+        });
+      } else {
+        // No session - only preserve email_confirmation, otherwise go to login
+        setNavState(prev => {
+          if (prev.currentScreen === 'email_confirmation') {
+            return prev;
+          }
+          return { currentScreen: 'login' };
+        });
       }
       setSessionChecked(true);
     }).catch((error) => {
@@ -84,12 +183,26 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         setNavState(prev => {
-           if (prev.currentScreen === 'home') return prev;
-           if (prev.currentScreen === 'email_confirmation') return prev;
-           return { currentScreen: 'home' };
+           // Preserve current screen if user is on any valid authenticated screen
+           // Only redirect to home if on login/forgot_password screens
+           if (prev.currentScreen === 'login' || prev.currentScreen === 'forgot_password') {
+             return { currentScreen: 'home' };
+           }
+           // Preserve all other screens (home, search, profile, my_data, player screens, support, admin_collections, email_confirmation, etc.)
+           return prev;
         });
       } else if (event === 'SIGNED_OUT' || !session) {
-        setNavState(prev => prev.currentScreen === 'email_confirmation' ? prev : { currentScreen: 'login' });
+        setNavState(prev => {
+          // Preserve email_confirmation screen even when signed out
+          if (prev.currentScreen === 'email_confirmation') {
+            return prev;
+          }
+          // Clear saved state on logout (except email_confirmation)
+          localStorage.removeItem(STORAGE_NAV_STATE);
+          localStorage.removeItem(STORAGE_PREVIOUS_STATE);
+          // Redirect to login for all other screens when signed out
+          return { currentScreen: 'login' };
+        });
       }
     });
 
@@ -128,12 +241,16 @@ const App: React.FC = () => {
   const navigate = (screen: ScreenName, params?: any) => {
     // Store previous state before navigating to player screens
     if (['player_audio', 'player_book', 'player_video', 'tools'].includes(screen)) {
-      setPreviousScreenState({
+      const newPreviousState = {
         screen: navState.currentScreen,
         collectionId: navState.params?.collectionId
-      });
+      };
+      setPreviousScreenState(newPreviousState);
+      savePreviousState(newPreviousState);
     }
-    setNavState({ currentScreen: screen, params });
+    const newNavState = { currentScreen: screen, params };
+    setNavState(newNavState);
+    saveNavState(newNavState);
     window.scrollTo(0, 0);
   };
 
@@ -161,12 +278,15 @@ const App: React.FC = () => {
   const closeModal = () => {
     setCurrentCollection(undefined);
     setPreviousScreenState(null);
+    savePreviousState(null);
     // Clear the collectionId from params
     if (navState.params?.collectionId) {
-      setNavState(prev => ({
-        ...prev,
-        params: { ...prev.params, collectionId: undefined }
-      }));
+      const newNavState = {
+        ...navState,
+        params: { ...navState.params, collectionId: undefined }
+      };
+      setNavState(newNavState);
+      saveNavState(newNavState);
     }
   };
 
