@@ -5,6 +5,7 @@ import FlipbookViewer from '../components/flipbook/FlipbookViewer';
 import useOrientation from '../hooks/useOrientation';
 import useIsMobile from '../hooks/useIsMobile';
 import { useThemeBackground } from '../hooks/useThemeBackground';
+import { GalaxyBackground } from '../components/GalaxyBackground';
 
 interface BookReaderScreenProps {
   collection: Collection;
@@ -135,8 +136,11 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
           backgroundColor: bgColor
         }}
       >
+        {/* Galaxy Effect - Only show after book is loaded */}
+        {!isLoading && <GalaxyBackground />}
+        
         {/* Dark overlay to darken background */}
-        <div className="absolute inset-0 bg-black/10 z-0" />
+        <div className="absolute inset-0 bg-black/10" style={{ zIndex: 2 }} />
         
         {/* Back Button */}
         <button 
@@ -192,8 +196,11 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
         backgroundColor: bgColor
       }}
     >
+      {/* Galaxy Effect - Only show after book is loaded */}
+      {!isLoading && <GalaxyBackground />}
+      
       {/* Dark overlay to darken background */}
-      <div className="absolute inset-0 bg-black/10 z-0" />
+      <div className="absolute inset-0 bg-black/10" style={{ zIndex: 2 }} />
 
       {/* Header - Hidden on mobile landscape */}
       {!isMobileLandscape && (

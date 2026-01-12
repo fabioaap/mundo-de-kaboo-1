@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection } from '../types';
 import { useThemeBackground } from '../hooks/useThemeBackground';
+import { GalaxyBackground } from '../components/GalaxyBackground';
 
 interface AudioPlayerScreenProps {
   collection: Collection;
@@ -190,8 +191,11 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
         backgroundColor: bgColor
       }}
     >
+      {/* Galaxy Effect */}
+      <GalaxyBackground />
+      
       {/* Dark overlay to darken background */}
-      <div className="absolute inset-0 bg-black/10 z-0" />
+      <div className="absolute inset-0 bg-black/10" style={{ zIndex: 2 }} />
       {collection.audio_url && (
         <audio 
           ref={audioRef} 
