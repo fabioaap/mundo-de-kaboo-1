@@ -31,6 +31,202 @@ const INITIAL_FILTERS: FilterState = {
   age: []
 };
 
+// Deck Scroll View Component - Cards overlapping like a deck
+interface DeckScrollViewProps {
+  collections: (Collection & { progress?: number })[];
+  onCollectionClick: (collection: Collection) => void;
+}
+
+const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollectionClick }) => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const updateDimensions = () => {
+      setContainerWidth(container.clientWidth || window.innerWidth);
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+
+    const handleScroll = () => {
+      setScrollLeft(container.scrollLeft);
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial call
+
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // Card width calculation - responsive based on container
+  const cardWidth = containerWidth > 0 
+    ? Math.max(280, Math.min(400, containerWidth * 0.75))
+    : 320; // Default fallback
+  
+  // Cards start side by side with a visible gap
+  // As you scroll, they overlap like a deck of cards
+  const cardGap = 40; // Gap between cards when they're side by side
+  const cardSpacing = cardWidth + cardGap; // Initial spacing with gap
+
+  // Calculate total width needed
+  // Add extra space at the end so the last card can scroll into view
+  const totalWidth = collections.length > 0 
+    ? (collections.length - 1) * cardSpacing + cardWidth + (containerWidth - cardWidth)
+    : cardWidth;
+
+  const paddingValue = isDesktop ? 32 : 24;
+  const totalPadding = paddingValue * 2;
+
+  return (
+    <div 
+      ref={scrollContainerRef}
+      className="relative overflow-x-auto no-scrollbar h-full"
+      style={{
+        scrollBehavior: 'smooth',
+        WebkitOverflowScrolling: 'touch',
+        paddingTop: '20px',
+        paddingBottom: '20px',
+        position: 'relative',
+        marginLeft: `-${paddingValue}px`,
+        marginRight: `-${paddingValue}px`,
+        paddingLeft: `${paddingValue}px`,
+        paddingRight: `${paddingValue}px`,
+        width: `calc(100% + ${totalPadding}px)`,
+      }}
+    >
+      <div 
+        className="relative"
+        style={{
+          width: `${totalWidth}px`,
+          height: '100%',
+          minHeight: '100%',
+          margin: '0 auto',
+          overflow: 'visible', // Allow cards to overflow this container
+          position: 'relative',
+        }}
+      >
+        {collections.map((collection, index) => {
+          // Calculate the base position of this card
+          const basePosition = index * cardSpacing;
+          
+          // Determine which card is currently "in front" (the leading card at scale 1.0)
+          // Initially (scrollLeft = 0), card 0 is in front
+          // As we scroll, the leading card index increases
+          const leadingCardIndex = Math.floor(scrollLeft / cardSpacing);
+          
+          // Calculate progress within the current card spacing
+          // progress = 0: current leading card is fully in front (scale 1.0)
+          // progress = 1: next card has become fully in front (scale 1.0)
+          const scrollProgressInCard = (scrollLeft % cardSpacing) / cardSpacing;
+          
+          // Determine the state of this card
+          const isCurrentLeading = index === leadingCardIndex;
+          const isNextLeading = index === leadingCardIndex + 1;
+          const hasBeenScrolledPast = index < leadingCardIndex;
+          const isFarAhead = index > leadingCardIndex + 1;
+          
+          let scale = 1.0;
+          let opacity = 1.0;
+          
+          // Initial state: when scrollLeft = 0, all cards should have scale 1.0
+          if (scrollLeft === 0) {
+            scale = 1.0;
+            opacity = 1.0;
+          } else if (isCurrentLeading) {
+            // This is the current leading card that's being scrolled past
+            // It starts at scale 1.0 and shrinks as we scroll to the next card
+            // Only start shrinking when scroll has actually started (scrollLeft > 0)
+            scale = 1.0 - (scrollProgressInCard * 0.15);
+            opacity = 1.0 - (scrollProgressInCard * 0.1);
+          } else if (isNextLeading) {
+            // This is the next card that's assuming the position of the current leading card
+            // It stays at scale 1.0 while assuming the position (not shrinking yet)
+            // It will only start shrinking when it becomes the current leading card
+            // and the card after it starts to take its place
+            scale = 1.0;
+            opacity = 1.0;
+          } else if (hasBeenScrolledPast) {
+            // This card has been scrolled past - it should be at scale 0.85
+            scale = 0.85;
+            opacity = 0.9;
+          } else {
+            // This card is far ahead, not yet in the transition zone
+            // It should be at scale 1.0 until it enters the transition zone
+            scale = 1.0;
+            opacity = 1.0;
+          }
+          
+          // Ensure values are within bounds
+          scale = Math.max(0.85, Math.min(1.0, scale));
+          opacity = Math.max(0.9, Math.min(1.0, opacity));
+          
+          // Calculate z-index:
+          // - The card that's assuming the position (next leading) should be on top
+          // - The card that's being scrolled past (current leading) should go behind
+          // - Cards that have been scrolled past should be behind
+          // - Cards that are far ahead should be behind
+          let zIndex = 1000;
+          if (scrollLeft === 0) {
+            // Initially, all cards have similar z-index, but earlier cards are on top
+            zIndex = 2000 - index * 10;
+          } else if (isNextLeading) {
+            // Next leading card should be on top as it's assuming the position
+            zIndex = 2000 + Math.round(scrollProgressInCard * 100);
+          } else if (isCurrentLeading) {
+            // Current leading card goes behind as it's being scrolled past
+            zIndex = 1900 - Math.round(scrollProgressInCard * 200);
+          } else if (hasBeenScrolledPast) {
+            // Cards that have been scrolled past are behind
+            zIndex = 1000 - (leadingCardIndex - index) * 10;
+          } else {
+            // Cards that are far ahead are behind
+            zIndex = 1000 - (index - leadingCardIndex - 1) * 10;
+          }
+
+          return (
+            <div
+              key={collection.id}
+              className="absolute top-0"
+              style={{
+                left: `${basePosition}px`,
+                width: `${cardWidth}px`,
+                transform: `scale(${scale})`,
+                opacity: opacity,
+                zIndex: zIndex,
+                transformOrigin: 'left center',
+                transition: 'transform 0.1s ease-out, opacity 0.1s ease-out',
+              }}
+            >
+              <Card3D
+                collection={collection}
+                onCollectionClick={onCollectionClick}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) => {
   // Data State
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -621,11 +817,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
   }
 
   return (
-    <div className="flex flex-col h-full bg-white pb-24 md:pb-0 relative">
-      <div className="overflow-y-auto no-scrollbar flex-1">
+    <div className="flex flex-col h-full bg-white md:pb-0 relative" style={{ height: '100vh', minHeight: '100vh' }}>
+      <div className="flex flex-col flex-1 min-h-0" style={{ height: '100%', minHeight: 0, flex: '1 1 0%' }}>
         
         {/* MOBILE HEADER: Fixed background color, reduced padding, no top margin */}
-        <div className="md:hidden px-6 py-4 flex justify-between items-center sticky top-0 bg-white z-30 transition-all border-b border-gray-50">
+        <div className="md:hidden px-6 py-4 flex justify-between items-center shrink-0 bg-white z-30 transition-all border-b border-gray-50">
           <div className="flex items-center gap-2">
              <button onClick={() => onNavigate('home')}>
                <img src={LOGO_URL} alt="KABOO" className="h-10 w-auto object-contain" />
@@ -651,11 +847,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           </button>
         </div>
 
-        <div className="hidden md:block">
+        <div className="hidden md:block shrink-0">
            <PageHeader title="Coleções" className="!pb-4" rightContent={<ProfileHeaderSection />} />
         </div>
 
-        <div className="px-6 md:px-8 mb-8 mt-2 flex items-center justify-between gap-4 relative z-0">
+        <div className="px-6 md:px-8 mb-4 mt-2 flex items-center justify-between gap-4 relative z-0 shrink-0">
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 flex-1">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
@@ -698,7 +894,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
         </div>
 
         {activeFilterCount > 0 && (
-            <div className="px-6 md:px-8 mb-6 flex gap-2 flex-wrap animate-fade-in-up">
+            <div className="px-6 md:px-8 mb-4 flex gap-2 flex-wrap animate-fade-in-up shrink-0">
                  {activeFilters.characters.map(f => (
                     <span key={f} onClick={() => toggleFilter('characters', f)} className="cursor-pointer px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
                         {f} <Icons.X size={12} className="group-hover:scale-110"/>
@@ -726,7 +922,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
         )}
 
         {inProgressCollections.length > 0 && activeFilterCount === 0 && (
-          <div className="mb-10">
+          <div className="mb-4 shrink-0">
             <h2 className="px-6 md:px-8 text-xl font-bold text-gray-800 mb-4">Continue onde parou</h2>
             <div className="flex gap-4 overflow-x-auto px-6 md:px-8 pb-6 no-scrollbar snap-x snap-mandatory">
               {inProgressCollections.map((c) => {
@@ -754,8 +950,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           </div>
         )}
 
-        <div className="px-6 md:px-8 pb-12">
-          <div className="flex justify-between items-end mb-4">
+        <div className="px-6 md:px-8 flex-1 flex flex-col min-h-0" style={{ minHeight: 0 }}>
+          <div className="flex justify-between items-end mb-4 shrink-0">
             <h2 className="text-xl font-bold text-gray-800">
                 {activeTab === 'all' && activeFilterCount === 0 ? 'Todas as Coleções' : 
                  activeFilterCount > 0 ? 'Resultados filtrados' :
@@ -767,17 +963,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           </div>
           
           {filteredCollections.length > 0 ? (
-            <div 
-                key={animationKey} 
-                className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 animate-fade-in-up"
-            >
-              {filteredCollections.map((collection) => (
-                <Card3D
-                  key={collection.id}
-                  collection={collection}
-                  onCollectionClick={handleCollectionClick}
-                />
-              ))}
+            <div className="flex-1 min-h-0" style={{ minHeight: 0, height: '100%' }}>
+              <DeckScrollView
+                key={animationKey}
+                collections={filteredCollections}
+                onCollectionClick={handleCollectionClick}
+              />
             </div>
           ) : (
             <div className="py-20 text-center flex flex-col items-center">

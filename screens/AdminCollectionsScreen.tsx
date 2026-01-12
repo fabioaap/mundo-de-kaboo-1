@@ -160,7 +160,6 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
   const actionsDropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [formData, setFormData] = useState<Partial<Collection>>({
     title: '',
-    description: '',
     level: 'Fundamental I',
     cover_image: '/assets/images/image-placeholder.png',
     pdf_url: '',
@@ -238,7 +237,6 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
   const handleEdit = (collection: Collection) => {
     const initialData = {
       title: collection.title || '',
-      description: collection.description || '',
       level: collection.level || 'Fundamental I',
       cover_image: collection.cover_image || '/assets/images/image-placeholder.png',
       pdf_url: collection.pdf_url || '',
@@ -285,8 +283,8 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
   };
 
   const handleSave = async () => {
-    if (!formData.title || !formData.description) {
-      showToast('Título e descrição são obrigatórios.', 'error');
+    if (!formData.title) {
+      showToast('Título é obrigatório.', 'error');
       return;
     }
 
@@ -332,7 +330,6 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
   const resetForm = () => {
     setFormData({
       title: '',
-      description: '',
       level: 'Fundamental I',
       cover_image: '/assets/images/image-placeholder.png',
       pdf_url: '',
@@ -406,7 +403,6 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
       const searchLower = searchFilter.toLowerCase();
       filtered = filtered.filter(collection => 
         collection.title?.toLowerCase().includes(searchLower) ||
-        collection.description?.toLowerCase().includes(searchLower) ||
         collection.theme?.toLowerCase().includes(searchLower)
       );
     }
@@ -482,31 +478,29 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                 onClick={() => {
                   if (hasUnsavedChanges()) {
                     setPendingAction(() => () => {
-                      setShowCreateForm(true);
-                      setOriginalFormData({
-                        title: '',
-                        description: '',
-                        level: 'Fundamental I',
-                        cover_image: '/assets/images/image-placeholder.png',
-                        pdf_url: '',
-                        audio_url: '',
-                        video_url: '',
-                        color_theme: '#5D1F58',
-                        theme: '',
-                        learning_objectives: '',
-                        characters: [],
-                        bncc_skills: [],
-                        casel_competencies: [],
-                        age_grade: [],
-                        extra_materials: []
-                      });
+                    setShowCreateForm(true);
+                    setOriginalFormData({
+                      title: '',
+                      level: 'Fundamental I',
+                      cover_image: '/assets/images/image-placeholder.png',
+                      pdf_url: '',
+                      audio_url: '',
+                      video_url: '',
+                      color_theme: '#5D1F58',
+                      theme: '',
+                      learning_objectives: '',
+                      characters: [],
+                      bncc_skills: [],
+                      casel_competencies: [],
+                      age_grade: [],
+                      extra_materials: []
+                    });
                     });
                     setShowUnsavedChangesModal(true);
                   } else {
                     setShowCreateForm(true);
                     setOriginalFormData({
                       title: '',
-                      description: '',
                       level: 'Fundamental I',
                       cover_image: '/assets/images/image-placeholder.png',
                       pdf_url: '',
@@ -569,16 +563,6 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                     />
                   </div>
 
-                  {/* 1.5. Descrição */}
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Descrição *</label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none min-h-[120px]"
-                      placeholder="Descrição da coleção"
-                    />
-                  </div>
 
                   {/* 1.1. Imagem de Capa and 1.2. Cor da Coleção in same row */}
                   <div className="grid grid-cols-2 gap-4">
@@ -816,7 +800,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                       type="text"
                       value={searchFilter}
                       onChange={(e) => setSearchFilter(e.target.value)}
-                      placeholder="Buscar por título, descrição ou tema..."
+                      placeholder="Buscar por título ou tema..."
                       className="w-full bg-gray-100 border-none rounded-2xl pl-12 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all font-medium"
                     />
                   </div>
@@ -1045,7 +1029,6 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                             setPendingAction(() => () => {
                               const initialData = {
                                 title: collection.title || '',
-                                description: collection.description || '',
                                 level: collection.level || 'Fundamental I',
                                 cover_image: collection.cover_image || '',
                                 pdf_url: collection.pdf_url || '',
@@ -1133,8 +1116,8 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
         cancelText="Descartar Alterações"
         onConfirm={async () => {
           // Save first, then execute pending action
-          if (!formData.title || !formData.description) {
-            alert('Título e descrição são obrigatórios para salvar.');
+          if (!formData.title) {
+            alert('Título é obrigatório para salvar.');
             setShowUnsavedChangesModal(false);
             return;
           }

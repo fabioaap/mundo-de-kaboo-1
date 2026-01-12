@@ -31,7 +31,6 @@ export interface Collection {
   id: string;
   title: string;
   cover_image: string; // Mapped from DB snake_case
-  description: string;
   level: 'Fundamental I' | 'Fundamental II';
   progress?: number; 
   duration?: string;
