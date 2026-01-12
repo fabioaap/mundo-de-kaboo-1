@@ -1,5 +1,6 @@
 import React, { forwardRef, memo } from 'react';
 import { Page } from 'react-pdf';
+import useIsMobile from '../../hooks/useIsMobile';
 
 interface PdfPageProps {
   page: number;
@@ -8,11 +9,13 @@ interface PdfPageProps {
   isPageInView: boolean;
   isPageInViewRange: boolean;
   onRenderSuccess?: () => void;
+  shouldLoad?: boolean;
 }
 
 const PdfPage = forwardRef<HTMLDivElement, PdfPageProps>(
-  ({ page, height, zoomScale, isPageInView, isPageInViewRange, onRenderSuccess }, ref) => {
+  ({ page, height, zoomScale, isPageInView, isPageInViewRange, onRenderSuccess, shouldLoad = true }, ref) => {
     const [isRendered, setIsRendered] = React.useState(false);
+    const isMobile = useIsMobile();
 
     const handleRenderSuccess = React.useCallback(() => {
       if (!isRendered && onRenderSuccess) {
@@ -30,12 +33,23 @@ const PdfPage = forwardRef<HTMLDivElement, PdfPageProps>(
       }
     }, [isRendered, onRenderSuccess]);
 
+    // If shouldLoad is false, show placeholder to maintain DOM structure
+    if (!shouldLoad) {
+      return (
+        <div ref={ref} className="bg-gray-100 w-full h-full flex items-center justify-center">
+          <div className="text-gray-400 text-sm">Carregando...</div>
+        </div>
+      );
+    }
+
     // Render the PDF page - always render to prevent blank screens
     return (
       <div ref={ref} className="bg-transparent w-full h-full flex items-center justify-center">
         <Page
           devicePixelRatio={
-            isPageInView && zoomScale > 1.7
+            isMobile
+              ? Math.min(window.devicePixelRatio || 1, 1.5) // Limit to 1.5x on mobile for better performance
+              : isPageInView && zoomScale > 1.7
               ? Math.min(zoomScale * (window.devicePixelRatio || 1), 5)
               : window.devicePixelRatio || 1
           }

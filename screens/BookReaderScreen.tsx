@@ -88,6 +88,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
+
   if (!collection.pdf_url) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-white" style={{ height: '100vh', width: '100vw' }}>

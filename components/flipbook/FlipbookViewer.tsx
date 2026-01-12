@@ -82,30 +82,20 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
   const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 
   // Fallback timeout to ensure loading doesn't stay forever
+  // Longer timeout on mobile to allow for slower connections
   useEffect(() => {
     if (pdfDetails && !firstPageRendered) {
-      // Shorter timeout to show content faster
+      const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const timeoutDuration = isMobile ? 5000 : 2000; // 5s on mobile, 2s on desktop
+      
       const timeout = setTimeout(() => {
-        console.log('⏱️ FlipbookViewer: Timeout reached (1.5s), marking first page as rendered');
+        console.log(`⏱️ FlipbookViewer: Timeout reached (${timeoutDuration}ms), marking first page as rendered`);
         setFirstPageRendered(true);
-      }, 1500); // 1.5 second fallback
+      }, timeoutDuration);
 
       return () => clearTimeout(timeout);
     }
   }, [pdfDetails, firstPageRendered]);
-  
-  // Also set firstPageRendered when pdfDetails is loaded (more aggressive fallback)
-  useEffect(() => {
-    if (pdfDetails && !firstPageRendered) {
-      // After a short delay, show content even if callback hasn't fired
-      const timeout = setTimeout(() => {
-        console.log('⏱️ FlipbookViewer: Aggressive fallback (2s), showing content');
-        setFirstPageRendered(true);
-      }, 2000);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [pdfDetails]);
 
   // Notify parent when page changes
   useEffect(() => {
@@ -187,10 +177,13 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
         }
       `}</style>
       {pdfLoading && (
-        <div className="absolute inset-0 flex items-center justify-center z-[9999]" style={{ backgroundColor: bgColor }}>
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-[9999]" style={{ backgroundColor: bgColor }}>
           {/* Dark overlay to darken background */}
           <div className="absolute inset-0 bg-black/10 z-0" />
-          <div className="relative z-10 w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <div className="relative z-10 flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <p className="text-white/90 text-sm font-medium">Carregando livro...</p>
+          </div>
         </div>
       )}
       
@@ -265,7 +258,7 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
               {/* Loading overlay that covers the book until first page is ready - MUST be last in DOM */}
               {!firstPageRendered && (
                 <div 
-                  className="absolute inset-0 flex items-center justify-center z-[9999]"
+                  className="absolute inset-0 flex flex-col items-center justify-center z-[9999]"
                   style={{ 
                     backgroundColor: bgColor,
                     top: 0,
@@ -277,7 +270,13 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
                 >
                   {/* Dark overlay to darken background */}
                   <div className="absolute inset-0 bg-black/10 z-0" />
-                  <div className="relative z-10 w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="relative z-10 flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <p className="text-white/90 text-sm font-medium">Preparando páginas...</p>
+                    {pdfDetails && (
+                      <p className="text-white/70 text-xs">{pdfDetails.totalPages} páginas</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
