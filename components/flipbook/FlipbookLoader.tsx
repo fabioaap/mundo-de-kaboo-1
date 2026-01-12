@@ -29,17 +29,16 @@ const FlipbookLoader = forwardRef<any, FlipbookLoaderProps>(
     const isMobile = useIsMobile();
     const debouncedZoom = useDebounce(viewerStates.zoomScale, 500);
     const firstPageRenderedRef = React.useRef(false);
-    // On mobile, only load a few pages initially to improve performance
+    // Progressive loading: mobile starts with 3 pages, desktop with 8 pages
     const [loadedPagesCount, setLoadedPagesCount] = useState(() => {
-      // Initialize based on current mobile state
       const initialIsMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      return initialIsMobile ? 3 : pdfDetails.totalPages;
+      return initialIsMobile ? 3 : Math.min(8, pdfDetails.totalPages);
     });
     
     // Reset loadedPagesCount when pdfDetails changes
     useEffect(() => {
       const initialIsMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      setLoadedPagesCount(initialIsMobile ? 3 : pdfDetails.totalPages);
+      setLoadedPagesCount(initialIsMobile ? 3 : Math.min(8, pdfDetails.totalPages));
       firstPageRenderedRef.current = false;
     }, [pdfDetails.totalPages]);
 
@@ -49,37 +48,43 @@ const FlipbookLoader = forwardRef<any, FlipbookLoaderProps>(
         console.log('✅ FlipbookLoader: First page rendered, calling onFirstPageRendered');
         onFirstPageRendered?.();
         
-        // On mobile, gradually load more pages after first page is ready
-        if (isMobile && loadedPagesCount < pdfDetails.totalPages) {
+        // Gradually load more pages after first page is ready
+        // Desktop loads more pages at once (10) vs mobile (5)
+        if (loadedPagesCount < pdfDetails.totalPages) {
           setTimeout(() => {
-            setLoadedPagesCount(Math.min(loadedPagesCount + 5, pdfDetails.totalPages));
+            const pagesToAdd = isMobile ? 5 : 10;
+            setLoadedPagesCount(Math.min(loadedPagesCount + pagesToAdd, pdfDetails.totalPages));
           }, 500);
         }
       }
     }, [onFirstPageRendered, isMobile, loadedPagesCount, pdfDetails.totalPages]);
     
-    // Load more pages when user flips on mobile
+    // Load more pages when user flips near the end of loaded pages
     useEffect(() => {
-      if (isMobile && viewerStates.currentPageIndex >= loadedPagesCount - 2) {
+      if (viewerStates.currentPageIndex >= loadedPagesCount - 2) {
         // Load more pages when user is near the end of loaded pages
+        // Desktop loads more pages at once (5) vs mobile (3)
         if (loadedPagesCount < pdfDetails.totalPages) {
-          setLoadedPagesCount(Math.min(loadedPagesCount + 3, pdfDetails.totalPages));
+          const pagesToAdd = isMobile ? 3 : 5;
+          setLoadedPagesCount(Math.min(loadedPagesCount + pagesToAdd, pdfDetails.totalPages));
         }
       }
     }, [viewerStates.currentPageIndex, loadedPagesCount, isMobile, pdfDetails.totalPages]);
     
-    // Gradually load all pages on mobile after first page is rendered
+    // Gradually load all pages after first page is rendered
+    // Desktop loads faster (4 pages/second) vs mobile (2 pages/second)
     useEffect(() => {
-      if (isMobile && firstPageRenderedRef.current && loadedPagesCount < pdfDetails.totalPages) {
+      if (firstPageRenderedRef.current && loadedPagesCount < pdfDetails.totalPages) {
+        const pagesPerSecond = isMobile ? 2 : 4;
         const interval = setInterval(() => {
           setLoadedPagesCount(prev => {
-            const next = Math.min(prev + 2, pdfDetails.totalPages);
+            const next = Math.min(prev + pagesPerSecond, pdfDetails.totalPages);
             if (next >= pdfDetails.totalPages) {
               clearInterval(interval);
             }
             return next;
           });
-        }, 1000); // Load 2 pages per second
+        }, 1000);
         
         return () => clearInterval(interval);
       }
