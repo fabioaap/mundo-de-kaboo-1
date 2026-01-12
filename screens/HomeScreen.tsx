@@ -32,7 +32,7 @@ const INITIAL_FILTERS: FilterState = {
   age: []
 };
 
-// Grid View Component - 3 columns grid
+// Grid View Component - Responsive grid with multiple breakpoints
 interface GridViewProps {
   collections: (Collection & { progress?: number })[];
   onCollectionClick: (collection: Collection) => void;
@@ -40,7 +40,7 @@ interface GridViewProps {
 
 const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 auto-rows-fr">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 auto-rows-fr">
       {collections.map((collection) => (
         <div key={collection.id} className="w-full">
           <Card3D
