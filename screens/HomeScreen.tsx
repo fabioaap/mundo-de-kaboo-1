@@ -8,6 +8,7 @@ import { TABS, LOGO_URL, getCharacterImageUrl, getCharacterColor } from '../cons
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
 import { Card3D } from '../components/Card3D';
+import useIsMobile from '../hooks/useIsMobile';
 // @ts-ignore
 import confetti from 'canvas-confetti';
 
@@ -39,19 +40,11 @@ interface DeckScrollViewProps {
 
 const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollectionClick }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [scrollLeft, setScrollLeft] = useState(0);
+  const [scrollPosition, setScrollPosition] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const checkDesktop = () => {
-      setIsDesktop(window.innerWidth >= 768);
-    };
-    checkDesktop();
-    window.addEventListener('resize', checkDesktop);
-    return () => window.removeEventListener('resize', checkDesktop);
-  }, []);
+  const isMobile = useIsMobile();
+  const isDesktop = !isMobile;
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -66,7 +59,11 @@ const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollecti
     window.addEventListener('resize', updateDimensions);
 
     const handleScroll = () => {
-      setScrollLeft(container.scrollLeft);
+      if (isMobile) {
+        setScrollPosition(container.scrollTop);
+      } else {
+        setScrollPosition(container.scrollLeft);
+      }
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
@@ -76,12 +73,20 @@ const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollecti
       window.removeEventListener('resize', updateDimensions);
       container.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [isMobile]);
 
-  // Card width calculation - responsive based on container
-  const cardWidth = containerWidth > 0 
-    ? Math.max(280, Math.min(400, containerWidth * 0.75))
-    : 320; // Default fallback
+  // Card size calculation - responsive based on container
+  const paddingValue = isDesktop ? 32 : 24;
+  const totalPadding = paddingValue * 2;
+  
+  // On mobile: card should be 100% width and square (1:1 aspect ratio)
+  // containerWidth already accounts for internal width (clientWidth), so use it directly
+  // On desktop: card is square and full height
+  const cardWidth = isMobile && containerWidth > 0
+    ? containerWidth // Full width on mobile (containerWidth is already internal width)
+    : (containerWidth > 0 
+      ? Math.max(280, Math.min(400, containerWidth * 0.75))
+      : 320); // Default fallback for desktop
   
   // On desktop, cards are square and full height, so calculate actual card size
   // Card height is container height minus padding and text space (approximately 80px)
@@ -92,66 +97,86 @@ const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollecti
   
   // Actual card width on desktop (square = height)
   // On desktop, card is square so width equals height
+  // On mobile, card should be square (width = height) and fill 100% width
   const actualCardWidth = isDesktop ? estimatedCardHeight : cardWidth;
+  const actualCardHeight = isMobile 
+    ? actualCardWidth // On mobile, make it a perfect square (1:1 aspect ratio)
+    : (isDesktop ? estimatedCardHeight : cardWidth);
   
-  // Cards start side by side with a visible gap
+  // Cards start side by side (desktop) or stacked (mobile) with a visible gap
   // Gap is proportional to card size for consistent visual spacing
-  // Use a percentage of card width so spacing scales with card size, not screen size
+  // Use a percentage of card size so spacing scales with card size, not screen size
   // On desktop/large screens, use minimal spacing for tighter layout
-  const gapPercentage = isDesktop ? 0.005 : 0.08; // 0.5% on desktop, 8% on mobile
-  const cardGap = actualCardWidth * gapPercentage;
-  const cardSpacing = actualCardWidth + cardGap; // Initial spacing with gap
+  const gapPercentage = isDesktop ? 0.005 : 0.15; // 0.5% on desktop, 15% on mobile (increased from 8%)
+  const cardGap = isMobile ? actualCardHeight * gapPercentage : actualCardWidth * gapPercentage;
+  const cardSpacing = isMobile ? actualCardHeight + cardGap : actualCardWidth + cardGap; // Spacing with gap
 
-  // Calculate total width needed
+  // Calculate total width/height needed
   // Add extra space at the end so the last card can scroll into view
-  const totalWidth = collections.length > 0 
+  const totalWidth = !isMobile && collections.length > 0 
     ? (collections.length - 1) * cardSpacing + actualCardWidth + (containerWidth - actualCardWidth)
-    : actualCardWidth;
-
-  const paddingValue = isDesktop ? 32 : 24;
-  const totalPadding = paddingValue * 2;
+    : (isMobile ? containerWidth : actualCardWidth);
+  
+  // Add top padding on mobile for better visual spacing
+  const topPadding = isMobile ? 16 : 0;
+  const totalHeight = isMobile && collections.length > 0
+    ? topPadding + (collections.length - 1) * cardSpacing + actualCardHeight + (containerHeight - actualCardHeight)
+    : (isMobile ? actualCardHeight : containerHeight);
 
   return (
     <div 
       ref={scrollContainerRef}
-      className="relative overflow-x-auto no-scrollbar h-full"
+      className={`relative no-scrollbar h-full ${isMobile ? 'overflow-y-auto' : 'overflow-x-auto'}`}
       style={{
         scrollBehavior: 'smooth',
         WebkitOverflowScrolling: 'touch',
         paddingTop: '20px',
         paddingBottom: '20px',
         position: 'relative',
-        marginLeft: `-${paddingValue}px`,
-        marginRight: `-${paddingValue}px`,
-        paddingLeft: `${paddingValue}px`,
-        paddingRight: `${paddingValue}px`,
-        width: `calc(100% + ${totalPadding}px)`,
+        ...(isMobile ? {
+          marginTop: '0',
+          marginBottom: `-${paddingValue}px`,
+          paddingTop: '0',
+          paddingBottom: `${paddingValue}px`,
+          height: `calc(100% + ${paddingValue}px)`,
+        } : {
+          marginLeft: `-${paddingValue}px`,
+          marginRight: `-${paddingValue}px`,
+          paddingLeft: `${paddingValue}px`,
+          paddingRight: `${paddingValue}px`,
+          width: `calc(100% + ${totalPadding}px)`,
+        }),
       }}
     >
       <div 
         className="relative"
         style={{
-          width: `${totalWidth}px`,
-          height: '100%',
-          minHeight: '100%',
+          width: isMobile ? '100%' : `${totalWidth}px`,
+          height: isMobile ? `${totalHeight}px` : '100%',
+          minHeight: isMobile ? `${totalHeight}px` : '100%',
           margin: '0 auto',
           overflow: 'visible', // Allow cards to overflow this container
           position: 'relative',
+          ...(isMobile ? {
+            paddingTop: '16px',
+          } : {}),
         }}
       >
         {collections.map((collection, index) => {
           // Calculate the base position of this card
-          const basePosition = index * cardSpacing;
+          // Add top padding on mobile to push first card down
+          const topPadding = isMobile ? 16 : 0;
+          const basePosition = index * cardSpacing + topPadding;
           
           // Determine which card is currently "in front" (the leading card at scale 1.0)
-          // Initially (scrollLeft = 0), card 0 is in front
+          // Initially (scrollPosition = 0), card 0 is in front
           // As we scroll, the leading card index increases
-          const leadingCardIndex = Math.floor(scrollLeft / cardSpacing);
+          const leadingCardIndex = Math.floor(scrollPosition / cardSpacing);
           
           // Calculate progress within the current card spacing
           // progress = 0: current leading card is fully in front (scale 1.0)
           // progress = 1: next card has become fully in front (scale 1.0)
-          const scrollProgressInCard = (scrollLeft % cardSpacing) / cardSpacing;
+          const scrollProgressInCard = (scrollPosition % cardSpacing) / cardSpacing;
           
           // Determine the state of this card
           const isCurrentLeading = index === leadingCardIndex;
@@ -162,14 +187,14 @@ const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollecti
           let scale = 1.0;
           let opacity = 1.0;
           
-          // Initial state: when scrollLeft = 0, all cards should have scale 1.0
-          if (scrollLeft === 0) {
+          // Initial state: when scrollPosition = 0, all cards should have scale 1.0
+          if (scrollPosition === 0) {
             scale = 1.0;
             opacity = 1.0;
           } else if (isCurrentLeading) {
             // This is the current leading card that's being scrolled past
             // It starts at scale 1.0 and shrinks as we scroll to the next card
-            // Only start shrinking when scroll has actually started (scrollLeft > 0)
+            // Only start shrinking when scroll has actually started (scrollPosition > 0)
             scale = 1.0 - (scrollProgressInCard * 0.15);
             opacity = 1.0 - (scrollProgressInCard * 0.1);
           } else if (isNextLeading) {
@@ -195,41 +220,57 @@ const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollecti
           opacity = Math.max(0.9, Math.min(1.0, opacity));
           
           // Calculate z-index:
+          // - Keep z-index low (1-10) so cards stay below BottomNav (z-50) and modals (z-[100]+)
           // - The card that's assuming the position (next leading) should be on top
           // - The card that's being scrolled past (current leading) should go behind
           // - Cards that have been scrolled past should be behind
           // - Cards that are far ahead should be behind
-          let zIndex = 1000;
-          if (scrollLeft === 0) {
+          let zIndex = 1;
+          if (scrollPosition === 0) {
             // Initially, all cards have similar z-index, but earlier cards are on top
-            zIndex = 2000 - index * 10;
+            zIndex = 10 - index;
           } else if (isNextLeading) {
             // Next leading card should be on top as it's assuming the position
-            zIndex = 2000 + Math.round(scrollProgressInCard * 100);
+            zIndex = 10 + Math.round(scrollProgressInCard * 2);
           } else if (isCurrentLeading) {
             // Current leading card goes behind as it's being scrolled past
-            zIndex = 1900 - Math.round(scrollProgressInCard * 200);
+            zIndex = 9 - Math.round(scrollProgressInCard * 2);
           } else if (hasBeenScrolledPast) {
             // Cards that have been scrolled past are behind
-            zIndex = 1000 - (leadingCardIndex - index) * 10;
+            zIndex = Math.max(1, 5 - (leadingCardIndex - index));
           } else {
             // Cards that are far ahead are behind
-            zIndex = 1000 - (index - leadingCardIndex - 1) * 10;
+            zIndex = Math.max(1, 5 - (index - leadingCardIndex - 1));
           }
+          
+          // Ensure z-index stays within bounds (1-12) to stay below BottomNav (z-50) and modals
+          zIndex = Math.max(1, Math.min(12, zIndex));
 
           return (
             <div
               key={collection.id}
-              className="absolute top-0"
+              className="absolute"
               style={{
-                left: `${basePosition}px`,
-                width: isDesktop ? 'fit-content' : `${cardWidth}px`,
-                minWidth: isDesktop ? `${actualCardWidth}px` : undefined,
-                height: '100%',
-                transform: `scale(${scale})`,
+                ...(isMobile ? {
+                  top: `${basePosition}px`,
+                  left: '0',
+                  right: '0',
+                  transform: `scale(${scale})`,
+                  width: '100%',
+                  // Ensure perfect square: height equals width using aspect-ratio
+                  aspectRatio: '1 / 1',
+                  height: 'auto',
+                } : {
+                  left: `${basePosition}px`,
+                  top: '0',
+                  transform: `scale(${scale})`,
+                  width: 'fit-content',
+                  minWidth: `${actualCardWidth}px`,
+                  height: '100%',
+                }),
                 opacity: opacity,
                 zIndex: zIndex,
-                transformOrigin: 'left center',
+                transformOrigin: isMobile ? 'top center' : 'left center',
                 transition: 'transform 0.1s ease-out, opacity 0.1s ease-out',
               }}
             >
@@ -968,8 +1009,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           </div>
         )}
 
-        <div className="px-6 md:px-8 pt-6 pb-6 flex-1 flex flex-col min-h-0" style={{ minHeight: 0 }}>
-          <div className="flex justify-between items-end mb-4 shrink-0">
+        <div className="px-6 md:px-8 pt-2 md:pt-6 pb-6 flex-1 flex flex-col min-h-0" style={{ minHeight: 0 }}>
+          <div className="flex justify-between items-end mb-0 md:mb-4 shrink-0 pb-4 border-b border-gray-100">
             <h2 className="text-xl font-bold text-gray-800">
                 {activeTab === 'all' && activeFilterCount === 0 ? 'Todas as Coleções' : 
                  activeFilterCount > 0 ? 'Resultados filtrados' :
