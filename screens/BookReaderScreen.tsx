@@ -140,8 +140,8 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
         {/* Galaxy Effect - Only show after book is loaded and not on mobile */}
         {!isLoading && !isMobile && <GalaxyBackground />}
         
-        {/* Dark overlay to darken background */}
-        <div className="absolute inset-0 bg-black/10" style={{ zIndex: 2 }} />
+        {/* Dark overlay to darken background - Works on both desktop and mobile */}
+        <div className="absolute inset-0 bg-black/20" style={{ zIndex: 1 }} />
         
         {/* Back Button */}
         <button 
@@ -152,7 +152,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
           <Icons.ChevronLeft size={24} strokeWidth={2.5} />
         </button>
 
-        <div className="text-center p-8 max-w-md mx-auto">
+        <div className="text-center p-8 max-w-md mx-auto relative z-10">
           <style>{`
             @keyframes rotatePhone {
               0% {
@@ -200,8 +200,8 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       {/* Galaxy Effect - Only show after book is loaded and not on mobile */}
       {!isLoading && !isMobile && <GalaxyBackground />}
       
-      {/* Dark overlay to darken background */}
-      <div className="absolute inset-0 bg-black/10" style={{ zIndex: 2 }} />
+      {/* Dark overlay to darken background - Works on both desktop and mobile */}
+      <div className={`absolute inset-0 ${isMobile ? 'bg-black/20' : 'bg-black/10'}`} style={{ zIndex: 1 }} />
 
       {/* Header - Hidden on mobile landscape */}
       {!isMobileLandscape && (
@@ -239,7 +239,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
 
       {/* Book Container - Full screen centered for mobile landscape */}
       <div 
-        className={`${isMobileLandscape ? 'fixed inset-0 flex items-center justify-center' : 'flex-1 relative z-10 overflow-hidden'}`} 
+        className={`${isMobileLandscape ? 'fixed inset-0 flex items-center justify-center z-10' : 'flex-1 relative z-10 overflow-hidden'}`} 
         style={isMobileLandscape ? { minHeight: 0 } : { minHeight: 0 }}
       >
         {error ? (
