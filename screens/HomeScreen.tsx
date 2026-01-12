@@ -32,256 +32,23 @@ const INITIAL_FILTERS: FilterState = {
   age: []
 };
 
-// Deck Scroll View Component - Cards overlapping like a deck
-interface DeckScrollViewProps {
+// Grid View Component - 3 columns grid
+interface GridViewProps {
   collections: (Collection & { progress?: number })[];
   onCollectionClick: (collection: Collection) => void;
 }
 
-const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollectionClick }) => {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const [containerHeight, setContainerHeight] = useState(0);
-  const isMobile = useIsMobile();
-  const isDesktop = !isMobile;
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const updateDimensions = () => {
-      setContainerWidth(container.clientWidth || window.innerWidth);
-      setContainerHeight(container.clientHeight || window.innerHeight);
-    };
-
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-
-    const handleScroll = () => {
-      if (isMobile) {
-        setScrollPosition(container.scrollTop);
-      } else {
-        setScrollPosition(container.scrollLeft);
-      }
-    };
-
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial call
-
-    return () => {
-      window.removeEventListener('resize', updateDimensions);
-      container.removeEventListener('scroll', handleScroll);
-    };
-  }, [isMobile]);
-
-  // Card size calculation - responsive based on container
-  const paddingValue = isDesktop ? 32 : 24;
-  const totalPadding = paddingValue * 2;
-  
-  // On mobile: card should be 100% width and square (1:1 aspect ratio)
-  // containerWidth already accounts for internal width (clientWidth), so use it directly
-  // On desktop: card is square and full height
-  const cardWidth = isMobile && containerWidth > 0
-    ? containerWidth // Full width on mobile (containerWidth is already internal width)
-    : (containerWidth > 0 
-      ? Math.max(280, Math.min(400, containerWidth * 0.75))
-      : 320); // Default fallback for desktop
-  
-  // On desktop, cards are square and full height, so calculate actual card size
-  // Card height is container height minus padding and text space (approximately 80px)
-  // Use a reasonable fallback if height not yet calculated
-  const estimatedCardHeight = isDesktop && containerHeight > 0 
-    ? Math.max(cardWidth, containerHeight - 80) // Full height minus space for text below, but at least cardWidth
-    : cardWidth; // On mobile or before height is calculated, use cardWidth
-  
-  // Actual card width on desktop (square = height)
-  // On desktop, card is square so width equals height
-  // On mobile, card should be square (width = height) and fill 100% width
-  const actualCardWidth = isDesktop ? estimatedCardHeight : cardWidth;
-  const actualCardHeight = isMobile 
-    ? actualCardWidth // On mobile, make it a perfect square (1:1 aspect ratio)
-    : (isDesktop ? estimatedCardHeight : cardWidth);
-  
-  // Cards start side by side (desktop) or stacked (mobile) with a visible gap
-  // Gap is proportional to card size for consistent visual spacing
-  // Use a percentage of card size so spacing scales with card size, not screen size
-  // On desktop/large screens, use minimal spacing for tighter layout
-  const gapPercentage = isDesktop ? 0.005 : 0.15; // 0.5% on desktop, 15% on mobile (increased from 8%)
-  const cardGap = isMobile ? actualCardHeight * gapPercentage : actualCardWidth * gapPercentage;
-  const cardSpacing = isMobile ? actualCardHeight + cardGap : actualCardWidth + cardGap; // Spacing with gap
-
-  // Calculate total width/height needed
-  // Add extra space at the end so the last card can scroll into view
-  const totalWidth = !isMobile && collections.length > 0 
-    ? (collections.length - 1) * cardSpacing + actualCardWidth + (containerWidth - actualCardWidth)
-    : (isMobile ? containerWidth : actualCardWidth);
-  
-  // Add top padding on mobile for better visual spacing
-  const topPadding = isMobile ? 16 : 0;
-  const totalHeight = isMobile && collections.length > 0
-    ? topPadding + (collections.length - 1) * cardSpacing + actualCardHeight + (containerHeight - actualCardHeight)
-    : (isMobile ? actualCardHeight : containerHeight);
-
+const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick }) => {
   return (
-    <div 
-      ref={scrollContainerRef}
-      className={`relative no-scrollbar h-full ${isMobile ? 'overflow-y-auto' : 'overflow-x-auto'}`}
-      style={{
-        scrollBehavior: 'smooth',
-        WebkitOverflowScrolling: 'touch',
-        paddingTop: '20px',
-        paddingBottom: '20px',
-        position: 'relative',
-        ...(isMobile ? {
-          marginTop: '0',
-          marginBottom: `-${paddingValue}px`,
-          paddingTop: '0',
-          paddingBottom: `${paddingValue}px`,
-          height: `calc(100% + ${paddingValue}px)`,
-        } : {
-          marginLeft: `-${paddingValue}px`,
-          marginRight: `-${paddingValue}px`,
-          paddingLeft: `${paddingValue}px`,
-          paddingRight: `${paddingValue}px`,
-          width: `calc(100% + ${totalPadding}px)`,
-        }),
-      }}
-    >
-      <div 
-        className="relative"
-        style={{
-          width: isMobile ? '100%' : `${totalWidth}px`,
-          height: isMobile ? `${totalHeight}px` : '100%',
-          minHeight: isMobile ? `${totalHeight}px` : '100%',
-          margin: '0 auto',
-          overflow: 'visible', // Allow cards to overflow this container
-          position: 'relative',
-          ...(isMobile ? {
-            paddingTop: '16px',
-          } : {}),
-        }}
-      >
-        {collections.map((collection, index) => {
-          // Calculate the base position of this card
-          // Add top padding on mobile to push first card down
-          const topPadding = isMobile ? 16 : 0;
-          const basePosition = index * cardSpacing + topPadding;
-          
-          // Determine which card is currently "in front" (the leading card at scale 1.0)
-          // Initially (scrollPosition = 0), card 0 is in front
-          // As we scroll, the leading card index increases
-          const leadingCardIndex = Math.floor(scrollPosition / cardSpacing);
-          
-          // Calculate progress within the current card spacing
-          // progress = 0: current leading card is fully in front (scale 1.0)
-          // progress = 1: next card has become fully in front (scale 1.0)
-          const scrollProgressInCard = (scrollPosition % cardSpacing) / cardSpacing;
-          
-          // Determine the state of this card
-          const isCurrentLeading = index === leadingCardIndex;
-          const isNextLeading = index === leadingCardIndex + 1;
-          const hasBeenScrolledPast = index < leadingCardIndex;
-          const isFarAhead = index > leadingCardIndex + 1;
-          
-          let scale = 1.0;
-          let opacity = 1.0;
-          
-          // Initial state: when scrollPosition = 0, all cards should have scale 1.0
-          if (scrollPosition === 0) {
-            scale = 1.0;
-            opacity = 1.0;
-          } else if (isCurrentLeading) {
-            // This is the current leading card that's being scrolled past
-            // It starts at scale 1.0 and shrinks as we scroll to the next card
-            // Only start shrinking when scroll has actually started (scrollPosition > 0)
-            scale = 1.0 - (scrollProgressInCard * 0.15);
-            opacity = 1.0 - (scrollProgressInCard * 0.1);
-          } else if (isNextLeading) {
-            // This is the next card that's assuming the position of the current leading card
-            // It stays at scale 1.0 while assuming the position (not shrinking yet)
-            // It will only start shrinking when it becomes the current leading card
-            // and the card after it starts to take its place
-            scale = 1.0;
-            opacity = 1.0;
-          } else if (hasBeenScrolledPast) {
-            // This card has been scrolled past - it should be at scale 0.85
-            scale = 0.85;
-            opacity = 0.9;
-          } else {
-            // This card is far ahead, not yet in the transition zone
-            // It should be at scale 1.0 until it enters the transition zone
-            scale = 1.0;
-            opacity = 1.0;
-          }
-          
-          // Ensure values are within bounds
-          scale = Math.max(0.85, Math.min(1.0, scale));
-          opacity = Math.max(0.9, Math.min(1.0, opacity));
-          
-          // Calculate z-index:
-          // - Keep z-index low (1-10) so cards stay below BottomNav (z-50) and modals (z-[100]+)
-          // - The card that's assuming the position (next leading) should be on top
-          // - The card that's being scrolled past (current leading) should go behind
-          // - Cards that have been scrolled past should be behind
-          // - Cards that are far ahead should be behind
-          let zIndex = 1;
-          if (scrollPosition === 0) {
-            // Initially, all cards have similar z-index, but earlier cards are on top
-            zIndex = 10 - index;
-          } else if (isNextLeading) {
-            // Next leading card should be on top as it's assuming the position
-            zIndex = 10 + Math.round(scrollProgressInCard * 2);
-          } else if (isCurrentLeading) {
-            // Current leading card goes behind as it's being scrolled past
-            zIndex = 9 - Math.round(scrollProgressInCard * 2);
-          } else if (hasBeenScrolledPast) {
-            // Cards that have been scrolled past are behind
-            zIndex = Math.max(1, 5 - (leadingCardIndex - index));
-          } else {
-            // Cards that are far ahead are behind
-            zIndex = Math.max(1, 5 - (index - leadingCardIndex - 1));
-          }
-          
-          // Ensure z-index stays within bounds (1-12) to stay below BottomNav (z-50) and modals
-          zIndex = Math.max(1, Math.min(12, zIndex));
-
-          return (
-            <div
-              key={collection.id}
-              className="absolute"
-              style={{
-                ...(isMobile ? {
-                  top: `${basePosition}px`,
-                  left: '0',
-                  right: '0',
-                  transform: `scale(${scale})`,
-                  width: '100%',
-                  // Ensure perfect square: height equals width using aspect-ratio
-                  aspectRatio: '1 / 1',
-                  height: 'auto',
-                } : {
-                  left: `${basePosition}px`,
-                  top: '0',
-                  transform: `scale(${scale})`,
-                  width: 'fit-content',
-                  minWidth: `${actualCardWidth}px`,
-                  height: '100%',
-                }),
-                opacity: opacity,
-                zIndex: zIndex,
-                transformOrigin: isMobile ? 'top center' : 'left center',
-                transition: 'transform 0.1s ease-out, opacity 0.1s ease-out',
-              }}
-            >
-              <Card3D
-                collection={collection}
-                onCollectionClick={onCollectionClick}
-              />
-            </div>
-          );
-        })}
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 auto-rows-fr">
+      {collections.map((collection) => (
+        <div key={collection.id} className="w-full">
+          <Card3D
+            collection={collection}
+            onCollectionClick={onCollectionClick}
+          />
+        </div>
+      ))}
     </div>
   );
 };
@@ -1022,8 +789,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           </div>
           
           {filteredCollections.length > 0 ? (
-            <div className="flex-1 min-h-0" style={{ minHeight: 0, height: '100%' }}>
-              <DeckScrollView
+            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar" style={{ minHeight: 0 }}>
+              <GridView
                 key={animationKey}
                 collections={filteredCollections}
                 onCollectionClick={handleCollectionClick}
