@@ -950,7 +950,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           </div>
         )}
 
-        <div className="px-6 md:px-8 flex-1 flex flex-col min-h-0" style={{ minHeight: 0 }}>
+        <div className="px-6 md:px-8 pt-6 pb-6 flex-1 flex flex-col min-h-0" style={{ minHeight: 0 }}>
           <div className="flex justify-between items-end mb-4 shrink-0">
             <h2 className="text-xl font-bold text-gray-800">
                 {activeTab === 'all' && activeFilterCount === 0 ? 'Todas as Coleções' : 
