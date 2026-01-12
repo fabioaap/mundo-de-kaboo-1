@@ -343,7 +343,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
         ...c,
         progress: userProgress[c.id] || undefined
       })) as (Collection & { progress?: number })[]).filter(c => {
-        if (activeTab === 'fund1' && c.level !== 'Ensino Infantil') return false;
+        if (activeTab === 'fund1' && c.level !== 'Educação Infantil') return false;
         if (activeTab === 'fund2' && c.level !== 'Fundamental I') return false;
 
         if (activeFilters.characters.length > 0) {
@@ -781,7 +781,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
             <h2 className="text-xl font-bold text-gray-800">
                 {activeTab === 'all' && activeFilterCount === 0 ? 'Todas as Coleções' : 
                  activeFilterCount > 0 ? 'Resultados filtrados' :
-                 activeTab === 'fund1' ? 'Ensino Infantil' : 'Fundamental I'}
+                 activeTab === 'fund1' ? 'Educação Infantil' : 'Fundamental I'}
             </h2>
             <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
                 {filteredCollections.length}

@@ -229,7 +229,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
               transform: 'translateZ(30px)',
             }}
           >
-            {collection.level.replace('Ensino Infantil', 'Ens. Infantil').replace('Fundamental ', 'Fund. ')}
+            {collection.level.replace('Educação Infantil', 'Ed. Infantil').replace('Fundamental ', 'Fund. ')}
           </div>
         )}
       </div>
