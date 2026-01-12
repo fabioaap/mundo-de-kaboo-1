@@ -41,6 +41,7 @@ const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollecti
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
@@ -58,6 +59,7 @@ const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollecti
 
     const updateDimensions = () => {
       setContainerWidth(container.clientWidth || window.innerWidth);
+      setContainerHeight(container.clientHeight || window.innerHeight);
     };
 
     updateDimensions();
@@ -81,16 +83,30 @@ const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollecti
     ? Math.max(280, Math.min(400, containerWidth * 0.75))
     : 320; // Default fallback
   
+  // On desktop, cards are square and full height, so calculate actual card size
+  // Card height is container height minus padding and text space (approximately 80px)
+  // Use a reasonable fallback if height not yet calculated
+  const estimatedCardHeight = isDesktop && containerHeight > 0 
+    ? Math.max(cardWidth, containerHeight - 80) // Full height minus space for text below, but at least cardWidth
+    : cardWidth; // On mobile or before height is calculated, use cardWidth
+  
+  // Actual card width on desktop (square = height)
+  // On desktop, card is square so width equals height
+  const actualCardWidth = isDesktop ? estimatedCardHeight : cardWidth;
+  
   // Cards start side by side with a visible gap
-  // As you scroll, they overlap like a deck of cards
-  const cardGap = 40; // Gap between cards when they're side by side
-  const cardSpacing = cardWidth + cardGap; // Initial spacing with gap
+  // Gap is proportional to card size for consistent visual spacing
+  // Use a percentage of card width so spacing scales with card size, not screen size
+  // On desktop/large screens, use minimal spacing for tighter layout
+  const gapPercentage = isDesktop ? 0.005 : 0.08; // 0.5% on desktop, 8% on mobile
+  const cardGap = actualCardWidth * gapPercentage;
+  const cardSpacing = actualCardWidth + cardGap; // Initial spacing with gap
 
   // Calculate total width needed
   // Add extra space at the end so the last card can scroll into view
   const totalWidth = collections.length > 0 
-    ? (collections.length - 1) * cardSpacing + cardWidth + (containerWidth - cardWidth)
-    : cardWidth;
+    ? (collections.length - 1) * cardSpacing + actualCardWidth + (containerWidth - actualCardWidth)
+    : actualCardWidth;
 
   const paddingValue = isDesktop ? 32 : 24;
   const totalPadding = paddingValue * 2;
@@ -207,7 +223,9 @@ const DeckScrollView: React.FC<DeckScrollViewProps> = ({ collections, onCollecti
               className="absolute top-0"
               style={{
                 left: `${basePosition}px`,
-                width: `${cardWidth}px`,
+                width: isDesktop ? 'fit-content' : `${cardWidth}px`,
+                minWidth: isDesktop ? `${actualCardWidth}px` : undefined,
+                height: '100%',
                 transform: `scale(${scale})`,
                 opacity: opacity,
                 zIndex: zIndex,

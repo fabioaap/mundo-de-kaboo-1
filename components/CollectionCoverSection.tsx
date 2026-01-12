@@ -373,7 +373,7 @@ export const CollectionCoverSection: React.FC<CollectionCoverSectionProps> = ({
       <div className="relative h-full flex flex-col items-center justify-center px-6 py-6 z-30">
         <div 
           ref={cardRef}
-          className="w-48 h-48 md:w-64 md:h-64 rounded-lg shadow-2xl shadow-gray-400/60 relative group overflow-hidden shrink-0 mx-auto border border-black/10"
+          className={`${isMobile ? 'w-48 h-48' : 'w-full'} rounded-lg shadow-2xl shadow-gray-400/60 relative group overflow-hidden shrink-0 mx-auto border border-black/10`}
           style={{ 
             WebkitMaskImage: '-webkit-radial-gradient(white, black)',
             transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale3d(1, 1, 1)`,
@@ -382,6 +382,11 @@ export const CollectionCoverSection: React.FC<CollectionCoverSectionProps> = ({
               ? 'transform 0.1s ease-out' 
               : (isHovered ? 'transform 0.1s ease-out' : 'transform 0.3s ease-out'),
             touchAction: 'manipulation',
+            ...(isMobile ? {} : { 
+              aspectRatio: '1 / 1',
+              maxWidth: 'min(100%, calc(100vh - 200px))',
+              width: 'min(100%, calc(100vh - 200px))',
+            }),
           }}
           onMouseEnter={!isMobile ? handleMouseEnter : undefined}
           onMouseMove={!isMobile ? handleCardMouseMove : undefined}

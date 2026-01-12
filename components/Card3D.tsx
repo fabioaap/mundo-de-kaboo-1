@@ -160,12 +160,12 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
     <div 
       key={collection.id}
       onClick={() => onCollectionClick(collection)}
-      className="cursor-pointer active:scale-95 transition-transform touch-manipulation"
-      style={{ touchAction: 'manipulation' }}
+      className="cursor-pointer active:scale-95 transition-transform touch-manipulation h-full flex flex-col"
+      style={{ touchAction: 'manipulation', alignItems: isMobile ? 'stretch' : 'flex-start', width: 'fit-content' }}
     >
       <div 
         ref={cardRef}
-        className="aspect-square mb-3 rounded-lg overflow-hidden relative group shadow-md shadow-gray-100"
+        className={`${isMobile ? 'aspect-square' : ''} mb-3 rounded-lg overflow-hidden relative group shadow-md shadow-gray-100`}
         style={{ 
           WebkitMaskImage: '-webkit-radial-gradient(white, black)',
           transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale3d(1, 1, 1)`,
@@ -174,6 +174,13 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
             ? 'transform 0.1s ease-out' 
             : (tilt.x === 0 && tilt.y === 0 ? 'transform 0.5s ease-out' : 'transform 0.1s ease-out'),
           touchAction: 'manipulation',
+          ...(isMobile ? {} : { 
+            height: 'calc(100% - 80px)',
+            aspectRatio: '1 / 1',
+            width: 'auto',
+            flexShrink: 0,
+            alignSelf: 'flex-start',
+          }),
         }}
         onMouseMove={!isMobile ? handleMouseMove : undefined}
         onMouseLeave={!isMobile ? handleMouseLeave : undefined}
