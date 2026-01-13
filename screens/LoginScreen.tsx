@@ -330,7 +330,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
           <div className="mt-6 text-center space-y-4">
             
             {/* Show Register Link only on Login Mode */}
-            {!isRegistering && (
+            {/* Temporarily removed */}
+            {/* {!isRegistering && (
               <p className="text-gray-600 text-sm">
                 Ainda não tem conta?
                 <button 
@@ -341,7 +342,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
                   Cadastre-se
                 </button>
               </p>
-            )}
+            )} */}
 
             {!isRegistering && (
               <button 
