@@ -41,10 +41,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (50MB limit)
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    // Validate file size (500MB limit)
+    const maxSize = 500 * 1024 * 1024; // 500MB
     if (file.size > maxSize) {
-      setError('Arquivo muito grande. Tamanho máximo: 50MB');
+      setError('Arquivo muito grande. Tamanho máximo: 500MB');
       return;
     }
 
@@ -266,10 +266,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       {/* File Type Hints */}
       <p className="mt-1 text-xs text-gray-500">
-        {folder === 'covers' && 'Formatos aceitos: JPG, PNG, WebP (máx. 50MB)'}
-        {folder === 'pdfs' && 'Formatos aceitos: PDF (máx. 50MB)'}
-        {folder === 'audio' && 'Formatos aceitos: MP3, WAV, OGG (máx. 50MB)'}
-        {folder === 'video' && 'Formatos aceitos: MP4, WebM (máx. 50MB)'}
+        {folder === 'covers' && 'Formatos aceitos: JPG, PNG, WebP (máx. 500MB)'}
+        {folder === 'pdfs' && 'Formatos aceitos: PDF (máx. 500MB)'}
+        {folder === 'audio' && 'Formatos aceitos: MP3, WAV, OGG (máx. 500MB)'}
+        {folder === 'video' && 'Formatos aceitos: MP4, WebM (máx. 500MB)'}
       </p>
     </div>
 

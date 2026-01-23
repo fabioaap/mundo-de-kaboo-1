@@ -42,11 +42,11 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Validate file sizes (50MB limit per file)
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    // Validate file sizes (500MB limit per file)
+    const maxSize = 500 * 1024 * 1024; // 500MB
     const oversizedFiles = files.filter(f => f.size > maxSize);
     if (oversizedFiles.length > 0) {
-      setError(`Arquivo(s) muito grande(s). Tamanho máximo: 50MB por arquivo`);
+      setError(`Arquivo(s) muito grande(s). Tamanho máximo: 500MB por arquivo`);
       return;
     }
 
@@ -204,7 +204,7 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
 
         {/* File Type Hints */}
         <p className="mt-1 text-xs text-gray-500">
-          Você pode adicionar múltiplos arquivos. Formatos aceitos: Todos (máx. 50MB por arquivo)
+          Você pode adicionar múltiplos arquivos. Formatos aceitos: Todos (máx. 500MB por arquivo)
         </p>
       </div>
 
