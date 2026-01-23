@@ -8,6 +8,10 @@ export interface UploadResult {
   originalFileName?: string; // Original filename before sanitization
 }
 
+export interface UploadProgressCallback {
+  (progress: number): void; // progress: 0-100
+}
+
 /**
  * Extract the original filename from a generated filename
  * Generated format: ${timestamp}-${randomStr}-${sanitizedName}
@@ -54,12 +58,13 @@ export function extractOriginalFileName(url: string): string {
 }
 
 /**
- * Upload a file to Supabase Storage
+ * Upload a file to Supabase Storage with progress tracking
  */
 export async function uploadFile(
   file: File,
   folder: 'covers' | 'pdfs' | 'audio' | 'video' | 'extras',
-  collectionId?: string
+  collectionId?: string,
+  onProgress?: UploadProgressCallback
 ): Promise<UploadResult> {
   try {
     // Check if bucket exists first (non-blocking - we'll try upload anyway)
@@ -83,16 +88,40 @@ export async function uploadFile(
       ? `${folder}/${collectionId}/${fileName}`
       : `${folder}/temp/${fileName}`;
 
-    // Upload file
+    // Upload file with progress simulation
     console.log('Uploading to path:', path, 'File size:', file.size, 'File type:', file.type);
+    
+    // Start progress simulation
+    let currentProgress = 10;
+    if (onProgress) {
+      onProgress(currentProgress);
+    }
+    
+    // Simulate progress updates during upload
+    let progressInterval: NodeJS.Timeout | null = null;
+    if (onProgress) {
+      progressInterval = setInterval(() => {
+        // Gradually increase progress, but cap at 90% until upload completes
+        const increment = Math.random() * 15 + 5; // Random increment between 5-20%
+        currentProgress = Math.min(90, currentProgress + increment);
+        onProgress(currentProgress);
+      }, 200);
+    }
+    
     const { data, error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(path, file, {
         cacheControl: '3600',
         upsert: false
       });
+    
+    // Clear progress interval
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
 
     if (error) {
+      // Don't set progress to 100 on error
       console.error('Upload error details:', {
         message: error.message,
         statusCode: (error as any).statusCode,
@@ -138,6 +167,10 @@ export async function uploadFile(
           .from(STORAGE_BUCKET)
           .getPublicUrl(newPath);
         
+        if (onProgress) {
+          onProgress(100); // Complete
+        }
+        
         return { url: retryUrlData.publicUrl, error: null, originalFileName: file.name };
       }
       
@@ -148,6 +181,10 @@ export async function uploadFile(
     const { data: urlData } = supabase.storage
       .from(STORAGE_BUCKET)
       .getPublicUrl(path);
+
+    if (onProgress) {
+      onProgress(100); // Complete
+    }
 
     return { url: urlData.publicUrl, error: null, originalFileName };
   } catch (error: any) {

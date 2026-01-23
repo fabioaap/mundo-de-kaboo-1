@@ -35,7 +35,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast, showToast, hideToast } = useToast();
+  const { toast, showToast, updateToast, hideToast } = useToast();
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,8 +51,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     setUploading(true);
     setError(null);
 
+    // Show progress toast
+    const fileName = file.name.length > 30 ? file.name.substring(0, 30) + '...' : file.name;
+    showToast(`Enviando: ${fileName}`, 'progress', 0);
+
     try {
-      const result = await uploadFile(file, folder, collectionId);
+      const result = await uploadFile(file, folder, collectionId, (progress) => {
+        // Update progress in toast
+        updateToast({ progress });
+      });
+      
+      // Hide progress toast
+      hideToast();
       
       if (result.error) {
         setError(result.error);
@@ -63,6 +73,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         showToast('Arquivo enviado com sucesso!', 'success');
       }
     } catch (err: any) {
+      // Hide progress toast
+      hideToast();
       const errorMsg = err.message || 'Erro ao fazer upload';
       setError(errorMsg);
       showToast(errorMsg, 'error');
@@ -296,6 +308,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       type={toast.type}
       isVisible={toast.isVisible}
       onClose={hideToast}
+      progress={toast.progress}
     />
     </>
   );

@@ -36,7 +36,7 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
   const [hoveredFileIndex, setHoveredFileIndex] = useState<number | null>(null);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast, showToast, hideToast } = useToast();
+  const { toast, showToast, updateToast, hideToast } = useToast();
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -55,11 +55,33 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
 
     try {
       const uploadedUrls: string[] = [];
+      const totalFiles = files.length;
       
-      for (const file of files) {
-        const result = await uploadFile(file, folder as any, collectionId);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileName = file.name.length > 25 ? file.name.substring(0, 25) + '...' : file.name;
+        
+        // Show progress toast for current file
+        showToast(
+          `Enviando ${i + 1}/${totalFiles}: ${fileName}`,
+          'progress',
+          0
+        );
+        
+        const result = await uploadFile(
+          file,
+          folder as any,
+          collectionId,
+          (progress) => {
+            // Calculate overall progress across all files
+            const fileProgress = progress / totalFiles;
+            const overallProgress = (i / totalFiles) * 100 + fileProgress;
+            updateToast({ progress: overallProgress });
+          }
+        );
         
         if (result.error) {
+          hideToast();
           setError(result.error);
           setUploading(false);
           showToast(`Erro ao fazer upload de ${file.name}`, 'error');
@@ -71,6 +93,9 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
         }
       }
 
+      // Hide progress toast
+      hideToast();
+
       // Add new URLs to existing ones
       onChange([...value, ...uploadedUrls]);
       setError(null);
@@ -78,6 +103,7 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
         showToast(`${uploadedUrls.length} arquivo(s) enviado(s) com sucesso!`, 'success');
       }
     } catch (err: any) {
+      hideToast();
       const errorMsg = err.message || 'Erro ao fazer upload';
       setError(errorMsg);
       showToast(errorMsg, 'error');
@@ -233,6 +259,7 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
       type={toast.type}
       isVisible={toast.isVisible}
       onClose={hideToast}
+      progress={toast.progress}
     />
     </>
   );
