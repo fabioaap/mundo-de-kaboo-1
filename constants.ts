@@ -1,35 +1,13 @@
 import { Collection } from './types';
 import logoImage from './assets/images/logo-kaboo.png';
 
-// Import character images
-import barataoImage from './assets/images/characters/baratao.png';
-import baratinhaImage from './assets/images/characters/baratinha.png';
-import batatinhaImage from './assets/images/characters/batatinha.png';
-import bladoImage from './assets/images/characters/blado.png';
-import drRatazanaImage from './assets/images/characters/dr-ratazana.png';
-import gaioImage from './assets/images/characters/gaio.png';
-import kabooImage from './assets/images/characters/kaboo.png';
-import mensageiroImage from './assets/images/characters/mensageiro.png';
-import papaImage from './assets/images/characters/papa.png';
-
 // ---------------------------------------------------------------------------
 // CONFIGURAÇÃO DE IMAGENS E STORAGE
 // ---------------------------------------------------------------------------
 export const LOGO_URL = logoImage; 
 
-// Mapping of character names to their image imports
-const CHARACTER_IMAGE_MAP: Record<string, string> = {
-  'Baratão': barataoImage,
-  'Baratinha': baratinhaImage,
-  'Batatinha': batatinhaImage,
-  'Blado': bladoImage,
-  'Dr. Ratazana': drRatazanaImage,
-  'Dr Ratazana': drRatazanaImage, // Alternative without period
-  'Gaio': gaioImage,
-  'Kaboo': kabooImage,
-  'Mensageiro': mensageiroImage,
-  'Papa': papaImage,
-};
+// Base URL for character images from Supabase storage
+export const CHAR_IMG_BASE_URL = 'https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/characters/';
 
 // Lista oficial de personagens atualizada
 export const AVATAR_CHARACTERS = [
@@ -78,31 +56,16 @@ export const getCharacterBgColor = (name: string | null) => {
 export const getCharacterImageUrl = (name: string) => {
   if (!name) return '';
   
-  // First, try exact match
-  if (CHARACTER_IMAGE_MAP[name]) {
-    return CHARACTER_IMAGE_MAP[name];
-  }
-  
-  // Try alternative format (without period for Dr.)
-  const altName = name.replace(/\./g, '');
-  if (CHARACTER_IMAGE_MAP[altName]) {
-    return CHARACTER_IMAGE_MAP[altName];
-  }
-  
-  // Fallback: try normalized name matching
+  // Normalize the character name to match the file naming pattern
+  // Remove accents, convert to lowercase, remove punctuation, replace spaces with hyphens
   const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const normalizedName = normalize(name).replace(/[^\w\s]/g, '').trim();
   
-  // Try to find a match by comparing normalized names
-  for (const [charName, imageUrl] of Object.entries(CHARACTER_IMAGE_MAP)) {
-    const normalizedCharName = normalize(charName).replace(/[^\w\s]/g, '').trim();
-    if (normalizedCharName === normalizedName) {
-      return imageUrl;
-    }
-  }
+  const filename = normalize(name)
+    .replace(/[^\w\s]/g, '') // Remove punctuation (ex: the period in Dr.)
+    .trim()
+    .replace(/\s+/g, '-');   // Replace spaces with hyphens
   
-  // If no match found, return empty string (fallback will show initials)
-  return '';
+  return `${CHAR_IMG_BASE_URL}${filename}.png`;
 };
 
 export const COLLECTIONS: Collection[] = []; 

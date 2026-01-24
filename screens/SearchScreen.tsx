@@ -187,7 +187,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
                         >
                             <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full shadow-md group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 overflow-hidden border-2 border-white relative ${getCharacterColor(char)}`}>
                                 {/* Fallback Background with Initial */}
-                                <div className={`absolute inset-0 flex items-center justify-center font-black text-2xl opacity-50 ${getCharacterBgColor(char)}`}>
+                                <div className={`absolute inset-0 flex items-center justify-center font-black text-2xl opacity-50 ${getCharacterBgColor(char)} pointer-events-none`}>
                                    {char.charAt(0)}
                                 </div>
                                 {/* Character Image using Shared Helper */}

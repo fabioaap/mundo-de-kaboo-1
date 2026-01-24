@@ -474,7 +474,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-transparent group-hover:ring-kaboo-primary/10 transition-all overflow-hidden relative border border-gray-100 ${hasAvatar ? charColor : 'bg-kaboo-primary text-white'}`}>
             {hasAvatar ? (
                <>
-                 <div className={`absolute inset-0 opacity-50 ${getCharacterBgColor(profile.avatar_id)}`} />
+                 <div className={`absolute inset-0 opacity-50 ${getCharacterBgColor(profile.avatar_id)} pointer-events-none`} />
                  <img 
                    src={getCharacterImageUrl(profile.avatar_id!)} 
                    alt="Avatar"
@@ -745,7 +745,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           >
              {profile?.avatar_id ? (
                 <>
-                 <div className={`absolute inset-0 opacity-50 ${getCharacterBgColor(profile.avatar_id)}`} />
+                 <div className={`absolute inset-0 rounded-full opacity-50 ${getCharacterBgColor(profile.avatar_id)} pointer-events-none z-0`} />
                  <img 
                    src={getCharacterImageUrl(profile.avatar_id)} 
                    alt="Avatar" 
