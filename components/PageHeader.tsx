@@ -10,7 +10,7 @@ interface PageHeaderProps {
 
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, onBack, className = '', rightContent }) => {
   return (
-    <div className={`px-6 pt-12 pb-6 md:px-8 md:pt-8 md:pb-8 flex items-center gap-4 bg-white sticky top-0 z-30 ${className}`}>
+    <div className={`px-6 pt-6 pb-6 md:px-8 md:pt-6 md:pb-8 flex items-center gap-4 bg-white sticky top-0 z-30 ${className}`}>
       {onBack && (
         <button 
           onClick={onBack}
