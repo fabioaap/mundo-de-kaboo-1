@@ -1,9 +1,10 @@
 import { supabase } from './supabase';
-import { Collection, CollectionResource } from '../types';
+import { Collection, CollectionResource, UserProfile } from '../types';
 import { logger } from './logger';
 
 // Cache management for collections
 const COLLECTIONS_CACHE_KEY = 'kaboo_collections_cache';
+const PROFILE_CACHE_KEY = 'kaboo_profile_cache';
 const SESSION_KEY = 'kaboo_session_id';
 
 // Get or create session ID (unique per browser session)
@@ -22,6 +23,13 @@ const getSessionId = (): string => {
 export const clearCollectionsCache = (): void => {
   if (typeof window !== 'undefined') {
     sessionStorage.removeItem(COLLECTIONS_CACHE_KEY);
+  }
+};
+
+// Clear profile cache
+export const clearProfileCache = (): void => {
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(PROFILE_CACHE_KEY);
   }
 };
 
@@ -50,6 +58,49 @@ const getCachedCollections = (): Collection[] | null => {
 // Export function to get cached collections synchronously (for initial state)
 export const getCachedCollectionsSync = (): Collection[] | null => {
   return getCachedCollections();
+};
+
+// Get cached profile if available
+const getCachedProfile = (): UserProfile | null => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const cached = sessionStorage.getItem(PROFILE_CACHE_KEY);
+    if (!cached) return null;
+    
+    const parsed = JSON.parse(cached);
+    // Verify it's from the current session
+    if (parsed.sessionId === getSessionId()) {
+      return parsed.profile;
+    }
+    // If session changed, clear old cache
+    sessionStorage.removeItem(PROFILE_CACHE_KEY);
+    return null;
+  } catch (error) {
+    logger.error('Error reading profile cache:', error);
+    return null;
+  }
+};
+
+// Export function to get cached profile synchronously (for initial state)
+export const getCachedProfileSync = (): UserProfile | null => {
+  return getCachedProfile();
+};
+
+// Save profile to cache
+const saveProfileCache = (profile: UserProfile): void => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const cacheData = {
+      profile,
+      sessionId: getSessionId(),
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(cacheData));
+  } catch (error) {
+    logger.error('Error saving profile cache:', error);
+  }
 };
 
 // Save collections to cache
@@ -234,5 +285,86 @@ export const api = {
     clearCollectionsCache();
     
     return true;
+  },
+
+  /**
+   * Fetch user profile (with cache support)
+   * @param forceRefresh - If true, bypass cache and fetch from server
+   */
+  async getProfile(forceRefresh: boolean = false): Promise<UserProfile | null> {
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = getCachedProfile();
+      if (cached) {
+        return cached;
+      }
+    }
+
+    // Fetch from server
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (error) {
+      logger.error('Error fetching profile:', error);
+      return null;
+    }
+
+    let profile: UserProfile | null = null;
+
+    if (data) {
+      profile = data;
+    } else {
+      // Profile doesn't exist, create it from auth metadata
+      profile = {
+        id: user.id,
+        full_name: user.user_metadata?.full_name || 'Professor(a)',
+        school_name: user.user_metadata?.school_name || null,
+        email: user.email || null,
+        avatar_id: null
+      };
+    }
+
+    // Save to cache
+    if (profile) {
+      saveProfileCache(profile);
+    }
+
+    return profile;
+  },
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(updates: Partial<UserProfile>): Promise<UserProfile | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Error updating profile:', error);
+      return null;
+    }
+
+    // Update cache
+    if (data) {
+      saveProfileCache(data);
+    }
+
+    return data;
   }
 };

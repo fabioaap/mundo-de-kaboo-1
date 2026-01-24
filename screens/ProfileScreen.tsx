@@ -6,14 +6,18 @@ import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor, AVATAR_CH
 import { canEditCollections, getUserRole } from '../lib/auth';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
+import { api, getCachedProfileSync } from '../lib/api';
 
 interface ProfileScreenProps {
   onNavigate: (screen: ScreenName) => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize profile from cache if available
+  const cachedProfile = getCachedProfileSync();
+  const [profile, setProfile] = useState<UserProfile | null>(cachedProfile);
+  // Only show loading if we don't have cached profile
+  const [loading, setLoading] = useState(!cachedProfile);
   const [isEditor, setIsEditor] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [roleLoaded, setRoleLoaded] = useState(false);
@@ -21,10 +25,46 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<string | null>(null);
 
+  // Preload avatar image to ensure it's cached
+  const preloadAvatarImage = (avatarId: string | null) => {
+    if (!avatarId) return;
+    
+    const imageUrl = getCharacterImageUrl(avatarId);
+    if (!imageUrl) return;
+    
+    // Create a new Image object to preload and cache the image
+    const img = new Image();
+    img.src = imageUrl;
+    // Set crossOrigin to allow caching
+    img.crossOrigin = 'anonymous';
+    // Preload the image - browser will cache it
+    img.onload = () => {
+      // Image is now cached
+    };
+    img.onerror = () => {
+      // Silently handle errors
+    };
+  };
+
   useEffect(() => {
-    getProfile();
+    // Only load data if we don't have cached profile
+    // If we have cache, load in background to check for updates, but don't show loading
+    if (!cachedProfile) {
+      getProfile(true); // Show loading if no cache
+    } else {
+      // Load data in background to check for updates silently
+      getProfile(false); // Don't show loading if we have cache
+    }
     checkEditorPermission();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Preload avatar image whenever profile changes
+  useEffect(() => {
+    if (profile?.avatar_id) {
+      preloadAvatarImage(profile.avatar_id);
+    }
+  }, [profile?.avatar_id]);
 
   const checkEditorPermission = async () => {
     const canEdit = await canEditCollections();
@@ -34,32 +74,27 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
     setRoleLoaded(true);
   };
 
-  const getProfile = async () => {
+  const getProfile = async (showLoading: boolean = true) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (data) {
-          setProfile(data);
-        } else {
-             setProfile({
-                id: user.id,
-                full_name: user.user_metadata?.full_name || 'Professor(a)',
-                school_name: null,
-                email: user.email || null,
-                avatar_id: null
-             });
+      if (showLoading) {
+        setLoading(true);
+      }
+      
+      const profileData = await api.getProfile(false); // Use cache if available
+      
+      if (profileData) {
+        setProfile(profileData);
+        // Preload avatar image when profile is loaded
+        if (profileData.avatar_id) {
+          preloadAvatarImage(profileData.avatar_id);
         }
       }
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -75,22 +110,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
   const handleAvatarChange = async (avatarId: string | null) => {
     setSavingAvatar(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          avatar_id: avatarId,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (error) throw error;
-
-      // Update local state
-      setProfile(prev => prev ? { ...prev, avatar_id: avatarId } : null);
-      setIsAvatarModalOpen(false);
+      const updatedProfile = await api.updateProfile({ avatar_id: avatarId });
+      
+      if (updatedProfile) {
+        // Update local state
+        setProfile(updatedProfile);
+        // Preload new avatar image
+        if (avatarId) {
+          preloadAvatarImage(avatarId);
+        }
+        setIsAvatarModalOpen(false);
+      } else {
+        throw new Error('Failed to update profile');
+      }
     } catch (error) {
       console.error('Erro ao atualizar avatar:', error);
     } finally {
@@ -104,7 +136,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
        <PageHeader title="Meu Perfil" onBack={() => onNavigate('home')} />
 
        {/* HERO SECTION - Standard White Background */}
-       <div className="px-6 py-8 flex flex-col items-center gap-4 max-w-2xl mx-auto w-full">
+       <div className="px-6 py-8 flex flex-col items-center gap-4 max-w-2xl mx-auto w-full h-[324px]">
             <div 
               className="relative group cursor-pointer"
               onClick={() => {
@@ -124,6 +156,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
                         src={getCharacterImageUrl(profile.avatar_id)} 
                         alt={profile.avatar_id}
                         className="w-full h-full object-cover relative z-10"
+                        loading="eager"
+                        fetchPriority="high"
                     />
                    </>
                  ) : (
@@ -141,17 +175,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
             </div>
 
             <div className="text-center">
-                {!loading && roleLoaded && userRole && (userRole === 'admin' || userRole === 'editor') && (
-                  <div className="mb-2">
-                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                      userRole === 'admin' 
-                        ? 'bg-purple-100 text-purple-700' 
-                        : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {userRole === 'admin' ? 'Administrador' : 'Editor'}
-                    </span>
-                  </div>
-                )}
                 <h1 className="text-2xl font-black text-gray-800">
                   {loading ? 'Carregando...' : (profile?.full_name || 'Usuário')}
                 </h1>
@@ -163,6 +186,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
                     <Icons.Mail size={16} className="text-gray-500" />
                     {profile?.email}
                 </p>
+                {!loading && roleLoaded && userRole && (userRole === 'admin' || userRole === 'editor') && (
+                  <div className="mt-2">
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                      userRole === 'admin' 
+                        ? 'bg-purple-100 text-purple-700' 
+                        : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {userRole === 'admin' ? 'Administrador' : 'Editor'}
+                    </span>
+                  </div>
+                )}
             </div>
        </div>
 
@@ -240,6 +274,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
                                         src={getCharacterImageUrl(char)} 
                                         alt={char} 
                                         className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 relative z-10"
+                                        loading="eager"
+                                        fetchPriority="high"
                                         onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0'; }}
                                     />
                                 </div>

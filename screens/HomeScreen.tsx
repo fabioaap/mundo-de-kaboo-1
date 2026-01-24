@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection, ScreenName, UserProfile } from '../types';
-import { api, clearCollectionsCache, getCachedCollectionsSync } from '../lib/api';
+import { api, clearCollectionsCache, getCachedCollectionsSync, getCachedProfileSync } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { getUserRole } from '../lib/auth';
 import { TABS, LOGO_URL, getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
@@ -56,6 +56,8 @@ const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick }) =
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) => {
   // Initialize collections from cache if available
   const cachedCollections = getCachedCollectionsSync();
+  // Initialize profile from cache if available
+  const cachedProfile = getCachedProfileSync();
   
   // Data State
   const [collections, setCollections] = useState<Collection[]>(cachedCollections || []);
@@ -69,8 +71,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState<FilterState>(INITIAL_FILTERS);
 
-  // User Profile State for Header
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  // User Profile State for Header - Initialize from cache
+  const [profile, setProfile] = useState<UserProfile | null>(cachedProfile);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userRole, setUserRole] = useState<string>('viewer');
 
@@ -82,6 +84,44 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
   const confettiInstance = useRef<any>(null);
   const [canvasReady, setCanvasReady] = useState(false);
+  
+  // Track preloaded avatar images to prevent duplicate preloads
+  const preloadedAvatarsRef = useRef<Set<string>>(new Set());
+
+  // Preload avatar image to ensure it's cached
+  const preloadAvatarImage = (avatarId: string | null) => {
+    if (!avatarId) return;
+    
+    // Skip if already preloaded
+    if (preloadedAvatarsRef.current.has(avatarId)) return;
+    
+    const imageUrl = getCharacterImageUrl(avatarId);
+    if (!imageUrl) return;
+    
+    // Mark as preloading
+    preloadedAvatarsRef.current.add(avatarId);
+    
+    // Create a new Image object to preload and cache the image
+    const img = new Image();
+    img.src = imageUrl;
+    // Set crossOrigin to allow caching
+    img.crossOrigin = 'anonymous';
+    // Preload the image - browser will cache it
+    img.onload = () => {
+      // Image is now cached
+    };
+    img.onerror = () => {
+      // Remove from set on error so we can retry
+      preloadedAvatarsRef.current.delete(avatarId);
+    };
+  };
+
+  // Preload avatar image immediately if cached profile exists
+  useEffect(() => {
+    if (cachedProfile?.avatar_id) {
+      preloadAvatarImage(cachedProfile.avatar_id);
+    }
+  }, []); // Run only once on mount
 
   useEffect(() => {
     // Only load data if we don't have cached collections
@@ -96,6 +136,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
     loadProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Preload avatar image whenever profile changes
+  useEffect(() => {
+    if (profile?.avatar_id) {
+      preloadAvatarImage(profile.avatar_id);
+    }
+  }, [profile?.avatar_id]);
 
   // Listen for params changes (specifically for new user registration)
   useEffect(() => {
@@ -275,41 +322,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
 
   const loadProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const role = await getUserRole();
-        setUserRole(role);
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-        
-        if (data) {
-          setProfile(data);
-        } else {
-          // Profile doesn't exist, create it from auth metadata
-          const profileData = {
-            id: user.id,
-            full_name: user.user_metadata?.full_name || 'Professor(a)',
-            school_name: user.user_metadata?.school_name || null,
-            email: user.email || null,
-            avatar_id: null,
-            role: 'viewer' as const,
-            updated_at: new Date().toISOString()
-          };
-          
-          // Try to create profile (non-blocking)
-          const { error: createError } = await supabase
-            .from('profiles')
-            .insert(profileData);
-          
-          if (createError) {
-            console.error('Error creating profile on load:', createError);
-            // Still set profile locally even if DB insert fails
-          }
-          
-          setProfile(profileData);
+      const role = await getUserRole();
+      setUserRole(role);
+      
+      const profileData = await api.getProfile(false); // Use cache if available
+      
+      if (profileData) {
+        setProfile(profileData);
+        // Preload avatar image when profile is loaded
+        if (profileData.avatar_id) {
+          preloadAvatarImage(profileData.avatar_id);
         }
       }
     } catch (error) {
@@ -476,9 +498,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
                <>
                  <div className={`absolute inset-0 opacity-50 ${getCharacterBgColor(profile.avatar_id)} pointer-events-none`} />
                  <img 
+                   key={profile.avatar_id}
                    src={getCharacterImageUrl(profile.avatar_id!)} 
                    alt="Avatar"
                    className="w-full h-full object-cover relative z-10"
+                   loading="eager"
+                   fetchPriority="high"
                    onError={(e) => {
                       e.currentTarget.style.display = 'none';
                       e.currentTarget.parentElement?.classList.remove('bg-red-100', 'text-red-600'); 
@@ -747,9 +772,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
                 <>
                  <div className={`absolute inset-0 rounded-full opacity-50 ${getCharacterBgColor(profile.avatar_id)} pointer-events-none z-0`} />
                  <img 
+                   key={profile.avatar_id}
                    src={getCharacterImageUrl(profile.avatar_id)} 
                    alt="Avatar" 
                    className="w-full h-full object-cover relative z-10"
+                   loading="eager"
+                   fetchPriority="high"
                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} 
                  />
                 </>
