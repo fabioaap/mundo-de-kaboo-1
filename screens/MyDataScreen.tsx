@@ -3,7 +3,7 @@ import { Icons } from '../components/Icons';
 import { Button } from '../components/Button';
 import { supabase } from '../lib/supabase';
 import { PageHeader } from '../components/PageHeader';
-import { AVATAR_CHARACTERS, getCharacterImageUrl, getCharacterColor } from '../constants';
+import { AVATAR_CHARACTERS, getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
 
 interface MyDataScreenProps {
   onBack: () => void;
@@ -155,7 +155,7 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                     <div className={`w-28 h-28 rounded-full border-4 border-gray-100 flex items-center justify-center overflow-hidden shadow-sm relative ${getCharacterColor(formData.avatar_id)}`}>
                         {formData.avatar_id ? (
                             <>
-                             <div className="absolute inset-0 opacity-50 bg-inherit" />
+                             <div className={`absolute inset-0 opacity-50 ${getCharacterBgColor(formData.avatar_id)}`} />
                              <img 
                                 src={getCharacterImageUrl(formData.avatar_id)} 
                                 alt="Avatar"
@@ -343,7 +343,7 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                             >
                                 <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full shadow-md group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 overflow-hidden border-4 border-white relative ${isSelected ? 'ring-4 ring-kaboo-primary ring-offset-2' : ''} ${charColor}`}>
                                     {/* Background Color Layer */}
-                                    <div className="absolute inset-0 opacity-50 bg-inherit" />
+                                    <div className={`absolute inset-0 opacity-50 ${getCharacterBgColor(char)}`} />
                                     {/* Image Layer */}
                                     <img 
                                         src={getCharacterImageUrl(char)} 

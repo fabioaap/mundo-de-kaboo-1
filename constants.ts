@@ -63,6 +63,17 @@ export const getCharacterColor = (name: string | null) => {
   return CHARACTER_COLORS[index % CHARACTER_COLORS.length];
 };
 
+// Helper Function: Retorna apenas a classe de background (sem text color)
+// Usado para overlays que não devem herdar o background do parent
+export const getCharacterBgColor = (name: string | null) => {
+  if (!name) return 'bg-gray-100';
+  const index = AVATAR_CHARACTERS.indexOf(name);
+  if (index === -1) return 'bg-gray-100';
+  const fullColor = CHARACTER_COLORS[index % CHARACTER_COLORS.length];
+  // Extract just the bg-* class, removing text-* class
+  return fullColor.split(' ').find(cls => cls.startsWith('bg-')) || 'bg-gray-100';
+};
+
 // Helper Function: Gera a URL da imagem baseada no nome
 export const getCharacterImageUrl = (name: string) => {
   if (!name) return '';

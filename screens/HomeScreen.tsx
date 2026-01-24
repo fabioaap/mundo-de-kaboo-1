@@ -4,7 +4,7 @@ import { Collection, ScreenName, UserProfile } from '../types';
 import { api, clearCollectionsCache, getCachedCollectionsSync } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { getUserRole } from '../lib/auth';
-import { TABS, LOGO_URL, getCharacterImageUrl, getCharacterColor } from '../constants';
+import { TABS, LOGO_URL, getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
 import { Card3D } from '../components/Card3D';
@@ -474,7 +474,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-transparent group-hover:ring-kaboo-primary/10 transition-all overflow-hidden relative border border-gray-100 ${hasAvatar ? charColor : 'bg-kaboo-primary text-white'}`}>
             {hasAvatar ? (
                <>
-                 <div className="absolute inset-0 opacity-50 bg-inherit" />
+                 <div className={`absolute inset-0 opacity-50 ${getCharacterBgColor(profile.avatar_id)}`} />
                  <img 
                    src={getCharacterImageUrl(profile.avatar_id!)} 
                    alt="Avatar"
@@ -741,11 +741,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
           </div>
           <button 
             onClick={() => onNavigate('profile')} 
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors overflow-hidden border border-gray-100 ${!!profile?.avatar_id ? getCharacterColor(profile?.avatar_id) : 'bg-gray-100 text-kaboo-primary hover:bg-kaboo-primary/10'}`}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors overflow-hidden border border-gray-100 relative ${!!profile?.avatar_id ? getCharacterColor(profile?.avatar_id) : 'bg-gray-100 text-kaboo-primary hover:bg-kaboo-primary/10'}`}
           >
              {profile?.avatar_id ? (
                 <>
-                 <div className="absolute inset-0 opacity-50 bg-inherit" />
+                 <div className={`absolute inset-0 opacity-50 ${getCharacterBgColor(profile.avatar_id)}`} />
                  <img 
                    src={getCharacterImageUrl(profile.avatar_id)} 
                    alt="Avatar" 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Icons } from '../components/Icons';
 import { ScreenName, UserProfile } from '../types';
 import { supabase } from '../lib/supabase';
-import { getCharacterImageUrl, getCharacterColor, AVATAR_CHARACTERS } from '../constants';
+import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor, AVATAR_CHARACTERS } from '../constants';
 import { canEditCollections, getUserRole } from '../lib/auth';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
@@ -119,7 +119,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
                    <div className="animate-pulse w-full h-full bg-gray-100" />
                  ) : profile?.avatar_id ? (
                    <>
-                    <div className="absolute inset-0 opacity-40 bg-inherit" />
+                    <div className={`absolute inset-0 opacity-40 ${getCharacterBgColor(profile.avatar_id)}`} />
                     <img 
                         src={getCharacterImageUrl(profile.avatar_id)} 
                         alt={profile.avatar_id}
@@ -234,7 +234,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
                             >
                                 <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full shadow-md group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 overflow-hidden border-4 border-white relative ${isSelected ? 'ring-4 ring-kaboo-primary ring-offset-2' : ''} ${charColor}`}>
                                     {/* Background Color Layer */}
-                                    <div className="absolute inset-0 opacity-50 bg-inherit" />
+                                    <div className={`absolute inset-0 opacity-50 ${getCharacterBgColor(char)}`} />
                                     {/* Image Layer */}
                                     <img 
                                         src={getCharacterImageUrl(char)} 

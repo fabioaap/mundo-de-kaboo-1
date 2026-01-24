@@ -3,7 +3,7 @@ import { Icons } from '../components/Icons';
 import { api } from '../lib/api';
 import { ScreenName, Collection } from '../types';
 import { PageHeader } from '../components/PageHeader';
-import { getCharacterImageUrl, getCharacterColor } from '../constants';
+import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
 
 interface SearchScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -187,7 +187,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
                         >
                             <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full shadow-md group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 overflow-hidden border-2 border-white relative ${getCharacterColor(char)}`}>
                                 {/* Fallback Background with Initial */}
-                                <div className="absolute inset-0 flex items-center justify-center font-black text-2xl opacity-50 bg-inherit">
+                                <div className={`absolute inset-0 flex items-center justify-center font-black text-2xl opacity-50 ${getCharacterBgColor(char)}`}>
                                    {char.charAt(0)}
                                 </div>
                                 {/* Character Image using Shared Helper */}
