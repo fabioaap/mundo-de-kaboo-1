@@ -1,14 +1,40 @@
 import { Collection } from './types';
 import logoImage from './assets/images/logo-kaboo.png';
 
+// Import character images
+import barataoImage from './assets/images/characters/baratao.png';
+import baratinhaImage from './assets/images/characters/baratinha.png';
+import batatinhaImage from './assets/images/characters/batatinha.png';
+import bladoImage from './assets/images/characters/blado.png';
+import drRatazanaImage from './assets/images/characters/dr-ratazana.png';
+import gaioImage from './assets/images/characters/gaio.png';
+import kabooImage from './assets/images/characters/kaboo.png';
+import mensageiroImage from './assets/images/characters/mensageiro.png';
+import papaImage from './assets/images/characters/papa.png';
+
 // ---------------------------------------------------------------------------
 // CONFIGURAÇÃO DE IMAGENS E STORAGE
 // ---------------------------------------------------------------------------
 export const LOGO_URL = logoImage; 
-export const CHAR_IMG_BASE_URL = 'https://hgigdiuwxjzdtqodpycn.supabase.co/storage/v1/object/public/kaboo-files/characters/';
+
+// Mapping of character names to their image imports
+const CHARACTER_IMAGE_MAP: Record<string, string> = {
+  'Baratão': barataoImage,
+  'Baratinha': baratinhaImage,
+  'Batatinha': batatinhaImage,
+  'Blado': bladoImage,
+  'Dr. Ratazana': drRatazanaImage,
+  'Dr Ratazana': drRatazanaImage, // Alternative without period
+  'Gaio': gaioImage,
+  'Kaboo': kabooImage,
+  'Mensageiro': mensageiroImage,
+  'Papa': papaImage,
+};
 
 // Lista oficial de personagens atualizada
 export const AVATAR_CHARACTERS = [
+  'Baratão',
+  'Baratinha',
   'Batatinha',
   'Blado',
   'Dr. Ratazana',
@@ -19,6 +45,8 @@ export const AVATAR_CHARACTERS = [
 
 // Paleta de cores compartilhada
 export const CHARACTER_COLORS = [
+  'bg-orange-100 text-orange-700', // Baratão
+  'bg-pink-100 text-pink-700',     // Baratinha
   'bg-yellow-100 text-yellow-700', // Batatinha
   'bg-blue-100 text-blue-600',     // Blado
   'bg-indigo-100 text-indigo-600', // Dr. Ratazana
@@ -38,14 +66,32 @@ export const getCharacterColor = (name: string | null) => {
 // Helper Function: Gera a URL da imagem baseada no nome
 export const getCharacterImageUrl = (name: string) => {
   if (!name) return '';
-  const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   
-  const filename = normalize(name)
-    .replace(/[^\w\s]/g, '') // Remove pontuação (ex: o ponto de Dr.)
-    .trim()
-    .replace(/\s+/g, '-');   // Substitui espaços por hifens
-
-  return `${CHAR_IMG_BASE_URL}${filename}.png`;
+  // First, try exact match
+  if (CHARACTER_IMAGE_MAP[name]) {
+    return CHARACTER_IMAGE_MAP[name];
+  }
+  
+  // Try alternative format (without period for Dr.)
+  const altName = name.replace(/\./g, '');
+  if (CHARACTER_IMAGE_MAP[altName]) {
+    return CHARACTER_IMAGE_MAP[altName];
+  }
+  
+  // Fallback: try normalized name matching
+  const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const normalizedName = normalize(name).replace(/[^\w\s]/g, '').trim();
+  
+  // Try to find a match by comparing normalized names
+  for (const [charName, imageUrl] of Object.entries(CHARACTER_IMAGE_MAP)) {
+    const normalizedCharName = normalize(charName).replace(/[^\w\s]/g, '').trim();
+    if (normalizedCharName === normalizedName) {
+      return imageUrl;
+    }
+  }
+  
+  // If no match found, return empty string (fallback will show initials)
+  return '';
 };
 
 export const COLLECTIONS: Collection[] = []; 
