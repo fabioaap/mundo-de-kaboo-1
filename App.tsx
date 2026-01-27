@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { NavState, ScreenName, Collection } from './types';
-import { api } from './lib/api';
+import { api, clearAllUserCache } from './lib/api';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { useThemeBackground } from './hooks/useThemeBackground';
 
@@ -182,16 +182,28 @@ const App: React.FC = () => {
     // 2. Realtime Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
+        // Clear all caches on login to ensure fresh data for the new user
+        clearAllUserCache();
+        
         setNavState(prev => {
            // Preserve current screen if user is on any valid authenticated screen
            // Only redirect to home if on login/forgot_password screens
            if (prev.currentScreen === 'login' || prev.currentScreen === 'forgot_password') {
+             // Hard refresh on login to ensure fresh data and clear any cached state
+             setTimeout(() => {
+               // Force a hard refresh by reloading the page
+               // This ensures all cached data is cleared and fresh data is loaded
+               window.location.reload();
+             }, 100);
              return { currentScreen: 'home' };
            }
            // Preserve all other screens (home, search, profile, my_data, player screens, support, admin_collections, email_confirmation, etc.)
            return prev;
         });
       } else if (event === 'SIGNED_OUT' || !session) {
+        // Clear all user-related caches to prevent showing previous user's data
+        clearAllUserCache();
+        
         setNavState(prev => {
           // Preserve email_confirmation screen even when signed out
           if (prev.currentScreen === 'email_confirmation') {

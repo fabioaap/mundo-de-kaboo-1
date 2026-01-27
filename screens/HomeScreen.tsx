@@ -325,7 +325,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params }) =>
       const role = await getUserRole();
       setUserRole(role);
       
-      const profileData = await api.getProfile(false); // Use cache if available
+      // Force refresh to ensure we get the correct user's profile
+      // Cache validation will handle user ID mismatch, but force refresh ensures correctness
+      const profileData = await api.getProfile(true); // Force refresh to ensure correct user
       
       if (profileData) {
         setProfile(profileData);

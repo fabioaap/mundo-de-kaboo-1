@@ -33,6 +33,27 @@ export const clearProfileCache = (): void => {
   }
 };
 
+// Clear all user-related caches (profile, collections, session ID, and offline collections)
+// This should be called when logging out to prevent showing previous user's data
+export const clearAllUserCache = (): void => {
+  if (typeof window !== 'undefined') {
+    // Clear sessionStorage caches
+    sessionStorage.removeItem(PROFILE_CACHE_KEY);
+    sessionStorage.removeItem(COLLECTIONS_CACHE_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    
+    // Clear offline collections list (user-specific)
+    localStorage.removeItem('offline_collections');
+    
+    // Clear Cache API (offline assets)
+    if ('caches' in window) {
+      caches.delete('kaboo-offline-v1').catch(err => {
+        logger.error('Error clearing offline cache:', err);
+      });
+    }
+  }
+};
+
 // Get cached collections if available
 const getCachedCollections = (): Collection[] | null => {
   if (typeof window === 'undefined') return null;
@@ -61,7 +82,7 @@ export const getCachedCollectionsSync = (): Collection[] | null => {
 };
 
 // Get cached profile if available
-const getCachedProfile = (): UserProfile | null => {
+const getCachedProfile = async (): Promise<UserProfile | null> => {
   if (typeof window === 'undefined') return null;
   
   try {
@@ -69,7 +90,41 @@ const getCachedProfile = (): UserProfile | null => {
     if (!cached) return null;
     
     const parsed = JSON.parse(cached);
+    
     // Verify it's from the current session
+    if (parsed.sessionId !== getSessionId()) {
+      // If session changed, clear old cache
+      sessionStorage.removeItem(PROFILE_CACHE_KEY);
+      return null;
+    }
+    
+    // Verify the cached profile belongs to the current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || parsed.userId !== user.id) {
+      // User ID doesn't match - clear cache
+      sessionStorage.removeItem(PROFILE_CACHE_KEY);
+      return null;
+    }
+    
+    return parsed.profile;
+  } catch (error) {
+    logger.error('Error reading profile cache:', error);
+    return null;
+  }
+};
+
+// Export function to get cached profile synchronously (for initial state)
+// Note: This doesn't validate user ID, so it should only be used for initial display
+// The actual profile fetch will validate and update if needed
+export const getCachedProfileSync = (): UserProfile | null => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const cached = sessionStorage.getItem(PROFILE_CACHE_KEY);
+    if (!cached) return null;
+    
+    const parsed = JSON.parse(cached);
+    // Only verify session ID synchronously - user ID check happens async
     if (parsed.sessionId === getSessionId()) {
       return parsed.profile;
     }
@@ -82,18 +137,18 @@ const getCachedProfile = (): UserProfile | null => {
   }
 };
 
-// Export function to get cached profile synchronously (for initial state)
-export const getCachedProfileSync = (): UserProfile | null => {
-  return getCachedProfile();
-};
-
 // Save profile to cache
-const saveProfileCache = (profile: UserProfile): void => {
+const saveProfileCache = async (profile: UserProfile): Promise<void> => {
   if (typeof window === 'undefined') return;
   
   try {
+    // Get current user ID to store with cache
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
     const cacheData = {
       profile,
+      userId: user.id, // Store user ID for validation
       sessionId: getSessionId(),
       timestamp: Date.now()
     };
@@ -294,7 +349,7 @@ export const api = {
   async getProfile(forceRefresh: boolean = false): Promise<UserProfile | null> {
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
-      const cached = getCachedProfile();
+      const cached = await getCachedProfile();
       if (cached) {
         return cached;
       }
@@ -332,7 +387,7 @@ export const api = {
 
     // Save to cache
     if (profile) {
-      saveProfileCache(profile);
+      await saveProfileCache(profile);
     }
 
     return profile;
@@ -362,9 +417,80 @@ export const api = {
 
     // Update cache
     if (data) {
-      saveProfileCache(data);
+      await saveProfileCache(data);
     }
 
     return data;
+  },
+
+  /**
+   * Get all users/profiles (Admin only)
+   */
+  async getAllUsers(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      logger.error('Error fetching users:', error);
+      return [];
+    }
+
+    return data || [];
+  },
+
+  /**
+   * Create a new user (Admin only)
+   */
+  async createUser(userData: {
+    email: string;
+    password: string;
+    full_name: string;
+    school_name?: string;
+    role?: 'admin' | 'editor' | 'viewer';
+  }): Promise<{ success: boolean; error?: string; userId?: string }> {
+    try {
+      // Create auth user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            full_name: userData.full_name,
+            school_name: userData.school_name || '',
+          },
+        },
+      });
+
+      if (signUpError) {
+        logger.error('Error creating auth user:', signUpError);
+        return { success: false, error: signUpError.message };
+      }
+
+      if (!signUpData.user) {
+        return { success: false, error: 'Failed to create user' };
+      }
+
+      // Create profile with specified role
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: signUpData.user.id,
+        email: userData.email,
+        full_name: userData.full_name,
+        school_name: userData.school_name || null,
+        role: userData.role || 'viewer',
+        updated_at: new Date().toISOString(),
+      });
+
+      if (profileError) {
+        logger.error('Error creating profile:', profileError);
+        return { success: false, error: profileError.message };
+      }
+
+      return { success: true, userId: signUpData.user.id };
+    } catch (error: any) {
+      logger.error('Error creating user:', error);
+      return { success: false, error: error.message || 'Unknown error' };
+    }
   }
 };

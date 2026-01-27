@@ -47,14 +47,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
   };
 
   useEffect(() => {
-    // Only load data if we don't have cached profile
-    // If we have cache, load in background to check for updates, but don't show loading
-    if (!cachedProfile) {
-      getProfile(true); // Show loading if no cache
-    } else {
-      // Load data in background to check for updates silently
-      getProfile(false); // Don't show loading if we have cache
-    }
+    // Always force refresh on mount to ensure we have the correct user's data
+    // The cache validation will check user ID, but we want to be sure
+    getProfile(true); // Always show loading to ensure fresh data
     checkEditorPermission();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -80,7 +75,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
         setLoading(true);
       }
       
-      const profileData = await api.getProfile(false); // Use cache if available
+      // Force refresh to ensure we get the correct user's profile
+      // Cache validation will handle user ID mismatch, but force refresh ensures correctness
+      const profileData = await api.getProfile(true); // Force refresh to ensure correct user
       
       if (profileData) {
         setProfile(profileData);

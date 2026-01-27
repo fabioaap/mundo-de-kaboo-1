@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection, ScreenName } from '../types';
 import { api } from '../lib/api';
-import { canEditCollections, isAdmin } from '../lib/auth';
+import { canEditCollections, isAdmin, UserRole } from '../lib/auth';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
 import { FileUpload } from '../components/FileUpload';
@@ -14,6 +14,7 @@ import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { ColorPicker } from '../components/ColorPicker';
 import useIsMobile from '../hooks/useIsMobile';
+import { supabase } from '../lib/supabase';
 
 interface AdminCollectionsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -131,6 +132,10 @@ const Card3DCover: React.FC<{
 };
 
 export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ onNavigate, onBack }) => {
+  // Main tab state (Coleções vs Users)
+  const [mainTab, setMainTab] = useState<'collections' | 'users'>('collections');
+  
+  // Collections state
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingPermission, setCheckingPermission] = useState(true);
@@ -139,6 +144,24 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'identification' | 'media'>('identification');
+  
+  // Users state
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [userFormData, setUserFormData] = useState({
+    email: '',
+    password: '',
+    full_name: '',
+    school_name: '',
+    role: 'viewer' as UserRole,
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [userErrorMsg, setUserErrorMsg] = useState<string | null>(null);
+  const [userSuccessMsg, setUserSuccessMsg] = useState<string | null>(null);
+  const roleDropdownRef = useRef<HTMLDivElement>(null);
   const [originalFormData, setOriginalFormData] = useState<Partial<Collection> | null>(null);
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
@@ -177,7 +200,17 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
 
   useEffect(() => {
     checkPermission();
-    loadCollections();
+    if (mainTab === 'collections') {
+      loadCollections();
+    } else if (mainTab === 'users') {
+      loadUsers();
+    }
+  }, [mainTab]);
+
+  useEffect(() => {
+    if (mainTab === 'collections') {
+      loadCollections();
+    }
   }, []);
 
   // Close dropdowns when clicking outside
@@ -195,6 +228,9 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
       if (headerActionsRef.current && !headerActionsRef.current.contains(event.target as Node)) {
         setShowHeaderActionsDropdown(false);
       }
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
+        setShowRoleDropdown(false);
+      }
       
       // Close actions dropdowns
       Object.keys(actionsDropdownRefs.current).forEach(key => {
@@ -205,14 +241,14 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
       });
     };
 
-    if (showSortDropdown || showLevelDropdown || showFormLevelDropdown || openActionsDropdown || showHeaderActionsDropdown) {
+    if (showSortDropdown || showLevelDropdown || showFormLevelDropdown || openActionsDropdown || showHeaderActionsDropdown || showRoleDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showSortDropdown, showLevelDropdown, showFormLevelDropdown, openActionsDropdown, showHeaderActionsDropdown]);
+  }, [showSortDropdown, showLevelDropdown, showFormLevelDropdown, openActionsDropdown, showHeaderActionsDropdown, showRoleDropdown]);
 
   const checkPermission = async () => {
     setCheckingPermission(true);
@@ -232,6 +268,81 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
     const data = await api.getCollections();
     setCollections(data);
     setLoading(false);
+  };
+
+  const loadUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const data = await api.getAllUsers();
+      setUsers(data);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      showToast('Erro ao carregar usuários.', 'error');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleCreateUser = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    if (!isAdminUser) {
+      setUserErrorMsg('Apenas administradores podem criar usuários.');
+      return;
+    }
+
+    if (!acceptedTerms) {
+      setUserErrorMsg('Você precisa aceitar a política de privacidade para continuar.');
+      return;
+    }
+
+    if (!userFormData.email || !userFormData.password || !userFormData.full_name) {
+      setUserErrorMsg('Preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    if (userFormData.password.length < 6) {
+      setUserErrorMsg('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    setLoadingUsers(true);
+    setUserErrorMsg(null);
+    setUserSuccessMsg(null);
+
+    const result = await api.createUser({
+      email: userFormData.email,
+      password: userFormData.password,
+      full_name: userFormData.full_name,
+      school_name: userFormData.school_name || undefined,
+      role: userFormData.role,
+    });
+
+    if (result.success) {
+      setUserSuccessMsg('Usuário criado com sucesso!');
+      setTimeout(() => {
+        setShowUserForm(false);
+        setUserFormData({
+          email: '',
+          password: '',
+          full_name: '',
+          school_name: '',
+          role: 'viewer',
+        });
+        setAcceptedTerms(false);
+        setUserSuccessMsg(null);
+        loadUsers();
+      }, 1500);
+    } else {
+      let msg = result.error || 'Erro ao criar usuário.';
+      if (msg === 'User already registered') msg = 'Este e-mail já está cadastrado.';
+      setUserErrorMsg(msg);
+    }
+    setLoadingUsers(false);
+  };
+
+  const clearUserError = () => {
+    if (userErrorMsg) setUserErrorMsg(null);
   };
 
   const handleEdit = (collection: Collection) => {
@@ -440,11 +551,11 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
   return (
     <div className="flex flex-col h-full bg-white pb-24 md:pb-0">
       <PageHeader 
-        title="Gerenciar Coleções" 
+        title="Gerenciar" 
         onBack={handleBackClick}
         rightContent={
-          <div className="flex items-center gap-2">
-            {editingId && (
+          mainTab === 'collections' && editingId ? (
+            <div className="flex items-center gap-2">
               <div className="relative" ref={headerActionsRef}>
                 <button
                   onClick={() => setShowHeaderActionsDropdown(!showHeaderActionsDropdown)}
@@ -472,66 +583,41 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                   </div>
                 )}
               </div>
-            )}
-            {!editingId && !showCreateForm && (
-              <button
-                onClick={() => {
-                  if (hasUnsavedChanges()) {
-                    setPendingAction(() => () => {
-                    setShowCreateForm(true);
-                    setOriginalFormData({
-                      title: '',
-                      level: 'Educação Infantil',
-                      cover_image: '/assets/images/image-placeholder.png',
-                      pdf_url: '',
-                      audio_url: '',
-                      video_url: '',
-                      color_theme: '#5D1F58',
-                      theme: '',
-                      learning_objectives: '',
-                      characters: [],
-                      bncc_skills: [],
-                      casel_competencies: [],
-                      age_grade: [],
-                      extra_materials: []
-                    });
-                    });
-                    setShowUnsavedChangesModal(true);
-                  } else {
-                    setShowCreateForm(true);
-                    setOriginalFormData({
-                      title: '',
-                      level: 'Educação Infantil',
-                      cover_image: '/assets/images/image-placeholder.png',
-                      pdf_url: '',
-                      audio_url: '',
-                      video_url: '',
-                      color_theme: '#5D1F58',
-                      theme: '',
-                      learning_objectives: '',
-                      characters: [],
-                      bncc_skills: [],
-                      casel_competencies: [],
-                      age_grade: [],
-                      extra_materials: []
-                    });
-                  }
-                }}
-                className="w-10 h-10 rounded-full bg-kaboo-primary text-white flex items-center justify-center hover:bg-opacity-90 transition-all active:scale-95"
-              >
-                <Icons.Plus size={24} />
-              </button>
-            )}
-          </div>
+            </div>
+          ) : null
         }
       />
 
-      {loading ? (
+      {/* Main Tabs */}
+      <div className="px-6 md:px-8 pb-0">
+        <Tabs
+          tabs={[
+            { id: 'collections', label: 'Coleções' },
+            { id: 'users', label: 'Usuários' }
+          ]}
+          activeTab={mainTab}
+          onChange={(tabId) => {
+            setMainTab(tabId as 'collections' | 'users');
+            // Reset form states when switching tabs
+            if (tabId === 'collections') {
+              setShowUserForm(false);
+            } else {
+              setEditingId(null);
+              setShowCreateForm(false);
+            }
+          }}
+        />
+      </div>
+
+      {/* Collections Tab Content */}
+      {mainTab === 'collections' && (
+        <>
+          {loading ? (
         <div className="flex items-center justify-center h-64">
           <div className="w-8 h-8 border-4 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : editingId || showCreateForm ? (
-        <div className="flex-1 overflow-y-auto px-6 md:px-8 py-6">
+        <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-6 pt-0">
           <div className="max-w-2xl mx-auto">
             <Tabs
               tabs={[
@@ -782,7 +868,7 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto px-6 md:px-8 py-6">
+        <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-6 pt-0">
           {collections.length === 0 ? (
             <div className="text-center py-12">
               <Icons.BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
@@ -943,6 +1029,58 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
                     </div>
                   )}
                 </div>
+
+                {/* Botão Nova Coleção */}
+                {!editingId && !showCreateForm && (
+                  <button
+                    onClick={() => {
+                      if (hasUnsavedChanges()) {
+                        setPendingAction(() => () => {
+                          setShowCreateForm(true);
+                          setOriginalFormData({
+                            title: '',
+                            level: 'Educação Infantil',
+                            cover_image: '/assets/images/image-placeholder.png',
+                            pdf_url: '',
+                            audio_url: '',
+                            video_url: '',
+                            color_theme: '#5D1F58',
+                            theme: '',
+                            learning_objectives: '',
+                            characters: [],
+                            bncc_skills: [],
+                            casel_competencies: [],
+                            age_grade: [],
+                            extra_materials: []
+                          });
+                        });
+                        setShowUnsavedChangesModal(true);
+                      } else {
+                        setShowCreateForm(true);
+                        setOriginalFormData({
+                          title: '',
+                          level: 'Educação Infantil',
+                          cover_image: '/assets/images/image-placeholder.png',
+                          pdf_url: '',
+                          audio_url: '',
+                          video_url: '',
+                          color_theme: '#5D1F58',
+                          theme: '',
+                          learning_objectives: '',
+                          characters: [],
+                          bncc_skills: [],
+                          casel_competencies: [],
+                          age_grade: [],
+                          extra_materials: []
+                        });
+                      }
+                    }}
+                    className="h-11 px-6 rounded-2xl bg-kaboo-primary text-white flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all active:scale-95 shadow-sm font-bold text-sm whitespace-nowrap"
+                  >
+                    <Icons.Plus size={18} />
+                    <span>Nova Coleção</span>
+                  </button>
+                )}
               </div>
 
               {/* Lista de Coleções */}
@@ -1082,6 +1220,289 @@ export const AdminCollectionsScreen: React.FC<AdminCollectionsScreenProps> = ({ 
             </div>
           )}
         </div>
+      )}
+        </>
+      )}
+
+      {/* Users Tab Content */}
+      {mainTab === 'users' && (
+        <>
+          {showUserForm ? (
+            <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-6 pt-0">
+              <div className="max-w-2xl mx-auto">
+                {/* Header */}
+                <div className="mb-6 flex items-center gap-4">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setShowUserForm(false);
+                      setUserFormData({
+                        email: '',
+                        password: '',
+                        full_name: '',
+                        school_name: '',
+                        role: 'viewer',
+                      });
+                      setAcceptedTerms(false);
+                      setUserErrorMsg(null);
+                      setUserSuccessMsg(null);
+                    }}
+                    className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-700"
+                  >
+                    <Icons.ChevronLeft size={24} />
+                  </button>
+                  <h1 className="text-xl font-bold text-gray-800 flex-1">Criar novo usuário</h1>
+                </div>
+
+                <form onSubmit={handleCreateUser} className="space-y-4">
+                  {/* Registration Fields */}
+                  <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                    {/* Name */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-gray-600 ml-2">Nome Completo</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={userFormData.full_name}
+                          onChange={(e) => { setUserFormData({ ...userFormData, full_name: e.target.value }); clearUserError(); }}
+                          className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                          placeholder="Seu nome"
+                          required
+                        />
+                        <Icons.User className="absolute left-4 top-4 text-gray-400" size={20} />
+                      </div>
+                    </div>
+
+                    {/* School */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-gray-600 ml-2">Escola</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={userFormData.school_name}
+                          onChange={(e) => { setUserFormData({ ...userFormData, school_name: e.target.value }); clearUserError(); }}
+                          className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                          placeholder="Nome da sua escola"
+                          required
+                        />
+                        <Icons.Home className="absolute left-4 top-4 text-gray-400" size={20} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Email Field */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-600 ml-2">E-mail</label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={userFormData.email}
+                        onChange={(e) => { setUserFormData({ ...userFormData, email: e.target.value }); clearUserError(); }}
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                        placeholder="email@escola.com.br"
+                        required
+                      />
+                      <Icons.Mail className="absolute left-4 top-4 text-gray-400" size={20} />
+                    </div>
+                  </div>
+
+                  {/* Password Field */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-600 ml-2">Senha</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={userFormData.password}
+                        onChange={(e) => { setUserFormData({ ...userFormData, password: e.target.value }); clearUserError(); }}
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pr-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                        placeholder="••••••••"
+                        required
+                        minLength={6}
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none"
+                      >
+                        {showPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Role Field */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-600 ml-2">Função</label>
+                    <div className="relative" ref={roleDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 pr-4 flex items-center justify-between text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                      >
+                        <span className="text-left">
+                          {userFormData.role === 'admin' ? 'Administrador' : 
+                           userFormData.role === 'editor' ? 'Editor' : 'Visualizador'}
+                        </span>
+                        <Icons.ChevronDown size={16} className={`transition-transform flex-shrink-0 ${showRoleDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {showRoleDropdown && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-fade-in-up origin-top">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUserFormData({ ...userFormData, role: 'viewer' });
+                              setShowRoleDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl ${
+                              userFormData.role === 'viewer'
+                                ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                                : 'text-gray-700 hover:bg-gray-50 font-medium'
+                            }`}
+                          >
+                            <span>Visualizador</span>
+                            {userFormData.role === 'viewer' && <Icons.Check size={18} className="ml-auto" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUserFormData({ ...userFormData, role: 'editor' });
+                              setShowRoleDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                              userFormData.role === 'editor'
+                                ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                                : 'text-gray-700 hover:bg-gray-50 font-medium'
+                            }`}
+                          >
+                            <span>Editor</span>
+                            {userFormData.role === 'editor' && <Icons.Check size={18} className="ml-auto" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUserFormData({ ...userFormData, role: 'admin' });
+                              setShowRoleDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${
+                              userFormData.role === 'admin'
+                                ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                                : 'text-gray-700 hover:bg-gray-50 font-medium'
+                            }`}
+                          >
+                            <span>Administrador</span>
+                            {userFormData.role === 'admin' && <Icons.Check size={18} className="ml-auto" />}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Privacy Policy Checkbox */}
+                  <div className="flex items-center gap-3 px-2 py-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="relative flex items-center justify-center shrink-0">
+                      <input
+                        type="checkbox"
+                        id="terms"
+                        checked={acceptedTerms}
+                        onChange={(e) => {
+                          setAcceptedTerms(e.target.checked);
+                          clearUserError();
+                        }}
+                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-300 transition-all checked:border-kaboo-primary checked:bg-kaboo-primary focus:ring-2 focus:ring-kaboo-primary/30 outline-none"
+                      />
+                      <Icons.Check
+                        size={14}
+                        strokeWidth={4}
+                        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+                      />
+                    </div>
+                    <label htmlFor="terms" className="text-sm text-gray-600 cursor-pointer select-none leading-tight">
+                      Li e concordo com a <button type="button" className="text-kaboo-primary font-bold hover:underline">política de privacidade</button> do Mundo de Kaboo.
+                    </label>
+                  </div>
+
+                  {/* Success Message */}
+                  {userSuccessMsg && (
+                    <div className="bg-green-50 text-green-600 text-sm p-3 rounded-xl font-bold text-center animate-in fade-in flex items-center justify-center gap-2">
+                      <Icons.Check size={16} />
+                      {userSuccessMsg}
+                    </div>
+                  )}
+
+                  {/* Error Message */}
+                  {userErrorMsg && (
+                    <div className="bg-red-50 text-red-500 text-sm p-3 rounded-xl font-medium text-center animate-in fade-in">
+                      {userErrorMsg}
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <Button type="submit" fullWidth disabled={loadingUsers}>
+                      {loadingUsers ? 'Carregando...' : 'Criar Conta'}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-6 pt-0">
+              {isAdminUser && (
+                <div className="mb-6">
+                  <button
+                    onClick={() => setShowUserForm(true)}
+                    className="h-11 px-6 rounded-2xl bg-kaboo-primary text-white flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all active:scale-95 shadow-sm font-bold text-sm"
+                  >
+                    <Icons.Plus size={18} />
+                    <span>Novo Usuário</span>
+                  </button>
+                </div>
+              )}
+              {loadingUsers ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="w-8 h-8 border-4 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : users.length === 0 ? (
+                <div className="text-center py-12">
+                  <Icons.User size={48} className="mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-500 font-bold">Nenhum usuário encontrado.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {users.map((user) => (
+                    <div
+                      key={user.id}
+                      className="bg-gray-50 rounded-2xl p-4 border border-gray-200 hover:border-gray-300 transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-bold text-gray-800 text-base mb-1">
+                            {user.full_name || 'Sem nome'}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-1">{user.email}</p>
+                          {user.school_name && (
+                            <p className="text-xs text-gray-500">{user.school_name}</p>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            user.role === 'admin' 
+                              ? 'bg-purple-100 text-purple-700' 
+                              : user.role === 'editor'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {user.role === 'admin' ? 'Admin' : 
+                             user.role === 'editor' ? 'Editor' : 'Visualizador'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* Toast Notification */}
