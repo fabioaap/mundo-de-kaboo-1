@@ -4,6 +4,7 @@ import {
   Library, 
   User, 
   ChevronLeft, 
+  ChevronRight,
   MoreHorizontal, 
   Play, 
   Pause, 
@@ -46,7 +47,7 @@ import {
 } from 'lucide-react';
 
 export const Icons = {
-  Home, Search, Library, User, ChevronLeft, MoreHorizontal,
+  Home, Search, Library, User, ChevronLeft, ChevronRight, MoreHorizontal,
   Play, Pause, SkipBack, SkipForward, BookOpen, Book, Headphones, 
   Video, Paperclip, Download, FileText, Settings, LogOut,
   HelpCircle, Mail, Grid, Volume2, VolumeX, Maximize, Minimize,
