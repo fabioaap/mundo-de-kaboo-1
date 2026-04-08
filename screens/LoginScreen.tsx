@@ -564,11 +564,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
               </div>
             )}
 
-            <div className="pt-2">
-              <Button type="submit" fullWidth disabled={loading || (isRegistering && !isRegisterVoucherValidated)}>
-                {loading ? 'Carregando...' : (isRegistering ? (isRegisterVoucherValidated ? 'Criar Conta' : 'Valide o codigo para continuar') : 'Entrar')}
-              </Button>
-            </div>
+            {(!isRegistering || isRegisterVoucherValidated) && (
+              <div className="pt-2">
+                <Button type="submit" fullWidth disabled={loading}>
+                  {loading ? 'Carregando...' : (isRegistering ? 'Criar Conta' : 'Entrar')}
+                </Button>
+              </div>
+            )}
           </form>
 
           {/* Footer Actions */}
