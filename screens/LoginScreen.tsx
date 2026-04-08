@@ -60,6 +60,7 @@ const normalizeAuthError = (message: string): { message: string; requiresEmailCo
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSuccess }) => {
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -291,6 +292,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     window.scrollTo(0, 0);
   };
 
+  const enterAdminLogin = () => {
+    setIsAdminLogin(true);
+    setIsRegistering(false);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setEmail('');
+    setPassword('');
+    window.scrollTo(0, 0);
+  };
+
+  const exitAdminLogin = () => {
+    setIsAdminLogin(false);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setEmail('');
+    setPassword('');
+    window.scrollTo(0, 0);
+  };
+
   return (
     <div
       className="relative flex min-h-[100dvh] overflow-hidden bg-gray-50 bg-cover bg-center bg-no-repeat p-0 md:items-center md:justify-center md:p-6 lg:p-8"
@@ -331,7 +351,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
               alt="Mundo de Kaboo"
               className="w-48 h-auto mb-4 object-contain"
             />
-            <p className="text-gray-500 font-medium text-sm">Para Professores</p>
+            <p className="text-gray-500 font-medium text-sm">
+              {isAdminLogin ? 'Acesso Interno' : 'Para Professores'}
+            </p>
             {!isSupabaseConfigured && (
               <div className="mt-5 w-full max-w-sm rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-left text-xs text-sky-800 leading-relaxed">
                 <p className="font-black uppercase tracking-[0.14em] text-sky-700 mb-2">Acesso de demonstração</p>
@@ -347,11 +369,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
           {!isRegistering && (
             <>
               <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
-                Bem-vindo de volta!
+                {isAdminLogin ? 'Login Administrativo' : 'Bem-vindo de volta!'}
               </h2>
-              <p className="mb-6 text-center text-sm leading-relaxed text-gray-500">
-                Primeiro acesso? O cadastro e a ativacao inicial acontecem a partir de um codigo de acesso.
-              </p>
+              {!isAdminLogin && (
+                <p className="mb-6 text-center text-sm leading-relaxed text-gray-500">
+                  Primeiro acesso? O cadastro e a ativacao inicial acontecem a partir de um codigo de acesso.
+                </p>
+              )}
+              {isAdminLogin && (
+                <p className="mb-6 text-center text-sm leading-relaxed text-gray-500">
+                  Acesso restrito a equipe interna.
+                </p>
+              )}
             </>
           )}
 
@@ -504,8 +533,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
               </>
             )}
 
-            {/* Voucher Field for Login Mode */}
-            {!isRegistering && (
+            {/* Voucher Field for Login Mode — hidden for admin login */}
+            {!isRegistering && !isAdminLogin && (
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-600 ml-2">Codigo de Acesso <span className="font-normal text-gray-400">(opcional)</span></label>
                 <div className="relative">
@@ -575,7 +604,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
           {/* Footer Actions */}
           <div className="mt-5 pb-1 text-center space-y-4 md:mt-6">
 
-            {!isRegistering && (
+            {!isRegistering && !isAdminLogin && (
               <p className="text-gray-600 text-sm">
                 Ainda não tem conta?
                 <button
@@ -595,6 +624,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                 className="text-xs font-semibold text-gray-400 hover:text-gray-600"
               >
                 Esqueci minha senha
+              </button>
+            )}
+
+            {/* Admin login entry/exit links */}
+            {!isRegistering && !isAdminLogin && (
+              <button
+                type="button"
+                onClick={enterAdminLogin}
+                className="block w-full text-xs text-gray-300 hover:text-gray-500 transition-colors pt-2"
+              >
+                Acesso Interno
+              </button>
+            )}
+
+            {isAdminLogin && (
+              <button
+                type="button"
+                onClick={exitAdminLogin}
+                className="text-xs font-semibold text-gray-400 hover:text-gray-600"
+              >
+                ← Voltar ao login com codigo de acesso
               </button>
             )}
           </div>
