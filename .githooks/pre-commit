@@ -1,0 +1,32 @@
+#!/bin/bash
+# .git/hooks/pre-commit
+# Hook automático para atualizar documentação antes de fazer commit
+
+# Cores
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${YELLOW}🔄 Atualizando documentações...${NC}"
+
+# Rodar script de documentação
+npm run update-docs
+
+# Verificar se o script completo com sucesso
+if [ $? -ne 0 ]; then
+    echo -e "${YELLOW}⚠️  Aviso: update-docs teve um erro, continuando commit...${NC}"
+else
+    echo -e "${GREEN}✅ Documentações atualizadas!${NC}"
+    
+    # Adicionar arquivos gerados ao commit
+    git add docs/COMPONENTES.md
+    git add docs/HOOKS.md
+    git add docs/SCREENS.md
+    git add docs/API.md
+    git add docs/CHANGELOG.md
+    git add INFRAESTRUTURA.md
+    
+    echo -e "${GREEN}📝 Arquivos de documentação adicionados ao commit${NC}"
+fi
+
+exit 0

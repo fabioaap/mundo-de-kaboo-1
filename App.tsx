@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
-import { NavState, ScreenName, Collection } from './types';
-import { api, clearAllUserCache } from './lib/api';
+import { NavState, ScreenName, Collection, UserProfile } from './types';
+import { api, clearAllUserCache, getCachedProfileSync } from './lib/api';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { useThemeBackground } from './hooks/useThemeBackground';
+import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
 
 // Screens
 import { LoginScreen } from './screens/LoginScreen';
+import { AccessExpiredScreen } from './screens/AccessExpiredScreen';
 import { ForgotPasswordScreen } from './screens/ForgotPasswordScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { DetailsScreen } from './screens/DetailsScreen';
@@ -19,7 +21,7 @@ import { ProfileScreen } from './screens/ProfileScreen';
 import { MyDataScreen } from './screens/MyDataScreen';
 import { SearchScreen } from './screens/SearchScreen';
 import { EmailConfirmationScreen } from './screens/EmailConfirmationScreen';
-import { AdminCollectionsScreen } from './screens/AdminCollectionsScreen';
+import { AdminScreen } from './screens/AdminScreen';
 
 // Components
 import { BottomNav } from './components/BottomNav';
@@ -29,6 +31,20 @@ import { CollectionModal } from './components/CollectionModal';
 // Storage keys
 const STORAGE_NAV_STATE = 'kaboo_nav_state';
 const STORAGE_PREVIOUS_STATE = 'kaboo_previous_state';
+
+const PROTECTED_SCREENS: ScreenName[] = [
+  'home',
+  'search',
+  'profile',
+  'my_data',
+  'details',
+  'player_book',
+  'player_audio',
+  'player_video',
+  'tools',
+  'support',
+  'admin',
+];
 
 // Helper functions for localStorage persistence
 const saveNavState = (state: NavState) => {
@@ -95,7 +111,8 @@ const App: React.FC = () => {
     return { currentScreen: 'login' };
   });
   const [sessionChecked, setSessionChecked] = useState(false);
-  
+  const [accessProfile, setAccessProfile] = useState<UserProfile | null>(() => getCachedProfileSync());
+
   const [currentCollection, setCurrentCollection] = useState<Collection | undefined>(undefined);
   // Store previous screen and collectionId before navigating to player screens
   const [previousScreenState, setPreviousScreenState] = useState<{ screen: ScreenName; collectionId?: string } | null>(() => {
@@ -103,7 +120,7 @@ const App: React.FC = () => {
   });
   // Store collection theme color for loading screen
   const [loadingCollectionTheme, setLoadingCollectionTheme] = useState<string | null>(null);
-  
+
   // Save navState to localStorage whenever it changes
   useEffect(() => {
     saveNavState(navState);
@@ -134,27 +151,63 @@ const App: React.FC = () => {
     // Check for confirmation URL parameter
     const params = new URLSearchParams(window.location.search);
     if (params.get('confirmation') === 'success') {
-       setNavState({ currentScreen: 'email_confirmation' });
-       setSessionChecked(true);
-       return;
-    }
-
-    // Only check session if Supabase is configured
-    if (!isSupabaseConfigured) {
+      setNavState({ currentScreen: 'email_confirmation', params: { status: 'confirmed' } });
       setSessionChecked(true);
       return;
     }
 
+    // Only check session if Supabase is configured
+    if (!isSupabaseConfigured) {
+      api.getProfile(true)
+        .then((profile) => {
+          setAccessProfile(profile);
+
+          setNavState((prev) => {
+            if (!profile) {
+              if (prev.currentScreen === 'email_confirmation') {
+                return prev;
+              }
+              return { currentScreen: 'login' };
+            }
+
+            if (isAccessBlocked(profile)) {
+              return { currentScreen: 'access_expired' };
+            }
+
+            if (prev.currentScreen === 'login' || prev.currentScreen === 'forgot_password' || prev.currentScreen === 'access_expired') {
+              return { currentScreen: 'home' };
+            }
+
+            if (['player_audio', 'player_book', 'player_video', 'tools'].includes(prev.currentScreen) && !prev.params?.collectionId) {
+              return { currentScreen: 'home' };
+            }
+
+            return prev;
+          });
+        })
+        .finally(() => {
+          setSessionChecked(true);
+        });
+      return;
+    }
+
     // 1. Initial Check
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
+        const profile = await api.getProfile(true);
+        setAccessProfile(profile);
+
         setNavState(prev => {
+          if (profile && isAccessBlocked(profile)) {
+            return { currentScreen: 'access_expired' };
+          }
+
           // Preserve current screen if user is on any valid authenticated screen
           // Only redirect to home if on login/forgot_password screens
           if (prev.currentScreen === 'login' || prev.currentScreen === 'forgot_password') {
             return { currentScreen: 'home' };
           }
-          // Preserve all other screens (home, search, profile, my_data, player screens, support, admin_collections, etc.)
+          // Preserve all other screens (home, search, profile, my_data, player screens, support, admin, etc.)
           // If restoring a player screen, ensure collectionId is present
           if (['player_audio', 'player_book', 'player_video', 'tools'].includes(prev.currentScreen)) {
             if (!prev.params?.collectionId) {
@@ -165,6 +218,7 @@ const App: React.FC = () => {
           return prev;
         });
       } else {
+        setAccessProfile(null);
         // No session - only preserve email_confirmation, otherwise go to login
         setNavState(prev => {
           if (prev.currentScreen === 'email_confirmation') {
@@ -184,26 +238,25 @@ const App: React.FC = () => {
       if (event === 'SIGNED_IN' && session) {
         // Clear all caches on login to ensure fresh data for the new user
         clearAllUserCache();
-        
+
+        api.getProfile(true)
+          .then((profile) => {
+            setAccessProfile(profile);
+          })
+          .catch((error) => {
+            console.error('Error refreshing profile after sign in:', error);
+          });
+
         setNavState(prev => {
-           // Preserve current screen if user is on any valid authenticated screen
-           // Only redirect to home if on login/forgot_password screens
-           if (prev.currentScreen === 'login' || prev.currentScreen === 'forgot_password') {
-             // Hard refresh on login to ensure fresh data and clear any cached state
-             setTimeout(() => {
-               // Force a hard refresh by reloading the page
-               // This ensures all cached data is cleared and fresh data is loaded
-               window.location.reload();
-             }, 100);
-             return { currentScreen: 'home' };
-           }
-           // Preserve all other screens (home, search, profile, my_data, player screens, support, admin_collections, email_confirmation, etc.)
-           return prev;
+          // Cada fluxo de autenticacao decide sua navegacao final.
+          // Evita recarregar a pagina no meio do cadastro com voucher.
+          return prev;
         });
       } else if (event === 'SIGNED_OUT' || !session) {
         // Clear all user-related caches to prevent showing previous user's data
         clearAllUserCache();
-        
+        setAccessProfile(null);
+
         setNavState(prev => {
           // Preserve email_confirmation screen even when signed out
           if (prev.currentScreen === 'email_confirmation') {
@@ -220,6 +273,66 @@ const App: React.FC = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      return;
+    }
+
+    api.getProfile(true)
+      .then((profile) => {
+        setAccessProfile(profile);
+      })
+      .catch((error) => {
+        console.error('Error refreshing mock session state:', error);
+      });
+  }, [navState.currentScreen]);
+
+  useEffect(() => {
+    if (!sessionChecked || !accessProfile) {
+      return;
+    }
+
+    if (navState.currentScreen === 'access_expired' && getProfileAccessStatus(accessProfile) === 'active') {
+      navigate('home', { accessRenewed: true });
+      return;
+    }
+
+    if (getProfileAccessStatus(accessProfile) !== 'active') {
+      return;
+    }
+
+    let cancelled = false;
+    let expiryTimeoutId: number | null = null;
+
+    const refreshAccessProfile = async () => {
+      try {
+        const profile = await api.getProfile(true);
+        if (!cancelled) {
+          setAccessProfile(profile);
+        }
+      } catch (error) {
+        console.error('Error rechecking access status:', error);
+      }
+    };
+
+    const intervalId = window.setInterval(refreshAccessProfile, 60 * 1000);
+
+    if (accessProfile.access_expires_at) {
+      const msUntilExpiry = new Date(accessProfile.access_expires_at).getTime() - Date.now();
+      if (Number.isFinite(msUntilExpiry) && msUntilExpiry > 0) {
+        expiryTimeoutId = window.setTimeout(refreshAccessProfile, Math.min(msUntilExpiry + 1000, 2147483647));
+      }
+    }
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      if (expiryTimeoutId !== null) {
+        window.clearTimeout(expiryTimeoutId);
+      }
+    };
+  }, [sessionChecked, accessProfile?.id, accessProfile?.access_status, accessProfile?.access_expires_at, navState.currentScreen]);
 
   // Fetch collection details when an ID is passed in params
   useEffect(() => {
@@ -268,22 +381,22 @@ const App: React.FC = () => {
 
   const goBack = () => {
     if (['player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen)) {
-        // Return to previous screen and restore the collection modal
-        if (previousScreenState) {
-          navigate(previousScreenState.screen, {
-            collectionId: previousScreenState.collectionId
-          });
-          setPreviousScreenState(null);
-        } else {
-          // Fallback: return to home
-          navigate('home');
-        }
+      // Return to previous screen and restore the collection modal
+      if (previousScreenState) {
+        navigate(previousScreenState.screen, {
+          collectionId: previousScreenState.collectionId
+        });
+        setPreviousScreenState(null);
+      } else {
+        // Fallback: return to home
+        navigate('home');
+      }
     } else if (navState.currentScreen === 'my_data') {
-        navigate('profile');
+      navigate('profile');
     } else if (navState.currentScreen === 'search' || navState.currentScreen === 'support' || navState.currentScreen === 'profile') {
-        navigate('home');
+      navigate('home');
     } else {
-        navigate('home');
+      navigate('home');
     }
   };
 
@@ -307,30 +420,49 @@ const App: React.FC = () => {
   }
 
   const renderScreen = () => {
+    if (PROTECTED_SCREENS.includes(navState.currentScreen) && accessProfile && isAccessBlocked(accessProfile)) {
+      return (
+        <AccessExpiredScreen
+          profile={accessProfile}
+          onNavigate={navigate}
+          onAccessRecovered={(profile) => setAccessProfile(profile)}
+        />
+      );
+    }
+
     switch (navState.currentScreen) {
       case 'login':
-        return <LoginScreen onNavigate={navigate} />;
-      
+        return <LoginScreen onNavigate={navigate} onAuthSuccess={(profile) => setAccessProfile(profile)} />;
+
+      case 'access_expired':
+        return (
+          <AccessExpiredScreen
+            profile={accessProfile}
+            onNavigate={navigate}
+            onAccessRecovered={(profile) => setAccessProfile(profile)}
+          />
+        );
+
       case 'forgot_password':
         return <ForgotPasswordScreen onNavigate={navigate} />;
 
       case 'email_confirmation':
-        return <EmailConfirmationScreen onNavigate={navigate} />;
+        return <EmailConfirmationScreen onNavigate={navigate} params={navState.params} />;
 
       case 'home':
-        return <HomeScreen onNavigate={navigate} params={navState.params} />;
-      
+        return <HomeScreen onNavigate={navigate} params={navState.params} accessProfile={accessProfile} />;
+
       case 'search':
         return <SearchScreen onNavigate={navigate} params={navState.params} />;
-      
+
       case 'profile':
         return <ProfileScreen onNavigate={navigate} />;
-        
+
       case 'my_data':
         return <MyDataScreen onBack={() => navigate('profile')} />;
-      
+
       // Details screen removed - now using modal
-      
+
       case 'player_audio':
         if (!currentCollection) return null;
         return <AudioPlayerScreen collection={currentCollection} onBack={goBack} />;
@@ -343,15 +475,15 @@ const App: React.FC = () => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result
               ? {
-                  r: parseInt(result[1], 16),
-                  g: parseInt(result[2], 16),
-                  b: parseInt(result[3], 16),
-                }
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16),
+              }
               : { r: 93, g: 31, b: 88 };
           };
           const rgb = hexToRgb(themeColor);
           const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-          
+
           return (
             <div className="flex items-center justify-center h-screen relative" style={{ backgroundColor: bgColor }}>
               {/* Dark overlay to darken background */}
@@ -365,15 +497,15 @@ const App: React.FC = () => {
           const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
           return result
             ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16),
-              }
+              r: parseInt(result[1], 16),
+              g: parseInt(result[2], 16),
+              b: parseInt(result[3], 16),
+            }
             : { r: 93, g: 31, b: 88 };
         };
         const rgbForSuspense = hexToRgbForSuspense(themeColor);
         const bgColorForSuspense = `rgb(${rgbForSuspense.r}, ${rgbForSuspense.g}, ${rgbForSuspense.b})`;
-        
+
         return (
           <React.Suspense fallback={
             <div className="flex items-center justify-center h-screen relative" style={{ backgroundColor: bgColorForSuspense }}>
@@ -387,56 +519,56 @@ const App: React.FC = () => {
         );
 
       case 'player_video':
-         if (!currentCollection) return null;
-         return <VideoPlayerScreen collection={currentCollection} onBack={goBack} />;
+        if (!currentCollection) return null;
+        return <VideoPlayerScreen collection={currentCollection} onBack={goBack} />;
 
       case 'tools':
         if (!currentCollection) return null;
         return <ExtraToolsScreen collection={currentCollection} onBack={goBack} />;
-      
+
       case 'support':
         return (
           <div className="flex flex-col h-full bg-white pb-24 md:pb-0">
-             <PageHeader title="Suporte" onBack={() => navigate('home')} />
-             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-2xl mx-auto">
-                <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center text-kaboo-primary mb-6">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                </div>
-                <h2 className="text-xl font-bold text-gray-800 mb-2">Precisa de ajuda?</h2>
-                <p className="text-gray-500 mb-8 leading-relaxed">
-                  Estamos aqui para ajudar você a ter a melhor experiência com o Mundo de Kaboo.
-                </p>
-                <a 
-                  href="mailto:suporte@mundodekaboo.com" 
-                  className="bg-kaboo-primary text-white px-8 py-4 rounded-2xl font-bold w-full md:w-auto shadow-lg hover:shadow-xl hover:bg-opacity-90 transition-all active:scale-95"
-                >
-                  Fale Conosco
-                </a>
-             </div>
+            <PageHeader title="Suporte" onBack={() => navigate('home')} />
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-2xl mx-auto">
+              <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center text-kaboo-primary mb-6">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </div>
+              <h2 className="text-xl font-bold text-gray-800 mb-2">Precisa de ajuda?</h2>
+              <p className="text-gray-500 mb-8 leading-relaxed">
+                Estamos aqui para ajudar você a ter a melhor experiência com o Mundo de Kaboo.
+              </p>
+              <a
+                href="mailto:suporte@mundodekaboo.com"
+                className="bg-kaboo-primary text-white px-8 py-4 rounded-2xl font-bold w-full md:w-auto shadow-lg hover:shadow-xl hover:bg-opacity-90 transition-all active:scale-95"
+              >
+                Fale Conosco
+              </a>
+            </div>
           </div>
         );
 
-      case 'admin_collections':
-        return <AdminCollectionsScreen onNavigate={navigate} onBack={goBack} />;
+      case 'admin':
+        return <AdminScreen onNavigate={navigate} onBack={goBack} />;
 
       default:
         return <HomeScreen onNavigate={navigate} />;
     }
   };
 
-  const showNav = ['home', 'search', 'support', 'profile', 'my_data', 'admin_collections'].includes(navState.currentScreen);
+  const showNav = ['home', 'search', 'support', 'profile', 'my_data', 'admin'].includes(navState.currentScreen);
   // Modal opens immediately when collectionId is present, even if collection is still loading
   const isModalOpen = !!navState.params?.collectionId && ['home', 'search'].includes(navState.currentScreen);
 
   return (
     <div className="bg-white min-h-screen w-full flex flex-col md:flex-row overflow-hidden">
-      
+
       {showNav && (
         <BottomNav currentScreen={navState.currentScreen} onNavigate={navigate} />
       )}
 
       <main className={`flex-1 overflow-hidden relative h-screen w-full bg-white`}>
-          {renderScreen()}
+        {renderScreen()}
       </main>
 
       {/* Collection Details Modal */}

@@ -1,19 +1,19 @@
-import { 
-  Home, 
-  Search, 
-  Library, 
-  User, 
-  ChevronLeft, 
+import {
+  Home,
+  Search,
+  Library,
+  User,
+  ChevronLeft,
   ChevronRight,
-  MoreHorizontal, 
-  Play, 
-  Pause, 
-  SkipBack, 
-  SkipForward, 
-  BookOpen, 
+  MoreHorizontal,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  BookOpen,
   Book,
-  Headphones, 
-  Video, 
+  Headphones,
+  Video,
   Paperclip,
   Download,
   FileText,
@@ -43,13 +43,14 @@ import {
   ArrowUpDown,
   ArrowDown,
   ArrowUp,
-  ChevronDown
+  ChevronDown,
+  Ticket
 } from 'lucide-react';
 
 export const Icons = {
   Home, Search, Library, User, ChevronLeft, ChevronRight, MoreHorizontal,
-  Play, Pause, SkipBack, SkipForward, BookOpen, Book, Headphones, 
+  Play, Pause, SkipBack, SkipForward, BookOpen, Book, Headphones,
   Video, Paperclip, Download, FileText, Settings, LogOut,
   HelpCircle, Mail, Grid, Volume2, VolumeX, Maximize, Minimize,
-  Eye, EyeOff, X, Filter, Check, Plus, Edit, Trash2, AlertCircle, Upload, ExternalLink, RotateCw, Smartphone, Image, ArrowUpDown, ArrowDown, ArrowUp, ChevronDown
+  Eye, EyeOff, X, Filter, Check, Plus, Edit, Trash2, AlertCircle, Upload, ExternalLink, RotateCw, Smartphone, Image, ArrowUpDown, ArrowDown, ArrowUp, ChevronDown, Ticket
 };

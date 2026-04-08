@@ -11,6 +11,7 @@ interface ConfirmationModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   danger?: boolean;
+  loading?: boolean;
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -21,12 +22,13 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   cancelText = 'Cancelar',
   onConfirm,
   onCancel,
-  danger = false
+  danger = false,
+  loading = false
 }) => {
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[200] flex items-center justify-center p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -36,7 +38,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-100" />
-      
+
       {/* Modal Content */}
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-100">
         {/* Header */}
@@ -56,11 +58,11 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
-          <Button variant="secondary" fullWidth onClick={onCancel}>
+          <Button variant="secondary" fullWidth onClick={onCancel} disabled={loading}>
             {cancelText}
           </Button>
-          <Button variant={danger ? "danger" : "primary"} fullWidth onClick={onConfirm}>
-            {confirmText}
+          <Button variant={danger ? "danger" : "primary"} fullWidth onClick={onConfirm} disabled={loading}>
+            {loading ? 'Aguarde...' : confirmText}
           </Button>
         </div>
       </div>

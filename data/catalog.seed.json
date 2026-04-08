@@ -1,0 +1,745 @@
+{
+    "metadata": {
+        "version": 1,
+        "source": "catalogo sincronizado da producao",
+        "notes": [
+            "Contem 16 colecoes visiveis para o usuario professor usado na verificacao.",
+            "Mantem URLs e nomes exatamente como expostos em producao, inclusive truncamentos observados em alguns arquivos."
+        ],
+        "collections_count": 16,
+        "collection_resources_count": 14
+    },
+    "collections": [
+        {
+            "id": "784b3238-0916-4922-af3c-8627d74cc16c",
+            "title": "Kaboo e a Carta Misteriosa",
+            "cover_image": "/mock/covers/kaboo-carta-misteriosa.png",
+            "level": "Fundamental I",
+            "color_theme": "#B9373B",
+            "theme": "Pertencimento e diversidade",
+            "learning_objectives": "Convidar ao pertencimento e à descoberta de que a diversidade é força. A história mostra que pertencer significa escutar, valorizar e respeitar as diferenças; a amizade protege, permitindo compartilhar histórias, brincar, rir e chorar juntos.",
+            "characters": [
+                "Kaboo",
+                "Batatinha",
+                "Blado",
+                "Papa",
+                "Gaio",
+                "Dr. Ratazana"
+            ],
+            "bncc_skills": [
+                "EF15LP01",
+                "EF15LP03",
+                "EF15LP04",
+                "EF15LP09",
+                "EF15LP10",
+                "EF15LP18",
+                "EF01LP02",
+                "EF01LP12",
+                "EF02LP13",
+                "EF02LP16",
+                "EF01ER01",
+                "EF01HI08"
+            ],
+            "casel_competencies": [
+                "Habilidades de Relacionamento",
+                "Consciência Social"
+            ],
+            "age_grade": [
+                "1º ano",
+                "2º ano",
+                "3º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/784b3238-0916-4922-af3c-8627d74cc16c/1768192341842-heqozuo-EFAI1_Livro_Kaboo_e_a_Carta_Misteriosa_app_compres",
+            "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/784b3238-0916-4922-af3c-8627d74cc16c/1769708145715-6jwjx6e-08_Kaboo_e_a_carta_misteriosa_OK.WAV",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/784b3238-0916-4922-af3c-8627d74cc16c/1771619357711-x4phiuh-Guia_do_Professor_-_Kaboo_e_a_Carta_Misteriosa.pdf"
+            ]
+        },
+        {
+            "id": "c6334710-6117-426f-995c-07be8d87d872",
+            "title": "Mensageiro e a Canção Certa",
+            "cover_image": "/mock/covers/mensageiro-cancao-certa.png",
+            "level": "Fundamental I",
+            "color_theme": "#325C41",
+            "theme": "Sensibilidade, regulação sensorial e respeito ao silêncio",
+            "learning_objectives": "Valorizar sons sutis e o silêncio como parte da escuta atenta. Regular a atenção e os sentidos para “escutar com o coração, com o olhar atento e com a presença”.",
+            "characters": [
+                "Kaboo",
+                "Blado",
+                "Papa",
+                "Batatinha",
+                "Gaio",
+                "Dr. Ratazana"
+            ],
+            "bncc_skills": [
+                "EF15AR04",
+                "EF15LP03",
+                "EF15LP04",
+                "EF15LP09",
+                "EF15LP10",
+                "EF15LP11",
+                "EF15LP12",
+                "EF15LP13",
+                "EF01ER06"
+            ],
+            "casel_competencies": [
+                "Autoconsciência",
+                "Autogestão"
+            ],
+            "age_grade": [
+                "1º ano",
+                "2º ano",
+                "3º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/c6334710-6117-426f-995c-07be8d87d872/1768192364095-xwrdb3g-EFAI8_Livro_Mensageiro_e_a_Canc_a_o_Certa_app_comp",
+            "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/c6334710-6117-426f-995c-07be8d87d872/1769477855454-zibkmtu-06_O_mensageiro_e_a_can__o_certa_ok.WAV",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/c6334710-6117-426f-995c-07be8d87d872/1771619379928-bj8hhqu-Guia_do_Professor_-_Mensageiro_e_a_Can__o_Certa.pd"
+            ]
+        },
+        {
+            "id": "6a93b60f-b4e9-4fe6-9fed-7c6f7391745c",
+            "title": "Baratinha e Baratão no Labirinto do Eco",
+            "cover_image": "/mock/covers/baratinha-baratao-labirinto-eco.png",
+            "level": "Fundamental I",
+            "color_theme": "#2E4179",
+            "theme": "Escuta ativa e diálogo",
+            "learning_objectives": "Perceber que repetir não é compreender; escutar “com o corpo, os olhos e o coração” favorece entendimento e convivência. A magia acontece com o diálogo, quando todos escutam e são escutados.",
+            "characters": [
+                "Baratinha",
+                "Baratão",
+                "Dr. Ratazana",
+                "Kaboo",
+                "Papa",
+                "Gaio",
+                "Blado"
+            ],
+            "bncc_skills": [
+                "EF15LP03",
+                "EF15LP04",
+                "EF15LP09",
+                "EF15LP10",
+                "EF15LP11",
+                "EF15LP12"
+            ],
+            "casel_competencies": [
+                "Habilidades de Relacionamento"
+            ],
+            "age_grade": [
+                "3º ano",
+                "4º ano",
+                "5º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/6a93b60f-b4e9-4fe6-9fed-7c6f7391745c/1768192379610-sublbh0-EFAI7_Livro_Baratinha_e_Barata_o_no_Labirinto_do_E",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/6a93b60f-b4e9-4fe6-9fed-7c6f7391745c/1771619403995-xyystt9-Guia_do_Professor_-_Baratinha_e_Barat_o_no_Labirin"
+            ]
+        },
+        {
+            "id": "ad037be3-ad9f-43d3-a913-549337aef9ef",
+            "title": "Kaboo e o Desafio das Cores",
+            "cover_image": "/mock/covers/kaboo-desafio-cores.png",
+            "level": "Fundamental I",
+            "color_theme": "#1D64A1",
+            "theme": "Conflitos, respeito e reconciliação",
+            "learning_objectives": "Valorizar o diálogo e a escuta como caminhos de mediação de conflitos. As diferenças (cores) se unem para formar algo novo, onde todas têm lugar e brilho.",
+            "characters": [
+                "Kaboo",
+                "Batatinha",
+                "Blado",
+                "Papa",
+                "Gaio",
+                "Dr. Ratazana"
+            ],
+            "bncc_skills": [
+                "EF15LP03",
+                "EF01ER01",
+                "EF15LP09",
+                "EF15LP10",
+                "EF15LP11",
+                "EF15LP12",
+                "EF15LP13",
+                "EF15AR05",
+                "EF01ER03",
+                "EF01ER04",
+                "EF01ER05",
+                "EF01ER06",
+                "EF12LP04",
+                "EF15AR19"
+            ],
+            "casel_competencies": [
+                "Consciência Social",
+                "Habilidades de Relacionamento"
+            ],
+            "age_grade": [
+                "1º ano",
+                "2º ano",
+                "3º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/ad037be3-ad9f-43d3-a913-549337aef9ef/1768192393562-cqysd42-EFAI6_Livro_Kaboo_e_o_Desafio_das_Cores_app_compre",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/ad037be3-ad9f-43d3-a913-549337aef9ef/1771619416692-ct3biwr-Guia_do_Professor_-_Kaboo_e_o_Desafio_das_Cores.pd"
+            ]
+        },
+        {
+            "id": "66627622-235a-43f6-ba4b-35522086165c",
+            "title": "Gaio e a Hora de Voar Alto",
+            "cover_image": "/mock/covers/gaio-hora-voar-alto.png",
+            "level": "Fundamental I",
+            "color_theme": "#D94625",
+            "theme": "Coragem e superação",
+            "learning_objectives": "Entender que coragem não é ausência de medo, mas avançar com ele ao lado, em passos pequenos e determinados. Enfrentar medos traz conquistas e fortalece a autoconfiança.",
+            "characters": [
+                "Gaio",
+                "Papa",
+                "Batatinha",
+                "Blado",
+                "Kaboo"
+            ],
+            "bncc_skills": [
+                "EF15LP03",
+                "EF15LP04",
+                "EF15LP09",
+                "EF15LP10",
+                "EF15LP11",
+                "EF15LP18",
+                "EF01LP02",
+                "EF01LP12",
+                "EF02CI04",
+                "EF03CI07",
+                "EF15LP02"
+            ],
+            "casel_competencies": [
+                "Autogestão",
+                "Autoconsciência"
+            ],
+            "age_grade": [
+                "3º ano",
+                "4º ano",
+                "5º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/66627622-235a-43f6-ba4b-35522086165c/1768192518631-ldtdhg7-EFAI5_Livro_Gaio_e_a_Hora_de_Voar_Alto_app_compres",
+            "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/66627622-235a-43f6-ba4b-35522086165c/1768192501446-f3gri8i-batatinha-e-o-giro-das-emocoes.mp3",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/66627622-235a-43f6-ba4b-35522086165c/1771619433282-czkenw6-Guia_do_Professor_-_Gaio_e_a_Hora_de_Voar_Alto.pdf"
+            ]
+        },
+        {
+            "id": "ce726511-73df-422d-b5fb-b2d0518e164a",
+            "title": "Papa e o Plano Furado",
+            "cover_image": "/mock/covers/papa-plano-furado.png",
+            "level": "Fundamental I",
+            "color_theme": "#006361",
+            "theme": "Criatividade, erro e recomeço",
+            "learning_objectives": "Compreender o erro como parte do processo criativo e do aprender; um “plano furado” pode virar uma boa invenção. Recomeçar fortalece e não diminui a inteligência.",
+            "characters": [
+                "Papa",
+                "Kaboo",
+                "Blado",
+                "Gaio",
+                "Batatinha",
+                "Dr. Ratazana"
+            ],
+            "bncc_skills": [
+                "EF15AR05",
+                "EF15LP02",
+                "EF15LP03",
+                "EF15LP09",
+                "EF15LP10",
+                "EF15LP18",
+                "EF02HI09",
+                "EF03HI03",
+                "EF04CI01"
+            ],
+            "casel_competencies": [
+                "Autogestão",
+                "Tomada de Decisão Responsável"
+            ],
+            "age_grade": [
+                "3º ano",
+                "4º ano",
+                "5º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/ce726511-73df-422d-b5fb-b2d0518e164a/1768192538644-hads9fz-EFAI4_Livro_Papa_e_o_Plano_Furado_app_compressed.p",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/ce726511-73df-422d-b5fb-b2d0518e164a/1771619445683-622yht4-Guia_do_Professor_-_Papa_e_o_Plano_Furado.pdf"
+            ]
+        },
+        {
+            "id": "5ff4a457-5cc8-4095-8a2d-f51604bbc7f8",
+            "title": "Batatinha e o Espelho da Alegria",
+            "cover_image": "/mock/covers/batatinha-espelho-alegria.png",
+            "level": "Fundamental I",
+            "color_theme": "#80307A",
+            "theme": "Autoimagem e identidade",
+            "learning_objectives": "Reconhecer que o “espelho” também reflete emoções, forças e histórias internas, incentivando o olhar para si com carinho e valorizando a singularidade de cada um.",
+            "characters": [
+                "Batatinha",
+                "Kaboo",
+                "Blado",
+                "Papa",
+                "Gaio"
+            ],
+            "bncc_skills": [
+                "EF15AR04",
+                "EF15LP03",
+                "EF15LP04",
+                "EF15LP09",
+                "EF15LP10",
+                "EF15LP11",
+                "EF15LP18",
+                "EF01CI03",
+                "EF01ER02",
+                "EF12LP04"
+            ],
+            "casel_competencies": [
+                "Autoconsciência"
+            ],
+            "age_grade": [
+                "3º ano",
+                "4º ano",
+                "5º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/5ff4a457-5cc8-4095-8a2d-f51604bbc7f8/1768192555847-fngscfn-EFAI3_Livro_Batatinha_e_o_Espelho_da_Alegria_app_c",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/5ff4a457-5cc8-4095-8a2d-f51604bbc7f8/1771619459909-duzk0vo-Guia_do_Professor_-_Batatinha_e_o_Espelho_da_Alegr"
+            ]
+        },
+        {
+            "id": "5993fc3f-8e1f-4d32-98f8-447676e31a39",
+            "title": "Blado e a Caixa dos Sentimentos",
+            "cover_image": "/mock/covers/blado-caixa-sentimentos.png",
+            "level": "Fundamental I",
+            "color_theme": "#5D1F58",
+            "theme": "Confiança, emoções, sentimentos e segurança emocional",
+            "learning_objectives": "Diferenciar emoção (sinais do corpo) de sentimento (o que permanece), e compreender que guardar ou compartilhar o que sentimos exige confiança, cuidado e respeito pelo tempo de cada um. Mensagem-síntese: carinho + respeito pelos sentimentos = superpoder da amizade.",
+            "characters": [
+                "Blado",
+                "Kaboo",
+                "Batatinha",
+                "Gaio",
+                "Papa"
+            ],
+            "bncc_skills": [
+                "EF15LP02",
+                "EF15LP03",
+                "EF15LP04",
+                "EF15LP05",
+                "EF15LP09",
+                "EF15LP10",
+                "EF15LP11",
+                "EF15LP18",
+                "EF01LP02",
+                "EF01LP12",
+                "EF02LP14",
+                "EF01ER05",
+                "EF15LP01",
+                "EF01ER06"
+            ],
+            "casel_competencies": [
+                "Autoconsciência",
+                "Habilidades de Relacionamento"
+            ],
+            "age_grade": [
+                "1º ano",
+                "2º ano",
+                "3º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/5993fc3f-8e1f-4d32-98f8-447676e31a39/1768192574050-bnb6rvg-EFAI2_Livro_Blado_e_a_Caixa_dos_Sentimentos__app_c",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/5993fc3f-8e1f-4d32-98f8-447676e31a39/1771619482234-0jjmad7-Guia_do_Professor_-_Blado_e_a_Caixa_dos_Sentimento"
+            ]
+        },
+        {
+            "id": "33efdbb5-abed-4037-9eed-bb7017d19f7a",
+            "title": "Gaio e o Vento da Coragem",
+            "cover_image": "/mock/covers/gaio-vento-coragem.png",
+            "level": "Educação Infantil",
+            "color_theme": "#5C3B77",
+            "theme": "Coragem, enfrentamento do medo e autoconfiança",
+            "learning_objectives": "Identificar situações que despertam medo; Reconhecer que sentir medo é natural e válido, e que em muitas situações ele pode nos proteger; Usar gestos, desenhos ou palavras para expressar seu medo e sua coragem; Participar de rituais coletivos de acolhimento (como mural ou roda); Compreender que coragem é aprender a seguir adiante mesmo com medo.",
+            "characters": [
+                "Gaio",
+                "Kaboo",
+                "Papa"
+            ],
+            "bncc_skills": [
+                "EI03EF03",
+                "EI03EO02",
+                "EI03EF01",
+                "EF15LP10"
+            ],
+            "casel_competencies": [
+                "Autogerenciamento",
+                "Tomada de Decisão Responsável"
+            ],
+            "age_grade": [
+                "3 anos",
+                "4 anos",
+                "5 anos",
+                "1º ano",
+                "2º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/33efdbb5-abed-4037-9eed-bb7017d19f7a/1768193219329-0x88gqk-EI_KabooLivro8_GaioVentoCoragem_app_compressed.pdf",
+            "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/33efdbb5-abed-4037-9eed-bb7017d19f7a/1769477877251-ohxkfe4-07_gaio_e_o_vento_da_coragem_OK.WAV",
+            "video_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/video/33efdbb5-abed-4037-9eed-bb7017d19f7a/1769203911843-r8hqd9p-Gaio_e_vento_da_coragem_OK.mov",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/33efdbb5-abed-4037-9eed-bb7017d19f7a/1771619497800-j0xqqfd-Guia_do_Professor_-_Gaio_e_o_Vento_da_Coragem.pdf"
+            ]
+        },
+        {
+            "id": "1faea193-81fb-42e6-af37-e3416ac43a2b",
+            "title": "Batatinha e o Giro das Emoções",
+            "cover_image": "/mock/covers/batatinha-giro-emocoes.png",
+            "level": "Educação Infantil",
+            "color_theme": "#1F804C",
+            "theme": "Alfabetização emocional por meio da música",
+            "learning_objectives": "Identificar e nomear emoções em diferentes situações; Reconhecer que toda emoção é válida e pode ser acolhida; Usar música, gestos e cores para expressar sentimentos; Participar de momentos coletivos de escuta, canto e acolhimento; Compreender que a música pode ser uma ponte de empatia e convivência saudável.",
+            "characters": [
+                "Batatinha"
+            ],
+            "bncc_skills": [
+                "EI03TS03",
+                "EI03CG02",
+                "EF15AR15",
+                "EF12LP07",
+                "ΕI03ΕF03",
+                "ΕI03ΕO02"
+            ],
+            "casel_competencies": [
+                "Autoconsciência",
+                "Habilidades de Relacionamento"
+            ],
+            "age_grade": [
+                "3 anos",
+                "4 anos",
+                "5 anos",
+                "1º ano",
+                "2º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/1faea193-81fb-42e6-af37-e3416ac43a2b/1768329386027-mlk5k6q-EI_KabooLivro7_BatatinhaGiroSentir_New.pdf",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/1faea193-81fb-42e6-af37-e3416ac43a2b/1771619561294-k926w6d-Guia_do_Professor_-_Batatinha_e_o_Giro_do_Sentir.p"
+            ]
+        },
+        {
+            "id": "224f863c-0048-41f5-a660-fbf15e5d632c",
+            "title": "Blado e a Escolha do Dia",
+            "cover_image": "/mock/covers/blado-escolha-dia.png",
+            "level": "Educação Infantil",
+            "color_theme": "#DC4244",
+            "theme": "Tomada de decisão, empatia e reparação",
+            "learning_objectives": "Identificar e nomear pequenas decisões cotidianas que envolvem cuidado com o outro; Reconhecer o valor da partilha, da escuta e da reparação; Usar frases e gestos para resolver situações de conflito com apoio do adulto; Criar registros simbólicos (como estrelas) de boas ações praticadas; Compreender que errar faz parte, mas é possível consertar com carinho.",
+            "characters": [
+                "Blado",
+                "Papa"
+            ],
+            "bncc_skills": [
+                "EI03EO02",
+                "EI03EF03",
+                "EI03EO03",
+                "EI03CG04",
+                "EI03CG05",
+                "EI03ECG04",
+                "EF01GE04",
+                "EF01HI04",
+                "EF02HI01"
+            ],
+            "casel_competencies": [
+                "Autogerenciamento",
+                "Tomada de Decisão Responsável",
+                "Habilidades de Relacionamento"
+            ],
+            "age_grade": [
+                "3 anos",
+                "4 anos",
+                "5 anos",
+                "1º ano",
+                "2º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/224f863c-0048-41f5-a660-fbf15e5d632c/1768193069596-um7618a-EI_KabooLivro6_BladoEscolhaDia_app_compressed.pdf",
+            "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/224f863c-0048-41f5-a660-fbf15e5d632c/1769477754231-bd1149x-03_Blado_e_a_escolha_do_dia___sem_trilha_.WAV",
+            "extra_materials": []
+        },
+        {
+            "id": "8a02c40e-6cbe-4281-bf90-8cc524ca3cc4",
+            "title": "Kaboo e o Espelho das Emoções",
+            "cover_image": "/mock/covers/kaboo-espelho-emocoes.png",
+            "level": "Educação Infantil",
+            "color_theme": "#257DBD",
+            "theme": "Nomeação das emoções, expressão verbal e escuta empática",
+            "learning_objectives": "Reconhecer e nomear sentimentos com apoio verbal e visual; Demonstrar abertura para compartilhar emoções com os colegas; Repetir frases que validam o próprio sentir com intencionalidade; Escutar o outro com empatia, mesmo quando o sentimento dele for diferente do seu.",
+            "characters": [
+                "Kaboo",
+                "Gaio"
+            ],
+            "bncc_skills": [
+                "EI03EF01",
+                "EI03EF03",
+                "EI03EO01",
+                "EI03EO03",
+                "EI03CG01",
+                "EF15AR04",
+                "EI03EO04"
+            ],
+            "casel_competencies": [
+                "Autoconsciência",
+                "Habilidades de Relacionamento"
+            ],
+            "age_grade": [
+                "3 anos",
+                "4 anos",
+                "5 anos",
+                "1º ano",
+                "2º ano"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/8a02c40e-6cbe-4281-bf90-8cc524ca3cc4/1768192975597-nplbvre-EI_KabooLivro5_EspelhoEmocoes_app_compressed.pdf",
+            "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/8a02c40e-6cbe-4281-bf90-8cc524ca3cc4/1769477677920-z4mnezj-02_kaboo_e_o_espelho_das_emo__es_ok.WAV",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/8a02c40e-6cbe-4281-bf90-8cc524ca3cc4/1771619578600-9uufecq-Guia_do_Professor_-_Kaboo_e_o_Espelho_das_Emocoes."
+            ]
+        },
+        {
+            "id": "78942184-3cab-47c9-92a1-4ba56932e440",
+            "title": "Batatinha e o Ritmo do Acolhimento",
+            "cover_image": "/mock/covers/batatinha-ritmo-acolhimento.png",
+            "level": "Educação Infantil",
+            "color_theme": "#923E90",
+            "theme": "Acolhimento, rotina e pertencimento",
+            "learning_objectives": "Reconhecer e nomear momentos da rotina escolar; Demonstrar atitudes de acolhimento e escuta de colegas novos; Repetir frases e gestos de boas-vindas com intencionalidade; Participar da construção de um ambiente coletivo respeitoso; Relacionar música e ritmo a momentos do dia.",
+            "characters": [
+                "Batatinha",
+                "Kaboo"
+            ],
+            "bncc_skills": [
+                "EI03CG01",
+                "EI03CG04",
+                "EI03EO02",
+                "EI03EF03",
+                "EI03ET06"
+            ],
+            "casel_competencies": [
+                "Habilidades de Relacionamento",
+                "Autoconsciência"
+            ],
+            "age_grade": [
+                "3 anos",
+                "4 anos",
+                "5 anos"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/78942184-3cab-47c9-92a1-4ba56932e440/1768192877873-wg09c61-EI_KabooLivro4_BatatinhaAcolhimento_app_compressed",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/78942184-3cab-47c9-92a1-4ba56932e440/1771619532327-nj5zsam-Guia_do_Professor_-_Batatinha_e_o_Ritmo_do_Acolhim"
+            ]
+        },
+        {
+            "id": "410acf81-6d7d-4569-85e4-02ed2fb28762",
+            "title": "Onde está Gaio?",
+            "cover_image": "/mock/covers/onde-esta-gaio.png",
+            "level": "Educação Infantil",
+            "color_theme": "#E35E37",
+            "theme": "Cooperação, pensamento investigativo e brincadeira simbólica",
+            "learning_objectives": "Participar de brincadeiras cooperativas com pistas e desafios; Fazer inferências com base em indícios visuais ou verbais; Respeitar diferentes formas de participação nas brincadeiras em grupo; Demonstrar curiosidade e persistência ao seguir pistas; Relatar como se sentiu e reconhecer o valor do trabalho em equipe.",
+            "characters": [],
+            "bncc_skills": [
+                "EI03ET03",
+                "EI03EO01",
+                "EI03CG05",
+                "EI03EO03",
+                "EI03EF03",
+                "EI03CG04",
+                "EI03ET06"
+            ],
+            "casel_competencies": [
+                "Habilidades de Relacionamento",
+                "Tomada de Decisão Responsável"
+            ],
+            "age_grade": [
+                "3 anos",
+                "4 anos",
+                "5 anos"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/410acf81-6d7d-4569-85e4-02ed2fb28762/1768192779387-i5lmwcw-EI_KabooLivro3_OndeEstaGaio_app_compressed.pdf",
+            "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/410acf81-6d7d-4569-85e4-02ed2fb28762/1768842640202-h0s902q-onde_esta__o_Gaio.WAV",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/410acf81-6d7d-4569-85e4-02ed2fb28762/1771619596214-cj9uqbk-Guia_do_Professor_-_Onde_Esta_Gaio.pdf"
+            ]
+        },
+        {
+            "id": "76ea478e-a796-48b7-b9f5-67187a777cb8",
+            "title": "Blado e os Sons que Brilham",
+            "cover_image": "/mock/covers/blado-sons-brilham.png",
+            "level": "Educação Infantil",
+            "color_theme": "#007C73",
+            "theme": "Percepção sensorial e escuta ativa",
+            "learning_objectives": "Nomear e reconhecer alguns sons externos e sons internos; Reproduzir sons com o corpo ou outros materiais; Valorizar o silêncio como momento de atenção e presença; Perceber emoções associadas a sons (medo, calma, alegria, raiva, etc.); Expressar o que escutou por meio de linguagem verbal e não verbal; Demonstrar atitudes de escuta ativa e respeito no convívio.",
+            "characters": [
+                "Blado",
+                "Kaboo"
+            ],
+            "bncc_skills": [
+                "EI03ET02",
+                "EI03CG01",
+                "EI03EF03"
+            ],
+            "casel_competencies": [
+                "Habilidades de Relacionamento",
+                "Autoconsciência"
+            ],
+            "age_grade": [
+                "3 anos",
+                "4 anos",
+                "5 anos"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/76ea478e-a796-48b7-b9f5-67187a777cb8/1768192650106-9x0kc27-EI_KabooLivro2_BladoSonsBrilham_app_compressed.pdf",
+            "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/76ea478e-a796-48b7-b9f5-67187a777cb8/1769477771898-n4rfbh1-04_Blado_e_os_sons_que_brilham_ok.WAV",
+            "extra_materials": [
+                "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/76ea478e-a796-48b7-b9f5-67187a777cb8/1771619612190-iotoj3h-Guia_do_Professor_-_Blado_e_os_Sons_que_Brilham.pd"
+            ]
+        },
+        {
+            "id": "df28d7f4-7eed-4417-ae8c-81e457d61bd5",
+            "title": "A Cor do Sentir",
+            "cover_image": "/mock/covers/a-cor-do-sentir.png",
+            "level": "Educação Infantil",
+            "color_theme": "#474A90",
+            "theme": "Emoções Básicas",
+            "learning_objectives": "Nomear e reconhecer emoções básicas; relacionar sentimentos a cores, sons e gestos; acolher o sentir do outro com empatia; expressar emoções por palavras, desenhos ou movimentos.",
+            "characters": [
+                "Kaboo",
+                "Batatinha"
+            ],
+            "bncc_skills": [
+                "EI03EF04",
+                "EI03CG03",
+                "EI03EF03",
+                "EI03EF01"
+            ],
+            "casel_competencies": [
+                "Autoconsciência"
+            ],
+            "age_grade": [
+                "3 anos",
+                "4 anos",
+                "5 anos"
+            ],
+            "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/df28d7f4-7eed-4417-ae8c-81e457d61bd5/1768192671272-atimo0w-EI_KabooLivro1_ACordoSentir_app_compressed.pdf",
+            "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/df28d7f4-7eed-4417-ae8c-81e457d61bd5/1769477834084-p3qcsg8-05_a_cor_do_sentir_ok.WAV",
+            "extra_materials": []
+        }
+    ],
+    "collection_resources": [
+        {
+            "id": "784b3238-0916-4922-af3c-8627d74cc16c-extra-1",
+            "collection_id": "784b3238-0916-4922-af3c-8627d74cc16c",
+            "title": "1771619357711-x4phiuh-Guia_do_Professor_-_Kaboo_e_a_Carta_Misteriosa.pdf",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/784b3238-0916-4922-af3c-8627d74cc16c/1771619357711-x4phiuh-Guia_do_Professor_-_Kaboo_e_a_Carta_Misteriosa.pdf",
+            "size": ""
+        },
+        {
+            "id": "c6334710-6117-426f-995c-07be8d87d872-extra-1",
+            "collection_id": "c6334710-6117-426f-995c-07be8d87d872",
+            "title": "1771619379928-bj8hhqu-Guia_do_Professor_-_Mensageiro_e_a_Can__o_Certa.pd",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/c6334710-6117-426f-995c-07be8d87d872/1771619379928-bj8hhqu-Guia_do_Professor_-_Mensageiro_e_a_Can__o_Certa.pd",
+            "size": ""
+        },
+        {
+            "id": "6a93b60f-b4e9-4fe6-9fed-7c6f7391745c-extra-1",
+            "collection_id": "6a93b60f-b4e9-4fe6-9fed-7c6f7391745c",
+            "title": "1771619403995-xyystt9-Guia_do_Professor_-_Baratinha_e_Barat_o_no_Labirin",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/6a93b60f-b4e9-4fe6-9fed-7c6f7391745c/1771619403995-xyystt9-Guia_do_Professor_-_Baratinha_e_Barat_o_no_Labirin",
+            "size": ""
+        },
+        {
+            "id": "ad037be3-ad9f-43d3-a913-549337aef9ef-extra-1",
+            "collection_id": "ad037be3-ad9f-43d3-a913-549337aef9ef",
+            "title": "1771619416692-ct3biwr-Guia_do_Professor_-_Kaboo_e_o_Desafio_das_Cores.pd",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/ad037be3-ad9f-43d3-a913-549337aef9ef/1771619416692-ct3biwr-Guia_do_Professor_-_Kaboo_e_o_Desafio_das_Cores.pd",
+            "size": ""
+        },
+        {
+            "id": "66627622-235a-43f6-ba4b-35522086165c-extra-1",
+            "collection_id": "66627622-235a-43f6-ba4b-35522086165c",
+            "title": "1771619433282-czkenw6-Guia_do_Professor_-_Gaio_e_a_Hora_de_Voar_Alto.pdf",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/66627622-235a-43f6-ba4b-35522086165c/1771619433282-czkenw6-Guia_do_Professor_-_Gaio_e_a_Hora_de_Voar_Alto.pdf",
+            "size": ""
+        },
+        {
+            "id": "ce726511-73df-422d-b5fb-b2d0518e164a-extra-1",
+            "collection_id": "ce726511-73df-422d-b5fb-b2d0518e164a",
+            "title": "1771619445683-622yht4-Guia_do_Professor_-_Papa_e_o_Plano_Furado.pdf",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/ce726511-73df-422d-b5fb-b2d0518e164a/1771619445683-622yht4-Guia_do_Professor_-_Papa_e_o_Plano_Furado.pdf",
+            "size": ""
+        },
+        {
+            "id": "5ff4a457-5cc8-4095-8a2d-f51604bbc7f8-extra-1",
+            "collection_id": "5ff4a457-5cc8-4095-8a2d-f51604bbc7f8",
+            "title": "1771619459909-duzk0vo-Guia_do_Professor_-_Batatinha_e_o_Espelho_da_Alegr",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/5ff4a457-5cc8-4095-8a2d-f51604bbc7f8/1771619459909-duzk0vo-Guia_do_Professor_-_Batatinha_e_o_Espelho_da_Alegr",
+            "size": ""
+        },
+        {
+            "id": "5993fc3f-8e1f-4d32-98f8-447676e31a39-extra-1",
+            "collection_id": "5993fc3f-8e1f-4d32-98f8-447676e31a39",
+            "title": "1771619482234-0jjmad7-Guia_do_Professor_-_Blado_e_a_Caixa_dos_Sentimento",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/5993fc3f-8e1f-4d32-98f8-447676e31a39/1771619482234-0jjmad7-Guia_do_Professor_-_Blado_e_a_Caixa_dos_Sentimento",
+            "size": ""
+        },
+        {
+            "id": "33efdbb5-abed-4037-9eed-bb7017d19f7a-extra-1",
+            "collection_id": "33efdbb5-abed-4037-9eed-bb7017d19f7a",
+            "title": "1771619497800-j0xqqfd-Guia_do_Professor_-_Gaio_e_o_Vento_da_Coragem.pdf",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/33efdbb5-abed-4037-9eed-bb7017d19f7a/1771619497800-j0xqqfd-Guia_do_Professor_-_Gaio_e_o_Vento_da_Coragem.pdf",
+            "size": ""
+        },
+        {
+            "id": "1faea193-81fb-42e6-af37-e3416ac43a2b-extra-1",
+            "collection_id": "1faea193-81fb-42e6-af37-e3416ac43a2b",
+            "title": "1771619561294-k926w6d-Guia_do_Professor_-_Batatinha_e_o_Giro_do_Sentir.p",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/1faea193-81fb-42e6-af37-e3416ac43a2b/1771619561294-k926w6d-Guia_do_Professor_-_Batatinha_e_o_Giro_do_Sentir.p",
+            "size": ""
+        },
+        {
+            "id": "8a02c40e-6cbe-4281-bf90-8cc524ca3cc4-extra-1",
+            "collection_id": "8a02c40e-6cbe-4281-bf90-8cc524ca3cc4",
+            "title": "1771619578600-9uufecq-Guia_do_Professor_-_Kaboo_e_o_Espelho_das_Emocoes.",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/8a02c40e-6cbe-4281-bf90-8cc524ca3cc4/1771619578600-9uufecq-Guia_do_Professor_-_Kaboo_e_o_Espelho_das_Emocoes.",
+            "size": ""
+        },
+        {
+            "id": "78942184-3cab-47c9-92a1-4ba56932e440-extra-1",
+            "collection_id": "78942184-3cab-47c9-92a1-4ba56932e440",
+            "title": "1771619532327-nj5zsam-Guia_do_Professor_-_Batatinha_e_o_Ritmo_do_Acolhim",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/78942184-3cab-47c9-92a1-4ba56932e440/1771619532327-nj5zsam-Guia_do_Professor_-_Batatinha_e_o_Ritmo_do_Acolhim",
+            "size": ""
+        },
+        {
+            "id": "410acf81-6d7d-4569-85e4-02ed2fb28762-extra-1",
+            "collection_id": "410acf81-6d7d-4569-85e4-02ed2fb28762",
+            "title": "1771619596214-cj9uqbk-Guia_do_Professor_-_Onde_Esta_Gaio.pdf",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/410acf81-6d7d-4569-85e4-02ed2fb28762/1771619596214-cj9uqbk-Guia_do_Professor_-_Onde_Esta_Gaio.pdf",
+            "size": ""
+        },
+        {
+            "id": "76ea478e-a796-48b7-b9f5-67187a777cb8-extra-1",
+            "collection_id": "76ea478e-a796-48b7-b9f5-67187a777cb8",
+            "title": "1771619612190-iotoj3h-Guia_do_Professor_-_Blado_e_os_Sons_que_Brilham.pd",
+            "type": "pdf",
+            "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/76ea478e-a796-48b7-b9f5-67187a777cb8/1771619612190-iotoj3h-Guia_do_Professor_-_Blado_e_os_Sons_que_Brilham.pd",
+            "size": ""
+        }
+    ]
+}

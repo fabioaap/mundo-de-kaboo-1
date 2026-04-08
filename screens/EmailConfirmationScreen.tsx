@@ -5,10 +5,21 @@ import { Icons } from '../components/Icons';
 import { LOGO_URL } from '../constants';
 
 interface EmailConfirmationScreenProps {
-  onNavigate: (screen: ScreenName) => void;
+  onNavigate: (screen: ScreenName, params?: any) => void;
+  params?: {
+    status?: 'pending' | 'confirmed';
+    email?: string;
+    message?: string;
+  };
 }
 
-export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = ({ onNavigate }) => {
+export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = ({ onNavigate, params }) => {
+  const isPendingConfirmation = params?.status === 'pending';
+  const title = isPendingConfirmation ? 'Confirme seu e-mail' : 'E-mail Confirmado!';
+  const description = isPendingConfirmation
+    ? params?.message || 'Enviamos um link de confirmação para o seu e-mail. Verifique sua caixa de entrada e a pasta de spam antes de tentar entrar.'
+    : 'Sua conta foi verificada com sucesso. Agora você tem acesso completo ao Mundo de Kaboo.';
+
   return (
     <div className="flex min-h-screen bg-gray-50 items-center justify-center p-6 relative">
        {/* Blobs Background */}
@@ -21,23 +32,29 @@ export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = (
         
         <img src={LOGO_URL} alt="Mundo de Kaboo" className="w-32 h-auto mb-8" />
 
-        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center text-green-600 mb-6">
-            <Icons.Check size={40} strokeWidth={3} />
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${isPendingConfirmation ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-600'}`}>
+            {isPendingConfirmation ? <Icons.Mail size={36} strokeWidth={2.5} /> : <Icons.Check size={40} strokeWidth={3} />}
         </div>
 
         <h1 className="text-2xl font-black text-gray-800 mb-2">
-          E-mail Confirmado!
+          {title}
         </h1>
+
+        {isPendingConfirmation && params?.email && (
+          <p className="text-sm font-semibold text-kaboo-primary mb-3">
+            {params.email}
+          </p>
+        )}
         
         <p className="text-gray-600 mb-8 leading-relaxed">
-          Sua conta foi verificada com sucesso. Agora você tem acesso completo ao Mundo de Kaboo.
+          {description}
         </p>
 
         <Button 
           onClick={() => onNavigate('login')} 
           fullWidth
         >
-          Entrar no App
+          {isPendingConfirmation ? 'Voltar para o login' : 'Entrar no App'}
         </Button>
       </div>
     </div>

@@ -4,10 +4,10 @@ import logoImage from './assets/images/logo-kaboo.png';
 // ---------------------------------------------------------------------------
 // CONFIGURAÇÃO DE IMAGENS E STORAGE
 // ---------------------------------------------------------------------------
-export const LOGO_URL = logoImage; 
+export const LOGO_URL = logoImage;
 
 // Base URL for character images from Supabase storage
-export const CHAR_IMG_BASE_URL = 'https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/characters/';
+export const CHAR_IMG_BASE_URL = 'https://yevysgqlnhonhkczkyhu.supabase.co/storage/v1/object/public/collections/characters/';
 
 // Lista oficial de personagens atualizada
 export const AVATAR_CHARACTERS = [
@@ -55,20 +55,20 @@ export const getCharacterBgColor = (name: string | null) => {
 // Helper Function: Gera a URL da imagem baseada no nome
 export const getCharacterImageUrl = (name: string) => {
   if (!name) return '';
-  
+
   // Normalize the character name to match the file naming pattern
   // Remove accents, convert to lowercase, remove punctuation, replace spaces with hyphens
   const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  
+
   const filename = normalize(name)
     .replace(/[^\w\s]/g, '') // Remove punctuation (ex: the period in Dr.)
     .trim()
     .replace(/\s+/g, '-');   // Replace spaces with hyphens
-  
+
   return `${CHAR_IMG_BASE_URL}${filename}.png`;
 };
 
-export const COLLECTIONS: Collection[] = []; 
+export const COLLECTIONS: Collection[] = [];
 
 export const TABS = [
   { id: 'all', label: 'Todos' },

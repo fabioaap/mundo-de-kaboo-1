@@ -1,14 +1,18 @@
-import { supabase } from './supabase';
-
-export type UserRole = 'admin' | 'editor' | 'viewer';
+import { supabase, isSupabaseConfigured } from './supabase';
+import { getMockCurrentUserRole } from './mockData';
+import { UserRole } from '../types';
 
 /**
  * Get the current user's role from their profile
  */
 export async function getUserRole(): Promise<UserRole> {
+  if (!isSupabaseConfigured) {
+    return getMockCurrentUserRole();
+  }
+
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+
     if (userError || !user) {
       return 'viewer';
     }
@@ -29,20 +33,20 @@ export async function getUserRole(): Promise<UserRole> {
 
     // Get the role value and normalize it
     let role = data.role;
-    
+
     // Handle ENUM types - they might come as objects or strings
     if (typeof role === 'object' && role !== null) {
       role = (role as any).value || (role as any).name || String(role);
     }
-    
+
     // Normalize: trim whitespace and convert to lowercase
     const normalizedRole = String(role).trim().toLowerCase();
-    
+
     // Validate role is one of the expected values (case-insensitive)
     if (normalizedRole && ['admin', 'editor', 'viewer'].includes(normalizedRole)) {
       return normalizedRole as UserRole;
     }
-    
+
     return 'viewer';
   } catch (error) {
     return 'viewer';

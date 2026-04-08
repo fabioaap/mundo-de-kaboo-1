@@ -50,8 +50,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
   ];
 
   // Add admin collections item if user has permission
-  const adminNavItem = canEdit 
-    ? { id: 'admin_collections', icon: Icons.Settings, label: 'Gerenciar' }
+  const adminNavItem = canEdit
+    ? { id: 'admin', icon: Icons.Settings, label: 'Gerenciar' }
     : null;
 
   const navItems = [
@@ -75,9 +75,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
                 className="flex flex-col items-center gap-1 min-w-[64px]"
               >
                 <div className={`p-2 rounded-xl transition-colors ${isActive ? 'bg-kaboo-primary/10' : 'bg-transparent'}`}>
-                  <Icon 
-                    size={24} 
-                    className={`transition-colors ${isActive ? 'text-kaboo-primary stroke-[3px]' : 'text-gray-400 stroke-[2px]'}`} 
+                  <Icon
+                    size={24}
+                    className={`transition-colors ${isActive ? 'text-kaboo-primary stroke-[3px]' : 'text-gray-400 stroke-[2px]'}`}
                   />
                 </div>
                 <span className={`text-[10px] font-bold ${isActive ? 'text-kaboo-primary' : 'text-gray-400'}`}>
@@ -90,9 +90,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
       </div>
 
       {/* DESKTOP SIDEBAR */}
-      <div className={`hidden md:flex flex-col h-screen bg-white border-r border-gray-100 shrink-0 z-50 shadow-sm transition-all duration-300 ease-in-out relative ${
-        isCollapsed ? 'w-20' : 'w-64'
-      }`}>
+      <div className={`hidden md:flex flex-col h-screen bg-white border-r border-gray-100 shrink-0 z-50 shadow-sm transition-all duration-300 ease-in-out relative ${isCollapsed ? 'w-20' : 'w-64'
+        }`}>
         {/* Toggle Button - Top Border */}
         <button
           onClick={toggleSidebar}
@@ -107,11 +106,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
         </button>
 
         {/* Logo Area - Clickable */}
-        <button 
+        <button
           onClick={() => onNavigate('home')}
-          className={`w-full flex justify-center hover:opacity-80 transition-opacity focus:outline-none ${
-            isCollapsed ? 'p-4' : 'p-8'
-          }`}
+          className={`w-full flex justify-center hover:opacity-80 transition-opacity focus:outline-none ${isCollapsed ? 'p-4' : 'p-8'
+            }`}
           title="Ir para o Início"
         >
           {!isCollapsed && (
@@ -123,39 +121,36 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
         </button>
 
         {/* Nav Items */}
-        <div className={`flex-1 space-y-2 py-4 transition-all duration-300 ${
-          isCollapsed ? 'px-2' : 'px-4'
-        }`}>
-            {navItems.map((item) => {
-                const isActive = currentScreen === item.id;
-                const Icon = item.icon;
-                return (
-                <button
-                    key={item.id}
-                    onClick={() => onNavigate(item.id as ScreenName)}
-                    className={`w-full flex items-center rounded-[100px] transition-all duration-200 group ${
-                      isCollapsed 
-                        ? 'justify-center px-3 py-4' 
-                        : 'gap-4 px-6 py-4'
-                    } ${
-                        isActive 
-                        ? 'bg-kaboo-primary text-white shadow-md shadow-kaboo-primary/20' 
-                        : 'bg-transparent text-gray-500 hover:bg-gray-50'
-                    }`}
-                    title={isCollapsed ? item.label : undefined}
-                >
-                    <Icon 
-                        size={22} 
-                        className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px] group-hover:text-kaboo-primary'} 
-                    />
-                    {!isCollapsed && (
-                      <span className={`text-sm font-bold ${isActive ? '' : 'group-hover:text-gray-800'}`}>
-                          {item.label}
-                      </span>
-                    )}
-                </button>
-                );
-            })}
+        <div className={`flex-1 space-y-2 py-4 transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'
+          }`}>
+          {navItems.map((item) => {
+            const isActive = currentScreen === item.id;
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id as ScreenName)}
+                className={`w-full flex items-center rounded-[100px] transition-all duration-200 group ${isCollapsed
+                    ? 'justify-center px-3 py-4'
+                    : 'gap-4 px-6 py-4'
+                  } ${isActive
+                    ? 'bg-kaboo-primary text-white shadow-md shadow-kaboo-primary/20'
+                    : 'bg-transparent text-gray-500 hover:bg-gray-50'
+                  }`}
+                title={isCollapsed ? item.label : undefined}
+              >
+                <Icon
+                  size={22}
+                  className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px] group-hover:text-kaboo-primary'}
+                />
+                {!isCollapsed && (
+                  <span className={`text-sm font-bold ${isActive ? '' : 'group-hover:text-gray-800'}`}>
+                    {item.label}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Footer */}

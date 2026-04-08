@@ -5,6 +5,7 @@ import useIsMobile from '../hooks/useIsMobile';
 interface Card3DProps {
   collection: Collection & { progress?: number };
   onCollectionClick: (collection: Collection) => void;
+  locked?: boolean;
 }
 
 // Global state for device orientation (shared across all cards)
@@ -18,9 +19,9 @@ const setupGlobalOrientationListener = () => {
 
   orientationHandler = (e: DeviceOrientationEvent) => {
     if (e.beta === null || e.gamma === null) return;
-    
+
     globalOrientation = { beta: e.beta, gamma: e.gamma };
-    
+
     // Notify all listeners
     orientationListeners.forEach(listener => {
       listener(globalOrientation!);
@@ -40,7 +41,7 @@ const requestIOSPermission = async (): Promise<boolean> => {
     console.log('DeviceOrientationEvent not available');
     return false;
   }
-  
+
   if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
     try {
       console.log('Requesting device orientation permission...');
@@ -62,7 +63,7 @@ const requestIOSPermission = async (): Promise<boolean> => {
   }
 };
 
-export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick }) => {
+export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, locked }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -78,14 +79,14 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
       // Increased rotation for more visible effect (max 25 degrees for mobile)
       const normalizedBeta = Math.max(-90, Math.min(90, orientation.beta));
       const normalizedGamma = Math.max(-90, Math.min(90, orientation.gamma));
-      
+
       // More pronounced rotation for better visibility
       const rotateX = (normalizedBeta / 90) * -25; // Invert for natural feel, increased from 12 to 25
       const rotateY = (normalizedGamma / 90) * 25; // Increased from 12 to 25
-      
-      setTilt({ 
-        x: Math.max(-25, Math.min(25, rotateX)), 
-        y: Math.max(-25, Math.min(25, rotateY)) 
+
+      setTilt({
+        x: Math.max(-25, Math.min(25, rotateX)),
+        y: Math.max(-25, Math.min(25, rotateY))
       });
     };
 
@@ -138,14 +139,14 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
     const rect = cardRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    
+
     const mouseX = e.clientX - centerX;
     const mouseY = e.clientY - centerY;
-    
+
     // Normalize to -1 to 1 range and apply subtle rotation (max 8 degrees)
     const rotateX = (mouseY / (rect.height / 2)) * -8; // Max 8 degrees for subtlety
     const rotateY = (mouseX / (rect.width / 2)) * 8; // Max 8 degrees for subtlety
-    
+
     setTilt({ x: rotateX, y: rotateY });
   };
 
@@ -157,23 +158,23 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
   };
 
   return (
-    <div 
+    <div
       key={collection.id}
       onClick={() => onCollectionClick(collection)}
       className="cursor-pointer active:scale-95 transition-transform touch-manipulation flex flex-col w-full"
-      style={{ 
-        touchAction: 'manipulation', 
+      style={{
+        touchAction: 'manipulation',
       }}
     >
-      <div 
+      <div
         ref={cardRef}
         className="mb-3 rounded-lg overflow-hidden relative group shadow-md shadow-gray-100 w-full"
-        style={{ 
+        style={{
           WebkitMaskImage: '-webkit-radial-gradient(white, black)',
           transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale3d(1, 1, 1)`,
           transformStyle: 'preserve-3d',
-          transition: isMobile 
-            ? 'transform 0.1s ease-out' 
+          transition: isMobile
+            ? 'transform 0.1s ease-out'
             : (tilt.x === 0 && tilt.y === 0 ? 'transform 0.5s ease-out' : 'transform 0.1s ease-out'),
           touchAction: 'manipulation',
           aspectRatio: '1 / 1',
@@ -183,21 +184,20 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
         onMouseMove={!isMobile ? handleMouseMove : undefined}
         onMouseLeave={!isMobile ? handleMouseLeave : undefined}
       >
-        <img 
-          src={collection.cover_image} 
-          alt={collection.title} 
-          className="w-full h-full object-cover bg-gray-200" 
+        <img
+          src={collection.cover_image}
+          alt={collection.title}
+          className="w-full h-full object-cover bg-gray-200"
           style={{
             transform: 'translateZ(20px)',
           }}
         />
         {/* Light reflection effect - moves based on tilt */}
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: `linear-gradient(${
-              135 + (tilt.y * 2)
-            }deg, 
+            background: `linear-gradient(${135 + (tilt.y * 2)
+              }deg, 
               transparent 0%, 
               rgba(255, 255, 255, 0.3) ${50 + (tilt.x * 0.5) + (tilt.y * 0.5)}%, 
               transparent 100%
@@ -208,7 +208,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
           }}
         />
         {/* Secondary light reflection for more realism */}
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background: `radial-gradient(ellipse at ${50 + (tilt.y * 1.5)}% ${50 + (tilt.x * 1.5)}%, 
@@ -221,9 +221,21 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-        
+
+        {/* Lock overlay for content-gated collections */}
+        {locked && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center" style={{ transform: 'translateZ(35px)' }}>
+            <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-gray-600">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+          </div>
+        )}
+
         {collection.level && (
-          <div 
+          <div
             className="absolute bottom-2 right-2 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-full text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50"
             style={{
               transform: 'translateZ(30px)',
@@ -233,7 +245,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick })
           </div>
         )}
       </div>
-      
+
       {collection.title && (
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-2">
           {collection.title}

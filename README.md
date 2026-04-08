@@ -28,7 +28,7 @@
 
 - **Node.js** 18 ou superior
 - **npm** (incluído com Node.js)
-- Conta no **Supabase** para backend e autenticação
+- Conta no **Supabase** para backend e autenticação, caso você vá sair do modo demonstração
 
 ### Instalação
 
@@ -42,20 +42,49 @@
    npm install
    ```
 
-3. **Configure as variáveis de ambiente**:
-   
-   Crie um arquivo `.env.local` na raiz do projeto:
-   ```bash
-   cp .env.example .env.local
+3. **Escolha como quer rodar o backend**:
+
+   **Modo demonstração**
+
+   Não crie o `.env.local`. A aplicação entra automaticamente em modo demonstração e usa o catálogo local em `data/catalog.seed.json`.
+
+   **Supabase local**
+
+   Copie o arquivo de exemplo e suba o stack local:
+   ```powershell
+   Copy-Item .env.local.example .env.local
+   .\scripts\start-local.ps1
    ```
-   
-   Edite o arquivo `.env.local` e adicione suas credenciais do Supabase:
-   ```env
-   VITE_SUPABASE_URL=sua_url_do_supabase
-   VITE_SUPABASE_ANON_KEY=sua_chave_anonima_do_supabase
+
+   **Supabase hospedado (novo projeto — recomendado)**
+
+   Se você **não tem um projeto Supabase**, o script cria tudo automaticamente:
+   ```powershell
+   .\scripts\create-project.ps1
    ```
-   
-   Você pode obter essas credenciais em: https://supabase.com/dashboard/project/_/settings/api
+   Ele pede apenas o **Access Token** (gere em [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens)) e faz o resto:
+   - Cria o projeto no Supabase Cloud (região `sa-east-1`)
+   - Aguarda até o projeto ficar ativo
+   - Aplica as migrations de schema, vouchers e storage
+   - Roda os seeds (catálogo + vouchers de homologação)
+   - Cria o bucket `collections` e envia os personagens para o storage
+   - Cria o `.env.local` com URL e ANON KEY
+
+   Observação: no plano free com SMTP padrão, o Supabase limita e-mails transacionais. Para homologação intensiva, prefira confirmar usuários manualmente ou configurar SMTP próprio.
+
+   **Supabase hospedado (projeto existente)**
+
+   Se já tem um projeto, use o setup-db para vincular:
+   ```powershell
+   .\scripts\setup-db.ps1 -ProjectRef "seu_project_ref"
+   ```
+
+   Flags opcionais:
+   - `-IncludeCatalogSeed` — sincroniza catálogo versionado
+   - `-IncludeVoucherSeed` — popula vouchers de homologação
+   - `-IncludeCatalogSeed -IncludeVoucherSeed` — executa ambos
+
+   O seed do catálogo pode sobrescrever dados existentes. O seed de vouchers usa códigos previsíveis. Evite em produção sem validar o impacto.
 
 4. **Execute o servidor de desenvolvimento**:
    ```bash
@@ -82,6 +111,7 @@ mundo-de-kaboo/
 ├── components/          # Componentes React reutilizáveis
 │   ├── flipbook/       # Componentes do visualizador de PDF
 │   └── ...             # Outros componentes
+├── data/                # Seeds e snapshots versionados do catálogo
 ├── hooks/              # Custom React Hooks
 ├── lib/                # Utilitários, clientes API e helpers
 │   ├── api.ts          # Cliente da API
@@ -142,14 +172,20 @@ mundo-de-kaboo/
 A aplicação requer as seguintes configurações no Supabase:
 
 1. **Tabelas necessárias**:
-   - `collections` - Armazena as coleções de conteúdo
-   - `users` - Informações dos usuários (gerenciado pelo Supabase Auth)
+   - `profiles` - Perfil do professor e status de acesso
+   - `vouchers` - Códigos de acesso e vigência
+   - `collections` - Catálogo de coleções de conteúdo
+   - `collection_resources` - Materiais extras de cada coleção
 
-2. **Storage Buckets**:
+2. **RPCs necessárias**:
+   - `validate_voucher` - Valida um código sem consumi-lo
+   - `redeem_voucher` - Consome o voucher e atualiza a vigência do usuário
+
+3. **Storage Buckets**:
    - Configurar bucket para armazenar PDFs, áudios e vídeos
    - Configurar políticas de acesso apropriadas
 
-3. **Row Level Security (RLS)**:
+4. **Row Level Security (RLS)**:
    - Configurar políticas RLS para proteger dados dos usuários
    - Garantir que usuários só acessem seus próprios dados
 
@@ -166,9 +202,28 @@ A aplicação requer as seguintes configurações no Supabase:
 ### Fluxo de Autenticação
 
 1. Usuário acessa a tela de login
-2. Autenticação via Supabase Auth
-3. Após login bem-sucedido, redireciona para HomeScreen
-4. Tokens de autenticação são gerenciados automaticamente pelo Supabase
+2. No cadastro, um código de acesso é obrigatório
+3. Autenticação via Supabase Auth
+4. Após login bem-sucedido, o app valida o status de acesso do perfil
+5. Usuários com acesso pendente ou expirado são enviados para a tela de renovação
+6. Tokens de autenticação são gerenciados automaticamente pelo Supabase
+
+### Runbook do Supabase Hospedado
+
+**Cenário 1: Projeto novo (do zero)**
+1. Cadastre-se no Supabase com GitHub: https://supabase.com/dashboard/sign-in
+2. Gere um Access Token: https://supabase.com/dashboard/account/tokens
+3. Rode `.\scripts\create-project.ps1` e cole o token quando pedido.
+4. O script cria o projeto, aplica migrations, roda seeds, provisiona o bucket `collections`, envia os personagens e gera o `.env.local`.
+5. Suba o app com `npm run dev` e teste o fluxo completo.
+6. Se for testar muitos cadastros por e-mail no plano free, configure SMTP próprio ou confirme usuários manualmente no dashboard para não cair no rate limit padrão do Supabase.
+
+**Cenário 2: Projeto existente**
+1. Garanta que você tem o `Project Ref`, o `Access Token`, a senha do banco e a ANON KEY.
+2. Rode `.\scripts\setup-db.ps1 -ProjectRef "seu_project_ref"` para vincular o CLI, aplicar migrations, enviar os personagens do storage e atualizar o `.env.local`.
+3. Use `-IncludeCatalogSeed` se quiser sincronizar o catálogo.
+4. Use `-IncludeVoucherSeed` para carregar códigos de homologação.
+5. Suba o app com `npm run dev` e valide cadastro, login, bloqueio por expiração e renovação.
 
 ### Adicionando Novas Funcionalidades
 
