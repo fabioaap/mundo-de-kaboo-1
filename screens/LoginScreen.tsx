@@ -354,12 +354,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
             <p className="text-gray-500 font-medium text-sm">
               {isAdminLogin ? 'Acesso Interno' : 'Para Professores'}
             </p>
-            {!isSupabaseConfigured && (
-              <div className="mt-5 w-full max-w-sm rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-left text-xs text-sky-800 leading-relaxed">
-                <p className="font-black uppercase tracking-[0.14em] text-sky-700 mb-2">Acesso de demonstração</p>
-                <p><strong>Admin seed:</strong> demo@mundodekaboo.local / 123456</p>
-              </div>
-            )}
           </div>
         )}
 
@@ -649,12 +643,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
             )}
           </div>
 
-          {!isSupabaseConfigured && (
-            <div className="mt-8 p-3 bg-yellow-50 border border-yellow-100 rounded-xl text-xs text-yellow-700 text-center">
-              ⚠️ <strong>Modo demonstracao ativo</strong><br />
-              O cadastro exige voucher e o login reutiliza o perfil local salvo neste navegador.
-            </div>
-          )}
+
         </div>
       </div>
     </div>
