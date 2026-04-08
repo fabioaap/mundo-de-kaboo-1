@@ -73,6 +73,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
   const [fullName, setFullName] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [voucherCode, setVoucherCode] = useState('');
+  const [loginVoucherCode, setLoginVoucherCode] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // UI State
@@ -235,11 +236,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
           throw new Error(result.error || 'Nao foi possivel iniciar a sessao.');
         }
 
-        if (result.profile && onAuthSuccess) {
-          await onAuthSuccess(result.profile);
+        let currentProfile = result.profile;
+
+        // Se preencheu voucher no login, resgata automaticamente
+        if (loginVoucherCode.trim() && currentProfile) {
+          const redemption = await api.redeemVoucher(loginVoucherCode.trim());
+          if (redemption.success && redemption.profile) {
+            currentProfile = redemption.profile;
+          } else if (!redemption.success) {
+            // Login OK mas voucher falhou — notifica e segue
+            setErrorMsg(redemption.message || 'Login realizado, mas nao foi possivel resgatar o voucher.');
+          }
         }
 
-        if (result.profile?.access_status === 'active') {
+        if (currentProfile && onAuthSuccess) {
+          await onAuthSuccess(currentProfile);
+        }
+
+        if (currentProfile?.access_status === 'active') {
           clearPendingSignupVoucher();
         }
 
@@ -488,6 +502,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                   </div>
                 </div>
               </>
+            )}
+
+            {/* Voucher Field for Login Mode */}
+            {!isRegistering && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-600 ml-2">Codigo de Acesso <span className="font-normal text-gray-400">(opcional)</span></label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={loginVoucherCode}
+                    onChange={(e) => { setLoginVoucherCode(e.target.value.toUpperCase()); clearError(); }}
+                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    placeholder="Ex.: KABOO-3MESES-2026"
+                  />
+                  <Icons.Check className="absolute left-4 top-4 text-gray-400" size={20} />
+                </div>
+                <p className="text-xs text-gray-400 ml-2 leading-relaxed">
+                  Se voce tem um novo codigo de acesso, informe aqui para ativa-lo junto com o login.
+                </p>
+              </div>
             )}
 
             {/* Privacy Policy Checkbox - Only for Registration */}
