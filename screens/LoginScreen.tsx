@@ -3,8 +3,9 @@ import { Button } from '../components/Button';
 import { ScreenName, UserProfile, Voucher } from '../types';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { Icons } from '../components/Icons';
-import { LOGO_URL, LEAD_CAPTURE_URL } from '../constants';
+import { LOGO_URL, LEAD_CAPTURE_URL, PRIVACY_POLICY_URL } from '../constants';
 import { api } from '../lib/api';
+import { logger } from '../lib/logger';
 
 interface LoginScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -25,6 +26,11 @@ const clearPendingSignupVoucher = () => {
   if (typeof window === 'undefined') return;
 
   sessionStorage.removeItem(PENDING_SIGNUP_VOUCHER_STORAGE_KEY);
+};
+
+const getPendingSignupVoucher = (): string => {
+  if (typeof window === 'undefined') return '';
+  return sessionStorage.getItem(PENDING_SIGNUP_VOUCHER_STORAGE_KEY) || '';
 };
 
 const formatVoucherDurationLabel = (months: number): string => {
@@ -75,10 +81,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
   const [schoolName, setSchoolName] = useState('');
   const [voucherCode, setVoucherCode] = useState('');
   const [loginVoucherCode, setLoginVoucherCode] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // UI State
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showContinueToHome, setShowContinueToHome] = useState(false);
   const normalizedVoucherCode = voucherCode.trim().toUpperCase();
   const isRegisterVoucherValidated = Boolean(
     isRegistering &&
@@ -104,6 +113,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
   const clearError = () => {
     if (errorMsg) setErrorMsg(null);
+    if (showContinueToHome) setShowContinueToHome(false);
   };
 
   const clearVoucherValidation = () => {
@@ -112,7 +122,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
   };
 
   const handleVoucherCodeChange = (value: string) => {
-    const nextValue = value.toUpperCase();
+    const nextValue = value.toUpperCase().replace(/\s+/g, '');
     setVoucherCode(nextValue);
     clearError();
     if (successMsg) setSuccessMsg(null);
@@ -191,6 +201,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
           throw new Error('Você precisa aceitar a política de privacidade para continuar.');
         }
 
+        if (password !== confirmPassword) {
+          throw new Error('As senhas não coincidem. Verifique e tente novamente.');
+        }
+
         savePendingSignupVoucher(voucherCode);
 
         const result = await api.registerWithVoucher({
@@ -227,8 +241,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         setIsRegistering(false);
         setVoucherCode('');
         clearVoucherValidation();
+        setConfirmPassword('');
         setSuccessMsg(result.message || 'Conta criada com sucesso! Faça login para ativar seu acesso.');
-        setLoading(false);
         return;
       } else {
         const result = await api.signIn(email, password);
@@ -239,14 +253,30 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
         let currentProfile = result.profile;
 
-        // Se preencheu voucher no login, resgata automaticamente
-        if (loginVoucherCode.trim() && currentProfile) {
-          const redemption = await api.redeemVoucher(loginVoucherCode.trim());
+        // P1.2: resgata voucher pendente do fluxo de confirmação de e-mail
+        const pendingVoucher = getPendingSignupVoucher();
+        if (pendingVoucher && !loginVoucherCode.trim()) {
+          const pendingRedemption = await api.redeemVoucher(pendingVoucher);
+          if (pendingRedemption.success && pendingRedemption.profile) {
+            currentProfile = pendingRedemption.profile;
+            clearPendingSignupVoucher();
+          }
+        }
+
+        // P1.1: se preencheu voucher no login, resgata automaticamente
+        const voucherToRedeem = loginVoucherCode.trim().replace(/\s+/g, '');
+        if (voucherToRedeem && currentProfile) {
+          const redemption = await api.redeemVoucher(voucherToRedeem);
           if (redemption.success && redemption.profile) {
             currentProfile = redemption.profile;
           } else if (!redemption.success) {
-            // Login OK mas voucher falhou — notifica e segue
+            // Login OK mas voucher falhou — atualiza perfil, mostra erro sem navegar (P1.1)
+            if (currentProfile && onAuthSuccess) {
+              await onAuthSuccess(currentProfile);
+            }
             setErrorMsg(redemption.message || 'Login realizado, mas nao foi possivel resgatar o voucher.');
+            setShowContinueToHome(true);
+            return;
           }
         }
 
@@ -261,7 +291,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         onNavigate('home');
       }
     } catch (error: any) {
-      console.error(error);
+      logger.error('Auth error', error);
       const normalizedError = normalizeAuthError(error.message || '');
 
       if (normalizedError.requiresEmailConfirmation) {
@@ -275,7 +305,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
       setErrorMsg(normalizedError.message);
     } finally {
-      if (!successMsg) setLoading(false); // Only stop loading if we didn't set success manually
+      setLoading(false);
     }
   };
 
@@ -285,6 +315,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     setSuccessMsg(null);
     setAcceptedTerms(false);
     setVoucherCode('');
+    setLoginVoucherCode('');
+    setConfirmPassword('');
+    setShowContinueToHome(false);
     clearVoucherValidation();
     if (!isRegistering) {
       loadDemoVouchers().catch(() => undefined);
@@ -299,6 +332,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     setSuccessMsg(null);
     setEmail('');
     setPassword('');
+    setLoginVoucherCode('');
+    setShowContinueToHome(false);
     window.scrollTo(0, 0);
   };
 
@@ -308,6 +343,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     setSuccessMsg(null);
     setEmail('');
     setPassword('');
+    setLoginVoucherCode('');
+    setShowContinueToHome(false);
     window.scrollTo(0, 0);
   };
 
@@ -333,6 +370,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
             <button
               type="button"
               onClick={toggleMode}
+              aria-label="Voltar para o login"
               className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-700"
             >
               <Icons.ChevronLeft size={24} />
@@ -384,9 +422,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
             {isRegistering && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-600 ml-2">Codigo de Acesso</label>
+                  <label htmlFor="field-voucher-register" className="text-sm font-bold text-gray-600 ml-2">Codigo de Acesso</label>
                   <div className="relative">
                     <input
+                      id="field-voucher-register"
                       type="text"
                       value={voucherCode}
                       onChange={(e) => handleVoucherCodeChange(e.target.value)}
@@ -394,6 +433,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                       placeholder="Ex.: KABOO-3MESES-2026"
                       required={isRegistering}
                       readOnly={isRegisterVoucherValidated}
+                      autoComplete="off"
+                      autoCapitalize="characters"
                     />
                     <Icons.Check className="absolute left-4 top-4 text-gray-400" size={20} />
                   </div>
@@ -437,30 +478,36 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                 {isRegisterVoucherValidated && (
                   <>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-600 ml-2">Nome Completo</label>
+                      <label htmlFor="field-name" className="text-sm font-bold text-gray-600 ml-2">Nome Completo</label>
                       <div className="relative">
                         <input
+                          id="field-name"
                           type="text"
                           value={fullName}
                           onChange={(e) => { setFullName(e.target.value); clearError(); }}
                           className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
                           placeholder="Seu nome"
                           required={isRegistering}
+                          minLength={3}
+                          autoComplete="name"
                         />
                         <Icons.User className="absolute left-4 top-4 text-gray-400" size={20} />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-600 ml-2">Escola</label>
+                      <label htmlFor="field-school" className="text-sm font-bold text-gray-600 ml-2">Escola</label>
                       <div className="relative">
                         <input
+                          id="field-school"
                           type="text"
                           value={schoolName}
                           onChange={(e) => { setSchoolName(e.target.value); clearError(); }}
                           className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
                           placeholder="Nome da sua escola"
                           required={isRegistering}
+                          minLength={3}
+                          autoComplete="organization"
                         />
                         <Icons.Home className="absolute left-4 top-4 text-gray-400" size={20} />
                       </div>
@@ -474,15 +521,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
               <>
                 {/* Email Field */}
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-600 ml-2">E-mail</label>
+                  <label htmlFor="field-email" className="text-sm font-bold text-gray-600 ml-2">E-mail</label>
                   <div className="relative">
                     <input
+                      id="field-email"
                       type="email"
                       value={email}
                       onChange={(e) => { setEmail(e.target.value); clearError(); }}
                       className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
                       placeholder="email@escola.com.br"
                       required
+                      autoComplete="email"
                     />
                     <Icons.Mail className="absolute left-4 top-4 text-gray-400" size={20} />
                   </div>
@@ -490,9 +539,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
                 {/* Password Field */}
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-600 ml-2">Senha</label>
+                  <label htmlFor="field-password" className="text-sm font-bold text-gray-600 ml-2">Senha</label>
                   <div className="relative">
                     <input
+                      id="field-password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => { setPassword(e.target.value); clearError(); }}
@@ -500,30 +550,63 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                       placeholder="••••••••"
                       required
                       minLength={6}
+                      autoComplete={isRegistering ? 'new-password' : 'current-password'}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                       className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none"
                     >
                       {showPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
                     </button>
                   </div>
                 </div>
+
+                {/* Confirm Password - Only for Registration (P1.4) */}
+                {isRegistering && (
+                  <div className="space-y-2">
+                    <label htmlFor="field-confirm-password" className="text-sm font-bold text-gray-600 ml-2">Confirmar Senha</label>
+                    <div className="relative">
+                      <input
+                        id="field-confirm-password"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => { setConfirmPassword(e.target.value); clearError(); }}
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pr-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                        placeholder="••••••••"
+                        required
+                        minLength={6}
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        aria-label={showConfirmPassword ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'}
+                        className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none"
+                      >
+                        {showConfirmPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
             {/* Voucher Field for Login Mode — hidden for admin login */}
             {!isRegistering && !isAdminLogin && (
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-600 ml-2">Codigo de Acesso <span className="font-normal text-gray-400">(opcional)</span></label>
+                <label htmlFor="field-voucher-login" className="text-sm font-bold text-gray-600 ml-2">Codigo de Acesso <span className="font-normal text-gray-400">(opcional)</span></label>
                 <div className="relative">
                   <input
+                    id="field-voucher-login"
                     type="text"
                     value={loginVoucherCode}
-                    onChange={(e) => { setLoginVoucherCode(e.target.value.toUpperCase()); clearError(); }}
+                    onChange={(e) => { setLoginVoucherCode(e.target.value.toUpperCase().replace(/\s+/g, '')); clearError(); }}
                     className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
                     placeholder="Ex.: KABOO-3MESES-2026"
+                    autoComplete="off"
+                    autoCapitalize="characters"
                   />
                   <Icons.Check className="absolute left-4 top-4 text-gray-400" size={20} />
                 </div>
@@ -554,14 +637,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                   />
                 </div>
                 <label htmlFor="terms" className="text-sm text-gray-600 cursor-pointer select-none leading-tight">
-                  Li e concordo com a <button type="button" className="text-kaboo-primary font-bold hover:underline">política de privacidade</button> do Mundo de Kaboo.
+                  Li e concordo com a <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-kaboo-primary font-bold hover:underline">política de privacidade</a> do Mundo de Kaboo.
                 </label>
               </div>
             )}
 
             {/* Success Message */}
             {successMsg && (
-              <div className="bg-green-50 text-green-600 text-sm p-3 rounded-xl font-bold text-center animate-in fade-in flex items-center justify-center gap-2">
+              <div role="status" aria-live="polite" className="bg-green-50 text-green-600 text-sm p-3 rounded-xl font-bold text-center animate-in fade-in flex items-center justify-center gap-2">
                 <Icons.Check size={16} />
                 {successMsg}
               </div>
@@ -569,14 +652,25 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
             {/* Error Message */}
             {errorMsg && (
-              <div className="bg-red-50 text-red-500 text-sm p-3 rounded-xl font-medium text-center animate-in fade-in">
+              <div role="alert" className="bg-red-50 text-red-500 text-sm p-3 rounded-xl font-medium text-center animate-in fade-in">
                 {errorMsg}
+                {showContinueToHome && (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('home')}
+                      className="text-sm font-bold text-kaboo-primary hover:underline"
+                    >
+                      Ir para a plataforma mesmo assim →
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
             {(!isRegistering || isRegisterVoucherValidated) && (
               <div className="pt-2">
-                <Button type="submit" fullWidth disabled={loading}>
+                <Button type="submit" fullWidth disabled={loading || (isRegistering && !acceptedTerms)}>
                   {loading ? 'Carregando...' : (isRegistering ? 'Criar Conta' : 'Entrar')}
                 </Button>
               </div>
