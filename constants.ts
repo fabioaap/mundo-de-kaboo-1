@@ -6,6 +6,9 @@ import logoImage from './assets/images/logo-kaboo.png';
 // ---------------------------------------------------------------------------
 export const LOGO_URL = logoImage;
 
+// URL para captura de leads (usuários sem voucher)
+export const LEAD_CAPTURE_URL = 'https://mundodekaboo.com.br/conhecer';
+
 // Base URL for character images from Supabase storage
 export const CHAR_IMG_BASE_URL = 'https://yevysgqlnhonhkczkyhu.supabase.co/storage/v1/object/public/collections/characters/';
 

@@ -3,7 +3,7 @@ import { Button } from '../components/Button';
 import { ScreenName, UserProfile, Voucher } from '../types';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { Icons } from '../components/Icons';
-import { LOGO_URL } from '../constants';
+import { LOGO_URL, LEAD_CAPTURE_URL } from '../constants';
 import { api } from '../lib/api';
 
 interface LoginScreenProps {
@@ -412,6 +412,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                       >
                         {loading ? 'Validando codigo...' : 'Validar codigo e continuar'}
                       </Button>
+                      <div className="pt-1 text-center">
+                        <a
+                          href={LEAD_CAPTURE_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-kaboo-primary/70 hover:text-kaboo-primary font-semibold transition-colors"
+                        >
+                          Nao tenho um codigo &mdash; Quero conhecer a plataforma &rarr;
+                        </a>
+                      </div>
                     </div>
                   ) : (
                     <div className="rounded-2xl border border-green-100 bg-green-50 px-4 py-4 text-sm text-green-800 space-y-3">
