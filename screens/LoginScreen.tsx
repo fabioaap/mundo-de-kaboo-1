@@ -397,31 +397,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                     />
                     <Icons.Check className="absolute left-4 top-4 text-gray-400" size={20} />
                   </div>
-                  {!isSupabaseConfigured && demoVouchers.length > 0 && (
-                    <div className="rounded-2xl border border-amber-100 bg-amber-50 px-3 py-3 text-xs text-amber-800 leading-relaxed space-y-2">
-                      <p className="font-black uppercase tracking-[0.14em] text-amber-700">Códigos de teste</p>
-                      {activeDemoVouchers.length > 0 && (
-                        <p>
-                          <strong>Válidos:</strong> {activeDemoVouchers.map((voucher) => voucher.code).join(', ')}.
-                        </p>
-                      )}
-                      {redeemedDemoVouchers.length > 0 && (
-                        <p>
-                          <strong>Já usados:</strong> {redeemedDemoVouchers.map((voucher) => voucher.code).join(', ')}.
-                        </p>
-                      )}
-                      {expiredDemoVouchers.length > 0 && (
-                        <p>
-                          <strong>Expirados:</strong> {expiredDemoVouchers.map((voucher) => voucher.code).join(', ')}.
-                        </p>
-                      )}
-                      {disabledDemoVouchers.length > 0 && (
-                        <p>
-                          <strong>Bloqueados:</strong> {disabledDemoVouchers.map((voucher) => voucher.code).join(', ')}.
-                        </p>
-                      )}
-                    </div>
-                  )}
+
 
                   {!isRegisterVoucherValidated ? (
                     <div className="rounded-2xl border border-kaboo-primary/10 bg-kaboo-primary/5 px-4 py-4 text-sm text-kaboo-primary space-y-3">
