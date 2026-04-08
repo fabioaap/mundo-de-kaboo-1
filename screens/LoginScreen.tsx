@@ -599,6 +599,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
               </p>
             )}
 
+            {!isRegistering && !isAdminLogin && (
+              <a
+                href={LEAD_CAPTURE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-xs text-gray-400 hover:text-kaboo-primary font-semibold transition-colors"
+              >
+                Nao tenho codigo &mdash; Quero conhecer a plataforma &rarr;
+              </a>
+            )}
+
             {!isRegistering && (
               <button
                 type="button"
