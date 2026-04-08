@@ -22,6 +22,11 @@ export const getProfileAccessStatus = (profile: UserProfile | null | undefined):
         return 'pending_voucher';
     }
 
+    // Admin e editor tem acesso irrestrito, nao dependem de voucher
+    if (profile.role === 'admin' || profile.role === 'editor') {
+        return 'active';
+    }
+
     if (profile.access_status === 'pending_voucher') {
         return 'pending_voucher';
     }
