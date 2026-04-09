@@ -13,7 +13,8 @@ export const LEAD_CAPTURE_URL = 'https://mundodekaboo.com.br/conhecer';
 export const PRIVACY_POLICY_URL = 'https://mundodekaboo.com.br/privacidade';
 
 // Base URL for character images from Supabase storage
-export const CHAR_IMG_BASE_URL = 'https://yevysgqlnhonhkczkyhu.supabase.co/storage/v1/object/public/collections/characters/';
+// Uses VITE_SUPABASE_URL env var to avoid hardcoded project ID in source
+export const CHAR_IMG_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL ?? ''}/storage/v1/object/public/collections/characters/`;
 
 // Lista oficial de personagens atualizada
 export const AVATAR_CHARACTERS = [

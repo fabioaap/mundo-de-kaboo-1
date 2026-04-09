@@ -18,6 +18,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ collection
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [playError, setPlayError] = useState<string | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,16 +47,22 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ collection
     }
   };
 
-  const togglePlay = (e?: React.MouseEvent) => {
+  const togglePlay = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     resetControlsTimeout();
-    if (videoRef.current) {
+    if (!videoRef.current) return;
+    try {
+      setPlayError(null);
       if (isPlaying) {
         videoRef.current.pause();
+        setIsPlaying(false);
       } else {
-        videoRef.current.play();
+        await videoRef.current.play();
+        setIsPlaying(true);
       }
-      setIsPlaying(!isPlaying);
+    } catch {
+      setPlayError('Não foi possível reproduzir o vídeo. Toque novamente para tentar.');
+      setIsPlaying(false);
     }
   };
 
@@ -178,6 +185,13 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ collection
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
            <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+        </div>
+      )}
+
+      {/* Play Error Message */}
+      {playError && (
+        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-20 bg-red-500/90 backdrop-blur-sm text-white text-sm px-5 py-2 rounded-full pointer-events-none text-center max-w-xs">
+          {playError}
         </div>
       )}
 

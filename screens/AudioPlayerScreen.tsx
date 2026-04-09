@@ -19,6 +19,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
   const [dragStartTime, setDragStartTime] = useState(0);
   const [dragStartRotation, setDragStartRotation] = useState(0);
   const [isHoveringCd, setIsHoveringCd] = useState(false);
+  const [playError, setPlayError] = useState<string | null>(null);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rotationIntervalRef = useRef<number | null>(null);
@@ -110,14 +111,16 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
     if (!audioRef.current) return;
 
     try {
+      setPlayError(null);
       if (isPlaying) {
         audioRef.current.pause();
       } else {
         await audioRef.current.play();
       }
       setIsPlaying(!isPlaying);
-    } catch (error) {
-      console.error('Error playing audio:', error);
+    } catch {
+      setPlayError('Não foi possível reproduzir o áudio. Toque novamente para tentar.');
+      setIsPlaying(false);
     }
   };
 
@@ -337,6 +340,13 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
               <Icons.SkipForward size={28} strokeWidth={2.5} />
             </button>
           </div>
+
+          {/* Play Error Message */}
+          {playError && (
+            <div className="mt-4 bg-red-500/80 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full text-center max-w-xs">
+              {playError}
+            </div>
+          )}
         </div>
       </div>
 

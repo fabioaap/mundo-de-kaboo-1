@@ -14,6 +14,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
   const [searchTerm, setSearchTerm] = useState('');
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Derived state for Browse sections
   const [allCharacters, setAllCharacters] = useState<string[]>([]);
@@ -27,11 +28,16 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
   
   useEffect(() => {
     // Fetch all collections on mount to allow instant filtering and tag extraction
-    api.getCollections().then(data => {
-      setCollections(data);
-      extractTags(data);
-      setLoading(false);
-    });
+    api.getCollections()
+      .then(data => {
+        setCollections(data);
+        extractTags(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Não foi possível carregar o acervo. Verifique sua conexão e tente novamente.');
+        setLoading(false);
+      });
   }, []);
 
   const extractTags = (data: Collection[]) => {
@@ -117,6 +123,8 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
       <div className="flex-1 overflow-y-auto px-6 pb-6 md:px-8 no-scrollbar">
         {loading ? (
            <div className="text-center py-10 text-gray-400">Carregando acervo...</div>
+        ) : error ? (
+          <div className="text-center py-10 text-red-500">{error}</div>
         ) : searchTerm ? (
           /* Results List -> Grid on Desktop */
           <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
