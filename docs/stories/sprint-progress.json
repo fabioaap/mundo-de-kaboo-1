@@ -1,247 +1,247 @@
 {
-  "sprint": "Quality Improvements",
-  "branch": "fix/quality-improvements",
-  "updatedAt": "2026-04-09",
-  "stories": [
-    {
-      "id": "US-C1",
-      "priority": "must",
-      "title": ".gitignore para credenciais",
-      "assignee": "Dev",
-      "pts": 0.5,
-      "status": "done",
-      "batch": 1,
-      "commit": "0fd62a2"
-    },
-    {
-      "id": "US-I3",
-      "priority": "must",
-      "title": "URL Supabase → variável de ambiente",
-      "assignee": "Dev",
-      "pts": 0.5,
-      "status": "done",
-      "batch": 1,
-      "commit": "0fd62a2"
-    },
-    {
-      "id": "US-DevOps4",
-      "priority": "must",
-      "title": "Headers de segurança Vercel",
-      "assignee": "DevOps",
-      "pts": 0.5,
-      "status": "done",
-      "batch": 1,
-      "commit": "0fd62a2"
-    },
-    {
-      "id": "US-DB4",
-      "priority": "must",
-      "title": "Índices faltantes nas queries críticas",
-      "assignee": "Data Engineer",
-      "pts": 0.5,
-      "status": "done",
-      "batch": 3,
-      "commit": "7cc7297"
-    },
-    {
-      "id": "US-DevOps3",
-      "priority": "must",
-      "title": "Prebuild cross-platform Windows",
-      "assignee": "DevOps",
-      "pts": 0.5,
-      "status": "done",
-      "batch": 1,
-      "commit": "0fd62a2"
-    },
-    {
-      "id": "US-C3",
-      "priority": "must",
-      "title": "Skeleton nos players ao recarregar",
-      "assignee": "Dev",
-      "pts": 2,
-      "status": "done",
-      "batch": 2,
-      "commit": "c55ce47"
-    },
-    {
-      "id": "US-C6",
-      "priority": "must",
-      "title": "History API / botão Voltar do browser",
-      "assignee": "Dev",
-      "pts": 2,
-      "status": "done",
-      "batch": 3,
-      "commit": "7cc7297"
-    },
-    {
-      "id": "US-C2",
-      "priority": "must",
-      "title": "createUser sem sobrescrever sessão",
-      "assignee": "Dev",
-      "pts": 2,
-      "status": "done",
-      "batch": 3,
-      "commit": "7cc7297"
-    },
-    {
-      "id": "US-I9-I10-I11",
-      "priority": "must",
-      "title": "Erros silenciosos players e busca",
-      "assignee": "Dev",
-      "pts": 1,
-      "status": "done",
-      "batch": 1,
-      "commit": "0fd62a2"
-    },
-    {
-      "id": "US-I14",
-      "priority": "must",
-      "title": "Splash com logo + spinner",
-      "assignee": "Dev",
-      "pts": 1,
-      "status": "done",
-      "batch": 2,
-      "commit": "c55ce47"
-    },
-    {
-      "id": "US-I15",
-      "priority": "must",
-      "title": "Toast safe-area iPhones",
-      "assignee": "Dev",
-      "pts": 0.5,
-      "status": "done",
-      "batch": 2,
-      "commit": "c55ce47"
-    },
-    {
-      "id": "US-DB2",
-      "priority": "must",
-      "title": "deleteCollection sem cascata",
-      "assignee": "Dev+Data",
-      "pts": 1,
-      "status": "done",
-      "batch": 3,
-      "commit": "7cc7297"
-    },
-    {
-      "id": "US-I1",
-      "priority": "must",
-      "title": "Bloquear modo demo em produção",
-      "assignee": "Dev",
-      "pts": 1,
-      "status": "done",
-      "batch": 2,
-      "commit": "c55ce47"
-    },
-    {
-      "id": "US-C7",
-      "priority": "should",
-      "title": "BookReader portrait fallback",
-      "assignee": "Dev",
-      "pts": 2,
-      "status": "done",
-      "batch": 3,
-      "commit": "7cc7297"
-    },
-    {
-      "id": "US-I13",
-      "priority": "should",
-      "title": "Confirmação antes de logout",
-      "assignee": "Dev",
-      "pts": 1,
-      "status": "done",
-      "batch": 2,
-      "commit": "c55ce47"
-    },
-    {
-      "id": "US-I12",
-      "priority": "should",
-      "title": "Aviso re-confirmação de e-mail",
-      "assignee": "Dev",
-      "pts": 1,
-      "status": "done",
-      "batch": 2,
-      "commit": "c55ce47"
-    },
-    {
-      "id": "US-D9",
-      "priority": "should",
-      "title": "console.* substituído por logger",
-      "assignee": "Dev",
-      "pts": 1,
-      "status": "done",
-      "batch": 2,
-      "commit": "c55ce47"
-    },
-    {
-      "id": "US-DevOps2",
-      "priority": "should",
-      "title": "GEMINI_API_KEY fora do bundle",
-      "assignee": "DevOps",
-      "pts": 1,
-      "status": "done",
-      "batch": 1,
-      "commit": "0fd62a2"
-    },
-    {
-      "id": "US-D6-D7",
-      "priority": "should",
-      "title": "Remover screens mortas do App.tsx",
-      "assignee": "Dev",
-      "pts": 0.5,
-      "status": "done",
-      "batch": 2,
-      "commit": "c55ce47"
-    },
-    {
-      "id": "US-I16-I17",
-      "priority": "should",
-      "title": "A11y: labels e ARIA nos forms/nav",
-      "assignee": "Dev",
-      "pts": 1,
-      "status": "done",
-      "batch": 2,
-      "commit": "c55ce47"
-    },
-    {
-      "id": "US-O1",
-      "priority": "could",
-      "title": "Velocidade 0.75x AudioPlayer",
-      "assignee": "Dev",
-      "pts": 0.5,
-      "status": "done",
-      "batch": 3,
-      "commit": "7cc7297"
-    },
-    {
-      "id": "US-O3",
-      "priority": "could",
-      "title": "EmailConfirmation redirect se sessão ativa",
-      "assignee": "Dev",
-      "pts": 0.5,
-      "status": "done",
-      "batch": 3,
-      "commit": "7cc7297"
-    },
-    {
-      "id": "US-D8",
-      "priority": "could",
-      "title": "Remover GEMINI_API_KEY sem integração",
-      "assignee": "Dev",
-      "pts": 0.5,
-      "status": "done",
-      "batch": 1,
-      "commit": "0fd62a2"
-    },
-    {
-      "id": "US-DB1",
-      "priority": "could",
-      "title": "profiles.email sync com auth.users",
-      "assignee": "Data Engineer",
-      "pts": 2,
-      "status": "done",
-      "batch": 4,
-      "commit": "pending"
-    }
-  ]
+    "sprint": "Quality Improvements",
+    "branch": "fix/quality-improvements",
+    "updatedAt": "2026-04-09",
+    "stories": [
+        {
+            "id": "US-C1",
+            "priority": "must",
+            "title": ".gitignore para credenciais",
+            "assignee": "Dev",
+            "pts": 0.5,
+            "status": "done",
+            "batch": 1,
+            "commit": "0fd62a2"
+        },
+        {
+            "id": "US-I3",
+            "priority": "must",
+            "title": "URL Supabase → variável de ambiente",
+            "assignee": "Dev",
+            "pts": 0.5,
+            "status": "done",
+            "batch": 1,
+            "commit": "0fd62a2"
+        },
+        {
+            "id": "US-DevOps4",
+            "priority": "must",
+            "title": "Headers de segurança Vercel",
+            "assignee": "DevOps",
+            "pts": 0.5,
+            "status": "done",
+            "batch": 1,
+            "commit": "0fd62a2"
+        },
+        {
+            "id": "US-DB4",
+            "priority": "must",
+            "title": "Índices faltantes nas queries críticas",
+            "assignee": "Data Engineer",
+            "pts": 0.5,
+            "status": "done",
+            "batch": 3,
+            "commit": "7cc7297"
+        },
+        {
+            "id": "US-DevOps3",
+            "priority": "must",
+            "title": "Prebuild cross-platform Windows",
+            "assignee": "DevOps",
+            "pts": 0.5,
+            "status": "done",
+            "batch": 1,
+            "commit": "0fd62a2"
+        },
+        {
+            "id": "US-C3",
+            "priority": "must",
+            "title": "Skeleton nos players ao recarregar",
+            "assignee": "Dev",
+            "pts": 2,
+            "status": "done",
+            "batch": 2,
+            "commit": "c55ce47"
+        },
+        {
+            "id": "US-C6",
+            "priority": "must",
+            "title": "History API / botão Voltar do browser",
+            "assignee": "Dev",
+            "pts": 2,
+            "status": "done",
+            "batch": 3,
+            "commit": "7cc7297"
+        },
+        {
+            "id": "US-C2",
+            "priority": "must",
+            "title": "createUser sem sobrescrever sessão",
+            "assignee": "Dev",
+            "pts": 2,
+            "status": "done",
+            "batch": 3,
+            "commit": "7cc7297"
+        },
+        {
+            "id": "US-I9-I10-I11",
+            "priority": "must",
+            "title": "Erros silenciosos players e busca",
+            "assignee": "Dev",
+            "pts": 1,
+            "status": "done",
+            "batch": 1,
+            "commit": "0fd62a2"
+        },
+        {
+            "id": "US-I14",
+            "priority": "must",
+            "title": "Splash com logo + spinner",
+            "assignee": "Dev",
+            "pts": 1,
+            "status": "done",
+            "batch": 2,
+            "commit": "c55ce47"
+        },
+        {
+            "id": "US-I15",
+            "priority": "must",
+            "title": "Toast safe-area iPhones",
+            "assignee": "Dev",
+            "pts": 0.5,
+            "status": "done",
+            "batch": 2,
+            "commit": "c55ce47"
+        },
+        {
+            "id": "US-DB2",
+            "priority": "must",
+            "title": "deleteCollection sem cascata",
+            "assignee": "Dev+Data",
+            "pts": 1,
+            "status": "done",
+            "batch": 3,
+            "commit": "7cc7297"
+        },
+        {
+            "id": "US-I1",
+            "priority": "must",
+            "title": "Bloquear modo demo em produção",
+            "assignee": "Dev",
+            "pts": 1,
+            "status": "done",
+            "batch": 2,
+            "commit": "c55ce47"
+        },
+        {
+            "id": "US-C7",
+            "priority": "should",
+            "title": "BookReader portrait fallback",
+            "assignee": "Dev",
+            "pts": 2,
+            "status": "done",
+            "batch": 3,
+            "commit": "7cc7297"
+        },
+        {
+            "id": "US-I13",
+            "priority": "should",
+            "title": "Confirmação antes de logout",
+            "assignee": "Dev",
+            "pts": 1,
+            "status": "done",
+            "batch": 2,
+            "commit": "c55ce47"
+        },
+        {
+            "id": "US-I12",
+            "priority": "should",
+            "title": "Aviso re-confirmação de e-mail",
+            "assignee": "Dev",
+            "pts": 1,
+            "status": "done",
+            "batch": 2,
+            "commit": "c55ce47"
+        },
+        {
+            "id": "US-D9",
+            "priority": "should",
+            "title": "console.* substituído por logger",
+            "assignee": "Dev",
+            "pts": 1,
+            "status": "done",
+            "batch": 2,
+            "commit": "c55ce47"
+        },
+        {
+            "id": "US-DevOps2",
+            "priority": "should",
+            "title": "GEMINI_API_KEY fora do bundle",
+            "assignee": "DevOps",
+            "pts": 1,
+            "status": "done",
+            "batch": 1,
+            "commit": "0fd62a2"
+        },
+        {
+            "id": "US-D6-D7",
+            "priority": "should",
+            "title": "Remover screens mortas do App.tsx",
+            "assignee": "Dev",
+            "pts": 0.5,
+            "status": "done",
+            "batch": 2,
+            "commit": "c55ce47"
+        },
+        {
+            "id": "US-I16-I17",
+            "priority": "should",
+            "title": "A11y: labels e ARIA nos forms/nav",
+            "assignee": "Dev",
+            "pts": 1,
+            "status": "done",
+            "batch": 2,
+            "commit": "c55ce47"
+        },
+        {
+            "id": "US-O1",
+            "priority": "could",
+            "title": "Velocidade 0.75x AudioPlayer",
+            "assignee": "Dev",
+            "pts": 0.5,
+            "status": "done",
+            "batch": 3,
+            "commit": "7cc7297"
+        },
+        {
+            "id": "US-O3",
+            "priority": "could",
+            "title": "EmailConfirmation redirect se sessão ativa",
+            "assignee": "Dev",
+            "pts": 0.5,
+            "status": "done",
+            "batch": 3,
+            "commit": "7cc7297"
+        },
+        {
+            "id": "US-D8",
+            "priority": "could",
+            "title": "Remover GEMINI_API_KEY sem integração",
+            "assignee": "Dev",
+            "pts": 0.5,
+            "status": "done",
+            "batch": 1,
+            "commit": "0fd62a2"
+        },
+        {
+            "id": "US-DB1",
+            "priority": "could",
+            "title": "profiles.email sync com auth.users",
+            "assignee": "Data Engineer",
+            "pts": 2,
+            "status": "done",
+            "batch": 4,
+            "commit": "373bb74"
+        }
+    ]
 }

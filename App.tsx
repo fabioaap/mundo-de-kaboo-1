@@ -416,14 +416,12 @@ const App: React.FC = () => {
 
   const goBack = () => {
     if (['player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen)) {
-      // Return to previous screen and restore the collection modal
-      if (previousScreenState) {
-        navigate(previousScreenState.screen, {
-          collectionId: previousScreenState.collectionId
-        });
-        setPreviousScreenState(null);
+      // Clear previousScreenState then use browser history so no duplicate entry is pushed
+      setPreviousScreenState(null);
+      savePreviousState(null);
+      if (window.history.length > 1) {
+        window.history.back();
       } else {
-        // Fallback: return to home
         navigate('home');
       }
     } else if (navState.currentScreen === 'my_data') {

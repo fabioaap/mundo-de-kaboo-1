@@ -17,7 +17,7 @@ interface EmailConfirmationScreenProps {
 export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = ({ onNavigate, params }) => {
   const isPendingConfirmation = params?.status === 'pending';
 
-  // Redireciona para home se a sessão já estiver ativa
+  // Redireciona para home se a sessão já estiver ativa (executa só no mount)
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -25,7 +25,8 @@ export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = (
         onNavigate('home');
       }
     });
-  }, [onNavigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const title = isPendingConfirmation ? 'Confirme seu e-mail' : 'E-mail Confirmado!';
   const description = isPendingConfirmation
     ? params?.message || 'Enviamos um link de confirmação para o seu e-mail. Verifique sua caixa de entrada e a pasta de spam antes de tentar entrar.'
