@@ -1,0 +1,35 @@
+/**
+ * Mundo de Kaboo - Docusaurus Theme
+ * Brand color: #5D1F58 (purple/magenta)
+ */
+
+:root {
+  --ifm-color-primary: #5D1F58;
+  --ifm-color-primary-dark: #531c50;
+  --ifm-color-primary-darker: #4e1b4b;
+  --ifm-color-primary-darkest: #40163d;
+  --ifm-color-primary-light: #672261;
+  --ifm-color-primary-lighter: #6c2466;
+  --ifm-color-primary-lightest: #7a2974;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(93, 31, 88, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #c76bbf;
+  --ifm-color-primary-dark: #bf58b7;
+  --ifm-color-primary-darker: #ba50b2;
+  --ifm-color-primary-darkest: #a83da0;
+  --ifm-color-primary-light: #cf7ec7;
+  --ifm-color-primary-lighter: #d386cf;
+  --ifm-color-primary-lightest: #dc9cd9;
+  --docusaurus-highlighted-code-line-bg: rgba(199, 107, 191, 0.2);
+}
+
+.navbar__brand {
+  font-weight: 700;
+}
+
+.footer__title {
+  font-weight: 600;
+}
