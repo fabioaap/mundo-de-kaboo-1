@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
+import { deleteFile } from './storage';
 import {
   Collection,
   CollectionResource,
@@ -702,12 +703,50 @@ export const api = {
   },
 
   /**
-   * Delete a collection (Admin only)
+   * Delete a collection (Admin only) — cascata: resources + storage + collection
    */
   async deleteCollection(id: string): Promise<boolean> {
     if (!isSupabaseConfigured) {
       return mockDeleteCollection(id);
     }
+
+    // 1. Buscar todos os recursos associados antes de deletar
+    const { data: resources, error: resourcesError } = await supabase
+      .from('collection_resources')
+      .select('id, url')
+      .eq('collection_id', id);
+
+    if (resourcesError) {
+      logger.error('Error fetching collection resources before delete:', resourcesError);
+      return false;
+    }
+
+    // 2. Deletar arquivos do Storage (best-effort: continua mesmo se algum falhar)
+    if (resources && resources.length > 0) {
+      const deleteResults = await Promise.allSettled(
+        resources
+          .filter(r => r.url)
+          .map(r => deleteFile(r.url))
+      );
+
+      const failures = deleteResults.filter(r => r.status === 'rejected').length;
+      if (failures > 0) {
+        logger.warn(`deleteCollection: ${failures}/${resources.length} storage files failed to delete`);
+      }
+
+      // 3. Deletar registros de collection_resources
+      const { error: resourcesDeleteError } = await supabase
+        .from('collection_resources')
+        .delete()
+        .eq('collection_id', id);
+
+      if (resourcesDeleteError) {
+        logger.error('Error deleting collection resources:', resourcesDeleteError);
+        return false;
+      }
+    }
+
+    // 4. Deletar a coleção
     const { error } = await supabase
       .from('collections')
       .delete()
@@ -888,6 +927,11 @@ export const api = {
     }
 
     try {
+      // Salva a sessão do admin antes de criar o usuário
+      // O signUp pode criar uma nova sessão e sobrescrever a sessão atual
+      const { data: adminSessionData } = await supabase.auth.getSession();
+      const adminRefreshToken = adminSessionData.session?.refresh_token;
+
       // Create auth user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: userData.email,
@@ -907,6 +951,13 @@ export const api = {
 
       if (!signUpData.user) {
         return { success: false, error: 'Failed to create user' };
+      }
+
+      // Restaura a sessão do admin se foi sobrescrita pelo signUp
+      const { data: currentSession } = await supabase.auth.getSession();
+      const sessionChanged = adminRefreshToken && currentSession.session?.refresh_token !== adminRefreshToken;
+      if (sessionChanged) {
+        await supabase.auth.refreshSession({ refresh_token: adminRefreshToken });
       }
 
       // Create profile with specified role

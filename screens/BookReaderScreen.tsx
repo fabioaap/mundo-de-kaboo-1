@@ -15,6 +15,7 @@ interface BookReaderScreenProps {
 export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, onBack }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [forcePortrait, setForcePortrait] = useState(false);
   const flipbookRef = useRef<any>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -126,8 +127,8 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const rgb = hexToRgb(themeColor);
   const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 
-  // Show orientation overlay if in portrait mode
-  if (!isLandscape) {
+  // Show orientation overlay if in portrait mode (but not if user chose to continue)
+  if (!isLandscape && !forcePortrait) {
     return (
       <div 
         className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden" 
@@ -183,6 +184,12 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
           <p className="text-lg text-white/90 mb-6 drop-shadow-md">
             Para uma melhor experiência de leitura, gire seu dispositivo para o modo horizontal.
           </p>
+          <button
+            onClick={() => setForcePortrait(true)}
+            className="text-sm text-white/60 underline underline-offset-2 hover:text-white/90 transition-colors mt-2"
+          >
+            Continuar em retrato mesmo assim
+          </button>
         </div>
       </div>
     );

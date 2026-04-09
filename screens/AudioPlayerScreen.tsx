@@ -173,9 +173,11 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
   };
 
   const toggleSpeed = () => {
-    if (playbackRate === 1.0) setPlaybackRate(1.5);
+    if (playbackRate === 0.75) setPlaybackRate(1.0);
+    else if (playbackRate === 1.0) setPlaybackRate(1.25);
+    else if (playbackRate === 1.25) setPlaybackRate(1.5);
     else if (playbackRate === 1.5) setPlaybackRate(2.0);
-    else setPlaybackRate(1.0);
+    else setPlaybackRate(0.75);
   };
 
   const formatTime = (time: number) => {
@@ -231,6 +233,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
 
         <button 
           onClick={toggleSpeed}
+          aria-label={`Velocidade de reprodução: ${playbackRate}x`}
           className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30 font-bold text-sm"
         >
           {playbackRate}x

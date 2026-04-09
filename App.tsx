@@ -376,8 +376,43 @@ const App: React.FC = () => {
     const newNavState = { currentScreen: screen, params };
     setNavState(newNavState);
     saveNavState(newNavState);
+    // Push history entry so browser Back button works
+    history.pushState({ screen, params }, '', `#${screen}`);
     window.scrollTo(0, 0);
   };
+
+  // Handle browser Back/Forward buttons via popstate
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.screen) {
+        const { screen, params } = event.state as { screen: ScreenName; params?: any };
+        const restoredNav = { currentScreen: screen, params };
+        setNavState(restoredNav);
+        saveNavState(restoredNav);
+      } else {
+        // No state — fallback to login/home
+        const fallback: NavState = accessProfile
+          ? { currentScreen: 'home' }
+          : { currentScreen: 'login' };
+        setNavState(fallback);
+        saveNavState(fallback);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Seed the current history entry once (only if no hash yet)
+    if (!window.location.hash) {
+      history.replaceState(
+        { screen: navState.currentScreen, params: navState.params },
+        '',
+        `#${navState.currentScreen}`
+      );
+    }
+
+    return () => window.removeEventListener('popstate', handlePopState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessProfile]);
 
   const goBack = () => {
     if (['player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen)) {
