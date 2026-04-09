@@ -174,7 +174,14 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
             const { error: authError } = await supabase.auth.updateUser(authUpdates);
             if (authError) throw authError;
 
-            setMsg({ type: 'success', text: 'Dados atualizados com sucesso!' });
+            // If email changed, Supabase sends a confirmation link to the new address
+            const emailChanged = formData.email !== user.email;
+            setMsg({
+              type: 'success',
+              text: emailChanged
+                ? 'Dados salvos! Um link de confirmação foi enviado para o novo e-mail. O endereço atual permanece ativo até a confirmação.'
+                : 'Dados atualizados com sucesso!'
+            });
 
             // Clear password fields
             setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
@@ -247,9 +254,10 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide">Informações Pessoais</h3>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 ml-1">Nome Completo</label>
+                            <label htmlFor="mydata-full-name" className="text-sm font-bold text-gray-700 ml-1">Nome Completo</label>
                             <div className="relative">
                                 <input
+                                    id="mydata-full-name"
                                     type="text"
                                     value={formData.full_name}
                                     onChange={(e) => handleChange('full_name', e.target.value)}
@@ -261,9 +269,10 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 ml-1">Escola</label>
+                            <label htmlFor="mydata-school" className="text-sm font-bold text-gray-700 ml-1">Escola</label>
                             <div className="relative">
                                 <input
+                                    id="mydata-school"
                                     type="text"
                                     value={formData.school_name}
                                     onChange={(e) => handleChange('school_name', e.target.value)}
@@ -282,9 +291,10 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide">Conta e Segurança</h3>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 ml-1">E-mail</label>
+                            <label htmlFor="mydata-email" className="text-sm font-bold text-gray-700 ml-1">E-mail</label>
                             <div className="relative">
                                 <input
+                                    id="mydata-email"
                                     type="email"
                                     value={formData.email}
                                     onChange={(e) => handleChange('email', e.target.value)}
@@ -297,9 +307,10 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 ml-1">Nova Senha (Opcional)</label>
+                            <label htmlFor="mydata-password" className="text-sm font-bold text-gray-700 ml-1">Nova Senha (Opcional)</label>
                             <div className="relative">
                                 <input
+                                    id="mydata-password"
                                     type={showPassword ? 'text' : 'password'}
                                     value={formData.password}
                                     onChange={(e) => handleChange('password', e.target.value)}
@@ -318,9 +329,10 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
 
                         {formData.password && (
                             <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                <label className="text-sm font-bold text-gray-700 ml-1">Confirmar Nova Senha</label>
+                                <label htmlFor="mydata-confirm-password" className="text-sm font-bold text-gray-700 ml-1">Confirmar Nova Senha</label>
                                 <div className="relative">
                                     <input
+                                        id="mydata-confirm-password"
                                         type={showConfirmPassword ? 'text' : 'password'}
                                         value={formData.confirmPassword}
                                         onChange={(e) => handleChange('confirmPassword', e.target.value)}

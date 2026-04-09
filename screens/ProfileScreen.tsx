@@ -8,6 +8,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
 import { api, clearAllUserCache, getCachedProfileSync } from '../lib/api';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 interface ProfileScreenProps {
   onNavigate: (screen: ScreenName) => void;
@@ -25,6 +26,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Preload avatar image to ensure it's cached
   const preloadAvatarImage = (avatarId: string | null) => {
@@ -99,6 +101,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
   const handleLogout = async () => {
     await api.signOut();
     onNavigate('login');
+  };
+
+  const handleLogoutRequest = () => {
+    setShowLogoutConfirm(true);
   };
 
   const getInitials = (name: string) => {
@@ -212,7 +218,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
         {[
           { icon: Icons.User, label: 'Meus Dados', action: () => onNavigate('my_data') },
           { icon: Icons.Mail, label: 'Fale Conosco', action: () => onNavigate('support') },
-          { icon: Icons.LogOut, label: 'Sair do App', color: 'text-red-500', bg: 'bg-red-50', action: handleLogout },
+          { icon: Icons.LogOut, label: 'Sair do App', color: 'text-red-500', bg: 'bg-red-50', action: handleLogoutRequest },
         ].map((item, idx) => (
           <button
             key={idx}
@@ -227,6 +233,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
           </button>
         ))}
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutConfirm}
+        title="Sair do App"
+        message="Tem certeza que deseja sair? Você precisará fazer login novamente para acessar o conteúdo."
+        confirmText="Sair"
+        cancelText="Cancelar"
+        danger
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
 
       {/* Avatar Selection Modal */}
       {isAvatarModalOpen && (

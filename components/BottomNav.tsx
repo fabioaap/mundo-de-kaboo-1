@@ -72,6 +72,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id as ScreenName)}
+                aria-label={item.label}
                 className="flex flex-col items-center gap-1 min-w-[64px]"
               >
                 <div className={`p-2 rounded-xl transition-colors ${isActive ? 'bg-kaboo-primary/10' : 'bg-transparent'}`}>
@@ -96,6 +97,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
         <button
           onClick={toggleSidebar}
           className="absolute -right-3 top-4 w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200 z-10"
+          aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
           title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           {isCollapsed ? (
@@ -110,6 +112,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
           onClick={() => onNavigate('home')}
           className={`w-full flex justify-center hover:opacity-80 transition-opacity focus:outline-none ${isCollapsed ? 'p-4' : 'p-8'
             }`}
+          aria-label="Ir para o Início"
           title="Ir para o Início"
         >
           {!isCollapsed && (
@@ -130,6 +133,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id as ScreenName)}
+                aria-label={item.label}
                 className={`w-full flex items-center rounded-[100px] transition-all duration-200 group ${isCollapsed
                     ? 'justify-center px-3 py-4'
                     : 'gap-4 px-6 py-4'
@@ -137,7 +141,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
                     ? 'bg-kaboo-primary text-white shadow-md shadow-kaboo-primary/20'
                     : 'bg-transparent text-gray-500 hover:bg-gray-50'
                   }`}
-                title={isCollapsed ? item.label : undefined}
               >
                 <Icon
                   size={22}
