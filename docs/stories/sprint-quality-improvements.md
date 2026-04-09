@@ -35,19 +35,19 @@
 ║                                                                          ║
 ╠══════════════════════════════════════════════════════════════════════════╣
 ║                                                                          ║
-║  [COULD HAVE]   █████████████████████████████░░░░░░░░░  3/4   75%        ║
+║  [COULD HAVE]   ██████████████████████████████████████  4/4  100%        ║
 ║                                                                          ║
 ║  US-O1            Velocidade 0.75x AudioPlayer      [x]  batch 3         ║
 ║  US-O3            EmailConfirmation redirect se...  [x]  batch 3         ║
 ║  US-D8            Remover GEMINI_API_KEY sem in...  [x]  batch 1         ║
-║  US-DB1           profiles.email sync com auth....  [ ]  pendente        ║
+║  US-DB1           profiles.email sync com auth....  [x]  batch 4         ║
 ║                                                                          ║
 ╠══════════════════════════════════════════════════════════════════════════╣
-║  GERAL          ████████████████████████████████████░░  23/24   96%      ║
+║  GERAL          ██████████████████████████████████████  24/24  100%      ║
 ╚══════════════════════════════════════════════════════════════════════════╝
 
   Legenda : [x] Concluido  [~] Em andamento  [ ] Pendente
-  Commits : batch 1 + batch 3 + batch 2
+  Commits : batch 1 + batch 3 + batch 2 + batch 4
 ```
 <!-- PROGRESS-CHART:END -->
 

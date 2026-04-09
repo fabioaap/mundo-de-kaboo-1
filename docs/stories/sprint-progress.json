@@ -41,7 +41,7 @@
       "pts": 0.5,
       "status": "done",
       "batch": 3,
-      "commit": "pending"
+      "commit": "7cc7297"
     },
     {
       "id": "US-DevOps3",
@@ -71,7 +71,7 @@
       "pts": 2,
       "status": "done",
       "batch": 3,
-      "commit": "pending"
+      "commit": "7cc7297"
     },
     {
       "id": "US-C2",
@@ -81,7 +81,7 @@
       "pts": 2,
       "status": "done",
       "batch": 3,
-      "commit": "pending"
+      "commit": "7cc7297"
     },
     {
       "id": "US-I9-I10-I11",
@@ -121,7 +121,7 @@
       "pts": 1,
       "status": "done",
       "batch": 3,
-      "commit": "pending"
+      "commit": "7cc7297"
     },
     {
       "id": "US-I1",
@@ -141,7 +141,7 @@
       "pts": 2,
       "status": "done",
       "batch": 3,
-      "commit": "pending"
+      "commit": "7cc7297"
     },
     {
       "id": "US-I13",
@@ -211,7 +211,7 @@
       "pts": 0.5,
       "status": "done",
       "batch": 3,
-      "commit": "pending"
+      "commit": "7cc7297"
     },
     {
       "id": "US-O3",
@@ -221,7 +221,7 @@
       "pts": 0.5,
       "status": "done",
       "batch": 3,
-      "commit": "pending"
+      "commit": "7cc7297"
     },
     {
       "id": "US-D8",
@@ -239,9 +239,9 @@
       "title": "profiles.email sync com auth.users",
       "assignee": "Data Engineer",
       "pts": 2,
-      "status": "pending",
-      "batch": null,
-      "commit": null
+      "status": "done",
+      "batch": 4,
+      "commit": "pending"
     }
   ]
 }
