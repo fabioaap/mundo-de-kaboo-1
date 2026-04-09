@@ -25,3 +25,7 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Docusaurus build output
+docs/.docusaurus
+docs/build
