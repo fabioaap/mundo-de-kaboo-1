@@ -79,6 +79,14 @@ const sidebars: SidebarsConfig = {
         'lib/offline',
       ],
     },
+    {
+      type: 'category',
+      label: '🗺️ Jornadas',
+      collapsed: false,
+      items: [
+        'journeys/journeys',
+      ],
+    },
     'contributing',
   ],
 };
