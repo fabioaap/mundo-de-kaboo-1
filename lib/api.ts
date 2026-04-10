@@ -328,7 +328,7 @@ export const api = {
         return {
           success: false,
           code: data?.code || 'unknown',
-          message: data?.message || getVoucherErrorMessage(data?.code)
+          message: getVoucherErrorMessage(data?.code) || data?.message
         };
       }
 
@@ -390,7 +390,7 @@ export const api = {
         return {
           success: false,
           code: data?.code || 'unknown',
-          message: data?.message || getVoucherErrorMessage(data?.code)
+          message: getVoucherErrorMessage(data?.code) || data?.message
         };
       }
 
