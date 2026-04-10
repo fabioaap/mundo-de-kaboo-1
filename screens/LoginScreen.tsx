@@ -385,15 +385,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
         {/* LOGO AREA (Only for Login Mode) */}
         {!isRegistering && (
-          <div className="mb-4 flex shrink-0 flex-col items-center pt-5 animate-in fade-in slide-in-from-top-4 duration-500 md:mb-6 md:pt-8">
+          <div className="mb-2 flex shrink-0 flex-col items-center pt-4 animate-in fade-in slide-in-from-top-4 duration-500 md:mb-4 md:pt-6">
             <img
               src={LOGO_URL}
               alt="Mundo de Kaboo"
-              className="w-36 h-auto mb-2 object-contain md:w-44"
+              className="w-36 h-auto object-contain md:w-44"
             />
-            <p className="text-gray-500 font-medium text-xs md:text-sm">
-              {isAdminLogin ? 'Acesso Interno' : 'Para Professores'}
-            </p>
+            {isAdminLogin && (
+              <p className="text-gray-500 font-medium text-xs mt-1 md:text-sm">
+                Acesso Interno
+              </p>
+            )}
           </div>
         )}
 
