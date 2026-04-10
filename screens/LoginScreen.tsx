@@ -88,6 +88,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showContinueToHome, setShowContinueToHome] = useState(false);
+  const [showLoginVoucherField, setShowLoginVoucherField] = useState(false);
   const normalizedVoucherCode = voucherCode.trim().toUpperCase();
   const isRegisterVoucherValidated = Boolean(
     isRegistering &&
@@ -318,6 +319,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     setLoginVoucherCode('');
     setConfirmPassword('');
     setShowContinueToHome(false);
+    setShowLoginVoucherField(false);
     clearVoucherValidation();
     if (!isRegistering) {
       loadDemoVouchers().catch(() => undefined);
@@ -350,7 +352,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
   return (
     <div
-      className="relative flex min-h-[100dvh] overflow-hidden bg-gray-50 bg-cover bg-center bg-no-repeat p-0 md:items-center md:justify-center md:p-6 lg:p-8"
+      className="relative flex h-[100dvh] overflow-hidden bg-gray-50 bg-cover bg-center bg-no-repeat p-0 md:items-center md:justify-center md:p-6 lg:p-8"
       style={{ backgroundImage: `url(${BG_IMAGE})` }}
     >
       {/* Overlay to ensure contrast and branding */}
@@ -383,33 +385,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
         {/* LOGO AREA (Only for Login Mode) */}
         {!isRegistering && (
-          <div className="mb-6 flex shrink-0 flex-col items-center pt-8 animate-in fade-in slide-in-from-top-4 duration-500 md:mb-8 md:pt-10">
+          <div className="mb-4 flex shrink-0 flex-col items-center pt-5 animate-in fade-in slide-in-from-top-4 duration-500 md:mb-6 md:pt-8">
             <img
               src={LOGO_URL}
               alt="Mundo de Kaboo"
-              className="w-48 h-auto mb-4 object-contain"
+              className="w-36 h-auto mb-2 object-contain md:w-44"
             />
-            <p className="text-gray-500 font-medium text-sm">
+            <p className="text-gray-500 font-medium text-xs md:text-sm">
               {isAdminLogin ? 'Acesso Interno' : 'Para Professores'}
             </p>
           </div>
         )}
 
-        <div className={`mx-auto flex min-h-0 w-full flex-1 flex-col overflow-y-auto px-6 py-5 md:px-6 md:py-6 md:pb-10 ${isRegistering ? 'justify-start' : 'justify-center'}`}>
+        <div className={`mx-auto flex min-h-0 w-full flex-1 flex-col px-6 py-4 md:px-6 md:py-6 md:pb-10 ${isRegistering ? 'justify-start overflow-y-auto' : 'justify-center overflow-hidden'}`}>
 
           {/* Title for Login Mode Only */}
           {!isRegistering && (
             <>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">
+              <h2 className="text-xl font-bold text-gray-800 text-center md:text-2xl">
                 {isAdminLogin ? 'Login Administrativo' : 'Bem-vindo de volta!'}
               </h2>
-              {!isAdminLogin && (
-                <p className="mb-6 text-center text-sm leading-relaxed text-gray-500">
-                  Primeiro acesso? O cadastro e a ativacao inicial acontecem a partir de um codigo de acesso.
-                </p>
-              )}
               {isAdminLogin && (
-                <p className="mb-6 text-center text-sm leading-relaxed text-gray-500">
+                <p className="mb-4 text-center text-sm leading-relaxed text-gray-500">
                   Acesso restrito a equipe interna.
                 </p>
               )}
@@ -593,26 +590,48 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
               </>
             )}
 
-            {/* Voucher Field for Login Mode — hidden for admin login */}
+            {/* Voucher Field for Login Mode — colapsado por padrão, revelado via toggle */}
             {!isRegistering && !isAdminLogin && (
-              <div className="space-y-2">
-                <label htmlFor="field-voucher-login" className="text-sm font-bold text-gray-600 ml-2">Codigo de Acesso <span className="font-normal text-gray-400">(opcional)</span></label>
-                <div className="relative">
-                  <input
-                    id="field-voucher-login"
-                    type="text"
-                    value={loginVoucherCode}
-                    onChange={(e) => { setLoginVoucherCode(e.target.value.toUpperCase().replace(/\s+/g, '')); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
-                    placeholder="Ex.: KABOO-3MESES-2026"
-                    autoComplete="off"
-                    autoCapitalize="characters"
-                  />
-                  <Icons.Check className="absolute left-4 top-4 text-gray-400" size={20} />
-                </div>
-                <p className="text-xs text-gray-400 ml-2 leading-relaxed">
-                  Se voce tem um novo codigo de acesso, informe aqui para ativa-lo junto com o login.
-                </p>
+              <div className="space-y-3">
+                {!showLoginVoucherField ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginVoucherField(true)}
+                    className="w-full flex items-center gap-3 bg-kaboo-primary/5 hover:bg-kaboo-primary/10 text-kaboo-primary font-semibold py-3 px-4 rounded-xl transition-all duration-200 group"
+                  >
+                    <Icons.Plus size={18} className="group-hover:scale-110 transition-transform" />
+                    <span>Tenho um codigo de acesso para renovar</span>
+                  </button>
+                ) : (
+                  <>
+                    <label htmlFor="field-voucher-login" className="text-sm font-bold text-gray-600 ml-2">Codigo de Acesso <span className="font-normal text-gray-400">(opcional)</span></label>
+                    <div className="relative">
+                      <input
+                        id="field-voucher-login"
+                        type="text"
+                        value={loginVoucherCode}
+                        onChange={(e) => { setLoginVoucherCode(e.target.value.toUpperCase().replace(/\s+/g, '')); clearError(); }}
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                        placeholder="Ex.: KABOO-3MESES-2026"
+                        autoComplete="off"
+                        autoCapitalize="characters"
+                        autoFocus
+                      />
+                      <Icons.Check className="absolute left-4 top-4 text-gray-400" size={20} />
+                    </div>
+                  </>
+                )}
+                {/* CTA principal: Não tenho código quero conhecer */}
+                <a
+                  href={LEAD_CAPTURE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-kaboo-primary/12 to-kaboo-primary/8 hover:from-kaboo-primary/18 hover:to-kaboo-primary/15 text-kaboo-primary font-bold py-3 px-4 rounded-xl transition-all duration-200 group hover:shadow-md"
+                >
+                  <Icons.Mail size={18} className="group-hover:animate-bounce" />
+                  <span>Não tenho código quero conhecer</span>
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </a>
               </div>
             )}
 
@@ -678,51 +697,45 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
           </form>
 
           {/* Footer Actions */}
-          <div className="mt-5 pb-1 text-center space-y-4 md:mt-6">
+          <div className="mt-4 pb-2 text-center space-y-2 md:mt-5 md:space-y-3">
 
             {!isRegistering && !isAdminLogin && (
               <p className="text-gray-600 text-sm">
-                Ainda não tem conta?
+                Ainda não tem conta?{' '}
                 <button
                   type="button"
                   onClick={toggleMode}
-                  className="ml-1 font-bold text-kaboo-light hover:text-kaboo-primary underline decoration-2 decoration-transparent hover:decoration-kaboo-primary transition-all"
+                  className="font-bold text-kaboo-light hover:text-kaboo-primary underline decoration-2 decoration-transparent hover:decoration-kaboo-primary transition-all"
                 >
-                  Cadastre-se com um codigo de acesso
+                  Cadastre-se
                 </button>
               </p>
             )}
 
-            {!isRegistering && !isAdminLogin && (
-              <a
-                href={LEAD_CAPTURE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-xs text-gray-400 hover:text-kaboo-primary font-semibold transition-colors"
-              >
-                Nao tenho codigo &mdash; Quero conhecer a plataforma &rarr;
-              </a>
-            )}
+
 
             {!isRegistering && (
-              <button
-                type="button"
-                onClick={() => onNavigate('forgot_password')}
-                className="text-xs font-semibold text-gray-400 hover:text-gray-600"
-              >
-                Esqueci minha senha
-              </button>
-            )}
-
-            {/* Admin login entry/exit links */}
-            {!isRegistering && !isAdminLogin && (
-              <button
-                type="button"
-                onClick={enterAdminLogin}
-                className="block w-full text-xs text-gray-300 hover:text-gray-500 transition-colors pt-2"
-              >
-                Acesso Interno
-              </button>
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('forgot_password')}
+                  className="text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 py-2 px-3 rounded-lg transition-all duration-200"
+                >
+                  Esqueci minha senha
+                </button>
+                {!isAdminLogin && (
+                  <>
+                    <span className="text-gray-300">|</span>
+                    <button
+                      type="button"
+                      onClick={enterAdminLogin}
+                      className="text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 py-2 px-3 rounded-lg transition-all duration-200"
+                    >
+                      Acesso Interno
+                    </button>
+                  </>
+                )}
+              </div>
             )}
 
             {isAdminLogin && (
