@@ -1,4 +1,4 @@
-import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
+import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 
 const sidebars: SidebarsConfig = {
   docsSidebar: [
@@ -85,6 +85,9 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'journeys/journeys',
+        'journeys/auth',
+        'journeys/post-login',
+        'journeys/reference',
       ],
     },
     'contributing',

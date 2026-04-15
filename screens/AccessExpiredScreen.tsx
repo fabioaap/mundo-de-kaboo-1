@@ -2,18 +2,17 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/Button';
 import { Icons } from '../components/Icons';
 import { Collection, ScreenName, UserProfile, Voucher } from '../types';
+import { PENDING_SIGNUP_VOUCHER_STORAGE_KEY } from '../constants';
 import { api } from '../lib/api';
 import { formatAccessDate, getProfileAccessStatus } from '../lib/access';
 import { isSupabaseConfigured } from '../lib/supabase';
-
-const PENDING_SIGNUP_VOUCHER_STORAGE_KEY = 'kaboo_pending_signup_voucher';
 
 const getPendingSignupVoucher = (): string => {
     if (typeof window === 'undefined') {
         return '';
     }
 
-    return sessionStorage.getItem(PENDING_SIGNUP_VOUCHER_STORAGE_KEY) || '';
+    return localStorage.getItem(PENDING_SIGNUP_VOUCHER_STORAGE_KEY) || '';
 };
 
 const clearPendingSignupVoucher = () => {
@@ -21,7 +20,7 @@ const clearPendingSignupVoucher = () => {
         return;
     }
 
-    sessionStorage.removeItem(PENDING_SIGNUP_VOUCHER_STORAGE_KEY);
+    localStorage.removeItem(PENDING_SIGNUP_VOUCHER_STORAGE_KEY);
 };
 
 interface AccessExpiredScreenProps {

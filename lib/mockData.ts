@@ -48,7 +48,6 @@ interface MockCreateUserInput {
     email: string;
     password: string;
     full_name: string;
-    school_name?: string;
     role?: UserRole;
     signIn?: boolean;
 }
@@ -74,7 +73,6 @@ const buildFutureDate = (months: VoucherDurationMonths): string => {
 const buildProfile = (overrides: Partial<UserProfile>): UserProfile => ({
     id: overrides.id || `mock-user-${Date.now()}`,
     full_name: overrides.full_name ?? 'Professor(a)',
-    school_name: overrides.school_name ?? 'Educacross',
     email: overrides.email ?? null,
     avatar_id: overrides.avatar_id ?? 'Kaboo',
     role: overrides.role ?? 'viewer',
@@ -96,7 +94,6 @@ const buildAdminDemoUser = (): MockUserAccount => {
             id,
             email: 'demo@mundodekaboo.local',
             full_name: 'Demo Admin',
-            school_name: 'Educacross',
             avatar_id: 'Kaboo',
             role: 'admin',
             voucher_id: null,
@@ -111,6 +108,7 @@ const DEFAULT_MOCK_USERS: MockUserAccount[] = [buildAdminDemoUser()];
 
 const DEFAULT_MOCK_VOUCHERS: Voucher[] = [
     { id: 'voucher-1', code: 'KABOO-1MES-2026', duration_months: 1, status: 'active' },
+    { id: 'voucher-livr-0001', code: 'KABOO-LIVR-0001', duration_months: 3, status: 'active' },
     { id: 'voucher-3', code: 'KABOO-3MESES-2026', duration_months: 3, status: 'active' },
     { id: 'voucher-6', code: 'KABOO-6MESES-2026', duration_months: 6, status: 'active' },
     { id: 'voucher-9', code: 'KABOO-9MESES-2026', duration_months: 9, status: 'active' },
@@ -184,8 +182,27 @@ const writeStoredVouchers = (vouchers: Voucher[]): void => {
     localStorage.setItem(MOCK_VOUCHERS_STORAGE_KEY, JSON.stringify(vouchers));
 };
 
+const mergeDefaultVouchers = (storedVouchers: Voucher[] | null): Voucher[] => {
+    if (!storedVouchers) {
+        return DEFAULT_MOCK_VOUCHERS;
+    }
+
+    const knownCodes = new Set(storedVouchers.map((voucher) => normalizeVoucherCode(voucher.code)));
+    const missingDefaults = DEFAULT_MOCK_VOUCHERS.filter(
+        (voucher) => !knownCodes.has(normalizeVoucherCode(voucher.code))
+    );
+
+    if (missingDefaults.length === 0) {
+        return storedVouchers;
+    }
+
+    const mergedVouchers = [...storedVouchers, ...missingDefaults];
+    writeStoredVouchers(mergedVouchers);
+    return mergedVouchers;
+};
+
 const getLiveVouchers = (): Voucher[] => {
-    return readStoredVouchers() ?? DEFAULT_MOCK_VOUCHERS;
+    return mergeDefaultVouchers(readStoredVouchers());
 };
 
 const readStoredBatchVouchers = (): StoredVoucher[] | null => {
@@ -345,7 +362,6 @@ export const createMockUser = (input: MockCreateUserInput): { success: boolean; 
         id: userId,
         email: normalizedEmail,
         full_name: input.full_name,
-        school_name: input.school_name || null,
         avatar_id: 'Kaboo',
         role,
         access_status: role === 'viewer' ? 'pending_voucher' : 'active',
@@ -403,7 +419,7 @@ export const getMockAllUsers = (): UserProfile[] => {
 
 export const updateMockUserById = (
     userId: string,
-    updates: { full_name?: string; school_name?: string; role?: UserRole }
+    updates: { full_name?: string; role?: UserRole }
 ): UserProfile | null => {
     const updatedUser = writeUpdatedUser(userId, (user) => ({
         ...user,
@@ -411,7 +427,6 @@ export const updateMockUserById = (
         profile: {
             ...user.profile,
             full_name: updates.full_name ?? user.profile.full_name,
-            school_name: updates.school_name ?? user.profile.school_name,
             role: updates.role ?? user.role,
         }
     }));
@@ -441,7 +456,6 @@ export const getMockProfile = (): UserProfile | null => {
 export const initializeMockProfile = (input: {
     email?: string;
     full_name?: string;
-    school_name?: string;
     voucher_id?: string | null;
     access_starts_at?: string | null;
     access_expires_at?: string | null;
@@ -461,7 +475,6 @@ export const initializeMockProfile = (input: {
             ...user.profile,
             email: input.email ? normalizeEmail(input.email) : user.email,
             full_name: input.full_name || user.profile.full_name,
-            school_name: input.school_name || user.profile.school_name,
             voucher_id: input.voucher_id ?? user.profile.voucher_id ?? null,
             access_starts_at: input.access_starts_at ?? user.profile.access_starts_at ?? null,
             access_expires_at: input.access_expires_at ?? user.profile.access_expires_at ?? null,

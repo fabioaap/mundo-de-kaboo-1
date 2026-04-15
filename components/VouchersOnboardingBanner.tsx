@@ -3,7 +3,7 @@ import { Button } from './Button';
 import { Icons } from './Icons';
 
 interface VouchersOnboardingBannerProps {
-    onDismiss: () => void;
+    description: 'Gere códigos únicos para campanha, parceiros ou operação interna.',
     onCreateFirstModel?: () => void;
 }
 

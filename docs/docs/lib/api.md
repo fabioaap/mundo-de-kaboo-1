@@ -79,7 +79,7 @@ Atualiza o perfil do usuário autenticado (upsert).
 ```typescript
 await api.updateProfile({
   full_name: 'Maria Silva',
-  school_name: 'Escola Municipal Kaboo',
+  email: 'maria.silva@exemplo.com.br',
   avatar_id: 'Kaboo',
 });
 ```
@@ -130,10 +130,9 @@ Cria um novo usuário com perfil.
 
 ```typescript
 const result = await api.createUser({
-  email: 'professor@escola.com',
+  email: 'professor@exemplo.com.br',
   password: 'senha-segura',
   full_name: 'Professor Silva',
-  school_name: 'Escola ABC',
   role: 'viewer',
 });
 // { success: true, userId: 'uuid' }

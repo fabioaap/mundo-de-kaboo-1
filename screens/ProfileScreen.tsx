@@ -184,10 +184,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
             {loading ? 'Carregando...' : (profile?.full_name || 'Usuário')}
           </h1>
           <p className="text-gray-500 text-sm font-medium mt-2 flex items-center justify-center gap-2">
-            <Icons.Home size={16} className="text-gray-500" />
-            {loading ? '...' : (profile?.school_name || 'Adicione sua escola')}
-          </p>
-          <p className="text-gray-500 text-sm font-medium mt-1 flex items-center justify-center gap-2">
             <Icons.Mail size={16} className="text-gray-500" />
             {profile?.email}
           </p>

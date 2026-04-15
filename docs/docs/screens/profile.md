@@ -25,10 +25,10 @@ interface ProfileScreenProps {
 
 ### Funcionalidades
 
-- Exibe **nome, escola e e-mail** do usuário
+- Exibe **nome, e-mail e status de acesso** do usuário
 - Exibe o **avatar** (personagem) selecionado pelo usuário
 - Link para editar dados pessoais (`my_data`)
-- Botão de **logout** (chama `supabase.auth.signOut()`)
+- Botão de **logout** (chama `api.signOut()`)
 - Link para **Suporte**
 
 ---
@@ -52,7 +52,7 @@ interface MyDataScreenProps {
 
 ### Funcionalidades
 
-- Editar **nome completo** e **nome da escola**
+- Editar **nome completo**, **e-mail** e **senha**
 - Selecionar **avatar** (personagem do Mundo de Kaboo)
 - Salvar via `api.updateProfile()`
 - Validação de campos antes de salvar

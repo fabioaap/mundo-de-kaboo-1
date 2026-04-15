@@ -41,7 +41,7 @@ Armazena os perfis dos usuários (estende o Supabase Auth).
 |--------|------|-----------|
 | `id` | `uuid` | ID do usuário (FK → `auth.users`) |
 | `full_name` | `text` | Nome completo |
-| `school_name` | `text` | Nome da escola |
+| `school_name` | `text` | Campo legado de compatibilidade. O frontend atual não lê nem escreve esse valor. |
 | `email` | `text` | E-mail do usuário |
 | `avatar_id` | `text` | Nome do personagem avatar |
 | `role` | `text` | Papel: `admin`, `editor`, `viewer` |

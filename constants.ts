@@ -6,8 +6,15 @@ import logoImage from './assets/images/logo-kaboo.png';
 // ---------------------------------------------------------------------------
 export const LOGO_URL = logoImage;
 
-// URL para captura de leads (usuários sem voucher)
-export const LEAD_CAPTURE_URL = 'https://mundodekaboo.com.br/conhecer';
+// CTA para usuários sem voucher.
+// Enquanto a rota dedicada com explicação e compra não existe, o link aponta para a loja externa.
+export const LEAD_CAPTURE_URL = 'https://loja.empatiaeditora.com.br/';
+
+// CTA de suporte para usuários que já receberam um código e precisam de ajuda.
+export const SUPPORT_CONTACT_URL = 'mailto:suporte@mundodekaboo.com';
+
+// Chave compartilhada para persistir o voucher pendente entre cadastro, login e renovação.
+export const PENDING_SIGNUP_VOUCHER_STORAGE_KEY = 'kaboo_pending_signup_voucher';
 
 // URL da política de privacidade
 export const PRIVACY_POLICY_URL = 'https://mundodekaboo.com.br/privacidade';

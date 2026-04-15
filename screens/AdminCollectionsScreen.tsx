@@ -160,7 +160,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     email: '',
     password: '',
     full_name: '',
-    school_name: '',
     role: 'viewer' as UserRole,
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -172,7 +171,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
   // Edit user state
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [editUserFormData, setEditUserFormData] = useState<{ full_name: string; school_name: string; role: UserRole }>({ full_name: '', school_name: '', role: 'viewer' });
+  const [editUserFormData, setEditUserFormData] = useState<{ full_name: string; role: UserRole }>({ full_name: '', role: 'viewer' });
   const [editUserRoleDropdownOpen, setEditUserRoleDropdownOpen] = useState(false);
   const [loadingUserEdit, setLoadingUserEdit] = useState(false);
   const [editUserErrorMsg, setEditUserErrorMsg] = useState<string | null>(null);
@@ -367,14 +366,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         email: userFormData.email,
         password: userFormData.password,
         full_name: userFormData.full_name,
-        school_name: userFormData.school_name || undefined,
         role: userFormData.role,
       });
 
       if (result.success) {
         showToast('Usuário criado com sucesso!', 'success');
         setShowUserForm(false);
-        setUserFormData({ email: '', password: '', full_name: '', school_name: '', role: 'viewer' });
+        setUserFormData({ email: '', password: '', full_name: '', role: 'viewer' });
         setAcceptedTerms(false);
         setUserSuccessMsg(null);
         loadUsers();
@@ -399,7 +397,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     setEditingUserId(user.id);
     setEditUserFormData({
       full_name: user.full_name || '',
-      school_name: user.school_name || '',
       role: (user.role as UserRole) || 'viewer',
     });
     setEditUserErrorMsg(null);
@@ -417,7 +414,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     try {
       const result = await api.updateUser(editingUserId, {
         full_name: editUserFormData.full_name.trim(),
-        school_name: editUserFormData.school_name.trim() || undefined,
         role: editUserFormData.role,
       });
       if (result.success) {
@@ -1342,21 +1338,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     </div>
                   </div>
 
-                  {/* Escola */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-600 ml-2">Escola</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={editUserFormData.school_name}
-                        onChange={(e) => setEditUserFormData({ ...editUserFormData, school_name: e.target.value })}
-                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
-                        placeholder="Nome da escola"
-                      />
-                      <Icons.Home className="absolute left-4 top-4 text-gray-400" size={20} />
-                    </div>
-                  </div>
-
                   {/* Papel */}
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-gray-600 ml-2">Papel</label>
@@ -1425,7 +1406,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         email: '',
                         password: '',
                         full_name: '',
-                        school_name: '',
                         role: 'viewer',
                       });
                       setAcceptedTerms(false);
@@ -1458,21 +1438,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       </div>
                     </div>
 
-                    {/* School */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-600 ml-2">Escola</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={userFormData.school_name}
-                          onChange={(e) => { setUserFormData({ ...userFormData, school_name: e.target.value }); clearUserError(); }}
-                          className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
-                          placeholder="Nome da sua escola"
-                          required
-                        />
-                        <Icons.Home className="absolute left-4 top-4 text-gray-400" size={20} />
-                      </div>
-                    </div>
                   </div>
 
                   {/* Email Field */}
@@ -1484,7 +1449,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         value={userFormData.email}
                         onChange={(e) => { setUserFormData({ ...userFormData, email: e.target.value }); clearUserError(); }}
                         className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
-                        placeholder="email@escola.com.br"
+                        placeholder="email@exemplo.com.br"
                         required
                       />
                       <Icons.Mail className="absolute left-4 top-4 text-gray-400" size={20} />
@@ -1677,9 +1642,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             {user.full_name || 'Sem nome'}
                           </h3>
                           <p className="text-sm text-gray-600 mb-1">{user.email}</p>
-                          {user.school_name && (
-                            <p className="text-xs text-gray-500">{user.school_name}</p>
-                          )}
                           <div className="mt-3 flex flex-wrap gap-2">
                             <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${getAccessBadgeClasses(user)}`}>
                               {getAccessStatusLabel(getProfileAccessStatus(user))}

@@ -179,7 +179,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     if (accessProfile.avatar_id) {
       preloadAvatarImage(accessProfile.avatar_id);
     }
-  }, [accessProfile?.id, accessProfile?.avatar_id, accessProfile?.full_name, accessProfile?.school_name, accessProfile?.access_status, accessProfile?.access_expires_at]);
+  }, [accessProfile?.id, accessProfile?.avatar_id, accessProfile?.full_name, accessProfile?.access_status, accessProfile?.access_expires_at]);
 
   // Preload avatar image whenever profile changes
   useEffect(() => {
@@ -618,7 +618,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               Olá, {getFirstName(profile.full_name || '')}
             </p>
             <p className="text-xs text-gray-400 font-medium truncate max-w-[150px]">
-              {profile.school_name || 'Escola não definida'}
+              {profile.email || 'Conta ativa'}
             </p>
             {(userRole === 'admin' || userRole === 'editor') && (
               <div className="mt-1">
@@ -663,7 +663,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 animate-fade-in-up origin-top-right">
             <div className="lg:hidden px-4 py-3 border-b border-gray-100 mb-2">
               <p className="text-sm font-bold text-gray-800">{profile.full_name}</p>
-              <p className="text-xs text-gray-400">{profile.school_name}</p>
+              <p className="text-xs text-gray-400">{profile.email || 'Conta ativa'}</p>
             </div>
             <button onClick={() => { setIsDropdownOpen(false); onNavigate('my_data'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700 transition-colors text-sm font-bold text-left"><Icons.User size={18} className="text-gray-400" /> Meus Dados</button>
             <button onClick={() => { setIsDropdownOpen(false); onNavigate('support'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700 transition-colors text-sm font-bold text-left"><Icons.HelpCircle size={18} className="text-gray-400" /> Suporte</button>

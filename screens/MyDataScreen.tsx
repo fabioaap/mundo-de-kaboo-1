@@ -23,7 +23,6 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
 
     const [formData, setFormData] = useState({
         full_name: '',
-        school_name: '',
         email: '',
         password: '', // Only for updating
         confirmPassword: '',
@@ -42,7 +41,6 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                 setFormData(prev => ({
                     ...prev,
                     full_name: profile?.full_name || '',
-                    school_name: profile?.school_name || '',
                     email: profile?.email || '',
                     avatar_id: profile?.avatar_id || null
                 }));
@@ -62,14 +60,12 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
 
             // Priority: 1. Profile Table, 2. Auth Metadata, 3. Empty string
             const fullName = profile?.full_name || user.user_metadata?.full_name || '';
-            const schoolName = profile?.school_name || user.user_metadata?.school_name || '';
             const email = user.email || '';
             const avatarId = profile?.avatar_id || null;
 
             setFormData(prev => ({
                 ...prev,
                 full_name: fullName,
-                school_name: schoolName,
                 email: email,
                 avatar_id: avatarId
             }));
@@ -102,7 +98,6 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
 
                 const updatedProfile = await api.updateProfile({
                     full_name: formData.full_name,
-                    school_name: formData.school_name,
                     email: formData.email,
                     avatar_id: formData.avatar_id,
                 });
@@ -114,7 +109,6 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                 setFormData(prev => ({
                     ...prev,
                     full_name: updatedProfile.full_name || '',
-                    school_name: updatedProfile.school_name || '',
                     email: updatedProfile.email || '',
                     avatar_id: updatedProfile.avatar_id,
                     password: '',
@@ -134,12 +128,12 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error('Usuário não autenticado');
 
-            // 1. Update Profile Data (Name, School, Avatar)
+            // 1. Update Profile Data (Name and Avatar)
             const updates = {
                 id: user.id,
                 email: formData.email,
                 full_name: formData.full_name,
-                school_name: formData.school_name,
+                school_name: null,
                 avatar_id: formData.avatar_id,
                 updated_at: new Date().toISOString(),
             };
@@ -155,7 +149,7 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
 
             authUpdates.data = {
                 full_name: formData.full_name,
-                school_name: formData.school_name
+                school_name: null
             };
 
             if (formData.email !== user.email) {
@@ -177,10 +171,10 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
             // If email changed, Supabase sends a confirmation link to the new address
             const emailChanged = formData.email !== user.email;
             setMsg({
-              type: 'success',
-              text: emailChanged
-                ? 'Dados salvos! Um link de confirmação foi enviado para o novo e-mail. O endereço atual permanece ativo até a confirmação.'
-                : 'Dados atualizados com sucesso!'
+                type: 'success',
+                text: emailChanged
+                    ? 'Dados salvos! Um link de confirmação foi enviado para o novo e-mail. O endereço atual permanece ativo até a confirmação.'
+                    : 'Dados atualizados com sucesso!'
             });
 
             // Clear password fields
@@ -267,21 +261,6 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                                 <Icons.User className="absolute left-4 top-4 text-gray-400" size={20} />
                             </div>
                         </div>
-
-                        <div className="space-y-2">
-                            <label htmlFor="mydata-school" className="text-sm font-bold text-gray-700 ml-1">Escola</label>
-                            <div className="relative">
-                                <input
-                                    id="mydata-school"
-                                    type="text"
-                                    value={formData.school_name}
-                                    onChange={(e) => handleChange('school_name', e.target.value)}
-                                    className="w-full bg-gray-50 border border-transparent focus:border-kaboo-primary/30 rounded-2xl p-4 pl-12 text-gray-800 outline-none transition-all"
-                                    placeholder="Nome da sua escola"
-                                />
-                                <Icons.Home className="absolute left-4 top-4 text-gray-400" size={20} />
-                            </div>
-                        </div>
                     </div>
 
                     <div className="h-px bg-gray-100 my-4" />
@@ -299,7 +278,7 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                                     value={formData.email}
                                     onChange={(e) => handleChange('email', e.target.value)}
                                     className="w-full bg-gray-50 border border-transparent focus:border-kaboo-primary/30 rounded-2xl p-4 pl-12 text-gray-800 outline-none transition-all"
-                                    placeholder="email@escola.com.br"
+                                    placeholder="email@exemplo.com.br"
                                 />
                                 <Icons.Mail className="absolute left-4 top-4 text-gray-400" size={20} />
                             </div>

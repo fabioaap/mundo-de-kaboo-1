@@ -53,7 +53,6 @@ export interface RegisterWithVoucherInput {
   email: string;
   password: string;
   full_name: string;
-  school_name?: string;
   voucherCode: string;
 }
 
@@ -70,7 +69,6 @@ export interface RegisterWithVoucherResult {
 export interface UserProfile {
   id: string;
   full_name: string | null;
-  school_name: string | null;
   email: string | null;
   avatar_id: string | null; // Stores the character name (e.g. "Kaboo") or null for initials
   role?: UserRole | null;

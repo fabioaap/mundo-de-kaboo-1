@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Mundo de Kaboo - Docusaurus Theme
  * Brand color: #5D1F58 (purple/magenta)
  */
@@ -32,4 +32,163 @@
 
 .footer__title {
   font-weight: 600;
+}
+
+/* ── Mermaid zoom — trigger button (🔍 aparece no hover) ──── */
+.mermaid-zoom-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.mermaid-zoom-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 1rem;
+  border: 1.5px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  background: var(--ifm-background-color);
+  cursor: zoom-in;
+  opacity: 0.45;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.mermaid-zoom-wrapper:hover .mermaid-zoom-btn {
+  opacity: 1;
+}
+
+.mermaid-zoom-btn:hover {
+  background: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+}
+
+/* ── Mermaid zoom — overlay ─────────────────────────────────── */
+#mermaid-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+#mermaid-zoom-overlay.mz-visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.mz-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(4px);
+}
+
+.mz-box {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--ifm-background-color);
+  border-radius: 14px;
+  width: 90vw;
+  max-height: 92vh;
+  overflow: hidden;
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.45);
+  transform: scale(0.96);
+  transition: transform 0.2s ease;
+}
+
+#mermaid-zoom-overlay.mz-visible .mz-box {
+  transform: scale(1);
+}
+
+/* toolbar */
+.mz-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200);
+  flex-shrink: 0;
+}
+
+.mz-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: 1.5px solid var(--ifm-color-emphasis-300);
+  border-radius: 7px;
+  background: var(--ifm-background-color);
+  color: var(--ifm-color-content);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  line-height: 1;
+}
+
+.mz-btn:hover {
+  background: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+  color: #fff;
+}
+
+.mz-close {
+  margin-left: auto;
+  font-size: 1.4rem;
+}
+
+.mz-scale {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: center;
+  color: var(--ifm-color-emphasis-600);
+}
+
+/* scrollable viewport */
+.mz-viewport {
+  overflow: auto;
+  flex: 1;
+  cursor: grab;
+  padding: 28px;
+}
+
+.mz-canvas {
+  transform-origin: top left;
+  transition: transform 0.15s ease;
+  width: 100%;
+}
+
+.mz-hint {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--ifm-color-emphasis-400);
+  padding: 6px 0 10px;
+  flex-shrink: 0;
+}
+
+/* ── Image zoom (medium-zoom) override ──────────────────────── */
+.medium-zoom-overlay {
+  z-index: 9998;
+}
+
+.medium-zoom-image--opened {
+  z-index: 9998;
 }
