@@ -110,7 +110,7 @@ O repositório de publicação agora é `educacrossgit/Mundo-de-Kaboo-V2`.
 4. Se os secrets não forem configurados, o deploy continua funcionando em modo demonstração, usando o catálogo local.
 5. Para validar localmente a mesma base do Pages antes do push, rode no PowerShell:
    ```powershell
-   $env:VITE_PUBLIC_BASE = '/Mundo-de-Kaboo-V2/'
+   $env:VITE_PUBLIC_BASE = './'
    npm run build
    ```
 
