@@ -91,7 +91,7 @@
    npm run dev
    ```
    
-   A aplicação estará disponível em `http://localhost:5173` (ou outra porta indicada no terminal)
+   A aplicação estará disponível em `http://localhost:4100` (ou outra porta indicada no terminal)
 
 5. **Build para produção**:
    ```bash
@@ -99,6 +99,20 @@
    ```
    
    Os arquivos de produção serão gerados na pasta `dist/`
+
+## 🌐 Publicação no GitHub Pages
+
+O repositório de publicação agora é `educacrossgit/Mundo-de-Kaboo-V2`.
+
+1. No GitHub, abra **Settings > Pages** e selecione **GitHub Actions** como source.
+2. O workflow `.github/workflows/deploy-pages.yml` publica automaticamente em pushes para `main` e `v1.1`.
+3. Se quiser publicar com Supabase real, cadastre os secrets `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` em **Settings > Secrets and variables > Actions**.
+4. Se os secrets não forem configurados, o deploy continua funcionando em modo demonstração, usando o catálogo local.
+5. Para validar localmente a mesma base do Pages antes do push, rode no PowerShell:
+   ```powershell
+   $env:VITE_PUBLIC_BASE = '/Mundo-de-Kaboo-V2/'
+   npm run build
+   ```
 
 ## 👨‍💻 Guia para Desenvolvedores
 

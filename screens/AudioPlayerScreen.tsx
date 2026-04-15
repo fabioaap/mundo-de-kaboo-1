@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from '../components/Icons';
+import { placeholderImageUrl } from '../lib/appPaths';
 import { Collection } from '../types';
 import { useThemeBackground } from '../hooks/useThemeBackground';
 import { GalaxyBackground } from '../components/GalaxyBackground';
@@ -19,13 +20,14 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
   const [dragStartTime, setDragStartTime] = useState(0);
   const [dragStartRotation, setDragStartRotation] = useState(0);
   const [isHoveringCd, setIsHoveringCd] = useState(false);
-  
+  const [playError, setPlayError] = useState<string | null>(null);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rotationIntervalRef = useRef<number | null>(null);
 
   const themeColor = collection.color_theme || '#5D1F58';
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
-  
+
   // Set browser background to match theme color
   useThemeBackground(themeColor);
 
@@ -34,10 +36,10 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
       : { r: 93, g: 31, b: 88 };
   };
 
@@ -57,7 +59,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
       setCdRotation(0);
     }
   }, [currentTime, isPlaying]);
-  
+
   // Start rotation immediately when play is pressed (before audio actually starts)
   useEffect(() => {
     if (isPlaying && currentTime === 0 && duration > 0) {
@@ -89,14 +91,14 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
           const rotation = timeToRotation(currentTime);
           setCdRotation(rotation);
         }
-        
+
         // Continue animation loop
         rotationIntervalRef.current = requestAnimationFrame(updateRotation);
       };
-      
+
       // Start animation loop immediately
       rotationIntervalRef.current = requestAnimationFrame(updateRotation);
-      
+
       return () => {
         if (rotationIntervalRef.current) {
           cancelAnimationFrame(rotationIntervalRef.current);
@@ -110,14 +112,16 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
     if (!audioRef.current) return;
 
     try {
+      setPlayError(null);
       if (isPlaying) {
         audioRef.current.pause();
       } else {
         await audioRef.current.play();
       }
       setIsPlaying(!isPlaying);
-    } catch (error) {
-      console.error('Error playing audio:', error);
+    } catch {
+      setPlayError('Não foi possível reproduzir o áudio. Toque novamente para tentar.');
+      setIsPlaying(false);
     }
   };
 
@@ -141,13 +145,13 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = Number(e.target.value);
-    
+
     // Update rotation based on new time
     const newRotation = timeToRotation(time);
     setCdRotation(newRotation);
-    
+
     setCurrentTime(time);
-    
+
     if (audioRef.current) {
       audioRef.current.currentTime = time;
     }
@@ -170,9 +174,11 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
   };
 
   const toggleSpeed = () => {
-    if (playbackRate === 1.0) setPlaybackRate(1.5);
+    if (playbackRate === 0.75) setPlaybackRate(1.0);
+    else if (playbackRate === 1.0) setPlaybackRate(1.25);
+    else if (playbackRate === 1.25) setPlaybackRate(1.5);
     else if (playbackRate === 1.5) setPlaybackRate(2.0);
-    else setPlaybackRate(1.0);
+    else setPlaybackRate(0.75);
   };
 
   const formatTime = (time: number) => {
@@ -193,13 +199,13 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
     >
       {/* Galaxy Effect */}
       <GalaxyBackground />
-      
+
       {/* Dark overlay to darken background */}
       <div className="absolute inset-0 bg-black/10" style={{ zIndex: 2 }} />
       {collection.audio_url && (
-        <audio 
-          ref={audioRef} 
-          src={collection.audio_url} 
+        <audio
+          ref={audioRef}
+          src={collection.audio_url}
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
@@ -210,14 +216,14 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
 
       {/* Header */}
       <div className="relative z-20 p-4 flex items-center justify-between flex-shrink-0">
-        <button 
+        <button
           onClick={onBack}
           className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30"
           aria-label="Voltar"
         >
           <Icons.ChevronLeft size={24} strokeWidth={2.5} />
         </button>
-        
+
         <div className="flex-1 text-center">
           <div className="inline-block bg-black/20 backdrop-blur-md px-6 py-2 rounded-full shadow-lg border border-white/10">
             <h1 className="text-sm md:text-base font-bold text-white drop-shadow-sm">
@@ -226,8 +232,9 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
           </div>
         </div>
 
-        <button 
+        <button
           onClick={toggleSpeed}
+          aria-label={`Velocidade de reprodução: ${playbackRate}x`}
           className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30 font-bold text-sm"
         >
           {playbackRate}x
@@ -238,7 +245,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 overflow-hidden">
         {/* CD/Vinyl Disc */}
         <div className="relative mb-12">
-          <div 
+          <div
             className="w-72 h-72 md:w-96 md:h-96 rounded-full relative cursor-pointer select-none"
             style={{
               transform: `rotate(${cdRotation}deg) scale(${isHoveringCd ? 1.05 : 1})`,
@@ -263,8 +270,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
 
             {/* Album Cover */}
             <div className="absolute inset-4 rounded-full overflow-hidden shadow-inner">
-              <img 
-                src={collection.cover_image || '/assets/images/image-placeholder.png'} 
+              <img
+                src={collection.cover_image || placeholderImageUrl}
                 alt={collection.title}
                 className="w-full h-full object-cover"
               />
@@ -337,6 +344,13 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
               <Icons.SkipForward size={28} strokeWidth={2.5} />
             </button>
           </div>
+
+          {/* Play Error Message */}
+          {playError && (
+            <div className="mt-4 bg-red-500/80 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full text-center max-w-xs">
+              {playError}
+            </div>
+          )}
         </div>
       </div>
 

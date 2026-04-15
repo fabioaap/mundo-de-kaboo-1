@@ -4,12 +4,13 @@ import { TransformWrapper } from 'react-zoom-pan-pinch';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import Flipbook from './Flipbook';
+import { resolveAppUrl } from '../../lib/appPaths';
 import { cn } from '../../lib/utils';
 
 // Configure PDF.js worker - use local worker file from public directory
 // This ensures the worker is bundled with the app and version matches
 if (typeof window !== 'undefined') {
-  pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+  pdfjs.GlobalWorkerOptions.workerSrc = resolveAppUrl('/pdf.worker.min.mjs');
 }
 
 interface FlipbookViewerProps {
@@ -31,7 +32,7 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
 }, ref) => {
   const flipbookRef = useRef<any>(null);
   const loaderRef = useRef<any>(null);
-  
+
   // Expose flipbook methods via ref
   React.useImperativeHandle(ref, () => ({
     pageFlip: () => {
@@ -71,10 +72,10 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
       : { r: 93, g: 31, b: 88 };
   };
 
@@ -87,7 +88,7 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
     if (pdfDetails && !firstPageRendered) {
       const isMobile = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const timeoutDuration = isMobile ? 5000 : 2000; // 5s on mobile, 2s on desktop
-      
+
       const timeout = setTimeout(() => {
         console.log(`⏱️ FlipbookViewer: Timeout reached (${timeoutDuration}ms), marking first page as rendered`);
         setFirstPageRendered(true);
@@ -186,7 +187,7 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
           </div>
         </div>
       )}
-      
+
       {!pdfUrl && (
         <div className="absolute inset-0 flex items-center justify-center z-50">
           <div className="text-center text-red-500 p-8">
@@ -194,11 +195,11 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
           </div>
         </div>
       )}
-      
+
       {pdfUrl && (
-        <Document 
-          file={pdfUrl} 
-          onLoadSuccess={onDocumentLoadSuccess} 
+        <Document
+          file={pdfUrl}
+          onLoadSuccess={onDocumentLoadSuccess}
           onLoadError={onDocumentLoadError}
           loading={
             <div className="absolute inset-0 flex items-center justify-center z-[9999]" style={{ backgroundColor: bgColor }}>
@@ -211,9 +212,9 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
           {pdfDetails && !pdfLoading ? (
             <div className="relative w-full h-full" style={{ position: 'relative', zIndex: 1 }}>
               {/* Book content - always visible, overlay will cover it during loading */}
-              <div 
+              <div
                 className="w-full h-full"
-                style={{ 
+                style={{
                   position: 'relative',
                   zIndex: 1
                 }}
@@ -236,7 +237,7 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
                       flipbookRef={flipbookRef}
                       pdfDetails={pdfDetails}
                       innerRef={flipbookRef}
-                      onRef={(ref) => { 
+                      onRef={(ref) => {
                         if (ref && ref.current) {
                           loaderRef.current = ref.current;
                         }
@@ -254,12 +255,12 @@ const FlipbookViewer = React.forwardRef<any, FlipbookViewerProps>(({
                   </div>
                 </TransformWrapper>
               </div>
-              
+
               {/* Loading overlay that covers the book until first page is ready - MUST be last in DOM */}
               {!firstPageRendered && (
-                <div 
+                <div
                   className="absolute inset-0 flex flex-col items-center justify-center z-[9999]"
-                  style={{ 
+                  style={{
                     backgroundColor: bgColor,
                     top: 0,
                     left: 0,

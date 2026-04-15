@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
+import { deleteFile } from './storage';
 import {
   Collection,
   CollectionResource,
@@ -10,6 +11,7 @@ import {
   VoucherValidationResult,
 } from '../types';
 import { logger } from './logger';
+import { buildAppUrl } from './appPaths';
 import {
   createMockUser,
   getMockAllUsers,
@@ -31,6 +33,7 @@ import {
   getMockCollectionByIdLive,
 } from './mockData';
 import {
+  calculateRenewedAccessExpiry,
   getProfileAccessStatus,
   getVoucherErrorMessage,
   normalizeVoucherCode,
@@ -41,6 +44,31 @@ import { getActiveGrantsForUser, hasGrantForCollection } from './mockVoucherData
 const COLLECTIONS_CACHE_KEY = 'kaboo_collections_cache';
 const PROFILE_CACHE_KEY = 'kaboo_profile_cache';
 const SESSION_KEY = 'kaboo_session_id';
+const DEV_SUPABASE_VOUCHER_FALLBACKS: Record<string, Voucher['duration_months']> = {
+  'KABOO-LIVR-0001': 3,
+};
+
+const getSupabaseDevFallbackVoucher = (voucherCode: string): Voucher | null => {
+  if (!import.meta.env.DEV || !isSupabaseConfigured) {
+    return null;
+  }
+
+  const normalizedCode = normalizeVoucherCode(voucherCode);
+  const durationMonths = DEV_SUPABASE_VOUCHER_FALLBACKS[normalizedCode];
+  if (!durationMonths) {
+    return null;
+  }
+
+  return {
+    id: `dev-fallback-${normalizedCode.toLowerCase()}`,
+    code: normalizedCode,
+    duration_months: durationMonths,
+    status: 'active',
+    expires_at: null,
+    consumed_at: null,
+    consumed_by_user_id: null,
+  };
+};
 
 const normalizeProfile = (profile: UserProfile): UserProfile => {
   return {
@@ -324,10 +352,22 @@ export const api = {
       }
 
       if (!data?.success) {
+        const fallbackVoucher = data?.code === 'invalid_code'
+          ? getSupabaseDevFallbackVoucher(voucherCode)
+          : null;
+
+        if (fallbackVoucher) {
+          logger.warn('Using DEV Supabase voucher fallback during validation:', fallbackVoucher.code);
+          return {
+            success: true,
+            voucher: fallbackVoucher,
+          };
+        }
+
         return {
           success: false,
           code: data?.code || 'unknown',
-          message: data?.message || getVoucherErrorMessage(data?.code)
+          message: getVoucherErrorMessage(data?.code) || data?.message
         };
       }
 
@@ -386,10 +426,19 @@ export const api = {
       }
 
       if (!data?.success) {
+        const fallbackVoucher = data?.code === 'invalid_code'
+          ? getSupabaseDevFallbackVoucher(voucherCode)
+          : null;
+
+        if (fallbackVoucher) {
+          logger.warn('Using DEV Supabase voucher fallback during redemption:', fallbackVoucher.code);
+          return this.redeemSupabaseDevFallbackVoucher(fallbackVoucher);
+        }
+
         return {
           success: false,
           code: data?.code || 'unknown',
-          message: data?.message || getVoucherErrorMessage(data?.code)
+          message: getVoucherErrorMessage(data?.code) || data?.message
         };
       }
 
@@ -410,6 +459,39 @@ export const api = {
     }
   },
 
+  async redeemSupabaseDevFallbackVoucher(voucher: Voucher): Promise<VoucherRedemptionResult> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return {
+        success: false,
+        code: 'not_authenticated',
+        message: getVoucherErrorMessage('not_authenticated')
+      };
+    }
+
+    const currentProfile = await this.getProfile(true);
+    const now = new Date();
+    const nextProfile = await this.updateProfile({
+      access_status: 'active',
+      access_starts_at: currentProfile?.access_starts_at ?? now.toISOString(),
+      access_expires_at: calculateRenewedAccessExpiry(currentProfile, voucher.duration_months, now),
+    });
+
+    if (!nextProfile) {
+      return {
+        success: false,
+        code: 'unknown',
+        message: getVoucherErrorMessage('unknown')
+      };
+    }
+
+    return {
+      success: true,
+      profile: nextProfile,
+      voucher,
+    };
+  },
+
   async registerWithVoucher(input: RegisterWithVoucherInput): Promise<RegisterWithVoucherResult> {
     const validation = await this.validateVoucher(input.voucherCode);
     if (!validation.success) {
@@ -424,7 +506,6 @@ export const api = {
         email: input.email,
         password: input.password,
         full_name: input.full_name,
-        school_name: input.school_name,
         role: 'viewer',
         signIn: true,
       });
@@ -454,7 +535,7 @@ export const api = {
 
     try {
       const emailRedirectTo = typeof window !== 'undefined'
-        ? `${window.location.origin}/?confirmation=success`
+        ? buildAppUrl('?confirmation=success')
         : undefined;
 
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -464,7 +545,6 @@ export const api = {
           emailRedirectTo,
           data: {
             full_name: input.full_name,
-            school_name: input.school_name || ''
           }
         }
       });
@@ -702,12 +782,50 @@ export const api = {
   },
 
   /**
-   * Delete a collection (Admin only)
+   * Delete a collection (Admin only) — cascata: resources + storage + collection
    */
   async deleteCollection(id: string): Promise<boolean> {
     if (!isSupabaseConfigured) {
       return mockDeleteCollection(id);
     }
+
+    // 1. Buscar todos os recursos associados antes de deletar
+    const { data: resources, error: resourcesError } = await supabase
+      .from('collection_resources')
+      .select('id, url')
+      .eq('collection_id', id);
+
+    if (resourcesError) {
+      logger.error('Error fetching collection resources before delete:', resourcesError);
+      return false;
+    }
+
+    // 2. Deletar arquivos do Storage (best-effort: continua mesmo se algum falhar)
+    if (resources && resources.length > 0) {
+      const deleteResults = await Promise.allSettled(
+        resources
+          .filter(r => r.url)
+          .map(r => deleteFile(r.url))
+      );
+
+      const failures = deleteResults.filter(r => r.status === 'rejected').length;
+      if (failures > 0) {
+        logger.warn(`deleteCollection: ${failures}/${resources.length} storage files failed to delete`);
+      }
+
+      // 3. Deletar registros de collection_resources
+      const { error: resourcesDeleteError } = await supabase
+        .from('collection_resources')
+        .delete()
+        .eq('collection_id', id);
+
+      if (resourcesDeleteError) {
+        logger.error('Error deleting collection resources:', resourcesDeleteError);
+        return false;
+      }
+    }
+
+    // 4. Deletar a coleção
     const { error } = await supabase
       .from('collections')
       .delete()
@@ -780,7 +898,6 @@ export const api = {
       profile = normalizeProfile({
         id: user.id,
         full_name: user.user_metadata?.full_name || 'Professor(a)',
-        school_name: user.user_metadata?.school_name || null,
         email: user.email || null,
         avatar_id: null,
         access_status: 'pending_voucher',
@@ -821,6 +938,7 @@ export const api = {
       .upsert({
         id: user.id,
         ...updates,
+        school_name: null,
         updated_at: new Date().toISOString(),
       })
       .select()
@@ -867,7 +985,6 @@ export const api = {
     email: string;
     password: string;
     full_name: string;
-    school_name?: string;
     role?: 'admin' | 'editor' | 'viewer';
   }): Promise<{ success: boolean; error?: string; userId?: string }> {
     if (!isSupabaseConfigured) {
@@ -875,7 +992,6 @@ export const api = {
         email: userData.email,
         password: userData.password,
         full_name: userData.full_name,
-        school_name: userData.school_name,
         role: userData.role || 'viewer',
         signIn: false,
       });
@@ -888,6 +1004,11 @@ export const api = {
     }
 
     try {
+      // Salva a sessão do admin antes de criar o usuário
+      // O signUp pode criar uma nova sessão e sobrescrever a sessão atual
+      const { data: adminSessionData } = await supabase.auth.getSession();
+      const adminRefreshToken = adminSessionData.session?.refresh_token;
+
       // Create auth user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: userData.email,
@@ -895,7 +1016,6 @@ export const api = {
         options: {
           data: {
             full_name: userData.full_name,
-            school_name: userData.school_name || '',
           },
         },
       });
@@ -909,12 +1029,19 @@ export const api = {
         return { success: false, error: 'Failed to create user' };
       }
 
+      // Restaura a sessão do admin se foi sobrescrita pelo signUp
+      const { data: currentSession } = await supabase.auth.getSession();
+      const sessionChanged = adminRefreshToken && currentSession.session?.refresh_token !== adminRefreshToken;
+      if (sessionChanged) {
+        await supabase.auth.refreshSession({ refresh_token: adminRefreshToken });
+      }
+
       // Create profile with specified role
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: signUpData.user.id,
         email: userData.email,
         full_name: userData.full_name,
-        school_name: userData.school_name || null,
+        school_name: null,
         role: userData.role || 'viewer',
         updated_at: new Date().toISOString(),
       });
@@ -964,7 +1091,7 @@ export const api = {
    */
   async updateUser(
     userId: string,
-    updates: { full_name?: string; school_name?: string; role?: 'admin' | 'editor' | 'viewer' }
+    updates: { full_name?: string; role?: 'admin' | 'editor' | 'viewer' }
   ): Promise<{ success: boolean; error?: string }> {
     if (!isSupabaseConfigured) {
       const updated = updateMockUserById(userId, updates);
@@ -975,6 +1102,7 @@ export const api = {
       .from('profiles')
       .update({
         ...updates,
+        school_name: null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId);
