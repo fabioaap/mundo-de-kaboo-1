@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Analytics } from '@vercel/analytics/react';
 import { NavState, ScreenName, Collection, UserProfile } from './types';
 import { api, clearAllUserCache, getCachedProfileSync } from './lib/api';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { useThemeBackground } from './hooks/useThemeBackground';
 import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
+import { logger } from './lib/logger';
 
 // Screens
 import { LoginScreen } from './screens/LoginScreen';
 import { AccessExpiredScreen } from './screens/AccessExpiredScreen';
 import { ForgotPasswordScreen } from './screens/ForgotPasswordScreen';
 import { HomeScreen } from './screens/HomeScreen';
-import { DetailsScreen } from './screens/DetailsScreen';
 import { AudioPlayerScreen } from './screens/AudioPlayerScreen';
 import { VideoPlayerScreen } from './screens/VideoPlayerScreen';
 // Lazy load BookReaderScreen to avoid import errors blocking the app
@@ -27,6 +26,7 @@ import { AdminScreen } from './screens/AdminScreen';
 import { BottomNav } from './components/BottomNav';
 import { PageHeader } from './components/PageHeader';
 import { CollectionModal } from './components/CollectionModal';
+import { LOGO_URL } from './constants';
 
 // Storage keys
 const STORAGE_NAV_STATE = 'kaboo_nav_state';
@@ -37,7 +37,6 @@ const PROTECTED_SCREENS: ScreenName[] = [
   'search',
   'profile',
   'my_data',
-  'details',
   'player_book',
   'player_audio',
   'player_video',
@@ -51,7 +50,7 @@ const saveNavState = (state: NavState) => {
   try {
     localStorage.setItem(STORAGE_NAV_STATE, JSON.stringify(state));
   } catch (error) {
-    console.warn('Failed to save nav state to localStorage:', error);
+    logger.warn('Failed to save nav state to localStorage:', error);
   }
 };
 
@@ -62,7 +61,7 @@ const loadNavState = (): NavState | null => {
       return JSON.parse(saved) as NavState;
     }
   } catch (error) {
-    console.warn('Failed to load nav state from localStorage:', error);
+    logger.warn('Failed to load nav state from localStorage:', error);
   }
   return null;
 };
@@ -75,7 +74,7 @@ const savePreviousState = (state: { screen: ScreenName; collectionId?: string } 
       localStorage.removeItem(STORAGE_PREVIOUS_STATE);
     }
   } catch (error) {
-    console.warn('Failed to save previous state to localStorage:', error);
+    logger.warn('Failed to save previous state to localStorage:', error);
   }
 };
 
@@ -86,7 +85,7 @@ const loadPreviousState = (): { screen: ScreenName; collectionId?: string } | nu
       return JSON.parse(saved) as { screen: ScreenName; collectionId?: string };
     }
   } catch (error) {
-    console.warn('Failed to load previous state from localStorage:', error);
+    logger.warn('Failed to load previous state from localStorage:', error);
   }
   return null;
 };
@@ -229,7 +228,7 @@ const App: React.FC = () => {
       }
       setSessionChecked(true);
     }).catch((error) => {
-      console.error('Error checking session:', error);
+      logger.error('Error checking session:', error);
       setSessionChecked(true);
     });
 
@@ -244,7 +243,7 @@ const App: React.FC = () => {
             setAccessProfile(profile);
           })
           .catch((error) => {
-            console.error('Error refreshing profile after sign in:', error);
+            logger.error('Error refreshing profile after sign in:', error);
           });
 
         setNavState(prev => {
@@ -284,7 +283,7 @@ const App: React.FC = () => {
         setAccessProfile(profile);
       })
       .catch((error) => {
-        console.error('Error refreshing mock session state:', error);
+        logger.error('Error refreshing mock session state:', error);
       });
   }, [navState.currentScreen]);
 
@@ -312,7 +311,7 @@ const App: React.FC = () => {
           setAccessProfile(profile);
         }
       } catch (error) {
-        console.error('Error rechecking access status:', error);
+        logger.error('Error rechecking access status:', error);
       }
     };
 
@@ -342,16 +341,16 @@ const App: React.FC = () => {
         // First, fetch just the theme color for loading screen
         api.getCollectionById(navState.params.collectionId).then(data => {
           if (data) {
-            console.log('📦 App: Fetched collection for', navState.currentScreen, data);
+            logger.log('📦 App: Fetched collection for', navState.currentScreen, data);
             setCurrentCollection(data);
             setLoadingCollectionTheme(data.color_theme || '#5D1F58');
           } else {
-            console.warn('⚠️ App: Collection not found for ID:', navState.params.collectionId);
-            setLoadingCollectionTheme('#5D1F58'); // Default color
+            logger.warn('⚠️ App: Collection not found for ID:', navState.params.collectionId);
+            setLoadingCollectionTheme('#5D1F58');
           }
         }).catch(error => {
-          console.error('❌ App: Error fetching collection:', error);
-          setLoadingCollectionTheme('#5D1F58'); // Default color on error
+          logger.error('❌ App: Error fetching collection:', error);
+          setLoadingCollectionTheme('#5D1F58');
         });
       }
     } else {
@@ -376,19 +375,52 @@ const App: React.FC = () => {
     const newNavState = { currentScreen: screen, params };
     setNavState(newNavState);
     saveNavState(newNavState);
+    // Push history entry so browser Back button works
+    history.pushState({ screen, params }, '', `#${screen}`);
     window.scrollTo(0, 0);
   };
 
+  // Handle browser Back/Forward buttons via popstate
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.screen) {
+        const { screen, params } = event.state as { screen: ScreenName; params?: any };
+        const restoredNav = { currentScreen: screen, params };
+        setNavState(restoredNav);
+        saveNavState(restoredNav);
+      } else {
+        // No state — fallback to login/home
+        const fallback: NavState = accessProfile
+          ? { currentScreen: 'home' }
+          : { currentScreen: 'login' };
+        setNavState(fallback);
+        saveNavState(fallback);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Seed the current history entry once (only if no hash yet)
+    if (!window.location.hash) {
+      history.replaceState(
+        { screen: navState.currentScreen, params: navState.params },
+        '',
+        `#${navState.currentScreen}`
+      );
+    }
+
+    return () => window.removeEventListener('popstate', handlePopState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessProfile]);
+
   const goBack = () => {
     if (['player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen)) {
-      // Return to previous screen and restore the collection modal
-      if (previousScreenState) {
-        navigate(previousScreenState.screen, {
-          collectionId: previousScreenState.collectionId
-        });
-        setPreviousScreenState(null);
+      // Clear previousScreenState then use browser history so no duplicate entry is pushed
+      setPreviousScreenState(null);
+      savePreviousState(null);
+      if (window.history.length > 1) {
+        window.history.back();
       } else {
-        // Fallback: return to home
         navigate('home');
       }
     } else if (navState.currentScreen === 'my_data') {
@@ -416,7 +448,12 @@ const App: React.FC = () => {
   };
 
   if (!sessionChecked) {
-    return <div className="min-h-screen bg-white flex items-center justify-center text-kaboo-primary font-bold">Carregando...</div>;
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6">
+        <img src={LOGO_URL} alt="Mundo de Kaboo" className="w-32 h-32 object-contain animate-pulse" />
+        <div className="w-8 h-8 border-4 border-kaboo-primary/30 border-t-kaboo-primary rounded-full animate-spin" />
+      </div>
+    );
   }
 
   const renderScreen = () => {
@@ -461,10 +498,15 @@ const App: React.FC = () => {
       case 'my_data':
         return <MyDataScreen onBack={() => navigate('profile')} />;
 
-      // Details screen removed - now using modal
-
       case 'player_audio':
-        if (!currentCollection) return null;
+        if (!currentCollection) {
+          return (
+            <div className="flex flex-col items-center justify-center h-screen bg-kaboo-primary/90">
+              <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-8" />
+              <button onClick={goBack} className="text-white/70 text-sm hover:text-white transition-colors">Voltar</button>
+            </div>
+          );
+        }
         return <AudioPlayerScreen collection={currentCollection} onBack={goBack} />;
 
       case 'player_book':
@@ -519,11 +561,25 @@ const App: React.FC = () => {
         );
 
       case 'player_video':
-        if (!currentCollection) return null;
+        if (!currentCollection) {
+          return (
+            <div className="flex flex-col items-center justify-center h-screen bg-gray-900">
+              <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-8" />
+              <button onClick={goBack} className="text-white/70 text-sm hover:text-white transition-colors">Voltar</button>
+            </div>
+          );
+        }
         return <VideoPlayerScreen collection={currentCollection} onBack={goBack} />;
 
       case 'tools':
-        if (!currentCollection) return null;
+        if (!currentCollection) {
+          return (
+            <div className="flex flex-col items-center justify-center h-screen bg-white">
+              <div className="w-12 h-12 border-4 border-kaboo-primary/30 border-t-kaboo-primary rounded-full animate-spin mb-8" />
+              <button onClick={goBack} className="text-gray-400 text-sm hover:text-gray-600 transition-colors">Voltar</button>
+            </div>
+          );
+        }
         return <ExtraToolsScreen collection={currentCollection} onBack={goBack} />;
 
       case 'support':
@@ -578,8 +634,6 @@ const App: React.FC = () => {
         onClose={closeModal}
         onNavigate={navigate}
       />
-
-      <Analytics />
     </div>
   );
 };
