@@ -1,10 +1,10 @@
 # Changelog - Análise Automática
 
-**Data**: 08/04/2026, 13:38:20
+**Data**: 15/04/2026, 18:00:53
 
 ## Resumo do Projeto
 
-- **Componentes**: 22
+- **Componentes**: 23
 - **Telas**: 17
 - **Hooks**: 7
 - **Tipos**: 29
@@ -12,11 +12,11 @@
 ## Ultimas Mudanças Detectadas
 
 ### Componentes
-- MultipleFileUpload
-- PageHeader
-- Tabs
-- TagInput
-- Toast
+- VouchersOnboardingBanner
+- Flipbook
+- FlipbookLoader
+- FlipbookViewer
+- PdfPage
 
 ### Telas
 - MyDataScreen

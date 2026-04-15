@@ -1,6 +1,6 @@
 # Documentação de React Hooks Customizados
 
-**Atualizado em**: 08/04/2026, 13:38:20
+**Atualizado em**: 15/04/2026, 18:00:53
 
 ## Índice
 
@@ -16,7 +16,7 @@
 
 ## useDebounce
 
-**Arquivo**: `hooks\useDebounce.ts`
+**Arquivo**: `hooks/useDebounce.ts`
 
 **Descrição**: Sem descrição
 
@@ -28,7 +28,7 @@
 
 ## useIsMobile
 
-**Arquivo**: `hooks\useIsMobile.ts`
+**Arquivo**: `hooks/useIsMobile.ts`
 
 **Descrição**: Sem descrição
 
@@ -40,7 +40,7 @@
 
 ## useOrientation
 
-**Arquivo**: `hooks\useOrientation.ts`
+**Arquivo**: `hooks/useOrientation.ts`
 
 **Descrição**: Sem descrição
 
@@ -52,7 +52,7 @@
 
 ## useRefSize
 
-**Arquivo**: `hooks\useRefSize.ts`
+**Arquivo**: `hooks/useRefSize.ts`
 
 **Descrição**: Sem descrição
 
@@ -64,7 +64,7 @@
 
 ## useScreenSize
 
-**Arquivo**: `hooks\useScreenSize.ts`
+**Arquivo**: `hooks/useScreenSize.ts`
 
 **Descrição**: Sem descrição
 
@@ -76,7 +76,7 @@
 
 ## useThemeBackground
 
-**Arquivo**: `hooks\useThemeBackground.ts`
+**Arquivo**: `hooks/useThemeBackground.ts`
 
 **Descrição**: /   Hook to set the browser background color to match the screen theme This ensures the mobile brows
 
@@ -91,7 +91,7 @@
 
 ## useToast
 
-**Arquivo**: `hooks\useToast.ts`
+**Arquivo**: `hooks/useToast.ts`
 
 **Descrição**: Sem descrição
 

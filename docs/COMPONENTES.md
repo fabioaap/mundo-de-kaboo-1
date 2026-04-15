@@ -1,6 +1,6 @@
 # Documentação de Componentes
 
-**Atualizado em**: 08/04/2026, 13:38:20
+**Atualizado em**: 15/04/2026, 18:00:53
 
 ## Índice
 
@@ -14,10 +14,6 @@
 - [CriticalConfirmationModal](#criticalconfirmationmodal)
 - [FilePreviewModal](#filepreviewmodal)
 - [FileUpload](#fileupload)
-- [Flipbook](#flipbook)
-- [FlipbookLoader](#flipbookloader)
-- [FlipbookViewer](#flipbookviewer)
-- [PdfPage](#pdfpage)
 - [GalaxyBackground](#galaxybackground)
 - [Icons](#icons)
 - [ModalSkeleton](#modalskeleton)
@@ -26,12 +22,17 @@
 - [Tabs](#tabs)
 - [TagInput](#taginput)
 - [Toast](#toast)
+- [VouchersOnboardingBanner](#vouchersonboardingbanner)
+- [Flipbook](#flipbook)
+- [FlipbookLoader](#flipbookloader)
+- [FlipbookViewer](#flipbookviewer)
+- [PdfPage](#pdfpage)
 
 ---
 
 ## BottomNav
 
-**Arquivo**: `components\BottomNav.tsx`
+**Arquivo**: `components/BottomNav.tsx`
 
 
 
@@ -43,7 +44,7 @@
 
 ## Button
 
-**Arquivo**: `components\Button.tsx`
+**Arquivo**: `components/Button.tsx`
 
 
 
@@ -55,7 +56,7 @@
 
 ## Card3D
 
-**Arquivo**: `components\Card3D.tsx`
+**Arquivo**: `components/Card3D.tsx`
 
 
 
@@ -67,7 +68,7 @@
 
 ## CollectionCoverSection
 
-**Arquivo**: `components\CollectionCoverSection.tsx`
+**Arquivo**: `components/CollectionCoverSection.tsx`
 
 
 
@@ -79,7 +80,7 @@
 
 ## CollectionModal
 
-**Arquivo**: `components\CollectionModal.tsx`
+**Arquivo**: `components/CollectionModal.tsx`
 
 
 
@@ -91,7 +92,7 @@
 
 ## ColorPicker
 
-**Arquivo**: `components\ColorPicker.tsx`
+**Arquivo**: `components/ColorPicker.tsx`
 
 
 
@@ -103,7 +104,7 @@
 
 ## ConfirmationModal
 
-**Arquivo**: `components\ConfirmationModal.tsx`
+**Arquivo**: `components/ConfirmationModal.tsx`
 
 
 
@@ -115,7 +116,7 @@
 
 ## CriticalConfirmationModal
 
-**Arquivo**: `components\CriticalConfirmationModal.tsx`
+**Arquivo**: `components/CriticalConfirmationModal.tsx`
 
 
 
@@ -127,7 +128,7 @@
 
 ## FilePreviewModal
 
-**Arquivo**: `components\FilePreviewModal.tsx`
+**Arquivo**: `components/FilePreviewModal.tsx`
 
 
 
@@ -139,7 +140,7 @@
 
 ## FileUpload
 
-**Arquivo**: `components\FileUpload.tsx`
+**Arquivo**: `components/FileUpload.tsx`
 
 
 
@@ -149,57 +150,9 @@
 
 ---
 
-## Flipbook
-
-**Arquivo**: `components\flipbook\Flipbook.tsx`
-
-
-
-
-
-**Exports**: Nenhum export encontrado
-
----
-
-## FlipbookLoader
-
-**Arquivo**: `components\flipbook\FlipbookLoader.tsx`
-
-
-
-
-
-**Exports**: Nenhum export encontrado
-
----
-
-## FlipbookViewer
-
-**Arquivo**: `components\flipbook\FlipbookViewer.tsx`
-
-
-
-
-
-**Exports**: Nenhum export encontrado
-
----
-
-## PdfPage
-
-**Arquivo**: `components\flipbook\PdfPage.tsx`
-
-
-
-
-
-**Exports**: Nenhum export encontrado
-
----
-
 ## GalaxyBackground
 
-**Arquivo**: `components\GalaxyBackground.tsx`
+**Arquivo**: `components/GalaxyBackground.tsx`
 
 
 
@@ -211,7 +164,7 @@
 
 ## Icons
 
-**Arquivo**: `components\Icons.tsx`
+**Arquivo**: `components/Icons.tsx`
 
 
 
@@ -223,7 +176,7 @@
 
 ## ModalSkeleton
 
-**Arquivo**: `components\ModalSkeleton.tsx`
+**Arquivo**: `components/ModalSkeleton.tsx`
 
 
 
@@ -235,7 +188,7 @@
 
 ## MultipleFileUpload
 
-**Arquivo**: `components\MultipleFileUpload.tsx`
+**Arquivo**: `components/MultipleFileUpload.tsx`
 
 
 
@@ -247,7 +200,7 @@
 
 ## PageHeader
 
-**Arquivo**: `components\PageHeader.tsx`
+**Arquivo**: `components/PageHeader.tsx`
 
 
 
@@ -259,7 +212,7 @@
 
 ## Tabs
 
-**Arquivo**: `components\Tabs.tsx`
+**Arquivo**: `components/Tabs.tsx`
 
 
 
@@ -271,7 +224,7 @@
 
 ## TagInput
 
-**Arquivo**: `components\TagInput.tsx`
+**Arquivo**: `components/TagInput.tsx`
 
 
 
@@ -283,13 +236,73 @@
 
 ## Toast
 
-**Arquivo**: `components\Toast.tsx`
+**Arquivo**: `components/Toast.tsx`
 
 
 
 
 
 **Exports**: `ToastType`, `Toast`
+
+---
+
+## VouchersOnboardingBanner
+
+**Arquivo**: `components/VouchersOnboardingBanner.tsx`
+
+
+
+
+
+**Exports**: `VouchersOnboardingBanner`
+
+---
+
+## Flipbook
+
+**Arquivo**: `components/flipbook/Flipbook.tsx`
+
+
+
+
+
+**Exports**: Nenhum export encontrado
+
+---
+
+## FlipbookLoader
+
+**Arquivo**: `components/flipbook/FlipbookLoader.tsx`
+
+
+
+
+
+**Exports**: Nenhum export encontrado
+
+---
+
+## FlipbookViewer
+
+**Arquivo**: `components/flipbook/FlipbookViewer.tsx`
+
+
+
+
+
+**Exports**: Nenhum export encontrado
+
+---
+
+## PdfPage
+
+**Arquivo**: `components/flipbook/PdfPage.tsx`
+
+
+
+
+
+**Exports**: Nenhum export encontrado
 
 ---
 
