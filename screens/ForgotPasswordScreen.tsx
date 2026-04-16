@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { ScreenName } from '../types';
 import { supabase } from '../lib/supabase';
 import { Icons } from '../components/Icons';

@@ -7,7 +7,7 @@ import { getUserRole } from '../lib/auth';
 import { TABS, LOGO_URL, getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
 import { canAccessCollection, formatAccessDate, getAccessStatusLabel, getDaysUntilAccessExpiry, getProfileAccessStatus } from '../lib/access';
 import { PageHeader } from '../components/PageHeader';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { Card3D } from '../components/Card3D';
 import useIsMobile from '../hooks/useIsMobile';
 // @ts-ignore

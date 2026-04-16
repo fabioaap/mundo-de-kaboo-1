@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { ScreenName } from '../types';
 import { Icons } from '../components/Icons';
 import { LOGO_URL } from '../constants';

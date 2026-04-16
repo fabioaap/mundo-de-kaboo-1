@@ -221,7 +221,8 @@ export type ScreenName =
   | 'tools'
   | 'support'
   | 'email_confirmation'
-  | 'admin';
+  | 'admin'
+  | 'design_system';
 
 export type AdminModule = 'collections' | 'users' | 'vouchers';
 

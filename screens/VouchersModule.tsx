@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from '../components/Icons';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { Toast } from '../components/Toast';
 import { CriticalConfirmationModal } from '../components/CriticalConfirmationModal';
 import { VouchersOnboardingBanner } from '../components/VouchersOnboardingBanner';

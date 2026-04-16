@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { supabase } from '../lib/supabase';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { api } from '../lib/api';

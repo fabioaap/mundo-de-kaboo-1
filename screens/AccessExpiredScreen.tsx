@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { Icons } from '../components/Icons';
 import { Collection, ScreenName, UserProfile, Voucher } from '../types';
 import { PENDING_SIGNUP_VOUCHER_STORAGE_KEY } from '../constants';

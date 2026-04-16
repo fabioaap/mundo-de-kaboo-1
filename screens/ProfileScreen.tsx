@@ -5,7 +5,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor, AVATAR_CHARACTERS } from '../constants';
 import { canEditCollections, getUserRole } from '../lib/auth';
 import { PageHeader } from '../components/PageHeader';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { api, clearAllUserCache, getCachedProfileSync } from '../lib/api';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 import { ConfirmationModal } from '../components/ConfirmationModal';

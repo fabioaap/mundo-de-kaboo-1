@@ -4,7 +4,7 @@ import { Collection, ScreenName, UserProfile, UserRole } from '../types';
 import { api } from '../lib/api';
 import { canEditCollections, isAdmin } from '../lib/auth';
 import { PageHeader } from '../components/PageHeader';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { FileUpload } from '../components/FileUpload';
 import { TagInput } from '../components/TagInput';
 import { Tabs } from '../components/Tabs';

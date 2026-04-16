@@ -22,6 +22,7 @@ import { MyDataScreen } from './screens/MyDataScreen';
 import { SearchScreen } from './screens/SearchScreen';
 import { EmailConfirmationScreen } from './screens/EmailConfirmationScreen';
 import { AdminScreen } from './screens/AdminScreen';
+import { DesignSystemScreen } from './screens/DesignSystemScreen';
 
 // Components
 import { BottomNav } from './components/BottomNav';
@@ -607,6 +608,9 @@ const App: React.FC = () => {
 
       case 'admin':
         return <AdminScreen onNavigate={navigate} onBack={goBack} />;
+
+      case 'design_system':
+        return <DesignSystemScreen />;
 
       default:
         return <HomeScreen onNavigate={navigate} />;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { ScreenName, UserProfile, Voucher } from '../types';
 import { Icons } from '../components/Icons';
 import { LOGO_URL, LEAD_CAPTURE_URL, PENDING_SIGNUP_VOUCHER_STORAGE_KEY, PRIVACY_POLICY_URL, SUPPORT_CONTACT_URL } from '../constants';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from '../components/Icons';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { Collection, CollectionResource, ScreenName } from '../types';
 import { offlineManager } from '../lib/offline';
 import { api } from '../lib/api';

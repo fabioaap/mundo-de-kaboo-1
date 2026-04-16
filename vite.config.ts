@@ -1,26 +1,32 @@
+/// <reference types="vitest/config" />
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'node:url';
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+import { playwright } from '@vitest/browser-playwright';
+const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
+// More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   server: {
     port: 4100,
     host: 'localhost',
-    strictPort: true,
+    strictPort: true
   },
   preview: {
     port: 4101,
-    strictPort: true,
+    strictPort: true
   },
   plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
-      'warning': path.resolve(__dirname, './lib/warning-shim.ts'),
+      'warning': path.resolve(__dirname, './lib/warning-shim.ts')
     },
     dedupe: ['react', 'react-dom']
   },
-  assetsInclude: ['**/*.css'],
+  assetsInclude: ['**/*.pdf'],
   optimizeDeps: {
     include: ['react-pdf', 'pdfjs-dist'],
     esbuildOptions: {
@@ -32,5 +38,27 @@ export default defineConfig({
       transformMixedEsModules: true,
       include: [/node_modules/]
     }
+  },
+  test: {
+    projects: [{
+      extends: true,
+      plugins: [
+      // The plugin will run tests for the stories defined in your Storybook config
+      // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
+      storybookTest({
+        configDir: path.join(dirname, '.storybook')
+      })],
+      test: {
+        name: 'storybook',
+        browser: {
+          enabled: true,
+          headless: true,
+          provider: playwright({}),
+          instances: [{
+            browser: 'chromium'
+          }]
+        }
+      }
+    }]
   }
 });
