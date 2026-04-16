@@ -5,6 +5,7 @@ const meta: Meta<typeof Button> = {
   title: 'Design System/Primitives/Button',
   component: Button,
   tags: ['autodocs'],
+  parameters: { layout: 'centered' },
   args: { children: 'Button' },
   argTypes: {
     variant: {

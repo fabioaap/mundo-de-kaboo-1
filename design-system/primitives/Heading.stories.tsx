@@ -5,6 +5,7 @@ const meta: Meta<typeof Heading> = {
   title: 'Design System/Primitives/Heading',
   component: Heading,
   tags: ['autodocs'],
+  parameters: { layout: 'centered' },
   args: { children: 'Mundo de Kaboo' },
   argTypes: {
     as:   { control: 'select', options: ['h1','h2','h3','h4','h5','h6'] },

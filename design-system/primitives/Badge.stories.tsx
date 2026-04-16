@@ -5,6 +5,7 @@ const meta: Meta<typeof Badge> = {
   title: 'Design System/Primitives/Badge',
   component: Badge,
   tags: ['autodocs'],
+  parameters: { layout: 'centered' },
   args: { children: 'Badge' },
   argTypes: {
     variant: {
