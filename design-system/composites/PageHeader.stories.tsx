@@ -18,7 +18,7 @@ export default meta
 type Story = StoryObj<typeof PageHeader>
 
 export const Default: Story = {
-  args: { title: 'Minhas Coleções' },
+  args: { title: 'Minhas Coleções', onBack: undefined },
 }
 
 export const WithBack: Story = {
