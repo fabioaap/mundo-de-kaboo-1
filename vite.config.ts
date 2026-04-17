@@ -7,22 +7,36 @@ import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
+const normalizeBasePath = (basePath: string): string => {
+  if (basePath === '' || basePath === '.' || basePath === './') {
+    return './';
+  }
+
+  const withLeadingSlash = basePath.startsWith('/') ? basePath : `/${basePath}`;
+  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
+};
+
+const base = normalizeBasePath(
+  process.env.VITE_PUBLIC_BASE || (process.env.GITHUB_ACTIONS === 'true' ? './' : '/')
+);
+
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
+  base,
   server: {
     port: 4100,
     host: 'localhost',
-    strictPort: true
+    strictPort: true,
   },
   preview: {
     port: 4101,
-    strictPort: true
+    strictPort: true,
   },
   plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
-      'warning': path.resolve(__dirname, './lib/warning-shim.ts')
+      'warning': path.resolve(__dirname, './lib/warning-shim.ts'),
     },
     dedupe: ['react', 'react-dom']
   },

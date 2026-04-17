@@ -15,6 +15,7 @@ import {
     getVoucherErrorMessage,
     normalizeVoucherCode
 } from './access';
+import { isPlaceholderImageUrl, placeholderImageUrl, resolveAppUrl } from './appPaths';
 import { createGrantsFromRedemption } from './mockVoucherData';
 
 interface CatalogSeed {
@@ -63,6 +64,17 @@ const MOCK_COLLECTIONS_STORAGE_KEY = 'kaboo_mock_collections';
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const seed = catalogSeed as CatalogSeed;
+
+const normalizeCollectionAssetUrls = (collection: Collection): Collection => ({
+    ...collection,
+    cover_image: isPlaceholderImageUrl(collection.cover_image)
+        ? placeholderImageUrl
+        : resolveAppUrl(collection.cover_image || placeholderImageUrl),
+});
+
+const normalizeCollections = (collections: Collection[]): Collection[] => {
+    return collections.map(normalizeCollectionAssetUrls);
+};
 
 const buildFutureDate = (months: VoucherDurationMonths): string => {
     const date = new Date();
@@ -118,7 +130,7 @@ const DEFAULT_MOCK_VOUCHERS: Voucher[] = [
     { id: 'voucher-disabled', code: 'KABOO-BLOQUEADO-2026', duration_months: 6, status: 'disabled' }
 ];
 
-const MOCK_COLLECTIONS: Collection[] = seed.collections;
+const MOCK_COLLECTIONS: Collection[] = normalizeCollections(seed.collections);
 
 const MOCK_COLLECTION_RESOURCES = seed.collection_resources.reduce<Record<string, CollectionResource[]>>((grouped, resource) => {
     const currentResources = grouped[resource.collection_id] || [];
@@ -640,7 +652,7 @@ const readStoredCollections = (): Collection[] | null => {
     if (typeof window === 'undefined') return null;
     try {
         const stored = localStorage.getItem(MOCK_COLLECTIONS_STORAGE_KEY);
-        return stored ? (JSON.parse(stored) as Collection[]) : null;
+        return stored ? normalizeCollections(JSON.parse(stored) as Collection[]) : null;
     } catch {
         return null;
     }
@@ -648,7 +660,7 @@ const readStoredCollections = (): Collection[] | null => {
 
 const writeStoredCollections = (collections: Collection[]): void => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(MOCK_COLLECTIONS_STORAGE_KEY, JSON.stringify(collections));
+    localStorage.setItem(MOCK_COLLECTIONS_STORAGE_KEY, JSON.stringify(normalizeCollections(collections)));
 };
 
 const getLiveCollections = (): Collection[] => {
@@ -656,10 +668,10 @@ const getLiveCollections = (): Collection[] => {
 };
 
 export const mockCreateCollection = (data: Partial<Collection>): Collection => {
-    const newCollection: Collection = {
+    const newCollection = normalizeCollectionAssetUrls({
         id: `mock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         title: data.title || 'Nova Coleção',
-        cover_image: data.cover_image || '/assets/images/image-placeholder.png',
+        cover_image: data.cover_image || placeholderImageUrl,
         level: data.level || 'Educação Infantil',
         color_theme: data.color_theme || '#5D1F58',
         theme: data.theme || '',
@@ -672,7 +684,7 @@ export const mockCreateCollection = (data: Partial<Collection>): Collection => {
         audio_url: data.audio_url || '',
         video_url: data.video_url || '',
         extra_materials: data.extra_materials || [],
-    };
+    });
     const updated = [...getLiveCollections(), newCollection];
     writeStoredCollections(updated);
     return clone(newCollection);
@@ -682,7 +694,7 @@ export const mockUpdateCollection = (id: string, updates: Partial<Collection>): 
     const collections = getLiveCollections();
     const idx = collections.findIndex(c => c.id === id);
     if (idx === -1) return null;
-    const updated = { ...collections[idx], ...updates, id };
+    const updated = normalizeCollectionAssetUrls({ ...collections[idx], ...updates, id });
     const next = [...collections];
     next[idx] = updated;
     writeStoredCollections(next);

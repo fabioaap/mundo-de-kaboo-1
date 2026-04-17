@@ -14,6 +14,7 @@ import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { ColorPicker } from '../components/ColorPicker';
 import useIsMobile from '../hooks/useIsMobile';
+import { placeholderImageUrl } from '../lib/appPaths';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 
@@ -199,7 +200,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [formData, setFormData] = useState<Partial<Collection>>({
     title: '',
     level: 'Educação Infantil',
-    cover_image: '/assets/images/image-placeholder.png',
+    cover_image: placeholderImageUrl,
     pdf_url: '',
     audio_url: '',
     video_url: '',
@@ -435,7 +436,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     const initialData = {
       title: collection.title || '',
       level: collection.level || 'Educação Infantil',
-      cover_image: collection.cover_image || '/assets/images/image-placeholder.png',
+      cover_image: collection.cover_image || placeholderImageUrl,
       pdf_url: collection.pdf_url || '',
       audio_url: collection.audio_url || '',
       video_url: collection.video_url || '',
@@ -540,7 +541,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     setFormData({
       title: '',
       level: 'Educação Infantil',
-      cover_image: '/assets/images/image-placeholder.png',
+      cover_image: placeholderImageUrl,
       pdf_url: '',
       audio_url: '',
       video_url: '',
@@ -733,7 +734,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         <div>
                           <FileUpload
                             label="Imagem de Capa"
-                            value={formData.cover_image || '/assets/images/image-placeholder.png'}
+                            value={formData.cover_image || placeholderImageUrl}
                             onChange={(url) => setFormData({ ...formData, cover_image: url })}
                             folder="covers"
                             accept="image/*"
@@ -1109,7 +1110,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               setOriginalFormData({
                                 title: '',
                                 level: 'Educação Infantil',
-                                cover_image: '/assets/images/image-placeholder.png',
+                                cover_image: placeholderImageUrl,
                                 pdf_url: '',
                                 audio_url: '',
                                 video_url: '',
@@ -1129,7 +1130,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             setOriginalFormData({
                               title: '',
                               level: 'Educação Infantil',
-                              cover_image: '/assets/images/image-placeholder.png',
+                              cover_image: placeholderImageUrl,
                               pdf_url: '',
                               audio_url: '',
                               video_url: '',

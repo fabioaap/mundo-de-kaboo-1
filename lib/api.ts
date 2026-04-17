@@ -11,6 +11,7 @@ import {
   VoucherValidationResult,
 } from '../types';
 import { logger } from './logger';
+import { buildAppUrl } from './appPaths';
 import {
   createMockUser,
   getMockAllUsers,
@@ -534,7 +535,7 @@ export const api = {
 
     try {
       const emailRedirectTo = typeof window !== 'undefined'
-        ? `${window.location.origin}/?confirmation=success`
+        ? buildAppUrl('?confirmation=success')
         : undefined;
 
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../design-system';
 import { ScreenName } from '../types';
+import { buildAppUrl } from '../lib/appPaths';
 import { supabase } from '../lib/supabase';
 import { Icons } from '../components/Icons';
 import backgroundImage from '../assets/images/background-login.jpg';
@@ -27,7 +28,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin, // Simple redirect logic
+        redirectTo: buildAppUrl(),
       });
 
       if (error) throw error;
