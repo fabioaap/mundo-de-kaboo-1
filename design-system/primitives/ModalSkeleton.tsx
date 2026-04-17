@@ -18,10 +18,10 @@ export const ModalSkeleton: React.FC = () => {
       <div className="flex-1 overflow-y-auto z-10 bg-white rounded-t-[2.5rem] md:rounded-none mt-0 relative shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none md:h-full">
         <div className="pt-9 px-6 pb-24 md:p-12 md:max-w-4xl md:mx-auto">
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-4">
-            <div className="h-6 bg-kaboo-primary/10 rounded-full w-24" />
-            <div className="h-4 bg-kaboo-primary/40 rounded w-1" />
-            <div className="h-6 bg-kaboo-primary/10 rounded-full w-16" />
-            <div className="h-6 bg-kaboo-primary/10 rounded-full w-16" />
+            <div className="h-6 bg-brand-primary/10 rounded-full w-24" />
+            <div className="h-4 bg-brand-primary/40 rounded w-1" />
+            <div className="h-6 bg-brand-primary/10 rounded-full w-16" />
+            <div className="h-6 bg-brand-primary/10 rounded-full w-16" />
           </div>
           <div className="mb-6 mt-6">
             <div className="h-8 md:h-12 bg-gray-200 rounded w-3/4 mx-auto md:mx-0" />

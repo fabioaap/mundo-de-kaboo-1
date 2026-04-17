@@ -18,15 +18,15 @@ const meta: Meta<typeof Button> = {
 export default meta
 type Story = StoryObj<typeof Button>
 
-export const Primary: Story   = { args: { variant: 'primary' } }
+export const Primary: Story = { args: { variant: 'primary' } }
 export const Secondary: Story = { args: { variant: 'secondary' } }
-export const Ghost: Story     = { args: { variant: 'ghost' } }
-export const White: Story     = {
+export const Ghost: Story = { args: { variant: 'ghost' } }
+export const White: Story = {
   args: { variant: 'white' },
-  decorators: [(Story) => <div className="bg-kaboo-primary p-6 inline-block rounded-2xl"><Story /></div>],
+  decorators: [(Story) => <div className="bg-brand-primary p-6 inline-block rounded-2xl"><Story /></div>],
 }
-export const Danger: Story    = { args: { variant: 'danger' } }
-export const Disabled: Story  = { args: { variant: 'primary', disabled: true } }
+export const Danger: Story = { args: { variant: 'danger' } }
+export const Disabled: Story = { args: { variant: 'primary', disabled: true } }
 export const FullWidth: Story = { args: { variant: 'primary', fullWidth: true } }
 
 export const AllVariants: Story = {

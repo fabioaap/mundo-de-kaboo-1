@@ -30,7 +30,7 @@ export const WithRightContent: Story = {
     title: 'Coleções',
     onBack: () => { },
     rightContent: (
-      <button className="px-4 py-2 bg-kaboo-primary text-white rounded-xl text-sm font-bold">
+      <button className="px-4 py-2 bg-brand-primary text-white rounded-xl text-sm font-bold">
         + Nova
       </button>
     ),

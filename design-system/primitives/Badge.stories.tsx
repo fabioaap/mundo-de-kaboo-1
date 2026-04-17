@@ -20,9 +20,9 @@ type Story = StoryObj<typeof Badge>
 
 export const Default: Story = { args: { variant: 'default', children: 'Default' } }
 export const Success: Story = { args: { variant: 'success', children: 'Success' } }
-export const Error: Story   = { args: { variant: 'error',   children: 'Error'   } }
+export const Error: Story = { args: { variant: 'error', children: 'Error' } }
 export const Warning: Story = { args: { variant: 'warning', children: 'Warning' } }
-export const Info: Story    = { args: { variant: 'info',    children: 'Info'    } }
+export const Info: Story = { args: { variant: 'info', children: 'Info' } }
 
 export const AllVariants: Story = {
   render: () => (

@@ -9,11 +9,11 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary:   'bg-kaboo-primary text-white hover:bg-opacity-90',
-  secondary: 'bg-kaboo-primary/10 text-kaboo-primary hover:bg-kaboo-primary/20',
-  ghost:     'bg-transparent text-gray-600 hover:bg-gray-100 shadow-none',
-  white:     'bg-white text-kaboo-primary hover:bg-gray-50',
-  danger:    'bg-red-500 text-white hover:bg-red-600',
+  primary: 'bg-brand-primary text-white hover:bg-opacity-90',
+  secondary: 'bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20',
+  ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 shadow-none',
+  white: 'bg-white text-brand-primary hover:bg-gray-50',
+  danger: 'bg-red-500 text-white hover:bg-red-600',
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

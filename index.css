@@ -3,39 +3,70 @@
 @theme {
   /* ─── Brand Colors ─────────────────────────────────────── */
   --color-kaboo-primary: #5D1F58;
-  --color-kaboo-light:   #883E82;
-  --color-kaboo-bg:      #F9F5F9;
-  --color-kaboo-accent:  #4EA8DE;
-  --color-kaboo-green:   #70E000;
+  --color-kaboo-light: #883E82;
+  --color-kaboo-bg: #F9F5F9;
+  --color-kaboo-accent: #4EA8DE;
+  --color-kaboo-green: #70E000;
 
   /* ─── Typography ────────────────────────────────────────── */
   --font-family-sans: 'Nunito', ui-rounded, system-ui, sans-serif;
 
   /* ─── Border Radius ─────────────────────────────────────── */
-  --radius-xl:  1rem;
+  --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
   --radius-3xl: 2rem;
 
+  /* ─── Semantic brand tokens (white-label) ───────────────── */
+  --color-brand-primary: var(--color-kaboo-primary);
+  --color-brand-light: var(--color-kaboo-light);
+  --color-brand-bg: var(--color-kaboo-bg);
+  --color-brand-accent: var(--color-kaboo-accent);
+  --color-brand-green: var(--color-kaboo-green);
+
   /* ─── Animations ────────────────────────────────────────── */
-  --animate-blob:       blob 25s infinite;
+  --animate-blob: blob 25s infinite;
   --animate-fade-in-up: fadeInUp 0.5s ease-out forwards;
 
   @keyframes blob {
-    0%   { transform: translate(0px, 0px) scale(1); }
-    25%  { transform: translate(30px, -50px) scale(1.1); }
-    50%  { transform: translate(-20px, 20px) scale(0.9); }
-    75%  { transform: translate(40px, 50px) scale(1.05); }
-    100% { transform: translate(0px, 0px) scale(1); }
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+
+    25% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+
+    50% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+
+    75% {
+      transform: translate(40px, 50px) scale(1.05);
+    }
+
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
   }
 
   @keyframes fadeInUp {
-    0%   { opacity: 0; transform: translateY(20px); }
-    100% { opacity: 1; transform: translateY(0); }
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
 /* ─── Scrollbar ──────────────────────────────────────────── */
-.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -57,21 +88,78 @@ body {
   opacity: 1 !important;
   background: transparent !important;
 }
-.react-pdf__Page    { display: flex !important; justify-content: center; align-items: center; background: transparent !important; }
-.react-pdf__Document { display: flex !important; justify-content: center; align-items: center; background: transparent !important; }
-.react-pdf__Document > div { background: transparent !important; }
+
+.react-pdf__Page {
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  background: transparent !important;
+}
+
+.react-pdf__Document {
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  background: transparent !important;
+}
+
+.react-pdf__Document>div {
+  background: transparent !important;
+}
 
 /* ─── Flipbook ───────────────────────────────────────────── */
-.stf__parent, .stf__wrapper, .tf__parent, .tf__wrapper { background: transparent !important; }
+.stf__parent,
+.stf__wrapper,
+.tf__parent,
+.tf__wrapper {
+  background: transparent !important;
+}
 
 /* ─── Zoom/Pan ───────────────────────────────────────────── */
-.react-transform-wrapper, .react-transform-component { background: transparent !important; }
+.react-transform-wrapper,
+.react-transform-component {
+  background: transparent !important;
+}
 
 /* ─── Modal Animations ───────────────────────────────────── */
-@keyframes fast-fade-in    { from { opacity: 0; } to { opacity: 1; } }
-@keyframes content-fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes skeleton-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes fast-fade-in {
+  from {
+    opacity: 0;
+  }
 
-.fast-fade-in     { animation: fast-fade-in 0.1s ease-out forwards; }
-.content-fade-in  { animation: content-fade-in 0.25s ease-out forwards; }
-.skeleton-fade-out { animation: skeleton-fade-out 0.2s ease-in forwards; }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes content-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes skeleton-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+.fast-fade-in {
+  animation: fast-fade-in 0.1s ease-out forwards;
+}
+
+.content-fade-in {
+  animation: content-fade-in 0.25s ease-out forwards;
+}
+
+.skeleton-fade-out {
+  animation: skeleton-fade-out 0.2s ease-in forwards;
+}

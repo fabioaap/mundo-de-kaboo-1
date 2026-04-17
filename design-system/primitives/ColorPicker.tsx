@@ -82,7 +82,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label
             onPaste={handleHexPaste}
             placeholder="#000000"
             maxLength={7}
-            className={`w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none ${!isValid ? 'ring-2 ring-red-500' : ''
+            className={`w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none ${!isValid ? 'ring-2 ring-red-500' : ''
               }`}
           />
         </div>

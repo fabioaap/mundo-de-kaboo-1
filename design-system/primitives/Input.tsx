@@ -30,7 +30,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className={cn(
             'w-full px-4 py-3 rounded-xl border bg-white text-gray-900',
             'placeholder:text-gray-400 transition-colors duration-150',
-            'focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30 focus:border-kaboo-primary',
+            'focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary',
             error
               ? 'border-red-400 focus:ring-red-300 focus:border-red-500'
               : 'border-gray-200 hover:border-gray-300',

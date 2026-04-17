@@ -34,6 +34,8 @@ export type { CriticalConfirmationModalProps } from './composites/CriticalConfir
 
 // ─── Tokens ──────────────────────────────────────────────
 export { colors, radius, font, characterColors } from './tokens'
+export { themes, applyTheme } from './tokens/themes'
+export type { BrandTheme } from './tokens/themes'
 
 // ─── Utils ───────────────────────────────────────────────
 export { cn } from './utils/cn'

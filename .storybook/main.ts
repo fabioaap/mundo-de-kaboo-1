@@ -12,6 +12,9 @@ const config: StorybookConfig = {
     "@storybook/addon-docs"
   ],
   "framework": "@storybook/react-vite",
+  "features": {
+    "whatsNewNotifications": false,
+  },
   async viteFinal(config) {
     const { default: tailwindcss } = await import('@tailwindcss/postcss')
     config.css = {
