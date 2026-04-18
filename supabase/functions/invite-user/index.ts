@@ -26,6 +26,12 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+    // Cliente admin — service_role, sem restrições RLS, nunca exposto ao browser
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // Valida o JWT do caller
     const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -38,18 +44,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verifica se o caller é admin
-    const { data: callerProfile, error: profileErr } = await callerClient
+    // Verifica papel do caller usando adminClient (bypassa RLS — evita 403 por política)
+    const { data: callerProfile, error: profileErr } = await adminClient
       .from('profiles')
       .select('role')
       .eq('id', caller.id)
       .single();
 
     if (profileErr || callerProfile?.role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Forbidden: apenas admins podem convidar usuários' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: apenas admins podem convidar usuários' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Parse do body
@@ -63,11 +69,6 @@ Deno.serve(async (req) => {
 
     const assignedRole = role ?? 'viewer';
     const isOperationalRole = assignedRole === 'admin' || assignedRole === 'editor';
-
-    // Cliente admin com service_role — roda no servidor, nunca exposto ao browser
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
 
     // Convida o usuário — cria conta + envia e-mail de convite em uma só chamada
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
