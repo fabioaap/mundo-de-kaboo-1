@@ -159,11 +159,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [showUserForm, setShowUserForm] = useState(false);
   const [userFormData, setUserFormData] = useState({
     email: '',
-    password: '',
     full_name: '',
     role: 'viewer' as UserRole,
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [userErrorMsg, setUserErrorMsg] = useState<string | null>(null);
@@ -348,13 +346,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       return;
     }
 
-    if (!userFormData.email || !userFormData.password || !userFormData.full_name) {
+    if (!userFormData.email || !userFormData.full_name) {
       setUserErrorMsg('Preencha todos os campos obrigatórios.');
-      return;
-    }
-
-    if (userFormData.password.length < 6) {
-      setUserErrorMsg('A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
@@ -365,15 +358,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     try {
       const result = await api.createUser({
         email: userFormData.email,
-        password: userFormData.password,
         full_name: userFormData.full_name,
         role: userFormData.role,
       });
 
       if (result.success) {
-        showToast('Usuário criado com sucesso!', 'success');
+        showToast(`Convite enviado para ${userFormData.email}!`, 'success');
         setShowUserForm(false);
-        setUserFormData({ email: '', password: '', full_name: '', role: 'viewer' });
+        setUserFormData({ email: '', full_name: '', role: 'viewer' });
         setAcceptedTerms(false);
         setUserSuccessMsg(null);
         loadUsers();
@@ -1405,7 +1397,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       setShowUserForm(false);
                       setUserFormData({
                         email: '',
-                        password: '',
                         full_name: '',
                         role: 'viewer',
                       });
@@ -1417,7 +1408,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                   >
                     <Icons.ChevronLeft size={24} />
                   </button>
-                  <h1 className="text-xl font-bold text-gray-800 flex-1">Criar novo usuário</h1>
+                  <h1 className="text-xl font-bold text-gray-800 flex-1">Convidar colaborador</h1>
                 </div>
 
                 <form onSubmit={handleCreateUser} className="space-y-4">
@@ -1457,28 +1448,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     </div>
                   </div>
 
-                  {/* Password Field */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-600 ml-2">Senha</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={userFormData.password}
-                        onChange={(e) => { setUserFormData({ ...userFormData, password: e.target.value }); clearUserError(); }}
-                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pr-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
-                        placeholder="••••••••"
-                        required
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none"
-                      >
-                        {showPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
-                      </button>
-                    </div>
-                  </div>
+                  {/* Password Field removed — collaborator sets password via invite email */}
 
                   {/* Role Field */}
                   <div className="space-y-2">
@@ -1545,11 +1515,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     </div>
                   </div>
 
-                  {!isSupabaseConfigured && (
+                  {isSupabaseConfigured ? (
+                    <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 leading-relaxed flex items-start gap-2">
+                      <Icons.Mail size={14} className="mt-0.5 shrink-0" />
+                      <span>Um e-mail de convite será enviado automaticamente para que o colaborador defina a própria senha no primeiro acesso.</span>
+                    </div>
+                  ) : (
                     <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-800 leading-relaxed">
                       {userFormData.role === 'viewer'
-                        ? 'No modo demonstracao, novos visualizadores ficam com acesso pendente e precisam ativar a conta com um codigo de acesso no primeiro login.'
-                        : 'No modo demonstracao, editores e administradores criados por aqui entram com acesso ativo para fins operacionais.'}
+                        ? 'No modo demonstração, o e-mail de convite não é enviado. O colaborador pode usar "Esqueci minha senha" na tela de login para definir a senha.'
+                        : 'No modo demonstração, editores e administradores criados por aqui entram com acesso ativo para fins operacionais.'}
                     </div>
                   )}
 
@@ -1586,7 +1561,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                   <div className="pt-2">
                     <Button type="submit" fullWidth disabled={isCreatingUser}>
-                      {isCreatingUser ? 'Criando...' : 'Criar Conta'}
+                      {isCreatingUser ? 'Enviando convite...' : 'Enviar convite por e-mail'}
                     </Button>
                   </div>
                 </form>

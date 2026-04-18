@@ -44,6 +44,25 @@ import { getActiveGrantsForUser, hasGrantForCollection } from './mockVoucherData
 const COLLECTIONS_CACHE_KEY = 'kaboo_collections_cache';
 const PROFILE_CACHE_KEY = 'kaboo_profile_cache';
 const SESSION_KEY = 'kaboo_session_id';
+
+// DEV-only: flag indicating we're running with a mock demo user despite Supabase being configured
+// Persisted in sessionStorage so it survives HMR and page reloads
+const DEV_MOCK_SESSION_KEY = 'kaboo_dev_mock_session';
+let devMockSession = import.meta.env.DEV && sessionStorage.getItem(DEV_MOCK_SESSION_KEY) === '1';
+
+function setDevMockSession(value: boolean) {
+  devMockSession = value;
+  if (value) {
+    sessionStorage.setItem(DEV_MOCK_SESSION_KEY, '1');
+  } else {
+    sessionStorage.removeItem(DEV_MOCK_SESSION_KEY);
+  }
+}
+
+/** Check if we're in a DEV mock session (demo user with Supabase configured) */
+export function isDevMockSession(): boolean {
+  return devMockSession;
+}
 const DEV_SUPABASE_VOUCHER_FALLBACKS: Record<string, Voucher['duration_months']> = {
   'KABOO-LIVR-0001': 3,
 };
@@ -230,7 +249,7 @@ const saveProfileCache = async (profile: UserProfile): Promise<void> => {
   try {
     let userId = getMockCurrentUserId() || 'mock-anonymous';
 
-    if (isSupabaseConfigured) {
+    if (isSupabaseConfigured && !devMockSession) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       userId = user.id;
@@ -279,6 +298,18 @@ export const api = {
       };
     }
 
+    // DEV-only: allow demo credentials even when Supabase is configured
+    if (import.meta.env.DEV && isSupabaseConfigured) {
+      const mockResult = signInMockUser(email, password);
+      if (mockResult.success && mockResult.profile) {
+        logger.warn('DEV: using mock demo user bypass for', email);
+        setDevMockSession(true);
+        clearCollectionsCache();
+        await saveProfileCache(normalizeProfile(mockResult.profile));
+        return { success: true, profile: mockResult.profile };
+      }
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -306,11 +337,18 @@ export const api = {
   },
 
   async signOut(): Promise<void> {
+    const wasMockSession = devMockSession;
     clearAllUserCache();
+    setDevMockSession(false);
 
     if (!isSupabaseConfigured) {
       signOutMockUser();
       return;
+    }
+
+    // Clean up mock session state if we were in a dev mock session
+    if (wasMockSession) {
+      signOutMockUser();
     }
 
     await supabase.auth.signOut();
@@ -623,7 +661,7 @@ export const api = {
       }
     }
 
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || devMockSession) {
       const collections = getMockCollectionsLive();
       saveCollectionsCache(collections);
       return collections;
@@ -695,10 +733,13 @@ export const api = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return {};
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_progress')
       .select('collection_id, progress_percent')
       .eq('user_id', user.id);
+
+    // Table may not exist yet (e.g. dev environment without migrations)
+    if (error) return {};
 
     const progressMap: Record<string, number> = {};
     data?.forEach((p: any) => {
@@ -983,16 +1024,20 @@ export const api = {
    */
   async createUser(userData: {
     email: string;
-    password: string;
     full_name: string;
     role?: 'admin' | 'editor' | 'viewer';
   }): Promise<{ success: boolean; error?: string; userId?: string }> {
+    const assignedRole = userData.role || 'viewer';
+    const isOperationalRole = assignedRole === 'admin' || assignedRole === 'editor';
+
     if (!isSupabaseConfigured) {
+      // Em modo mock, gera senha aleatória internamente — o colaborador nunca a vê
+      const mockPassword = crypto.randomUUID();
       const result = createMockUser({
         email: userData.email,
-        password: userData.password,
+        password: mockPassword,
         full_name: userData.full_name,
-        role: userData.role || 'viewer',
+        role: assignedRole,
         signIn: false,
       });
 
@@ -1005,14 +1050,17 @@ export const api = {
 
     try {
       // Salva a sessão do admin antes de criar o usuário
-      // O signUp pode criar uma nova sessão e sobrescrever a sessão atual
+      // O signUp pode sobrescrever a sessão atual
       const { data: adminSessionData } = await supabase.auth.getSession();
       const adminRefreshToken = adminSessionData.session?.refresh_token;
 
-      // Create auth user
+      // Gera senha aleatória — o colaborador nunca a usa diretamente;
+      // vai redefinir pelo link de convite enviado por e-mail.
+      const tempPassword = crypto.randomUUID();
+
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: userData.email,
-        password: userData.password,
+        password: tempPassword,
         options: {
           data: {
             full_name: userData.full_name,
@@ -1036,19 +1084,34 @@ export const api = {
         await supabase.auth.refreshSession({ refresh_token: adminRefreshToken });
       }
 
-      // Create profile with specified role
+      // Cria perfil com papel e status de acesso corretos
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: signUpData.user.id,
         email: userData.email,
         full_name: userData.full_name,
         school_name: null,
-        role: userData.role || 'viewer',
+        role: assignedRole,
+        access_status: isOperationalRole ? 'active' : 'pending_voucher',
+        access_starts_at: isOperationalRole ? new Date().toISOString() : null,
+        access_expires_at: null,
+        voucher_id: null,
         updated_at: new Date().toISOString(),
       });
 
       if (profileError) {
         logger.error('Error creating profile:', profileError);
         return { success: false, error: profileError.message };
+      }
+
+      // Envia e-mail de convite para o colaborador definir a própria senha
+      const { error: inviteError } = await supabase.auth.resetPasswordForEmail(
+        userData.email,
+        { redirectTo: buildAppUrl() }
+      );
+
+      if (inviteError) {
+        // Perfil foi criado; avisa mas não trata como falha bloqueante
+        logger.error('Error sending invite email:', inviteError);
       }
 
       return { success: true, userId: signUpData.user.id };
@@ -1098,13 +1161,37 @@ export const api = {
       return updated ? { success: true } : { success: false, error: 'Usuário não encontrado.' };
     }
 
+    const nextProfileUpdates: Record<string, unknown> = {
+      ...updates,
+      school_name: null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (updates.role) {
+      const { data: currentProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('voucher_id, access_expires_at, access_starts_at')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        logger.error('Error fetching current user profile before update:', profileError);
+        return { success: false, error: profileError.message };
+      }
+
+      const isOperationalRole = updates.role === 'admin' || updates.role === 'editor';
+      if (isOperationalRole) {
+        nextProfileUpdates.access_status = 'active';
+        nextProfileUpdates.access_starts_at = currentProfile?.access_starts_at || new Date().toISOString();
+      } else if (!currentProfile?.voucher_id && !currentProfile?.access_expires_at) {
+        nextProfileUpdates.access_status = 'pending_voucher';
+        nextProfileUpdates.access_starts_at = null;
+      }
+    }
+
     const { error } = await supabase
       .from('profiles')
-      .update({
-        ...updates,
-        school_name: null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(nextProfileUpdates)
       .eq('id', userId);
 
     if (error) {

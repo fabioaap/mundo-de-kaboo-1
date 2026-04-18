@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavState, ScreenName, Collection, UserProfile } from './types';
-import { api, clearAllUserCache, getCachedProfileSync } from './lib/api';
+import { api, clearAllUserCache, getCachedProfileSync, isDevMockSession } from './lib/api';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { useThemeBackground } from './hooks/useThemeBackground';
 import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
@@ -18,8 +18,8 @@ const BookReaderScreen = React.lazy(() => import('./screens/BookReaderScreen').t
 import { ExtraToolsScreen } from './screens/ExtraToolsScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { MyDataScreen } from './screens/MyDataScreen';
-import { SearchScreen } from './screens/SearchScreen';
 import { EmailConfirmationScreen } from './screens/EmailConfirmationScreen';
+import { SetPasswordScreen } from './screens/SetPasswordScreen';
 import { AdminScreen } from './screens/AdminScreen';
 import { DesignSystemScreen } from './screens/DesignSystemScreen';
 
@@ -102,8 +102,8 @@ const App: React.FC = () => {
           return { currentScreen: 'login' };
         }
       }
-      // Don't restore login/forgot_password screens - let auth check handle it
-      if (saved.currentScreen === 'login' || saved.currentScreen === 'forgot_password') {
+      // Don't restore login/forgot_password/set_password screens - let auth check handle it
+      if (saved.currentScreen === 'login' || saved.currentScreen === 'forgot_password' || saved.currentScreen === 'set_password') {
         return { currentScreen: 'login' };
       }
       return saved;
@@ -217,6 +217,10 @@ const App: React.FC = () => {
           }
           return prev;
         });
+      } else if (isDevMockSession()) {
+        // DEV mock session: skip redirect to login, preserve current nav state
+        setSessionChecked(true);
+        return;
       } else {
         setAccessProfile(null);
         // No session - only preserve email_confirmation, otherwise go to login
@@ -235,6 +239,12 @@ const App: React.FC = () => {
 
     // 2. Realtime Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // Colaborador clicou no link de convite — redireciona para tela de definir senha
+        setNavState({ currentScreen: 'set_password' });
+        return;
+      }
+
       if (event === 'SIGNED_IN' && session) {
         // Clear all caches on login to ensure fresh data for the new user
         clearAllUserCache();
@@ -253,6 +263,9 @@ const App: React.FC = () => {
           return prev;
         });
       } else if (event === 'SIGNED_OUT' || !session) {
+        // In DEV mock session, ignore Supabase auth state changes
+        if (isDevMockSession()) return;
+
         // Clear all user-related caches to prevent showing previous user's data
         clearAllUserCache();
         setAccessProfile(null);
@@ -484,14 +497,22 @@ const App: React.FC = () => {
       case 'forgot_password':
         return <ForgotPasswordScreen onNavigate={navigate} />;
 
+      case 'set_password':
+        return (
+          <SetPasswordScreen
+            onNavigate={navigate}
+            onPasswordSet={() => navigate('home')}
+          />
+        );
+
       case 'email_confirmation':
         return <EmailConfirmationScreen onNavigate={navigate} params={navState.params} />;
 
       case 'home':
-        return <HomeScreen onNavigate={navigate} params={navState.params} accessProfile={accessProfile} />;
+        return <HomeScreen key="home-screen" onNavigate={navigate} params={navState.params} accessProfile={accessProfile} screenName="home" />;
 
       case 'search':
-        return <SearchScreen onNavigate={navigate} params={navState.params} />;
+        return <HomeScreen key="search-home-screen" onNavigate={navigate} params={navState.params} accessProfile={accessProfile} screenName="search" searchMode />;
 
       case 'profile':
         return <ProfileScreen onNavigate={navigate} />;
@@ -612,7 +633,7 @@ const App: React.FC = () => {
         return <DesignSystemScreen />;
 
       default:
-        return <HomeScreen onNavigate={navigate} />;
+        return <HomeScreen key="home-screen-default" onNavigate={navigate} screenName="home" />;
     }
   };
 

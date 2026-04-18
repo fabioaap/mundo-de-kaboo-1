@@ -209,6 +209,7 @@ export interface AuditLogEntry {
 export type ScreenName =
   | 'login'
   | 'forgot_password'
+  | 'set_password'
   | 'access_expired'
   | 'home'
   | 'search'
