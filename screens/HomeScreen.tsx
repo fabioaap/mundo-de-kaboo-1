@@ -7,9 +7,8 @@ import { getUserRole } from '../lib/auth';
 import { TABS, LOGO_URL, getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
 import { canAccessCollection, formatAccessDate, getAccessStatusLabel, getDaysUntilAccessExpiry, getProfileAccessStatus } from '../lib/access';
 import { PageHeader } from '../components/PageHeader';
-import { Button } from '../design-system';
+import { Button, Input } from '../design-system';
 import { Card3D } from '../components/Card3D';
-import useIsMobile from '../hooks/useIsMobile';
 // @ts-ignore
 import confetti from 'canvas-confetti';
 
@@ -17,6 +16,8 @@ interface HomeScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
   params?: any;
   accessProfile?: UserProfile | null;
+  screenName?: 'home' | 'search';
+  searchMode?: boolean;
 }
 
 // Define filter types
@@ -32,6 +33,34 @@ const INITIAL_FILTERS: FilterState = {
   bncc: [],
   casel: [],
   age: []
+};
+
+const AGE_ORDER = ['3 anos', '4 anos', '5 anos', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano'];
+
+const normalizeSearch = (str: string) => {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+};
+
+const collectionMatchesQuery = (collection: Collection, query: string) => {
+  if (!query) return true;
+
+  const searchIndex = [
+    collection.title,
+    collection.level,
+    collection.theme,
+    collection.learning_objectives,
+    collection.characters?.join(' '),
+    collection.bncc_skills?.join(' '),
+    collection.casel_competencies?.join(' '),
+    collection.age_grade?.join(' '),
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return normalizeSearch(searchIndex).includes(query);
 };
 
 const ACCESS_BANNER_DISMISS_STORAGE_KEY = 'kaboo_access_banner_dismissed';
@@ -81,7 +110,7 @@ const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, gra
   );
 };
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, accessProfile }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, accessProfile, screenName = 'home', searchMode = false }) => {
   // Initialize collections from cache if available
   const cachedCollections = getCachedCollectionsSync();
   // Initialize profile from cache if available
@@ -98,6 +127,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   // Filter State
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [searchTerm, setSearchTerm] = useState(() => typeof params?.query === 'string' ? params.query : '');
+  const [filterDrawerFocus, setFilterDrawerFocus] = useState<keyof FilterState | null>(null);
 
   // User Profile State for Header - Initialize from cache
   const [profile, setProfile] = useState<UserProfile | null>(accessProfile || cachedProfile);
@@ -115,6 +146,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   // Confetti Refs
   const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
   const confettiInstance = useRef<any>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const filterSectionRefs = useRef<Record<keyof FilterState, HTMLDivElement | null>>({
+    characters: null,
+    bncc: null,
+    casel: null,
+    age: null,
+  });
   const [canvasReady, setCanvasReady] = useState(false);
 
   // Track preloaded avatar images to prevent duplicate preloads
@@ -195,6 +233,42 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       setCanvasReady(false); // Reset canvas ready state
     }
   }, [params]);
+
+  useEffect(() => {
+    if (typeof params?.query === 'string') {
+      setSearchTerm(params.query);
+    }
+  }, [params?.query]);
+
+  useEffect(() => {
+    if (!showFilters || !filterDrawerFocus) {
+      return;
+    }
+
+    const target = filterSectionRefs.current[filterDrawerFocus];
+    if (!target) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [showFilters, filterDrawerFocus]);
+
+  useEffect(() => {
+    if (!searchMode && !params?.focusSearch) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [searchMode, params?.focusSearch]);
 
   // Reset canvas ready when modal closes
   useEffect(() => {
@@ -417,8 +491,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       c.age_grade?.forEach(x => opts.age.add(x));
     });
 
-    const AGE_ORDER = ['3 anos', '4 anos', '5 anos', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano'];
-
     return {
       characters: Array.from(opts.characters).sort(),
       bncc: Array.from(opts.bncc).sort(),
@@ -434,6 +506,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     };
   }, [collections]);
 
+  const normalizedSearchTerm = useMemo(() => normalizeSearch(searchTerm.trim()), [searchTerm]);
+  const hasSearchQuery = normalizedSearchTerm.length > 0;
+
   const filteredCollections = useMemo(() => {
     // Explicitly casting the mapped result to ensure correct type inference for filteredCollections
     return (collections.map(c => ({
@@ -442,6 +517,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     })) as (Collection & { progress?: number })[]).filter(c => {
       if (activeTab === 'fund1' && c.level !== 'Educação Infantil') return false;
       if (activeTab === 'fund2' && c.level !== 'Fundamental I') return false;
+
+      if (normalizedSearchTerm && !collectionMatchesQuery(c, normalizedSearchTerm)) {
+        return false;
+      }
 
       if (activeFilters.characters.length > 0) {
         const hasChar = c.characters?.some(char => activeFilters.characters.includes(char));
@@ -465,7 +544,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
       return true;
     });
-  }, [collections, userProgress, activeTab, activeFilters]);
+  }, [collections, userProgress, activeTab, activeFilters, normalizedSearchTerm]);
 
   const inProgressCollections = collections.filter(c => (userProgress[c.id] || 0) > 0);
 
@@ -475,7 +554,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       return;
     }
     // Open modal instead of navigating to details screen - stay on current screen
-    onNavigate('home', { collectionId: collection.id });
+    onNavigate(screenName, { collectionId: collection.id });
   };
 
   const toggleFilter = (category: keyof FilterState, value: string) => {
@@ -491,8 +570,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     });
   };
 
+  const resetDiscovery = () => {
+    setSearchTerm('');
+    setActiveFilters(INITIAL_FILTERS);
+    setActiveTab('all');
+  };
+
+  const openFilterDrawer = (category?: keyof FilterState) => {
+    setFilterDrawerFocus(category ?? null);
+    setShowFilters(true);
+  };
+
   // Fixed type inference by casting Object.values results to string[][]
   const activeFilterCount = (Object.values(activeFilters) as string[][]).reduce((acc, curr) => acc + curr.length, 0);
+  const hasRefinedDiscovery = hasSearchQuery || activeFilterCount > 0 || activeTab !== 'all';
 
   const animationKey = `${activeTab}-${JSON.stringify(activeFilters)}`;
 
@@ -700,9 +791,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
+          <section className="space-y-1">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-gray-400">Filtros rápidos</p>
+            <p className="text-sm text-gray-500">Use os atalhos abaixo para refinar o acervo sem sair da home.</p>
+          </section>
 
           {availableOptions.characters.length > 0 && (
-            <section>
+            <section ref={(node) => { filterSectionRefs.current.characters = node; }}>
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
                 <Icons.User size={14} /> Personagens
               </h3>
@@ -727,7 +822,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           )}
 
           {availableOptions.age.length > 0 && (
-            <section>
+            <section ref={(node) => { filterSectionRefs.current.age = node; }}>
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
                 <Icons.Grid size={14} /> Idade-Série
               </h3>
@@ -751,8 +846,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             </section>
           )}
 
+          <section className="space-y-1 pt-2">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-gray-400">Filtros pedagógicos</p>
+            <p className="text-sm text-gray-500">Refine por repertório curricular e socioemocional quando quiser chegar em coleções mais específicas.</p>
+          </section>
+
           {availableOptions.bncc.length > 0 && (
-            <section>
+            <section ref={(node) => { filterSectionRefs.current.bncc = node; }}>
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
                 <Icons.BookOpen size={14} /> Habilidades BNCC
               </h3>
@@ -777,7 +877,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           )}
 
           {availableOptions.casel.length > 0 && (
-            <section>
+            <section ref={(node) => { filterSectionRefs.current.casel = node; }}>
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
                 <Icons.Book size={14} /> Competências CASEL
               </h3>
@@ -928,8 +1028,41 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
         <AccessStatusBanner />
 
-        <div className="px-6 md:px-8 mb-4 mt-2 flex items-center justify-between gap-4 relative z-0 shrink-0">
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 flex-1">
+        <div className="px-6 md:px-8 mb-4 mt-2 relative z-0 shrink-0 space-y-3">
+          <div className="relative w-full">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10">
+              <Icons.Search size={18} />
+            </div>
+
+            <Input
+              ref={searchInputRef}
+              aria-label="Buscar coleções"
+              placeholder="Buscar por título, tema, BNCC ou personagem"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="h-14 rounded-[28px] border-gray-200 bg-white pl-11 pr-16 md:pr-28 shadow-sm hover:border-kaboo-primary/20 focus:border-kaboo-primary"
+            />
+
+            <button
+              type="button"
+              onClick={() => openFilterDrawer()}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 h-10 px-3 md:px-4 rounded-[20px] flex items-center gap-2 border transition-all active:scale-95 shadow-sm ${activeFilterCount > 0
+                ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
+                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-white hover:border-kaboo-primary/20'
+                }`}
+              title="Refinar busca"
+            >
+              <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
+              <span className="hidden md:inline text-sm font-bold">Filtros</span>
+              {activeFilterCount > 0 && (
+                <span className={`min-w-5 h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center ${activeFilterCount > 0 ? 'bg-white/20 text-white' : 'bg-kaboo-primary/10 text-kaboo-primary'}`}>
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -947,29 +1080,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               );
             })}
           </div>
-
-          <div className="relative pb-2">
-            <button
-              onClick={() => setShowFilters(true)}
-              className={`h-11 px-4 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 shadow-sm ${activeFilterCount > 0
-                ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
-                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                }`}
-              title="Filtros Avançados"
-            >
-              <Icons.Filter size={20} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
-              <span className="font-bold text-sm hidden md:inline-block">Filtros</span>
-              {activeFilterCount > 0 && (
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
-                  {activeFilterCount}
-                </div>
-              )}
-            </button>
-          </div>
         </div>
 
-        {activeFilterCount > 0 && (
+        {(activeFilterCount > 0 || hasSearchQuery) && (
           <div className="px-6 md:px-8 mb-4 flex gap-2 flex-wrap animate-fade-in-up shrink-0">
+            {hasSearchQuery && (
+              <span onClick={() => setSearchTerm('')} className="cursor-pointer px-3 py-1 rounded-full bg-kaboo-primary/10 text-kaboo-primary text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
+                Busca: {searchTerm.trim()} <Icons.X size={12} className="group-hover:scale-110" />
+              </span>
+            )}
             {activeFilters.characters.map(f => (
               <span key={f} onClick={() => toggleFilter('characters', f)} className="cursor-pointer px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
                 {f} <Icons.X size={12} className="group-hover:scale-110" />
@@ -990,13 +1109,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 {f} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             ))}
-            <button onClick={() => setActiveFilters(INITIAL_FILTERS)} className="text-xs font-bold text-kaboo-primary hover:underline ml-1">
+            <button onClick={resetDiscovery} className="text-xs font-bold text-kaboo-primary hover:underline ml-1">
               Limpar tudo
             </button>
           </div>
         )}
 
-        {inProgressCollections.length > 0 && activeFilterCount === 0 && (
+        {inProgressCollections.length > 0 && !hasRefinedDiscovery && (
           <div className="mb-4 shrink-0">
             <h2 className="px-6 md:px-8 text-xl font-bold text-gray-800 mb-4">Continue onde parou</h2>
             <div className="flex gap-4 overflow-x-auto px-6 md:px-8 pb-6 no-scrollbar snap-x snap-mandatory">
@@ -1028,11 +1147,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
         <div className="px-6 md:px-8 pt-2 md:pt-6 pb-6 flex-1 flex flex-col min-h-0" style={{ minHeight: 0 }}>
           <div className="flex justify-between items-end mb-0 md:mb-4 shrink-0 pb-4 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">
-              {activeTab === 'all' && activeFilterCount === 0 ? 'Todas as Coleções' :
-                activeFilterCount > 0 ? 'Resultados filtrados' :
+            <div>
+              {hasSearchQuery && (
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-kaboo-primary mb-1">Busca ativa</p>
+              )}
+              <h2 className="text-xl font-bold text-gray-800">
+                {hasSearchQuery ? 'Resultados da busca' :
+                  activeTab === 'all' && activeFilterCount === 0 ? 'Todas as Coleções' :
+                  activeFilterCount > 0 ? 'Resultados filtrados' :
                   activeTab === 'fund1' ? 'Educação Infantil' : 'Fundamental I'}
-            </h2>
+              </h2>
+              {hasSearchQuery && (
+                <p className="text-sm text-gray-500 mt-1 line-clamp-1">Pesquisando por “{searchTerm.trim()}”</p>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
                 {filteredCollections.length}
@@ -1067,13 +1195,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               </div>
               <h3 className="text-gray-800 font-bold mb-2">Nenhum item encontrado</h3>
               <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">
-                Não encontramos resultados para a combinação de filtros selecionada.
+                Não encontramos resultados para a combinação atual de busca e filtros.
               </p>
               <button
-                onClick={() => setActiveFilters(INITIAL_FILTERS)}
+                onClick={resetDiscovery}
                 className="px-6 py-3 bg-kaboo-primary/10 text-kaboo-primary rounded-xl font-bold hover:bg-kaboo-primary/20 transition-colors"
               >
-                Limpar filtros
+                Limpar busca e filtros
               </button>
             </div>
           )}

@@ -206,6 +206,7 @@ const ModelsListView: React.FC<{
                     <input
                         type="text"
                         placeholder="Buscar modelo..."
+                        aria-label="Buscar modelo"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
@@ -213,6 +214,7 @@ const ModelsListView: React.FC<{
                 </div>
                 <select
                     value={statusFilter}
+                    aria-label="Filtrar por status"
                     onChange={(e) => setStatusFilter(e.target.value as VoucherModelStatus | 'all')}
                     className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
                 >
@@ -376,9 +378,9 @@ const ModelDetailView: React.FC<{
                                 className="w-full text-left bg-white border border-gray-200 rounded-lg p-3 hover:border-kaboo-primary/40 transition-all"
                             >
                                 <div className="flex items-center justify-between">
-                                    <div>
+                                    <div className="flex items-center gap-2 flex-wrap">
                                         <span className="font-medium text-gray-800">Lote #{batch.id.substring(0, 8)}</span>
-                                        {batch.label && <span className="ml-2 text-xs text-gray-400">{batch.label}</span>}
+                                        {batch.label && <span className="text-xs text-gray-400">{batch.label}</span>}
                                         <StatusBadge label={BATCH_STATUS_LABELS[batch.status] || batch.status} className={BATCH_STATUS_CLASSES[batch.status] || 'bg-gray-100 text-gray-600'} />
                                     </div>
                                     <div className="text-sm text-gray-500">
@@ -824,13 +826,14 @@ const BatchesListView: React.FC<{
                 <div className="relative flex-1">
                     <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
-                        type="text" placeholder="Buscar lote ou modelo..." value={search}
+                        type="text" placeholder="Buscar lote ou modelo..." aria-label="Buscar lote ou modelo" value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
                     />
                 </div>
                 <select
                     value={statusFilter}
+                    aria-label="Filtrar lotes por status"
                     onChange={(e) => setStatusFilter(e.target.value as VoucherBatchStatus | 'all')}
                     className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
                 >
@@ -994,7 +997,7 @@ const BatchDetailView: React.FC<{
             </div>
 
             {/* Counters */}
-            <div className="grid grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                 {[
                     { label: 'Total', value: batch.quantity, cls: 'bg-gray-50' },
                     { label: 'Disponíveis', value: available, cls: 'bg-blue-50' },
@@ -1163,13 +1166,14 @@ const CodesListView: React.FC = () => {
                 <div className="relative flex-1">
                     <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
-                        type="text" placeholder="Buscar código..." value={search}
+                        type="text" placeholder="Buscar código..." aria-label="Buscar código" value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
                     />
                 </div>
                 <select
                     value={statusFilter}
+                    aria-label="Filtrar códigos por status"
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
                 >
@@ -1238,10 +1242,10 @@ const CodesListView: React.FC = () => {
 
             {/* Code detail drawer */}
             {selectedCode && (
-                <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setSelectedCodeId(null)}>
-                    <div className="absolute inset-0 bg-black/30" />
+                <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="Detalhes do código" onClick={() => setSelectedCodeId(null)}>
+                    <div className="absolute inset-0 bg-black/30 animate-in fade-in duration-200" />
                     <div
-                        className="relative w-full max-w-md bg-white h-full shadow-xl overflow-y-auto"
+                        className="relative w-full max-w-md bg-white h-full shadow-xl overflow-y-auto animate-in slide-in-from-right duration-300"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-5">
@@ -1404,6 +1408,7 @@ const AuditListView: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-3 mb-5">
                 <select
                     value={entityFilter}
+                    aria-label="Filtrar auditoria por entidade"
                     onChange={(e) => { setEntityFilter(e.target.value); setPage(0); }}
                     className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
                 >
@@ -1427,7 +1432,7 @@ const AuditListView: React.FC = () => {
                         {filtered.length} registros · Página {page + 1} de {totalPages}
                     </div>
 
-                    <div className="border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="border border-gray-200 rounded-xl overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50">
                                 <tr>
@@ -1456,7 +1461,7 @@ const AuditListView: React.FC = () => {
                                         <td className="px-3 py-2 font-mono text-xs text-gray-400">
                                             #{e.entity_id.substring(0, 8)}
                                         </td>
-                                        <td className="px-3 py-2 text-xs text-gray-500 max-w-[200px] truncate">
+                                        <td className="px-3 py-2 text-xs text-gray-500 max-w-[200px] truncate" title={e.details ? Object.entries(e.details).map(([k, v]) => `${k}: ${v}`).join(', ') : '—'}>
                                             {e.details ? Object.entries(e.details).map(([k, v]) => `${k}: ${v}`).join(', ') : '—'}
                                         </td>
                                     </tr>
@@ -1555,10 +1560,12 @@ export const VouchersModule: React.FC = () => {
     return (
         <div className="flex flex-col h-full">
             {/* Sub-tabs */}
-            <div className="flex border-b border-gray-200 bg-white px-4">
+            <div className="flex border-b border-gray-200 bg-white px-4" role="tablist" aria-label="Seções de vouchers">
                 {(['models', 'batches', 'codes', 'audit'] as VoucherSubView[]).map(tab => (
                     <button
                         key={tab}
+                        role="tab"
+                        aria-selected={subView === tab}
                         onClick={() => { setSubView(tab); setSelectedModelId(null); setSelectedBatchId(null); }}
                         className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors
               ${subView === tab ? 'text-kaboo-primary border-kaboo-primary' : 'text-gray-500 border-transparent hover:text-gray-700'}`}
@@ -1569,7 +1576,7 @@ export const VouchersModule: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto" role="tabpanel">
                 {subView === 'models' && (
                     <ModelsListView
                         onCreateNew={() => { setEditingModelId(null); setShowWizard(true); }}

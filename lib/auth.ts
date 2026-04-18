@@ -1,12 +1,13 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { getMockCurrentUserRole } from './mockData';
+import { isDevMockSession } from './api';
 import { UserRole } from '../types';
 
 /**
  * Get the current user's role from their profile
  */
 export async function getUserRole(): Promise<UserRole> {
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured || isDevMockSession()) {
     return getMockCurrentUserRole();
   }
 

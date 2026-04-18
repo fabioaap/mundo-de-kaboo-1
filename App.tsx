@@ -156,6 +156,20 @@ const App: React.FC = () => {
       return;
     }
 
+    // Detecta link de convite expirado/inválido no hash (#error=access_denied&error_code=otp_expired)
+    const hash = window.location.hash;
+    if (hash.includes('error=')) {
+      const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
+      const errorCode = hashParams.get('error_code') ?? hashParams.get('error');
+      if (errorCode) {
+        // Limpa o hash da URL sem recarregar
+        window.history.replaceState(null, '', window.location.pathname);
+        setNavState({ currentScreen: 'set_password', params: { linkExpired: true } });
+        setSessionChecked(true);
+        return;
+      }
+    }
+
     // Only check session if Supabase is configured
     if (!isSupabaseConfigured) {
       api.getProfile(true)
@@ -509,7 +523,8 @@ const App: React.FC = () => {
         return (
           <SetPasswordScreen
             onNavigate={navigate}
-            onPasswordSet={() => navigate('home')}
+            onPasswordSet={() => navigate('login')}
+            linkExpired={navState.params?.linkExpired === true}
           />
         );
 

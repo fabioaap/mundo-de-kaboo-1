@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Icons } from './Icons';
 import { Collection, ScreenName } from '../types';
 import { DetailsScreen } from '../screens/DetailsScreen';
@@ -19,12 +19,17 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
 }) => {
   const [showContent, setShowContent] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
+  // Keep a stable ref to onClose so the escape handler always calls the latest version
+  // without causing Effect 1 to re-run (and reset state) on every parent render
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
-  // Close on Escape key
+  // Reset state and manage body scroll when modal opens/closes
+  // NOTE: onClose intentionally excluded from deps — use onCloseRef instead
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
+      if (e.key === 'Escape') {
+        onCloseRef.current();
       }
     };
 
@@ -41,7 +46,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   // Handle smooth transition from skeleton to content
   useEffect(() => {
@@ -64,7 +69,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
       onClick={(e) => {
         // Close when clicking backdrop
@@ -75,7 +80,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-100" />
-      
+
       {/* Modal Content */}
       <div className="relative w-full max-w-6xl h-[90vh] md:h-[95vh] bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-100 flex flex-col">
         {/* Close Button - Always visible on all screen sizes */}
@@ -95,12 +100,12 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
               <ModalSkeleton />
             </div>
           )}
-          
+
           {/* Content - fades in when ready */}
           {collection && showContent && (
             <div className="flex-1 content-fade-in">
-              <DetailsScreen 
-                collection={collection} 
+              <DetailsScreen
+                collection={collection}
                 onNavigate={(screen, params) => {
                   // Close modal when navigating to player screens
                   if (['player_book', 'player_audio', 'player_video'].includes(screen)) {

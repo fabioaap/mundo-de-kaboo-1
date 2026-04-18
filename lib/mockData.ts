@@ -110,7 +110,7 @@ const buildAdminDemoUser = (): MockUserAccount => {
             role: 'admin',
             voucher_id: null,
             access_starts_at: new Date().toISOString(),
-            access_expires_at: buildFutureDate(12),
+                access_expires_at: null,
             access_status: 'active'
         })
     };
@@ -378,7 +378,7 @@ export const createMockUser = (input: MockCreateUserInput): { success: boolean; 
         role,
         access_status: role === 'viewer' ? 'pending_voucher' : 'active',
         access_starts_at: role === 'viewer' ? null : createdAt,
-        access_expires_at: role === 'viewer' ? null : buildFutureDate(12),
+        access_expires_at: null,
         voucher_id: null
     });
 
@@ -433,6 +433,7 @@ export const updateMockUserById = (
     userId: string,
     updates: { full_name?: string; role?: UserRole }
 ): UserProfile | null => {
+    const updatedAt = new Date().toISOString();
     const updatedUser = writeUpdatedUser(userId, (user) => ({
         ...user,
         role: updates.role ?? user.role,
@@ -440,6 +441,30 @@ export const updateMockUserById = (
             ...user.profile,
             full_name: updates.full_name ?? user.profile.full_name,
             role: updates.role ?? user.role,
+            access_status: (() => {
+                const nextRole = updates.role ?? user.role;
+                if (nextRole === 'admin' || nextRole === 'editor') {
+                    return 'active';
+                }
+
+                if (!user.profile.voucher_id && !user.profile.access_expires_at) {
+                    return 'pending_voucher';
+                }
+
+                return user.profile.access_status;
+            })(),
+            access_starts_at: (() => {
+                const nextRole = updates.role ?? user.role;
+                if (nextRole === 'admin' || nextRole === 'editor') {
+                    return user.profile.access_starts_at ?? updatedAt;
+                }
+
+                if (!user.profile.voucher_id && !user.profile.access_expires_at) {
+                    return null;
+                }
+
+                return user.profile.access_starts_at;
+            })(),
         }
     }));
 

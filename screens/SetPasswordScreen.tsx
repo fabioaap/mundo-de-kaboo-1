@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../design-system';
 import { ScreenName } from '../types';
 import { supabase } from '../lib/supabase';
@@ -8,11 +8,12 @@ import backgroundImage from '../assets/images/background-login.jpg';
 interface SetPasswordScreenProps {
   onNavigate: (screen: ScreenName) => void;
   onPasswordSet?: () => void;
+  linkExpired?: boolean;
 }
 
 const BG_IMAGE = backgroundImage;
 
-export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate, onPasswordSet }) => {
+export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate, onPasswordSet, linkExpired }) => {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,6 +21,14 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Tenta pegar o e-mail da sessão atual (válido quando o link de convite é clicado)
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) setUserEmail(data.user.email);
+    });
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +94,24 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
 
         <div className="w-full mx-auto flex-1 flex flex-col justify-center px-6 py-6 md:pb-12">
 
-          {successMsg ? (
+          {/* Link expirado */}
+          {linkExpired ? (
+            <div className="flex flex-col items-center gap-5 text-center py-8">
+              <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
+                <Icons.AlertCircle size={32} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-800 mb-2">Link de convite expirado</h2>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  O link que você recebeu por e-mail já foi usado ou expirou.
+                  Solicite ao administrador que reenvie o convite.
+                </p>
+              </div>
+              <Button variant="secondary" onClick={() => onNavigate('login')}>
+                Voltar ao login
+              </Button>
+            </div>
+          ) : successMsg ? (
             <div className="flex flex-col items-center gap-4 text-center py-8">
               <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500">
                 <Icons.Check size={32} />
@@ -94,9 +120,22 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
             </div>
           ) : (
             <>
-              <div className="text-center mb-8">
-                <p className="text-gray-600 leading-relaxed">
-                  Escolha uma senha segura para a sua conta no Mundo de Kaboo.
+              <div className="text-center mb-6">
+                <p className="text-gray-500 text-sm mb-1">Você foi convidado para o</p>
+                <p className="text-gray-800 font-bold text-base">Mundo de Kaboo</p>
+              </div>
+
+              {/* E-mail pré-preenchido */}
+              {userEmail && (
+                <div className="mb-4 bg-gray-50 rounded-2xl px-4 py-3 flex items-center gap-3">
+                  <Icons.Mail size={18} className="text-gray-400 shrink-0" />
+                  <span className="text-gray-700 text-sm font-medium truncate">{userEmail}</span>
+                </div>
+              )}
+
+              <div className="text-center mb-6">
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  Escolha uma senha para acessar a plataforma.
                   Ela precisa ter pelo menos <strong>8 caracteres</strong>.
                 </p>
               </div>

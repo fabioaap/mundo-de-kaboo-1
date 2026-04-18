@@ -6,7 +6,7 @@ import { canEditCollections } from '../lib/auth';
 
 interface BottomNavProps {
   currentScreen: ScreenName;
-  onNavigate: (screen: ScreenName) => void;
+  onNavigate: (screen: ScreenName, params?: any) => void;
 }
 
 const STORAGE_SIDEBAR_COLLAPSED = 'kaboo_sidebar_collapsed';
@@ -43,9 +43,16 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
     setIsCollapsed(!isCollapsed);
   };
 
+  const isItemActive = (itemId: string) => {
+    if (itemId === 'home') {
+      return currentScreen === 'home' || currentScreen === 'search';
+    }
+
+    return currentScreen === itemId;
+  };
+
   const baseNavItems = [
     { id: 'home', icon: Icons.Library, label: 'Coleções' },
-    { id: 'search', icon: Icons.Search, label: 'Buscar' },
     { id: 'support', icon: Icons.HelpCircle, label: 'Suporte' },
   ];
 
@@ -66,12 +73,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4 pb-4 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50">
         <div className="flex justify-between items-center max-w-md mx-auto">
           {navItems.map((item) => {
-            const isActive = currentScreen === item.id;
+            const isActive = isItemActive(item.id);
             const Icon = item.icon;
             return (
               <button
                 key={item.id}
-                onClick={() => onNavigate(item.id as ScreenName)}
+                onClick={() => onNavigate(item.id as ScreenName, item.params)}
                 aria-label={item.label}
                 className="flex flex-col items-center gap-1 min-w-[64px]"
               >
@@ -127,12 +134,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
         <div className={`flex-1 space-y-2 py-4 transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'
           }`}>
           {navItems.map((item) => {
-            const isActive = currentScreen === item.id;
+            const isActive = isItemActive(item.id);
             const Icon = item.icon;
             return (
               <button
                 key={item.id}
-                onClick={() => onNavigate(item.id as ScreenName)}
+                onClick={() => onNavigate(item.id as ScreenName, item.params)}
                 aria-label={item.label}
                 className={`w-full flex items-center rounded-[100px] transition-all duration-200 group ${isCollapsed
                     ? 'justify-center px-3 py-4'
