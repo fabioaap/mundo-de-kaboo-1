@@ -5,6 +5,7 @@ import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { useThemeBackground } from './hooks/useThemeBackground';
 import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
 import { logger } from './lib/logger';
+import { clearPendingPasswordSetup, hasPendingPasswordSetup, isInvitedAuthUser, markPendingPasswordSetup } from './lib/passwordSetupFlow';
 
 // Screens
 import { LoginScreen } from './screens/LoginScreen';
@@ -160,10 +161,15 @@ const App: React.FC = () => {
     // Isso garante que isInviteLink seja correto no closure do onAuthStateChange
     const hash = window.location.hash;
     const isInviteLink = hash.includes('type=invite');
+    if (isInviteLink) {
+      markPendingPasswordSetup();
+    }
+
     if (hash.includes('error=')) {
       const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
       const errorCode = hashParams.get('error_code') ?? hashParams.get('error');
       if (errorCode) {
+        clearPendingPasswordSetup();
         // Limpa o hash da URL sem recarregar
         window.history.replaceState(null, '', window.location.pathname);
         setNavState({ currentScreen: 'set_password', params: { linkExpired: true } });
@@ -210,8 +216,15 @@ const App: React.FC = () => {
     // 1. Initial Check
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
+        const shouldCompletePasswordSetup = hasPendingPasswordSetup() && isInvitedAuthUser(session.user);
         const profile = await api.getProfile(true);
         setAccessProfile(profile);
+
+        if (shouldCompletePasswordSetup) {
+          setNavState({ currentScreen: 'set_password' });
+          setSessionChecked(true);
+          return;
+        }
 
         setNavState(prev => {
           if (profile && isAccessBlocked(profile)) {
@@ -263,7 +276,8 @@ const App: React.FC = () => {
 
       // Link de convite (inviteUserByEmail) dispara SIGNED_IN com type=invite no hash
       // isInviteLink é capturado do hash original (antes do Supabase limpar)
-      if (event === 'SIGNED_IN' && session && isInviteLink) {
+      if (event === 'SIGNED_IN' && session && (isInviteLink || hasPendingPasswordSetup()) && isInvitedAuthUser(session.user)) {
+        markPendingPasswordSetup();
         // Colaborador clicou no link de convite — redireciona para definir senha
         setNavState({ currentScreen: 'set_password' });
         return;
@@ -290,6 +304,8 @@ const App: React.FC = () => {
       } else if (event === 'SIGNED_OUT' || !session) {
         // In DEV mock session, ignore Supabase auth state changes
         if (isDevMockSession()) return;
+
+        clearPendingPasswordSetup();
 
         // Clear all user-related caches to prevent showing previous user's data
         clearAllUserCache();

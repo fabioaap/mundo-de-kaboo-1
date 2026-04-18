@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../design-system';
 import { ScreenName } from '../types';
 import { supabase } from '../lib/supabase';
+import { clearPendingPasswordSetup } from '../lib/passwordSetupFlow';
 import { Icons } from '../components/Icons';
 import backgroundImage from '../assets/images/background-login.jpg';
 
@@ -28,7 +29,7 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user?.email) setUserEmail(data.user.email);
     });
-  }, [])
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,12 +54,15 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
 
       if (error) throw error;
 
-      setSuccessMsg('Senha definida com sucesso! Redirecionando...');
-      setTimeout(() => {
+      setSuccessMsg('Senha definida com sucesso! Redirecionando para o login...');
+      setTimeout(async () => {
+        clearPendingPasswordSetup();
+        await supabase.auth.signOut();
+
         if (onPasswordSet) {
           onPasswordSet();
         } else {
-          onNavigate('home');
+          onNavigate('login');
         }
       }, 1500);
     } catch (error: any) {
