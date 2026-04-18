@@ -1001,9 +1001,23 @@ export const api = {
   /**
    * Get all users/profiles (Admin only)
    */
-  async getAllUsers(): Promise<any[]> {
+  async getAllUsers(): Promise<UserProfile[]> {
     if (!isSupabaseConfigured) {
       return getMockAllUsers();
+    }
+
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('admin-list-users');
+
+      if (fnError) {
+        logger.error('Error invoking admin-list-users function:', fnError);
+      } else if (fnData?.success && Array.isArray(fnData.users)) {
+        return fnData.users.map((user: UserProfile) => normalizeProfile(user));
+      } else if (fnData?.error) {
+        logger.error('admin-list-users function returned error:', fnData.error);
+      }
+    } catch (error) {
+      logger.error('Unexpected error fetching admin-list-users:', error);
     }
 
     const { data, error } = await supabase
@@ -1016,7 +1030,7 @@ export const api = {
       return [];
     }
 
-    return data || [];
+    return (data || []).map((user) => normalizeProfile(user));
   },
 
   /**

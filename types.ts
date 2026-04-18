@@ -9,6 +9,8 @@ export type AccessStatus = 'active' | 'expired' | 'pending_voucher';
 
 export type UserRole = 'admin' | 'editor' | 'viewer';
 
+export type UserAuthStatus = 'invite_pending' | 'confirmed' | 'authenticated' | 'created';
+
 // Duration in months. UI/business rules should validate allowed range.
 export type VoucherDurationMonths = number;
 
@@ -76,6 +78,12 @@ export interface UserProfile {
   access_starts_at?: string | null;
   access_expires_at?: string | null;
   access_status?: AccessStatus | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  invited_at?: string | null;
+  confirmed_at?: string | null;
+  last_sign_in_at?: string | null;
+  auth_status?: UserAuthStatus | null;
 }
 
 export interface UserProgress {

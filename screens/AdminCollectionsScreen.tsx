@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Icons } from '../components/Icons';
-import { Collection, ScreenName, UserProfile, UserRole } from '../types';
+import { Collection, ScreenName, UserAuthStatus, UserProfile, UserRole } from '../types';
 import { api } from '../lib/api';
 import { canEditCollections, isAdmin } from '../lib/auth';
 import { PageHeader } from '../components/PageHeader';
@@ -237,6 +237,73 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
     return 'bg-amber-100 text-amber-700';
   };
+
+  const getUserAuthStatus = (user: UserProfile): UserAuthStatus => {
+    if (user.auth_status) {
+      return user.auth_status;
+    }
+
+    if (user.last_sign_in_at) {
+      return 'authenticated';
+    }
+
+    if (user.confirmed_at) {
+      return 'confirmed';
+    }
+
+    if (user.invited_at) {
+      return 'invite_pending';
+    }
+
+    return 'created';
+  };
+
+  const getAuthBadgeMeta = (user: UserProfile) => {
+    const status = getUserAuthStatus(user);
+
+    switch (status) {
+      case 'authenticated':
+        return {
+          label: 'Já acessou',
+          classes: 'bg-emerald-100 text-emerald-700',
+        };
+      case 'confirmed':
+        return {
+          label: 'Convite confirmado',
+          classes: 'bg-sky-100 text-sky-700',
+        };
+      case 'invite_pending':
+        return {
+          label: 'Esperando autenticação',
+          classes: 'bg-amber-100 text-amber-700',
+        };
+      default:
+        return {
+          label: 'Conta criada',
+          classes: 'bg-slate-100 text-slate-700',
+        };
+    }
+  };
+
+  const formatAdminDateTime = (value?: string | null) => {
+    if (!value) {
+      return 'Nunca acessou';
+    }
+
+    try {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(value));
+    } catch {
+      return 'Data indisponível';
+    }
+  };
+
+  const pendingInviteCount = users.filter((user) => getUserAuthStatus(user) === 'invite_pending').length;
 
   useEffect(() => {
     checkPermission();
@@ -1591,11 +1658,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
                     {[
                       { label: 'Total', value: accessSummary.total, tone: 'bg-gray-100 text-gray-700' },
                       { label: 'Ativos', value: accessSummary.active, tone: 'bg-emerald-100 text-emerald-700' },
-                      { label: 'Pendentes', value: accessSummary.pending_voucher, tone: 'bg-amber-100 text-amber-700' },
+                      { label: 'Aguardando acesso', value: pendingInviteCount, tone: 'bg-amber-100 text-amber-700' },
+                      { label: 'Aguardando voucher', value: accessSummary.pending_voucher, tone: 'bg-yellow-100 text-yellow-700' },
                       { label: 'Expirados', value: accessSummary.expired, tone: 'bg-orange-100 text-orange-700' },
                     ].map((item) => (
                       <div key={item.label} className="rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
@@ -1608,9 +1676,17 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                   </div>
 
                   {users.map((user) => (
+                    (() => {
+                      const authBadge = getAuthBadgeMeta(user);
+                      const isWaitingFirstAccess = !user.last_sign_in_at && Boolean(user.invited_at);
+
+                      return (
                     <div
                       key={user.id}
-                      className="bg-gray-50 rounded-2xl p-4 border border-gray-200 hover:border-gray-300 transition-all"
+                      className={`rounded-2xl p-4 border transition-all ${isWaitingFirstAccess
+                        ? 'bg-gray-50/80 border-gray-300 border-dashed opacity-80'
+                        : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -1618,9 +1694,20 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             {user.full_name || 'Sem nome'}
                           </h3>
                           <p className="text-sm text-gray-600 mb-1">{user.email}</p>
+                          <p className="text-xs text-gray-500">
+                            Último acesso: {formatAdminDateTime(user.last_sign_in_at)}
+                          </p>
+                          {user.invited_at && !user.last_sign_in_at && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              Convite enviado em {formatAdminDateTime(user.invited_at)}
+                            </p>
+                          )}
                           <div className="mt-3 flex flex-wrap gap-2">
                             <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${getAccessBadgeClasses(user)}`}>
                               {getAccessStatusLabel(getProfileAccessStatus(user))}
+                            </span>
+                            <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${authBadge.classes}`}>
+                              {authBadge.label}
                             </span>
                             <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">
                               Vigencia: {formatAccessDate(user.access_expires_at)}
@@ -1649,6 +1736,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         </div>
                       </div>
                     </div>
+                      );
+                    })()
                   ))}
                 </div>
               )}

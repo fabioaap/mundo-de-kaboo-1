@@ -2,6 +2,7 @@ import catalogSeed from '../data/catalog.seed.json';
 import {
     Collection,
     CollectionResource,
+    UserAuthStatus,
     UserProfile,
     UserRole,
     Voucher,
@@ -37,6 +38,9 @@ interface MockUserAccount {
     role: UserRole;
     profile: UserProfile;
     created_at: string;
+    invited_at: string | null;
+    confirmed_at: string | null;
+    last_sign_in_at: string | null;
 }
 
 interface MockAuthResult {
@@ -96,12 +100,16 @@ const buildProfile = (overrides: Partial<UserProfile>): UserProfile => ({
 
 const buildAdminDemoUser = (): MockUserAccount => {
     const id = 'mock-admin';
+    const createdAt = new Date().toISOString();
     return {
         id,
         email: 'demo@mundodekaboo.local',
         password: '123456',
         role: 'admin',
-        created_at: new Date().toISOString(),
+        created_at: createdAt,
+        invited_at: null,
+        confirmed_at: createdAt,
+        last_sign_in_at: createdAt,
         profile: buildProfile({
             id,
             email: 'demo@mundodekaboo.local',
@@ -343,13 +351,25 @@ export const signInMockUser = (email: string, password: string): MockAuthResult 
         };
     }
 
+    const now = new Date().toISOString();
+    const updatedUser = writeUpdatedUser(user.id, (current) => ({
+        ...current,
+        confirmed_at: current.confirmed_at ?? now,
+        last_sign_in_at: now,
+    })) ?? user;
+
     writeStoredSessionUserId(user.id);
     return {
         success: true,
         profile: normalizeProfile({
-            ...user.profile,
-            email: user.email,
-            role: user.role
+            ...updatedUser.profile,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            created_at: updatedUser.created_at,
+            invited_at: updatedUser.invited_at,
+            confirmed_at: updatedUser.confirmed_at,
+            last_sign_in_at: updatedUser.last_sign_in_at,
+            auth_status: 'authenticated',
         })
     };
 };
@@ -388,7 +408,10 @@ export const createMockUser = (input: MockCreateUserInput): { success: boolean; 
         password: input.password,
         role,
         profile,
-        created_at: createdAt
+        created_at: createdAt,
+        invited_at: input.signIn ? null : createdAt,
+        confirmed_at: input.signIn ? createdAt : null,
+        last_sign_in_at: input.signIn ? createdAt : null,
     };
 
     writeStoredUsers([...getLiveUsers(), nextUser]);
@@ -425,7 +448,26 @@ export const getMockAllUsers = (): UserProfile[] => {
     return getLiveUsers().map((user) => normalizeProfile({
         ...user.profile,
         email: user.email,
-        role: user.role
+        role: user.role,
+        created_at: user.created_at,
+        invited_at: user.invited_at,
+        confirmed_at: user.confirmed_at,
+        last_sign_in_at: user.last_sign_in_at,
+        auth_status: (() => {
+            if (user.last_sign_in_at) {
+                return 'authenticated';
+            }
+
+            if (user.confirmed_at) {
+                return 'confirmed';
+            }
+
+            if (user.invited_at) {
+                return 'invite_pending';
+            }
+
+            return 'created';
+        })() as UserAuthStatus,
     }));
 };
 
