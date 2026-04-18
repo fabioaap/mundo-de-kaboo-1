@@ -23,7 +23,6 @@ Deno.serve(async (req) => {
 
     // Cliente com anon key para verificar o caller
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
     // Cliente admin — service_role, sem restrições RLS, nunca exposto ao browser
@@ -31,20 +30,26 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Valida o JWT do caller
-    const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+    // Valida o JWT do caller via chamada HTTP direta ao endpoint de auth
+    // (evita problemas com algoritmo ES256 na verificação local do SDK)
+    const userResp = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: authHeader, apikey: supabaseServiceKey },
     });
-
-    const { data: { user: caller }, error: callerError } = await callerClient.auth.getUser();
-    if (callerError || !caller) {
+    if (!userResp.ok) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const caller = await userResp.json();
+    if (!caller?.id) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Verifica papel do caller usando adminClient (bypassa RLS — evita 403 por política)
+    // Verifica papel do caller usando adminClient (bypassa RLS)
     const { data: callerProfile, error: profileErr } = await adminClient
       .from('profiles')
       .select('role')
@@ -80,15 +85,16 @@ Deno.serve(async (req) => {
     );
 
     if (inviteError) {
-      return new Response(JSON.stringify({ error: inviteError.message }), {
-        status: 400,
+      // Retorna 200 com error no body para o SDK cliente não tratar como erro genérico
+      return new Response(JSON.stringify({ success: false, error: inviteError.message }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     if (!inviteData.user) {
-      return new Response(JSON.stringify({ error: 'Falha ao criar usuário' }), {
-        status: 500,
+      return new Response(JSON.stringify({ success: false, error: 'Falha ao criar usuário' }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -108,8 +114,8 @@ Deno.serve(async (req) => {
     });
 
     if (upsertError) {
-      return new Response(JSON.stringify({ error: upsertError.message }), {
-        status: 500,
+      return new Response(JSON.stringify({ success: false, error: upsertError.message }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -119,8 +125,8 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message ?? 'Internal error' }), {
-      status: 500,
+    return new Response(JSON.stringify({ success: false, error: err.message ?? 'Internal error' }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
