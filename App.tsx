@@ -156,8 +156,10 @@ const App: React.FC = () => {
       return;
     }
 
-    // Detecta link de convite expirado/inválido no hash (#error=access_denied&error_code=otp_expired)
+    // Lê o hash ANTES do Supabase processar o token (o SDK limpa o hash após a troca)
+    // Isso garante que isInviteLink seja correto no closure do onAuthStateChange
     const hash = window.location.hash;
+    const isInviteLink = hash.includes('type=invite');
     if (hash.includes('error=')) {
       const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
       const errorCode = hashParams.get('error_code') ?? hashParams.get('error');
@@ -260,13 +262,14 @@ const App: React.FC = () => {
       }
 
       // Link de convite (inviteUserByEmail) dispara SIGNED_IN com type=invite no hash
+      // isInviteLink é capturado do hash original (antes do Supabase limpar)
+      if (event === 'SIGNED_IN' && session && isInviteLink) {
+        // Colaborador clicou no link de convite — redireciona para definir senha
+        setNavState({ currentScreen: 'set_password' });
+        return;
+      }
+
       if (event === 'SIGNED_IN' && session) {
-        const hash = typeof window !== 'undefined' ? window.location.hash : '';
-        if (hash.includes('type=invite')) {
-          // Colaborador clicou no link de convite — redireciona para definir senha
-          setNavState({ currentScreen: 'set_password' });
-          return;
-        }
 
         // Clear all caches on login to ensure fresh data for the new user
         clearAllUserCache();
