@@ -1049,72 +1049,32 @@ export const api = {
     }
 
     try {
-      // Salva a sessão do admin antes de criar o usuário
-      // O signUp pode sobrescrever a sessão atual
-      const { data: adminSessionData } = await supabase.auth.getSession();
-      const adminRefreshToken = adminSessionData.session?.refresh_token;
+      // Usa a Edge Function invite-user que roda com service_role no servidor.
+      // Isso garante segurança (service_role nunca exposta ao browser) e usa
+      // admin.inviteUserByEmail() que cria o usuário e envia um único e-mail de convite.
+      const redirectTo = buildAppUrl();
 
-      // Gera senha aleatória — o colaborador nunca a usa diretamente;
-      // vai redefinir pelo link de convite enviado por e-mail.
-      const tempPassword = crypto.randomUUID();
-
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: tempPassword,
-        options: {
-          data: {
-            full_name: userData.full_name,
-          },
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('invite-user', {
+        body: {
+          email: userData.email,
+          full_name: userData.full_name,
+          role: assignedRole,
+          redirect_to: redirectTo,
         },
       });
 
-      if (signUpError) {
-        logger.error('Error creating auth user:', signUpError);
-        return { success: false, error: signUpError.message };
+      if (fnError) {
+        logger.error('Error invoking invite-user function:', fnError);
+        return { success: false, error: fnError.message };
       }
 
-      if (!signUpData.user) {
-        return { success: false, error: 'Failed to create user' };
+      if (!fnData?.success) {
+        const errMsg = fnData?.error ?? 'Erro ao convidar usuário';
+        logger.error('invite-user function returned error:', errMsg);
+        return { success: false, error: errMsg };
       }
 
-      // Restaura a sessão do admin se foi sobrescrita pelo signUp
-      const { data: currentSession } = await supabase.auth.getSession();
-      const sessionChanged = adminRefreshToken && currentSession.session?.refresh_token !== adminRefreshToken;
-      if (sessionChanged) {
-        await supabase.auth.refreshSession({ refresh_token: adminRefreshToken });
-      }
-
-      // Cria perfil com papel e status de acesso corretos
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: signUpData.user.id,
-        email: userData.email,
-        full_name: userData.full_name,
-        school_name: null,
-        role: assignedRole,
-        access_status: isOperationalRole ? 'active' : 'pending_voucher',
-        access_starts_at: isOperationalRole ? new Date().toISOString() : null,
-        access_expires_at: null,
-        voucher_id: null,
-        updated_at: new Date().toISOString(),
-      });
-
-      if (profileError) {
-        logger.error('Error creating profile:', profileError);
-        return { success: false, error: profileError.message };
-      }
-
-      // Envia e-mail de convite para o colaborador definir a própria senha
-      const { error: inviteError } = await supabase.auth.resetPasswordForEmail(
-        userData.email,
-        { redirectTo: buildAppUrl() }
-      );
-
-      if (inviteError) {
-        // Perfil foi criado; avisa mas não trata como falha bloqueante
-        logger.error('Error sending invite email:', inviteError);
-      }
-
-      return { success: true, userId: signUpData.user.id };
+      return { success: true, userId: fnData.userId };
     } catch (error: any) {
       logger.error('Error creating user:', error);
       return { success: false, error: error.message || 'Unknown error' };

@@ -240,12 +240,20 @@ const App: React.FC = () => {
     // 2. Realtime Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        // Colaborador clicou no link de convite — redireciona para tela de definir senha
+        // Link de recuperação de senha → tela de definir senha
         setNavState({ currentScreen: 'set_password' });
         return;
       }
 
+      // Link de convite (inviteUserByEmail) dispara SIGNED_IN com type=invite no hash
       if (event === 'SIGNED_IN' && session) {
+        const hash = typeof window !== 'undefined' ? window.location.hash : '';
+        if (hash.includes('type=invite')) {
+          // Colaborador clicou no link de convite — redireciona para definir senha
+          setNavState({ currentScreen: 'set_password' });
+          return;
+        }
+
         // Clear all caches on login to ensure fresh data for the new user
         clearAllUserCache();
 
