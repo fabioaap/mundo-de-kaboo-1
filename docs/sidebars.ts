@@ -90,6 +90,18 @@ const sidebars: SidebarsConfig = {
         'journeys/reference',
       ],
     },
+    {
+      type: 'category',
+      label: '🗺️ Roadmap',
+      items: [
+        'roadmap/index',
+        'roadmap/roadmap-central-coruja-v1.2',
+        'roadmap/consolidado-backlog-reuniao-15abr2026',
+        'roadmap/backlog-central-coruja-15abr2026',
+        'roadmap/prd-vouchers-por-conteudo',
+        'roadmap/qa-validation-plan-v1.2',
+      ],
+    },
     'contributing',
   ],
 };
