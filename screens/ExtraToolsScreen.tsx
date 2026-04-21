@@ -3,6 +3,7 @@ import { Icons } from '../components/Icons';
 import { Collection, CollectionResource } from '../types';
 import { api } from '../lib/api';
 import { CollectionCoverSection } from '../components/CollectionCoverSection';
+import { getCollectionPresentationCopy } from '../lib/collectionPresentation';
 
 interface ExtraToolsScreenProps {
   collection: Collection;
@@ -12,6 +13,7 @@ interface ExtraToolsScreenProps {
 export const ExtraToolsScreen: React.FC<ExtraToolsScreenProps> = ({ collection, onBack }) => {
   const [resources, setResources] = useState<CollectionResource[]>([]);
   const [loading, setLoading] = useState(true);
+  const presentationCopy = getCollectionPresentationCopy(collection);
 
   useEffect(() => {
     api.getCollectionResources(collection.id).then(data => {
@@ -61,8 +63,8 @@ export const ExtraToolsScreen: React.FC<ExtraToolsScreenProps> = ({ collection, 
       <div className="flex-1 overflow-y-auto z-10 no-scrollbar bg-white rounded-t-[2.5rem] md:rounded-none mt-0 relative shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none md:h-full">
           <div className="pt-16 px-6 pb-24 md:p-12 md:max-w-4xl md:mx-auto">
             
-            <h1 className="text-2xl md:text-3xl font-black text-gray-800 mb-2">Materiais Extras</h1>
-            <p className="text-gray-500 mb-8">Recursos complementares para {collection.title}</p>
+            <h1 className="text-2xl md:text-3xl font-black text-gray-800 mb-2">{presentationCopy.materialsTitle}</h1>
+            <p className="text-gray-500 mb-8">{presentationCopy.materialsDescription}</p>
 
             {loading ? (
                  <div className="text-center text-gray-400 py-10">Carregando materiais...</div>
@@ -71,7 +73,7 @@ export const ExtraToolsScreen: React.FC<ExtraToolsScreenProps> = ({ collection, 
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                         <Icons.FileText className="text-gray-300" size={32} />
                     </div>
-                    <p>Nenhum material extra disponível.</p>
+                      <p>{presentationCopy.materialsEmptyState}</p>
                  </div>
             ) : (
                 <div className="space-y-4">

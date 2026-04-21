@@ -127,7 +127,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
   const handleValidateVoucher = async () => {
     if (loading) return;
     if (!voucherCode.trim()) {
-      setErrorMsg('Informe o codigo de acesso para continuar.');
+      setErrorMsg('Informe o voucher de acesso para continuar.');
       return;
     }
     setLoading(true);
@@ -137,7 +137,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     try {
       const result = await api.validateVoucher(voucherCode);
       if (!result.success || !result.voucher) {
-        throw new Error(result.message || 'Nao foi possivel validar o codigo informado.');
+        throw new Error(result.message || 'Nao foi possivel validar o voucher informado.');
       }
       setValidatedVoucher(result.voucher);
       setVoucherCode(result.voucher.code);
@@ -283,7 +283,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
   const SupportLink = (
     <div className="text-center">
-      <p className="text-xs font-medium text-gray-500">Precisa de ajuda com o código?</p>
+      <p className="text-xs font-medium text-gray-500">Precisa de ajuda com o voucher?</p>
       <a
         href={SUPPORT_CONTACT_URL}
         className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-gray-600 transition-colors hover:text-kaboo-primary"
@@ -322,12 +322,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         {step === 'voucher' && (
           <div className="flex flex-col flex-1 px-6 pt-4 pb-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <StepDots current={1} total={2} />
-            <h2 className="text-xl font-bold text-gray-800 mt-3 mb-1">Qual é o seu código?</h2>
-            <p className="text-sm text-gray-500 mb-5">Use o código impresso no seu material de acesso</p>
+            <h2 className="text-xl font-bold text-gray-800 mt-3 mb-1">Qual é o seu voucher?</h2>
+            <p className="text-sm text-gray-500 mb-5">Use o voucher impresso no seu material de acesso</p>
 
             <div className="space-y-3">
               <div className="relative">
-                <label htmlFor="field-voucher" className="sr-only">Código de acesso</label>
+                <label htmlFor="field-voucher" className="sr-only">Voucher de acesso</label>
                 <input
                   id="field-voucher"
                   type="text"
@@ -374,7 +374,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                   onClick={handleValidateVoucher}
                   disabled={loading || !voucherCode.trim()}
                 >
-                  {loading ? 'Validando...' : 'Validar código'}
+                  {loading ? 'Validando...' : 'Validar voucher'}
                 </Button>
               ) : (
                 <div className="space-y-2">
@@ -386,7 +386,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                     onClick={handleUseAnotherVoucher}
                     className="w-full text-sm text-gray-400 hover:text-gray-600 py-2 transition-colors"
                   >
-                    Usar outro código
+                    Usar outro voucher
                   </button>
                 </div>
               )}
@@ -402,11 +402,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         {step === 'register' && (
           <div className="flex flex-col flex-1 px-6 pt-4 overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
             <h2 className="text-xl font-bold text-gray-800 mb-1">Crie sua conta</h2>
-            <p className="text-sm text-gray-500">Preencha seus dados e informe o código para liberar o acesso.</p>
+            <p className="text-sm text-gray-500">Preencha seus dados e informe o voucher para liberar o acesso.</p>
 
             <form onSubmit={handleAuth} className="space-y-4 mt-4 pb-8">
               <div className="space-y-2">
-                <label htmlFor="field-voucher-register" className="text-sm font-bold text-gray-600 ml-2">Código de acesso</label>
+                <label htmlFor="field-voucher-register" className="text-sm font-bold text-gray-600 ml-2">Voucher de acesso</label>
                 <div className="relative">
                   <input
                     id="field-voucher-register"
@@ -605,7 +605,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/70">Primeiro acesso</p>
                     <p className="mt-1 text-base font-bold text-gray-800">Ainda não tem cadastro?</p>
-                    <p className="mt-1 text-sm leading-5 text-gray-600">Insira seu código de acesso para criar sua conta e liberar a plataforma.</p>
+                    <p className="mt-1 text-sm leading-5 text-gray-600">Insira seu voucher de acesso para criar sua conta e liberar a plataforma.</p>
                   </div>
                 </div>
 
@@ -620,7 +620,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                   }}
                   className="mt-4"
                 >
-                  Inserir código de acesso
+                  Inserir voucher de acesso
                 </Button>
               </div>
 

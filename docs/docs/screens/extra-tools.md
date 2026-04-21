@@ -11,7 +11,7 @@ sidebar_position: 9
 
 ## Descrição
 
-Tela de ferramentas e materiais extras relacionados a uma coleção específica. Oferece acesso a recursos complementares como arquivos ZIP, PDFs adicionais ou outros materiais.
+Tela de materiais da coleção relacionados a um item específico. Oferece acesso a recursos complementares, guias e documentos de apoio sem misturar esse escopo com materiais gerais da Central.
 
 ## Props
 
@@ -24,7 +24,7 @@ interface ExtraToolsScreenProps {
 
 ## Funcionalidades
 
-- Lista materiais extras da coleção (`collection.extra_materials`)
+- Lista materiais da coleção (`collection.extra_materials`)
 - Permite **download** ou **visualização** dos materiais
 - Cor de tema da coleção aplicada ao layout
 

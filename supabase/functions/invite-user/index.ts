@@ -99,6 +99,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    const nextAppMetadata = {
+      ...(inviteData.user.app_metadata ?? {}),
+      created_by: caller.id,
+    };
+
+    const { error: metadataError } = await adminClient.auth.admin.updateUserById(
+      inviteData.user.id,
+      { app_metadata: nextAppMetadata }
+    );
+
+    if (metadataError) {
+      return new Response(JSON.stringify({ success: false, error: metadataError.message }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Cria/atualiza o perfil com papel e status corretos
     const { error: upsertError } = await adminClient.from('profiles').upsert({
       id: inviteData.user.id,

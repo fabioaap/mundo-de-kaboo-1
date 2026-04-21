@@ -7,10 +7,17 @@ import { GalaxyBackground } from '../components/GalaxyBackground';
 
 interface AudioPlayerScreenProps {
   collection: Collection;
+  assetUrl?: string;
+  assetTitle?: string;
   onBack: () => void;
 }
 
-export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection, onBack }) => {
+export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
+  collection,
+  assetUrl,
+  assetTitle,
+  onBack,
+}) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -26,6 +33,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
   const rotationIntervalRef = useRef<number | null>(null);
 
   const themeColor = collection.color_theme || '#5D1F58';
+  const resolvedAudioUrl = assetUrl ?? collection.audio_url;
+  const resolvedTitle = assetTitle ?? collection.title;
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
 
   // Set browser background to match theme color
@@ -202,10 +211,10 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
 
       {/* Dark overlay to darken background */}
       <div className="absolute inset-0 bg-black/10" style={{ zIndex: 2 }} />
-      {collection.audio_url && (
+      {resolvedAudioUrl && (
         <audio
           ref={audioRef}
-          src={collection.audio_url}
+          src={resolvedAudioUrl}
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
@@ -227,7 +236,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({ collection
         <div className="flex-1 text-center">
           <div className="inline-block bg-black/20 backdrop-blur-md px-6 py-2 rounded-full shadow-lg border border-white/10">
             <h1 className="text-sm md:text-base font-bold text-white drop-shadow-sm">
-              {collection.title}
+              {resolvedTitle}
             </h1>
           </div>
         </div>

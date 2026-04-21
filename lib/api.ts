@@ -1,8 +1,11 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { deleteFile } from './storage';
+import catalogSeed from '../data/catalog.seed.json';
 import {
+  Character,
   Collection,
   CollectionResource,
+  CentralMaterial,
   RegisterWithVoucherInput,
   RegisterWithVoucherResult,
   UserProfile,
@@ -13,7 +16,19 @@ import {
 import { logger } from './logger';
 import { buildAppUrl } from './appPaths';
 import {
+  getMockCharactersLive,
+  mockCreateCharacter,
+  mockUpdateCharacter,
+  normalizeCharacter,
+  normalizeCharacterLookupKey,
+  setCharacterRegistrySnapshot,
+  syncCollectionCharacters,
+} from './characters';
+import { syncCollectionWithAssets } from './collectionAssets';
+import { getMockCentralMaterials } from './centralMaterials';
+import {
   createMockUser,
+  deleteMockUserById,
   getMockAllUsers,
   updateMockUserById,
   getMockCollectionResources,
@@ -65,6 +80,118 @@ export function isDevMockSession(): boolean {
 }
 const DEV_SUPABASE_VOUCHER_FALLBACKS: Record<string, Voucher['duration_months']> = {
   'KABOO-LIVR-0001': 3,
+};
+
+let userProgressTableAvailable: boolean | null = null;
+let charactersTableAvailable: boolean | null = null;
+let remoteCharactersCache: Character[] | null = null;
+
+const cloneCharacters = (characters: Character[]): Character[] => {
+  return JSON.parse(JSON.stringify(characters)) as Character[];
+};
+
+const isMissingUserProgressError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const candidate = error as { code?: string; message?: string; details?: string };
+  const combinedMessage = `${candidate.message ?? ''} ${candidate.details ?? ''}`.toLowerCase();
+
+  return candidate.code === 'PGRST205'
+    || candidate.code === '42P01'
+    || combinedMessage.includes('user_progress');
+};
+
+const PRESENTATION_SEED_COLLECTIONS_BY_ID = new Map(
+  (((catalogSeed as { collections?: Collection[] }).collections) || []).map((collection) => [collection.id, collection])
+);
+
+const hydrateCollectionPresentationFields = (collection: Collection, characters?: Character[]): Collection => {
+  const seedCollection = PRESENTATION_SEED_COLLECTIONS_BY_ID.get(collection.id);
+
+  if (!seedCollection) {
+    return syncCollectionCharacters(syncCollectionWithAssets(collection), characters);
+  }
+
+  return syncCollectionCharacters(syncCollectionWithAssets({
+    ...seedCollection,
+    ...collection,
+    collection_type: collection.collection_type ?? seedCollection.collection_type,
+    kit_cover_image: collection.kit_cover_image ?? seedCollection.kit_cover_image ?? null,
+    kit_book_ids: collection.kit_book_ids ?? seedCollection.kit_book_ids ?? [],
+    collection_assets: (collection.collection_assets?.length ?? 0) > 0
+      ? collection.collection_assets
+      : seedCollection.collection_assets,
+  }), characters);
+};
+
+const hydrateCollectionsPresentationFields = (collections: Collection[], characters?: Character[]): Collection[] => {
+  return collections.map((collection) => hydrateCollectionPresentationFields(collection, characters));
+};
+
+const sanitizeCollectionPayload = (collection: Partial<Collection>, characters?: Character[]): Partial<Collection> => {
+  const syncedCollection = syncCollectionCharacters(syncCollectionWithAssets(collection), characters);
+
+  return syncedCollection;
+};
+
+const isMissingColumnError = (error: unknown, columnName: string): boolean => {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const candidate = error as { message?: string; details?: string };
+  const combinedMessage = `${candidate.message ?? ''} ${candidate.details ?? ''}`.toLowerCase();
+
+  return combinedMessage.includes(columnName.toLowerCase());
+};
+
+const isMissingRelationError = (error: unknown, relationName: string): boolean => {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const candidate = error as { code?: string; message?: string; details?: string };
+  const combinedMessage = `${candidate.message ?? ''} ${candidate.details ?? ''}`.toLowerCase();
+
+  return candidate.code === 'PGRST205'
+    || candidate.code === '42P01'
+    || (combinedMessage.includes(relationName.toLowerCase()) && combinedMessage.includes('does not exist'))
+    || (combinedMessage.includes(relationName.toLowerCase()) && combinedMessage.includes('could not find'));
+};
+
+const loadRemoteCharacters = async (forceRefresh: boolean = false): Promise<Character[] | null> => {
+  if (!isSupabaseConfigured || devMockSession || charactersTableAvailable === false) {
+    return null;
+  }
+
+  if (!forceRefresh && remoteCharactersCache) {
+    return cloneCharacters(remoteCharactersCache);
+  }
+
+  const { data, error } = await supabase
+    .from('characters')
+    .select('*')
+    .order('name', { ascending: true });
+
+  if (error) {
+    if (isMissingRelationError(error, 'characters')) {
+      charactersTableAvailable = false;
+      logger.warn('characters table unavailable; falling back to local registry for this session.', error);
+      return null;
+    }
+
+    logger.error('Error fetching characters:', error);
+    return null;
+  }
+
+  const remoteCharacters = ((data || []) as Character[]).map((character) => normalizeCharacter(character));
+  charactersTableAvailable = true;
+  remoteCharactersCache = cloneCharacters(remoteCharacters);
+  setCharacterRegistrySnapshot(remoteCharacters);
+
+  return cloneCharacters(remoteCharacters);
 };
 
 const getSupabaseDevFallbackVoucher = (voucherCode: string): Voucher | null => {
@@ -154,7 +281,13 @@ const getCachedCollections = (): Collection[] | null => {
     const parsed = JSON.parse(cached);
     // Verify it's from the current session
     if (parsed.sessionId === getSessionId()) {
-      return parsed.collections;
+      const hydratedCollections = hydrateCollectionsPresentationFields(parsed.collections || []);
+
+      if (JSON.stringify(hydratedCollections) !== JSON.stringify(parsed.collections || [])) {
+        saveCollectionsCache(hydratedCollections);
+      }
+
+      return hydratedCollections;
     }
     // If session changed, clear old cache
     sessionStorage.removeItem(COLLECTIONS_CACHE_KEY);
@@ -355,7 +488,7 @@ export const api = {
   },
 
   async getVoucherSamples(): Promise<Voucher[]> {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || devMockSession) {
       return getMockVoucherSamples();
     }
 
@@ -371,7 +504,7 @@ export const api = {
       };
     }
 
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || devMockSession) {
       return validateMockVoucher(voucherCode);
     }
 
@@ -432,7 +565,7 @@ export const api = {
       };
     }
 
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || devMockSession) {
       const result = redeemMockVoucher(voucherCode);
       if (result.success && result.profile) {
         await saveProfileCache(normalizeProfile(result.profile));
@@ -657,6 +790,7 @@ export const api = {
     if (!forceRefresh) {
       const cached = getCachedCollections();
       if (cached) {
+        await loadRemoteCharacters();
         return cached;
       }
     }
@@ -666,6 +800,8 @@ export const api = {
       saveCollectionsCache(collections);
       return collections;
     }
+
+    const remoteCharacters = await loadRemoteCharacters(forceRefresh);
 
     // Fetch from server
     const { data, error } = await supabase
@@ -678,7 +814,7 @@ export const api = {
       return [];
     }
 
-    const collections = data || [];
+    const collections = hydrateCollectionsPresentationFields((data || []) as Collection[], remoteCharacters ?? undefined);
 
     // Save to cache
     saveCollectionsCache(collections);
@@ -690,9 +826,11 @@ export const api = {
    * Fetch a single collection by ID
    */
   async getCollectionById(id: string): Promise<Collection | null> {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || devMockSession) {
       return getMockCollectionByIdLive(id);
     }
+
+    const remoteCharacters = await loadRemoteCharacters();
 
     const { data, error } = await supabase
       .from('collections')
@@ -700,8 +838,8 @@ export const api = {
       .eq('id', id)
       .single();
 
-    if (error) return null;
-    return data;
+    if (error || !data) return null;
+    return hydrateCollectionPresentationFields(data as Collection, remoteCharacters ?? undefined);
   },
 
   /**
@@ -721,6 +859,125 @@ export const api = {
     return data || [];
   },
 
+  async getCentralMaterials(): Promise<CentralMaterial[]> {
+    return getMockCentralMaterials();
+  },
+
+  async getCharacters(): Promise<Character[]> {
+    if (!isSupabaseConfigured || devMockSession) {
+      return getMockCharactersLive();
+    }
+
+    const remoteCharacters = await loadRemoteCharacters();
+    return remoteCharacters ?? getMockCharactersLive();
+  },
+
+  async createCharacter(character: Partial<Character> & { name: string }): Promise<Character | null> {
+    if (!isSupabaseConfigured || devMockSession) {
+      try {
+        return mockCreateCharacter(character);
+      } catch (error) {
+        logger.error('Error creating character:', error);
+        return null;
+      }
+    }
+
+    try {
+      const payload = normalizeCharacter(character);
+      const { data, error } = await supabase
+        .from('characters')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (error) {
+        if (isMissingRelationError(error, 'characters')) {
+          charactersTableAvailable = false;
+          return mockCreateCharacter(character);
+        }
+
+        logger.error('Error creating character:', error);
+        return null;
+      }
+
+      const nextCharacter = normalizeCharacter(data as Character);
+      await loadRemoteCharacters(true);
+      clearCollectionsCache();
+      return nextCharacter;
+    } catch (error) {
+      logger.error('Error creating character:', error);
+      return null;
+    }
+  },
+
+  async updateCharacter(id: string, updates: Partial<Character>): Promise<Character | null> {
+    if (!isSupabaseConfigured || devMockSession) {
+      try {
+        return mockUpdateCharacter(id, updates);
+      } catch (error) {
+        logger.error('Error updating character:', error);
+        return null;
+      }
+    }
+
+    try {
+      const currentCharacters = await this.getCharacters();
+      const currentCharacter = currentCharacters.find((character) => character.id === id);
+
+      if (!currentCharacter) {
+        return null;
+      }
+
+      const requestedName = updates.name?.trim() || currentCharacter.name;
+      const hasRenamedCharacter =
+        normalizeCharacterLookupKey(requestedName) !== normalizeCharacterLookupKey(currentCharacter.name);
+      const aliases = hasRenamedCharacter
+        ? [...(currentCharacter.aliases || []), ...(updates.aliases || []), currentCharacter.name]
+        : updates.aliases ?? currentCharacter.aliases;
+
+      const payload = normalizeCharacter({
+        ...currentCharacter,
+        ...updates,
+        id,
+        name: requestedName,
+        aliases,
+      });
+
+      const { data, error } = await supabase
+        .from('characters')
+        .update({
+          name: payload.name,
+          description: payload.description,
+          traits: payload.traits,
+          aliases: payload.aliases || [],
+          image_url: payload.image_url,
+          status: payload.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        if (isMissingRelationError(error, 'characters')) {
+          charactersTableAvailable = false;
+          return mockUpdateCharacter(id, updates);
+        }
+
+        logger.error('Error updating character:', error);
+        return null;
+      }
+
+      const nextCharacter = normalizeCharacter(data as Character);
+      await loadRemoteCharacters(true);
+      clearCollectionsCache();
+      return nextCharacter;
+    } catch (error) {
+      logger.error('Error updating character:', error);
+      return null;
+    }
+  },
+
   /**
    * Fetch user progress (Merged logic would go here in a real app)
    * For now, returns a simple dictionary of { collection_id: percent }
@@ -728,6 +985,10 @@ export const api = {
   async getUserProgress(): Promise<Record<string, number>> {
     if (!isSupabaseConfigured) {
       return getMockUserProgress();
+    }
+
+    if (userProgressTableAvailable === false) {
+      return {};
     }
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -738,8 +999,16 @@ export const api = {
       .select('collection_id, progress_percent')
       .eq('user_id', user.id);
 
-    // Table may not exist yet (e.g. dev environment without migrations)
-    if (error) return {};
+    // The current branch can run against remotes that do not have this table yet.
+    if (error) {
+      if (isMissingUserProgressError(error)) {
+        userProgressTableAvailable = false;
+        logger.warn('user_progress table unavailable; skipping progress fetches for this session.', error);
+      }
+      return {};
+    }
+
+    userProgressTableAvailable = true;
 
     const progressMap: Record<string, number> = {};
     data?.forEach((p: any) => {
@@ -755,11 +1024,21 @@ export const api = {
     if (!isSupabaseConfigured) {
       return mockCreateCollection(collection);
     }
-    const { data, error } = await supabase
+    const payload = sanitizeCollectionPayload(collection, (await loadRemoteCharacters()) ?? undefined);
+    let { data, error } = await supabase
       .from('collections')
-      .insert(collection)
+      .insert(payload)
       .select()
       .single();
+
+    if (error && isMissingColumnError(error, 'character_ids')) {
+      const { character_ids, ...legacyPayload } = payload;
+      ({ data, error } = await supabase
+        .from('collections')
+        .insert(legacyPayload)
+        .select()
+        .single());
+    }
 
     if (error) {
       logger.error('Error creating collection:', error);
@@ -779,6 +1058,7 @@ export const api = {
     if (!isSupabaseConfigured) {
       return mockUpdateCollection(id, updates);
     }
+    const payload = sanitizeCollectionPayload(updates, (await loadRemoteCharacters()) ?? undefined);
     // First, verify the collection exists and we can access it
     const existing = await this.getCollectionById(id);
     if (!existing) {
@@ -787,16 +1067,26 @@ export const api = {
     }
 
     // Perform the update
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('collections')
-      .update(updates)
+      .update(payload)
       .eq('id', id)
       .select()
       .single();
 
+    if (error && isMissingColumnError(error, 'character_ids')) {
+      const { character_ids, ...legacyPayload } = payload;
+      ({ data, error } = await supabase
+        .from('collections')
+        .update(legacyPayload)
+        .eq('id', id)
+        .select()
+        .single());
+    }
+
     if (error) {
       logger.error('Error updating collection:', error);
-      logger.error('Update details:', { id, updates, error });
+      logger.error('Update details:', { id, payload, error });
 
       // Check for RLS policy error
       if (error.code === 'PGRST116' || error.message?.includes('0 rows')) {
@@ -1011,26 +1301,20 @@ export const api = {
 
       if (fnError) {
         logger.error('Error invoking admin-list-users function:', fnError);
-      } else if (fnData?.success && Array.isArray(fnData.users)) {
-        return fnData.users.map((user: UserProfile) => normalizeProfile(user));
-      } else if (fnData?.error) {
-        logger.error('admin-list-users function returned error:', fnData.error);
+        throw fnError;
       }
+
+      if (!fnData?.success || !Array.isArray(fnData.users)) {
+        const errMsg = fnData?.error ?? 'Erro ao listar usuários do administrador';
+        logger.error('admin-list-users function returned error:', errMsg);
+        throw new Error(errMsg);
+      }
+
+      return fnData.users.map((user: UserProfile) => normalizeProfile(user));
     } catch (error) {
       logger.error('Unexpected error fetching admin-list-users:', error);
+      throw error;
     }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      logger.error('Error fetching users:', error);
-      return [];
-    }
-
-    return (data || []).map((user) => normalizeProfile(user));
   },
 
   /**
@@ -1053,6 +1337,7 @@ export const api = {
         full_name: userData.full_name,
         role: assignedRole,
         signIn: false,
+        created_by: getMockCurrentUserId(),
       });
 
       return {
@@ -1173,6 +1458,34 @@ export const api = {
       return { success: false, error: error.message };
     }
     return { success: true };
+  },
+
+  async deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
+    if (!isSupabaseConfigured) {
+      return deleteMockUserById(userId);
+    }
+
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('delete-user', {
+        body: { user_id: userId },
+      });
+
+      if (fnError) {
+        logger.error('Error invoking delete-user function:', fnError);
+        return { success: false, error: fnError.message };
+      }
+
+      if (!fnData?.success) {
+        const errMsg = fnData?.error ?? 'Erro ao excluir usuário';
+        logger.error('delete-user function returned error:', errMsg);
+        return { success: false, error: errMsg };
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      logger.error('Error deleting user:', error);
+      return { success: false, error: error.message || 'Unknown error' };
+    }
   },
 
   /**

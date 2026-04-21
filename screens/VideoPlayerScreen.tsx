@@ -5,10 +5,17 @@ import { useThemeBackground } from '../hooks/useThemeBackground';
 
 interface VideoPlayerScreenProps {
   collection: Collection;
+  assetUrl?: string;
+  assetTitle?: string;
   onBack: () => void;
 }
 
-export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ collection, onBack }) => {
+export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
+  collection,
+  assetUrl,
+  assetTitle,
+  onBack,
+}) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -25,6 +32,8 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ collection
   const controlsTimeoutRef = useRef<any>(null);
 
   const themeColor = collection.color_theme || '#5D1F58';
+  const resolvedVideoUrl = assetUrl ?? collection.video_url;
+  const resolvedTitle = assetTitle ?? collection.title;
   
   // Set browser background to black for video player
   useThemeBackground('#000000');
@@ -164,10 +173,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ collection
       <div className="absolute inset-0 bg-black/10 z-0" />
       
       {/* Video Element */}
-      {collection.video_url ? (
+      {resolvedVideoUrl ? (
         <video
             ref={videoRef}
-            src={collection.video_url}
+        src={resolvedVideoUrl}
             className="w-full h-full object-contain"
             playsInline
             onClick={(e) => { e.stopPropagation(); togglePlay(); }}
@@ -214,7 +223,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({ collection
              <div className="flex-1 text-center">
                <div className="inline-block bg-black/20 backdrop-blur-md px-6 py-2 rounded-full shadow-lg border border-white/10">
                  <h1 className="text-sm md:text-base font-bold text-white drop-shadow-sm">
-                   {collection.title}
+                   {resolvedTitle}
                  </h1>
                </div>
              </div>

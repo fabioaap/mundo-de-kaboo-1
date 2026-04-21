@@ -14,6 +14,11 @@ type AuthAdminUser = {
   last_sign_in_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  app_metadata?: {
+    created_by?: string | null;
+    provider?: string;
+    providers?: string[];
+  } | null;
   user_metadata?: {
     full_name?: string | null;
     name?: string | null;
@@ -128,28 +133,34 @@ Deno.serve(async (req) => {
       }
     }
 
-    const userIds = authUsers.map((user) => user.id);
-    const profileMap = new Map<string, ProfileRow>();
+    const scopedAuthUsers = authUsers.filter((user) => user.app_metadata?.created_by === caller.id);
+    const userIds = scopedAuthUsers.map((user) => user.id);
 
-    if (userIds.length > 0) {
-      const { data: profiles, error: profilesError } = await adminClient
-        .from('profiles')
-        .select('id, email, full_name, avatar_id, role, voucher_id, access_starts_at, access_expires_at, access_status, created_at, updated_at')
-        .in('id', userIds);
-
-      if (profilesError) {
-        return new Response(JSON.stringify({ success: false, error: profilesError.message }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      for (const profile of profiles ?? []) {
-        profileMap.set(profile.id, profile as ProfileRow);
-      }
+    if (userIds.length === 0) {
+      return new Response(JSON.stringify({ success: true, users: [] }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const users = authUsers
+    const { data: profiles, error: profilesError } = await adminClient
+      .from('profiles')
+      .select('id, email, full_name, avatar_id, role, voucher_id, access_starts_at, access_expires_at, access_status, created_at, updated_at')
+      .in('id', userIds);
+
+    if (profilesError) {
+      return new Response(JSON.stringify({ success: false, error: profilesError.message }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const profileMap = new Map<string, ProfileRow>();
+    for (const profile of profiles ?? []) {
+      profileMap.set(profile.id, profile as ProfileRow);
+    }
+
+    const users = scopedAuthUsers
       .map((authUser) => {
         const profile = profileMap.get(authUser.id);
         const confirmedAt = authUser.confirmed_at ?? authUser.email_confirmed_at ?? null;
@@ -159,6 +170,7 @@ Deno.serve(async (req) => {
           full_name: profile?.full_name ?? authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? null,
           email: profile?.email ?? authUser.email ?? null,
           avatar_id: profile?.avatar_id ?? null,
+          created_by: authUser.app_metadata?.created_by ?? null,
           role: profile?.role ?? 'viewer',
           voucher_id: profile?.voucher_id ?? null,
           access_starts_at: profile?.access_starts_at ?? null,

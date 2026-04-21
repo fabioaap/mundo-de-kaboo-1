@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Icons } from '../components/Icons';
 import { ScreenName, UserProfile } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor, AVATAR_CHARACTERS } from '../constants';
+import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
+import { getAvatarCharacters } from '../lib/characters';
 import { canEditCollections, getUserRole } from '../lib/auth';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../design-system';
@@ -277,7 +278,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
               </button>
 
               {/* Character Options */}
-              {AVATAR_CHARACTERS.map((char) => {
+              {getAvatarCharacters().map((char) => {
                 const isSelected = selectedAvatarId === char;
                 const charColor = getCharacterColor(char);
 

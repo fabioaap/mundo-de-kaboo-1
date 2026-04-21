@@ -27,6 +27,7 @@ import {
     getAllMockVoucherCodes,
     getAuditLog,
     generateBatchCsv,
+    generateBatchXlsx,
     disableVoucherCode,
     isValidVoucherBatchQuantity,
     MIN_VOUCHER_BATCH_QUANTITY,
@@ -73,7 +74,7 @@ const BATCH_STATUS_CLASSES: Record<string, string> = {
 
 const DURATION_OPTIONS: VoucherDurationMonths[] = [1, 3, 6, 9, 12];
 const MIN_CUSTOM_DURATION_MONTHS = 1;
-const MAX_CUSTOM_DURATION_MONTHS = 120;
+const MAX_CUSTOM_DURATION_MONTHS = 12;
 const VOUCHERS_ONBOARDING_STORAGE_KEY = 'kaboo_vouchers_onboarding_v1';
 
 const WIZARD_STEP_COPY: Record<1 | 2 | 3, { title: string; description: string }> = {
@@ -622,9 +623,9 @@ const ModelWizard: React.FC<{
                             onChange={(e) => setLevelFilter(e.target.value)}
                             className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
                         >
-                            <option value="all">Todos os níveis</option>
-                            <option value="Educação Infantil">Educação Infantil</option>
-                            <option value="Fundamental I">Fundamental I</option>
+                            <option value="all">Todos os segmentos</option>
+                            <option value="Educação Infantil">Ed. Infantil</option>
+                            <option value="Fundamental I">E.F. Anos Iniciais</option>
                         </select>
                     </div>
 
@@ -922,18 +923,34 @@ const BatchDetailView: React.FC<{
     const disabled = vouchers.filter(v => v.status === 'disabled').length;
     const available = batch.quantity - redeemed - disabled;
 
-    const handleExport = () => {
-        const csv = generateBatchCsv(batchId);
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const fileBaseName = `KABOO_VOUCHERS_${batch.id.substring(0, 8)}_${snap.name.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().substring(0, 10)}_v01`;
+
+    const downloadBlob = (blob: Blob, filename: string) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `KABOO_VOUCHERS_${batch.id.substring(0, 8)}_${snap.name.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().substring(0, 10)}_v01.csv`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
+    };
+
+    const handleExport = () => {
+        const csv = generateBatchCsv(batchId);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        downloadBlob(blob, `${fileBaseName}.csv`);
 
         updateBatchStatus(batchId, 'exported', { exported_at: new Date().toISOString() });
         showToast('CSV exportado e lote marcado como exportado.', 'success');
+        reload();
+    };
+
+    const handleExportXlsx = () => {
+        const blob = generateBatchXlsx(batchId);
+        if (!blob) { showToast('Erro ao gerar XLSX.', 'error'); return; }
+        downloadBlob(blob, `${fileBaseName}.xlsx`);
+
+        updateBatchStatus(batchId, 'exported', { exported_at: new Date().toISOString() });
+        showToast('Excel exportado e lote marcado como exportado.', 'success');
         reload();
     };
 
@@ -1013,11 +1030,14 @@ const BatchDetailView: React.FC<{
 
             {/* Lifecycle actions — contextual by batch status */}
             <div className="flex flex-wrap gap-2 mb-6">
-                {(batch.status === 'generated' || batch.status === 'exported') && (
+                {(batch.status === 'generated' || batch.status === 'exported') && (<>
                     <Button onClick={handleExport}>
                         <Icons.Download className="w-4 h-4 mr-1" /> {batch.status === 'exported' ? 'Re-exportar CSV' : 'Exportar CSV'}
                     </Button>
-                )}
+                    <Button onClick={handleExportXlsx} variant="secondary">
+                        <Icons.Download className="w-4 h-4 mr-1" /> Exportar Excel
+                    </Button>
+                </>)}
                 {batch.status === 'exported' && (
                     <Button onClick={handleMarkSent} variant="secondary">
                         📤 Registrar envio
@@ -1288,6 +1308,18 @@ const CodesListView: React.FC = () => {
                                     <div className="flex justify-between">
                                         <span className="text-gray-500">Resgatado em</span>
                                         <span className="text-gray-800">{new Date(selectedCode.consumed_at).toLocaleString('pt-BR')}</span>
+                                    </div>
+                                )}
+                                {selectedCode.consumed_by_name && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Resgatado por</span>
+                                        <span className="text-gray-800">{selectedCode.consumed_by_name}</span>
+                                    </div>
+                                )}
+                                {selectedCode.consumed_by_email && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">E-mail</span>
+                                        <span className="text-gray-800">{selectedCode.consumed_by_email}</span>
                                     </div>
                                 )}
                                 {selectedCode.expires_at && (

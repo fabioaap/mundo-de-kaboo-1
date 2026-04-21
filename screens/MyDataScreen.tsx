@@ -5,7 +5,8 @@ import { supabase } from '../lib/supabase';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { api } from '../lib/api';
 import { PageHeader } from '../components/PageHeader';
-import { AVATAR_CHARACTERS, getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
+import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
+import { getAvatarCharacters } from '../lib/characters';
 
 interface MyDataScreenProps {
     onBack: () => void;
@@ -378,7 +379,7 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                             </button>
 
                             {/* Character Options */}
-                            {AVATAR_CHARACTERS.map((char, idx) => {
+                            {getAvatarCharacters().map((char) => {
                                 const isSelected = formData.avatar_id === char;
                                 const charColor = getCharacterColor(char);
 

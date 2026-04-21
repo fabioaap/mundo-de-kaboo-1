@@ -19,6 +19,9 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
 }) => {
   const [showContent, setShowContent] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
+  const [collectionStack, setCollectionStack] = useState<Collection[]>([]);
+  const activeCollection = collectionStack[collectionStack.length - 1] || collection;
+  const parentCollection = collectionStack.length > 1 ? collectionStack[collectionStack.length - 2] : null;
   // Keep a stable ref to onClose so the escape handler always calls the latest version
   // without causing Effect 1 to re-run (and reset state) on every parent render
   const onCloseRef = useRef(onClose);
@@ -26,6 +29,17 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
 
   // Reset state and manage body scroll when modal opens/closes
   // NOTE: onClose intentionally excluded from deps — use onCloseRef instead
+  useEffect(() => {
+    if (isOpen && collection) {
+      setCollectionStack([collection]);
+      return;
+    }
+
+    if (!isOpen) {
+      setCollectionStack([]);
+    }
+  }, [isOpen, collection?.id]);
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -50,7 +64,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
 
   // Handle smooth transition from skeleton to content
   useEffect(() => {
-    if (collection) {
+    if (activeCollection) {
       // Small delay to ensure smooth transition
       const timer = setTimeout(() => {
         setShowSkeleton(false);
@@ -64,7 +78,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       setShowContent(false);
       setShowSkeleton(true);
     }
-  }, [collection]);
+  }, [activeCollection?.id]);
 
   if (!isOpen) return null;
 
@@ -96,16 +110,16 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
         <div className="flex-1 overflow-hidden flex min-h-0 relative">
           {/* Skeleton - fades out when content loads */}
           {showSkeleton && (
-            <div className={`absolute inset-0 ${collection ? 'skeleton-fade-out' : ''}`}>
+            <div className={`absolute inset-0 ${activeCollection ? 'skeleton-fade-out' : ''}`}>
               <ModalSkeleton />
             </div>
           )}
 
           {/* Content - fades in when ready */}
-          {collection && showContent && (
+          {activeCollection && showContent && (
             <div className="flex-1 content-fade-in">
               <DetailsScreen
-                collection={collection}
+                collection={activeCollection}
                 onNavigate={(screen, params) => {
                   // Close modal when navigating to player screens
                   if (['player_book', 'player_audio', 'player_video'].includes(screen)) {
@@ -113,7 +127,18 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
                   }
                   onNavigate(screen, params);
                 }}
-                onBack={onClose}
+                onBack={() => {
+                  if (collectionStack.length > 1) {
+                    setCollectionStack((currentStack) => currentStack.slice(0, -1));
+                    return;
+                  }
+
+                  onClose();
+                }}
+                onOpenCollection={(nextCollection) => {
+                  setCollectionStack((currentStack) => [...currentStack, nextCollection]);
+                }}
+                parentCollection={parentCollection}
               />
             </div>
           )}

@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Collection } from '../types';
 import useIsMobile from '../hooks/useIsMobile';
+import { formatSegmentLabel } from '../constants';
+import { getCollectionDisplayCover, getCollectionTypeMeta } from '../lib/collectionPresentation';
 
 interface Card3DProps {
   collection: Collection & { progress?: number };
@@ -67,6 +69,8 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
+  const collectionTypeMeta = getCollectionTypeMeta(collection);
 
   // Gyroscope effect for mobile
   useEffect(() => {
@@ -185,13 +189,19 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         onMouseLeave={!isMobile ? handleMouseLeave : undefined}
       >
         <img
-          src={collection.cover_image}
+          src={displayCoverImage}
           alt={collection.title}
           className="w-full h-full object-cover bg-gray-200"
           style={{
             transform: 'translateZ(20px)',
           }}
         />
+        <div
+          className={`absolute top-2 left-2 whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.14em] border backdrop-blur-sm ${collectionTypeMeta.coverClassName}`}
+          style={{ transform: 'translateZ(30px)' }}
+        >
+          {collectionTypeMeta.shortLabel}
+        </div>
         {/* Light reflection effect - moves based on tilt */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -234,16 +244,37 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
           </div>
         )}
 
-        {collection.level && (
-          <div
-            className="absolute bottom-2 right-2 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-full text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50"
-            style={{
-              transform: 'translateZ(30px)',
-            }}
-          >
-            {collection.level.replace('Educação Infantil', 'Ed. Infantil').replace('Fundamental ', 'Fund. ')}
-          </div>
-        )}
+        {(() => {
+          const segments = collection.segments;
+          if (segments && segments.length > 1) {
+            const visible = segments.slice(0, 2);
+            const extra = segments.length - 2;
+            return (
+              <div className="absolute bottom-2 right-2 flex gap-1" style={{ transform: 'translateZ(30px)' }}>
+                {visible.map((seg) => (
+                  <span key={seg} className="px-2 py-1 bg-white/95 backdrop-blur-sm rounded-full text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50">
+                    {formatSegmentLabel(seg)}
+                  </span>
+                ))}
+                {extra > 0 && (
+                  <span className="px-2 py-1 bg-white/95 backdrop-blur-sm rounded-full text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50">
+                    +{extra}
+                  </span>
+                )}
+              </div>
+            );
+          }
+          const label = collection.level;
+          if (!label) return null;
+          return (
+            <div
+              className="absolute bottom-2 right-2 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-full text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50"
+              style={{ transform: 'translateZ(30px)' }}
+            >
+              {formatSegmentLabel(label)}
+            </div>
+          );
+        })()}
       </div>
 
       {collection.title && (

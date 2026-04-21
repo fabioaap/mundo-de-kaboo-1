@@ -5,6 +5,7 @@ import useIsMobile from '../hooks/useIsMobile';
 
 // Re-export the legacy admin screen so existing code keeps working
 import { AdminCollectionsScreen, AdminCollectionsHandle } from './AdminCollectionsScreen';
+import { AdminCharactersHandle, AdminCharactersScreen } from './AdminCharactersScreen';
 import { VouchersModule } from './VouchersModule';
 
 interface AdminScreenProps {
@@ -16,9 +17,10 @@ const MODULE_META: Record<AdminModule, { icon: React.FC<{ className?: string }>;
     collections: { icon: Icons.Library, label: 'Coleções' },
     users: { icon: Icons.User, label: 'Usuários' },
     vouchers: { icon: Icons.Ticket, label: 'Vouchers' },
+    characters: { icon: Icons.Users, label: 'Personagens' },
 };
 
-const MODULES: AdminModule[] = ['collections', 'users', 'vouchers'];
+const MODULES: AdminModule[] = ['collections', 'users', 'characters', 'vouchers'];
 
 /* ─── Sidebar ──────────────────────────────────────────── */
 
@@ -115,6 +117,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) 
     const [activeModule, setActiveModule] = useState<AdminModule>('collections');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const collectionsRef = useRef<AdminCollectionsHandle>(null);
+    const charactersRef = useRef<AdminCharactersHandle>(null);
 
     const handleModuleSelect = (mod: AdminModule) => {
         // Guard: check for unsaved changes before leaving collections/users module
@@ -125,6 +128,15 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) 
                 }
             }
         }
+
+        if (activeModule === 'characters' && mod !== activeModule) {
+            if (charactersRef.current?.hasUnsavedChanges()) {
+                if (!window.confirm('Você tem alterações não salvas. Deseja sair sem salvar?')) {
+                    return;
+                }
+            }
+        }
+
         setActiveModule(mod);
     };
 
@@ -144,6 +156,8 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) 
                 );
             case 'vouchers':
                 return <VouchersModule />;
+            case 'characters':
+                return <AdminCharactersScreen ref={charactersRef} onNavigate={onNavigate} onBack={onBack} />;
             default:
                 return null;
         }

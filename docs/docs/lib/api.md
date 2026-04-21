@@ -126,12 +126,11 @@ const deleted = await api.deleteCollection('uuid');
 
 ### `api.createUser(userData)` *(Admin)*
 
-Cria um novo usuário com perfil.
+Cria um novo usuário e envia convite por e-mail para definição de senha.
 
 ```typescript
 const result = await api.createUser({
   email: 'professor@exemplo.com.br',
-  password: 'senha-segura',
   full_name: 'Professor Silva',
   role: 'viewer',
 });
@@ -142,10 +141,21 @@ const result = await api.createUser({
 
 ### `api.getAllUsers()` *(Admin)*
 
-Lista todos os perfis de usuários.
+Lista apenas os usuários criados pelo administrador autenticado.
 
 ```typescript
 const users = await api.getAllUsers();
+```
+
+---
+
+### `api.deleteUser(userId)` *(Admin)*
+
+Exclui um usuário do Auth e remove seus dados relacionados do banco.
+
+```typescript
+const result = await api.deleteUser('uuid');
+// { success: true }
 ```
 
 ## Funções de Cache

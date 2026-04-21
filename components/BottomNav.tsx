@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
-import { ScreenName } from '../types';
+import { ScreenName, UserProfile } from '../types';
 import { LOGO_URL } from '../constants';
-import { canEditCollections } from '../lib/auth';
+import { UserIdentityCard } from './UserIdentityCard';
 
 interface BottomNavProps {
   currentScreen: ScreenName;
   onNavigate: (screen: ScreenName, params?: any) => void;
+  profile?: UserProfile | null;
 }
 
 const STORAGE_SIDEBAR_COLLAPSED = 'kaboo_sidebar_collapsed';
 
-export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate }) => {
-  const [canEdit, setCanEdit] = useState(false);
+export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate, profile }) => {
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_SIDEBAR_COLLAPSED);
@@ -23,10 +23,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
   });
 
   useEffect(() => {
-    checkPermission();
-  }, []);
-
-  useEffect(() => {
     try {
       localStorage.setItem(STORAGE_SIDEBAR_COLLAPSED, String(isCollapsed));
     } catch (error) {
@@ -34,18 +30,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
     }
   }, [isCollapsed]);
 
-  const checkPermission = async () => {
-    const hasPermission = await canEditCollections();
-    setCanEdit(hasPermission);
-  };
-
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
 
+  const canEdit = profile?.role === 'admin' || profile?.role === 'editor';
+  const isProfileSection = currentScreen === 'profile' || currentScreen === 'my_data';
+
   const isItemActive = (itemId: string) => {
     if (itemId === 'home') {
-      return currentScreen === 'home' || currentScreen === 'search';
+      return currentScreen === 'home' || currentScreen === 'search' || currentScreen === 'characters';
+    }
+
+    if (itemId === 'profile') {
+      return isProfileSection;
     }
 
     return currentScreen === itemId;
@@ -61,9 +59,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
     ? { id: 'admin', icon: Icons.Settings, label: 'Gerenciar' }
     : null;
 
-  const navItems = [
+  const desktopNavItems = [
     ...baseNavItems,
     ...(adminNavItem ? [adminNavItem] : []),
+  ];
+
+  const mobileNavItems = [
+    ...desktopNavItems,
     { id: 'profile', icon: Icons.User, label: 'Perfil' },
   ];
 
@@ -72,13 +74,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
       {/* MOBILE BOTTOM NAV */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4 pb-4 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50">
         <div className="flex justify-between items-center max-w-md mx-auto">
-          {navItems.map((item) => {
+          {mobileNavItems.map((item) => {
             const isActive = isItemActive(item.id);
             const Icon = item.icon;
             return (
               <button
                 key={item.id}
-                onClick={() => onNavigate(item.id as ScreenName, item.params)}
+                onClick={() => onNavigate(item.id as ScreenName)}
                 aria-label={item.label}
                 className="flex flex-col items-center gap-1 min-w-[64px]"
               >
@@ -133,13 +135,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
         {/* Nav Items */}
         <div className={`flex-1 space-y-2 py-4 transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'
           }`}>
-          {navItems.map((item) => {
+          {desktopNavItems.map((item) => {
             const isActive = isItemActive(item.id);
             const Icon = item.icon;
             return (
               <button
                 key={item.id}
-                onClick={() => onNavigate(item.id as ScreenName, item.params)}
+                onClick={() => onNavigate(item.id as ScreenName)}
                 aria-label={item.label}
                 className={`w-full flex items-center rounded-[100px] transition-all duration-200 group ${isCollapsed
                     ? 'justify-center px-3 py-4'
@@ -164,12 +166,25 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate 
         </div>
 
         {/* Footer */}
-        {!isCollapsed && (
-          <div className="border-t border-gray-100 p-6 text-center text-xs text-gray-300">
-            <p>Mundo de Kaboo © 2025</p>
-            <p className="mt-1">Versão 2.1</p>
-          </div>
-        )}
+        <div className={`border-t border-gray-100 transition-all duration-300 ${isCollapsed ? 'px-2 py-4' : 'px-4 pt-4 pb-6'}`}>
+          {profile && (
+            <div className={isCollapsed ? 'flex justify-center' : ''}>
+              <UserIdentityCard
+                profile={profile}
+                collapsed={isCollapsed}
+                active={isProfileSection}
+                onClick={() => onNavigate('profile')}
+              />
+            </div>
+          )}
+
+          {!isCollapsed && (
+            <div className="pt-4 text-center text-xs text-gray-300">
+              <p>Mundo de Kaboo © 2025</p>
+              <p className="mt-1">Versão 2.1</p>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

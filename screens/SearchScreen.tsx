@@ -3,7 +3,7 @@ import { Icons } from '../components/Icons';
 import { api } from '../lib/api';
 import { ScreenName, Collection } from '../types';
 import { PageHeader } from '../components/PageHeader';
-import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
+import { CharacterAvatar } from '../components/CharacterAvatar';
 
 interface SearchScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -193,21 +193,12 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
                             className="flex flex-col items-center gap-2 group"
                             onClick={() => setSearchTerm(char)}
                         >
-                            <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full shadow-md group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 overflow-hidden border-2 border-white relative ${getCharacterColor(char)}`}>
-                                {/* Fallback Background with Initial */}
-                                <div className={`absolute inset-0 flex items-center justify-center font-black text-2xl opacity-50 ${getCharacterBgColor(char)} pointer-events-none`}>
-                                   {char.charAt(0)}
-                                </div>
-                                {/* Character Image using Shared Helper */}
-                                <img 
-                                  src={getCharacterImageUrl(char)} 
-                                  alt={char}
-                                  className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 relative z-10"
-                                  onError={(e) => {
-                                     (e.target as HTMLImageElement).style.opacity = '0';
-                                  }}
-                                />
-                            </div>
+                            <CharacterAvatar
+                              name={char}
+                              className="w-20 h-20 md:w-24 md:h-24 rounded-full shadow-md group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 border-2 border-white"
+                              imageClassName="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 relative z-10"
+                              initialClassName="absolute inset-0 flex items-center justify-center font-black text-2xl text-white/80"
+                            />
                             <span className="text-xs md:text-sm font-bold text-gray-600 text-center leading-tight group-hover:text-kaboo-primary transition-colors">
                                 {char}
                             </span>

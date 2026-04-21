@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test:unit": "vitest run --project unit",
     "update-docs": "node scripts/update-docs.mjs",
     "sprint:chart": "node scripts/update-sprint-chart.mjs",
     "storybook": "storybook dev -p 6007",
@@ -25,7 +26,8 @@
     "react-pageflip": "^2.0.3",
     "react-pdf": "^10.2.0",
     "react-zoom-pan-pinch": "^3.4.4",
-    "tailwind-merge": "^2.2.2"
+    "tailwind-merge": "^2.2.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.1.2",

@@ -28,7 +28,7 @@ interface AdminCollectionsScreenProps {
 - **Criar nova coleção** com todos os campos pedagógicos
 - **Editar coleção** existente
 - **Excluir coleção** com confirmação
-- **Upload de arquivos:** capa, PDF, áudio, vídeo, materiais extras via `FileUpload` e `MultipleFileUpload`
+- **Upload de arquivos:** capa, PDF, áudio, vídeo e materiais da coleção via `FileUpload` e `MultipleFileUpload`
 - **Seleção de cor de tema** via `ColorPicker`
 - **Gerenciamento de tags:** personagens, habilidades BNCC, competências CASEL
 - **Preview de arquivos** antes de salvar
@@ -63,4 +63,4 @@ A tela verifica se o usuário tem papel `admin` ou `editor` no perfil. Usuários
 | Habilidades BNCC | TagInput | — |
 | Competências CASEL | TagInput | — |
 | Faixa etária/série | TagInput | — |
-| Materiais extras | MultipleFileUpload | — |
+| Materiais da coleção | MultipleFileUpload | — |

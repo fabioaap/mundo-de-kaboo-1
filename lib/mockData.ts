@@ -17,7 +17,10 @@ import {
     normalizeVoucherCode
 } from './access';
 import { isPlaceholderImageUrl, placeholderImageUrl, resolveAppUrl } from './appPaths';
-import { createGrantsFromRedemption } from './mockVoucherData';
+import { syncCollectionCharacters } from './characters';
+import { syncCollectionWithAssets } from './collectionAssets';
+import { getCollectionType } from './collectionPresentation';
+import { createGrantsFromRedemption, deleteUserContentGrants } from './mockVoucherData';
 
 interface CatalogSeed {
     metadata: {
@@ -55,6 +58,7 @@ interface MockCreateUserInput {
     full_name: string;
     role?: UserRole;
     signIn?: boolean;
+    created_by?: string | null;
 }
 
 type StoredVoucher = Voucher & { model_id?: string; batch_id?: string };
@@ -69,15 +73,36 @@ const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const seed = catalogSeed as CatalogSeed;
 
-const normalizeCollectionAssetUrls = (collection: Collection): Collection => ({
-    ...collection,
-    cover_image: isPlaceholderImageUrl(collection.cover_image)
-        ? placeholderImageUrl
-        : resolveAppUrl(collection.cover_image || placeholderImageUrl),
-});
+const normalizeOptionalImageUrl = (value?: string | null): string | null => {
+    const normalizedValue = value?.trim();
+
+    if (!normalizedValue || isPlaceholderImageUrl(normalizedValue)) {
+        return null;
+    }
+
+    return resolveAppUrl(normalizedValue);
+};
+
+const normalizeKitBookIds = (value?: string[] | null): string[] => {
+    return Array.from(new Set((value || []).map((id) => id?.trim()).filter(Boolean) as string[]));
+};
+
+const normalizeCollectionRecord = (collection: Collection): Collection => {
+    const syncedCollection = syncCollectionCharacters(syncCollectionWithAssets(collection));
+
+    return {
+        ...syncedCollection,
+        collection_type: getCollectionType(syncedCollection),
+        cover_image: isPlaceholderImageUrl(syncedCollection.cover_image)
+            ? placeholderImageUrl
+            : resolveAppUrl(syncedCollection.cover_image || placeholderImageUrl),
+        kit_cover_image: normalizeOptionalImageUrl(syncedCollection.kit_cover_image),
+        kit_book_ids: normalizeKitBookIds(syncedCollection.kit_book_ids),
+    };
+};
 
 const normalizeCollections = (collections: Collection[]): Collection[] => {
-    return collections.map(normalizeCollectionAssetUrls);
+    return collections.map(normalizeCollectionRecord);
 };
 
 const buildFutureDate = (months: VoucherDurationMonths): string => {
@@ -91,6 +116,7 @@ const buildProfile = (overrides: Partial<UserProfile>): UserProfile => ({
     full_name: overrides.full_name ?? 'Professor(a)',
     email: overrides.email ?? null,
     avatar_id: overrides.avatar_id ?? 'Kaboo',
+    created_by: overrides.created_by ?? null,
     role: overrides.role ?? 'viewer',
     voucher_id: overrides.voucher_id ?? null,
     access_starts_at: overrides.access_starts_at ?? null,
@@ -395,6 +421,7 @@ export const createMockUser = (input: MockCreateUserInput): { success: boolean; 
         email: normalizedEmail,
         full_name: input.full_name,
         avatar_id: 'Kaboo',
+        created_by: input.created_by ?? null,
         role,
         access_status: role === 'viewer' ? 'pending_voucher' : 'active',
         access_starts_at: role === 'viewer' ? null : createdAt,
@@ -445,7 +472,9 @@ export const getMockUserProgress = (): Record<string, number> => ({ ...MOCK_USER
 export const getMockVoucherSamples = (): Voucher[] => clone(getLiveVouchers());
 
 export const getMockAllUsers = (): UserProfile[] => {
-    return getLiveUsers().map((user) => normalizeProfile({
+    const currentUserId = getMockCurrentUserId();
+
+    return getLiveUsers().filter((user) => user.profile.created_by === currentUserId).map((user) => normalizeProfile({
         ...user.profile,
         email: user.email,
         role: user.role,
@@ -517,6 +546,62 @@ export const updateMockUserById = (
         email: updatedUser.email,
         role: updatedUser.role,
     });
+};
+
+export const deleteMockUserById = (userId: string): { success: boolean; error?: string } => {
+    const currentUserId = getMockCurrentUserId();
+    if (!currentUserId) {
+        return { success: false, error: 'Sessão inválida.' };
+    }
+
+    if (userId === currentUserId) {
+        return { success: false, error: 'Você não pode excluir o próprio usuário.' };
+    }
+
+    const users = getLiveUsers();
+    const targetUser = users.find((user) => user.id === userId);
+
+    if (!targetUser) {
+        return { success: false, error: 'Usuário não encontrado.' };
+    }
+
+    if (targetUser.profile.created_by !== currentUserId) {
+        return { success: false, error: 'Você não tem permissão para excluir este usuário.' };
+    }
+
+    writeStoredUsers(users.filter((user) => user.id !== userId));
+
+    if (readStoredSessionUserId() === userId) {
+        clearStoredSessionUserId();
+    }
+
+    const nextVouchers = getLiveVouchers().map((voucher) => {
+        if (voucher.consumed_by_user_id !== userId) {
+            return voucher;
+        }
+
+        return {
+            ...voucher,
+            consumed_by_user_id: null,
+        };
+    });
+    writeStoredVouchers(nextVouchers);
+
+    const nextBatchVouchers = getLiveBatchVouchers().map((voucher) => {
+        if (voucher.consumed_by_user_id !== userId) {
+            return voucher;
+        }
+
+        return {
+            ...voucher,
+            consumed_by_user_id: null,
+        };
+    });
+    writeStoredBatchVouchers(nextBatchVouchers);
+
+    deleteUserContentGrants(userId);
+
+    return { success: true };
 };
 
 export const getMockProfile = (): UserProfile | null => {
@@ -730,27 +815,94 @@ const writeStoredCollections = (collections: Collection[]): void => {
     localStorage.setItem(MOCK_COLLECTIONS_STORAGE_KEY, JSON.stringify(normalizeCollections(collections)));
 };
 
+const mergeSeedCollections = (storedCollections: Collection[]): { collections: Collection[]; changed: boolean } => {
+    const seedCollectionsById = new Map(MOCK_COLLECTIONS.map((collection) => [collection.id, collection]));
+    let changed = false;
+
+    const mergedCollections = storedCollections.map((storedCollection) => {
+        const seedCollection = seedCollectionsById.get(storedCollection.id);
+
+        if (!seedCollection) {
+            return normalizeCollectionRecord(storedCollection);
+        }
+
+        seedCollectionsById.delete(storedCollection.id);
+
+        const mergedCollection = normalizeCollectionRecord({
+            ...seedCollection,
+            ...storedCollection,
+            collection_type: storedCollection.collection_type ?? seedCollection.collection_type,
+            kit_cover_image: storedCollection.kit_cover_image ?? seedCollection.kit_cover_image ?? null,
+            kit_book_ids: (storedCollection.kit_book_ids?.length ?? 0) > 0
+                ? storedCollection.kit_book_ids
+                : seedCollection.kit_book_ids,
+            collection_assets: (storedCollection.collection_assets?.length ?? 0) > 0
+                ? storedCollection.collection_assets
+                : seedCollection.collection_assets,
+        });
+
+        const normalizedStoredCollection = normalizeCollectionRecord(storedCollection);
+        if (JSON.stringify(mergedCollection) !== JSON.stringify(normalizedStoredCollection)) {
+            changed = true;
+        }
+
+        return mergedCollection;
+    });
+
+    if (seedCollectionsById.size > 0) {
+        changed = true;
+        seedCollectionsById.forEach((collection) => {
+            mergedCollections.push(normalizeCollectionRecord(collection));
+        });
+    }
+
+    return {
+        collections: mergedCollections,
+        changed,
+    };
+};
+
 const getLiveCollections = (): Collection[] => {
-    return readStoredCollections() ?? MOCK_COLLECTIONS;
+    const storedCollections = readStoredCollections();
+
+    if (!storedCollections) {
+        return MOCK_COLLECTIONS;
+    }
+
+    const mergedCollections = mergeSeedCollections(storedCollections);
+
+    if (mergedCollections.changed) {
+        writeStoredCollections(mergedCollections.collections);
+    }
+
+    return mergedCollections.collections;
 };
 
 export const mockCreateCollection = (data: Partial<Collection>): Collection => {
-    const newCollection = normalizeCollectionAssetUrls({
+    const newCollection = normalizeCollectionRecord({
         id: `mock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         title: data.title || 'Nova Coleção',
         cover_image: data.cover_image || placeholderImageUrl,
+        collection_type: data.collection_type || 'book',
+        kit_cover_image: data.kit_cover_image || null,
+        kit_book_ids: normalizeKitBookIds(data.kit_book_ids),
         level: data.level || 'Educação Infantil',
         color_theme: data.color_theme || '#5D1F58',
+        synopsis: data.synopsis || null,
         theme: data.theme || '',
         learning_objectives: data.learning_objectives || '',
         characters: data.characters || [],
+        character_ids: data.character_ids || [],
         bncc_skills: data.bncc_skills || [],
         casel_competencies: data.casel_competencies || [],
         age_grade: data.age_grade || [],
+        segments: data.segments || [],
+        primary_segment: data.primary_segment || data.level || 'Educação Infantil',
         pdf_url: data.pdf_url || '',
         audio_url: data.audio_url || '',
         video_url: data.video_url || '',
         extra_materials: data.extra_materials || [],
+        collection_assets: data.collection_assets || [],
     });
     const updated = [...getLiveCollections(), newCollection];
     writeStoredCollections(updated);
@@ -761,7 +913,7 @@ export const mockUpdateCollection = (id: string, updates: Partial<Collection>): 
     const collections = getLiveCollections();
     const idx = collections.findIndex(c => c.id === id);
     if (idx === -1) return null;
-    const updated = normalizeCollectionAssetUrls({ ...collections[idx], ...updates, id });
+    const updated = normalizeCollectionRecord({ ...collections[idx], ...updates, id });
     const next = [...collections];
     next[idx] = updated;
     writeStoredCollections(next);

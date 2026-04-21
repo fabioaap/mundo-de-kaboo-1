@@ -32,6 +32,8 @@ export interface Voucher {
   expires_at?: string | null;
   consumed_at?: string | null;
   consumed_by_user_id?: string | null;
+  consumed_by_name?: string | null;
+  consumed_by_email?: string | null;
 }
 
 export interface VoucherValidationResult {
@@ -73,6 +75,7 @@ export interface UserProfile {
   full_name: string | null;
   email: string | null;
   avatar_id: string | null; // Stores the character name (e.g. "Kaboo") or null for initials
+  created_by?: string | null;
   role?: UserRole | null;
   voucher_id?: string | null;
   access_starts_at?: string | null;
@@ -91,6 +94,18 @@ export interface UserProgress {
   progress_percent: number;
 }
 
+export type CharacterStatus = 'active' | 'inactive';
+
+export interface Character {
+  id: string;
+  name: string;
+  description: string;
+  traits: string[];
+  aliases?: string[];
+  image_url?: string | null;
+  status?: CharacterStatus;
+}
+
 export interface CollectionResource {
   id: string;
   collection_id: string;
@@ -100,22 +115,60 @@ export interface CollectionResource {
   size: string;
 }
 
+export type CollectionAssetMediaType = 'document' | 'audio' | 'video';
+
+export type CollectionType = 'book' | 'kit';
+
+export type CentralMaterialPreviewType = 'pdf' | 'audio' | 'video' | 'image' | 'other';
+
+export type CentralMaterialCategory = 'guide' | 'tutorial' | 'family_support' | 'catalog';
+
+export type CentralMaterialAudience = 'all' | 'educator' | 'family';
+
+export type CollectionAssetCategory =
+  | 'reading'
+  | 'storytelling'
+  | 'animation'
+  | 'accessible_video'
+  | 'how_to_play'
+  | 'video_lesson'
+  | 'teacher_guide'
+  | 'extra_material';
+
+export interface CollectionAsset {
+  id: string;
+  category: CollectionAssetCategory;
+  media_type: CollectionAssetMediaType;
+  title: string;
+  url: string;
+  description?: string | null;
+  scope?: 'primary' | 'library';
+}
+
 export interface Collection {
   id: string;
   title: string;
   cover_image: string; // Mapped from DB snake_case
+  collection_type?: CollectionType;
+  kit_cover_image?: string | null;
+  kit_book_ids?: string[];
   level: 'Educação Infantil' | 'Fundamental I';
+  // Multissegmentos (aditivo, retrocompat)
+  segments?: string[];
+  primary_segment?: string;
   progress?: number;
   duration?: string;
   current_position?: string;
   total_pages?: number;
   current_page?: number;
   color_theme?: string;
+  synopsis?: string | null;
 
   // New fields for media files
   pdf_url?: string;
   audio_url?: string;
   video_url?: string;
+  text_content?: string | null;
 }
 
 // Extend Collection with new pedagogical fields
@@ -123,10 +176,23 @@ export interface Collection {
   theme?: string;
   learning_objectives?: string;
   characters?: string[];
+  character_ids?: string[];
   bncc_skills?: string[];
   casel_competencies?: string[];
   age_grade?: string[]; // New field: Idade-série
   extra_materials?: string[]; // New field: Materiais Extras (array of file URLs)
+  collection_assets?: CollectionAsset[];
+}
+
+export interface CentralMaterial {
+  id: string;
+  title: string;
+  description?: string | null;
+  category: CentralMaterialCategory;
+  audience?: CentralMaterialAudience;
+  preview_type: CentralMaterialPreviewType;
+  url: string;
+  cta_label?: string | null;
 }
 
 // ── Voucher Models, Batches & Grants ──────────────────────
@@ -231,9 +297,10 @@ export type ScreenName =
   | 'support'
   | 'email_confirmation'
   | 'admin'
-  | 'design_system';
+  | 'design_system'
+  | 'characters';
 
-export type AdminModule = 'collections' | 'users' | 'vouchers';
+export type AdminModule = 'collections' | 'users' | 'vouchers' | 'characters';
 
 export interface NavState {
   currentScreen: ScreenName;

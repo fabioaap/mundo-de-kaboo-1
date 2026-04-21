@@ -63,7 +63,7 @@ export function extractOriginalFileName(url: string): string {
  */
 export async function uploadFile(
   file: File,
-  folder: 'covers' | 'pdfs' | 'audio' | 'video' | 'extras',
+  folder: 'covers' | 'characters' | 'pdfs' | 'audio' | 'video' | 'extras',
   collectionId?: string,
   onProgress?: UploadProgressCallback
 ): Promise<UploadResult> {

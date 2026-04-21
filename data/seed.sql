@@ -293,7 +293,7 @@ INSERT INTO collections (
   '#E35E37',
   'Cooperação, pensamento investigativo e brincadeira simbólica',
   'Participar de brincadeiras cooperativas com pistas e desafios; Fazer inferências com base em indícios visuais ou verbais; Respeitar diferentes formas de participação nas brincadeiras em grupo; Demonstrar curiosidade e persistência ao seguir pistas; Relatar como se sentiu e reconhecer o valor do trabalho em equipe.',
-  ARRAY[]::text[],
+  ARRAY['Gaio'],
   ARRAY['EI03ET03','EI03EO01','EI03CG05','EI03EO03','EI03EF03','EI03CG04','EI03ET06'],
   ARRAY['Habilidades de Relacionamento','Tomada de Decisão Responsável'],
   ARRAY['3 anos','4 anos','5 anos'],

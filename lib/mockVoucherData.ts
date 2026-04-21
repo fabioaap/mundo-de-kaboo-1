@@ -167,7 +167,9 @@ const ensureSeed = () => {
         status: i < 3 ? 'redeemed' as const : 'active' as const,
         expires_at: null,
         consumed_at: i < 3 ? '2026-04-06T10:15:00Z' : null,
-        consumed_by_user_id: null,
+        consumed_by_user_id: i < 3 ? 'mock-user-redeemer' : null,
+        consumed_by_name: i < 3 ? ['Maria Silva', 'João Santos', 'Ana Oliveira'][i] : null,
+        consumed_by_email: i < 3 ? ['maria@exemplo.com', 'joao@exemplo.com', 'ana@exemplo.com'][i] : null,
         model_id: modelId1,
         batch_id: batchId1,
     }));
@@ -353,6 +355,8 @@ export const createVoucherBatch = (modelId: string, quantity: number, label?: st
         expires_at: model.redeem_by || null,
         consumed_at: null,
         consumed_by_user_id: null,
+        consumed_by_name: null,
+        consumed_by_email: null,
         model_id: modelId,
         batch_id: batch.id,
     }));
@@ -448,6 +452,7 @@ export const generateBatchCsv = (batchId: string): string => {
         'voucher_code', 'model_name', 'package_type',
         'content_summary', 'content_count', 'duration_months',
         'redeem_by_date', 'generated_at', 'status',
+        'consumed_by_name', 'consumed_by_email',
     ];
 
     const contentSummary = snap.items.map(i => i.title).join('; ');
@@ -465,9 +470,45 @@ export const generateBatchCsv = (batchId: string): string => {
         snap.redeem_by || '',
         v.expires_at || batch.created_at,
         v.status,
+        v.consumed_by_name || '',
+        v.consumed_by_email || '',
     ].join(','));
 
     return [headers.join(','), ...rows].join('\n');
+};
+
+// XLSX export helper
+import * as XLSX from 'xlsx';
+
+export const generateBatchXlsx = (batchId: string): Blob | null => {
+    const batch = getVoucherBatchById(batchId);
+    if (!batch) return null;
+    const vouchers = getBatchVouchers(batchId);
+    const snap = batch.model_snapshot;
+    const contentSummary = snap.items.map(i => i.title).join('; ');
+
+    const rows = vouchers.map((v, i) => ({
+        'Lote': batch.id,
+        'Nome Lote': batch.label || '',
+        'Nº': i + 1,
+        'Código': v.code,
+        'Modelo': snap.name,
+        'Tipo Pacote': snap.package_type,
+        'Conteúdos': contentSummary,
+        'Qtd Conteúdos': snap.items.length,
+        'Duração (meses)': snap.duration_months,
+        'Validade': snap.redeem_by || '',
+        'Gerado em': v.expires_at || batch.created_at,
+        'Status': v.status,
+        'Resgatado por': v.consumed_by_name || '',
+        'E-mail': v.consumed_by_email || '',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Códigos');
+    const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 };
 
 // ── User Content Grants (T01 + T04) ─────────────────────
@@ -520,6 +561,12 @@ export const hasGrantForCollection = (userId: string, collectionId: string): boo
 
 export const getAllGrantsForUser = (userId: string): import('../types').UserContentGrant[] => {
     return load<import('../types').UserContentGrant[]>(GRANTS_KEY, []).filter(g => g.user_id === userId);
+};
+
+export const deleteUserContentGrants = (userId: string): void => {
+    const grants = load<import('../types').UserContentGrant[]>(GRANTS_KEY, []);
+    const nextGrants = grants.filter((grant) => grant.user_id !== userId);
+    save(GRANTS_KEY, nextGrants);
 };
 
 // ── Disable voucher (T09) ────────────────────────────────

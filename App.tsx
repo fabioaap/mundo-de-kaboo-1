@@ -22,6 +22,7 @@ import { MyDataScreen } from './screens/MyDataScreen';
 import { EmailConfirmationScreen } from './screens/EmailConfirmationScreen';
 import { SetPasswordScreen } from './screens/SetPasswordScreen';
 import { AdminScreen } from './screens/AdminScreen';
+import { CharactersScreen } from './screens/CharactersScreen';
 import { DesignSystemScreen } from './screens/DesignSystemScreen';
 
 // Components
@@ -46,6 +47,52 @@ const PROTECTED_SCREENS: ScreenName[] = [
   'support',
   'admin',
 ];
+
+const PLAYER_SCREENS: ScreenName[] = ['player_audio', 'player_book', 'player_video', 'tools'];
+const HASH_ADDRESSABLE_SCREENS = new Set<ScreenName>([
+  'login',
+  'forgot_password',
+  'set_password',
+  'access_expired',
+  'home',
+  'search',
+  'profile',
+  'my_data',
+  'support',
+  'email_confirmation',
+  'admin',
+  'design_system',
+  'characters',
+]);
+
+const getHashScreen = (hash: string): ScreenName | null => {
+  const rawHash = hash.replace(/^#/, '').trim();
+  if (!rawHash) {
+    return null;
+  }
+
+  const candidate = rawHash.split(/[?&]/)[0]?.trim();
+  if (!candidate || candidate.includes('=')) {
+    return null;
+  }
+
+  return HASH_ADDRESSABLE_SCREENS.has(candidate as ScreenName)
+    ? (candidate as ScreenName)
+    : null;
+};
+
+const getNavStateFromHash = (): NavState | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const hashScreen = getHashScreen(window.location.hash);
+  if (!hashScreen || PLAYER_SCREENS.includes(hashScreen)) {
+    return null;
+  }
+
+  return { currentScreen: hashScreen };
+};
 
 // Helper functions for localStorage persistence
 const saveNavState = (state: NavState) => {
@@ -95,10 +142,15 @@ const loadPreviousState = (): { screen: ScreenName; collectionId?: string } | nu
 const App: React.FC = () => {
   // Initialize state from localStorage if available
   const [navState, setNavState] = useState<NavState>(() => {
+    const hashState = getNavStateFromHash();
+    if (hashState) {
+      return hashState;
+    }
+
     const saved = loadNavState();
     if (saved) {
       // Don't restore player screens without collectionId - they'll be handled after session check
-      if (['player_audio', 'player_book', 'player_video', 'tools'].includes(saved.currentScreen)) {
+      if (PLAYER_SCREENS.includes(saved.currentScreen)) {
         if (!saved.params?.collectionId) {
           return { currentScreen: 'login' };
         }
@@ -134,7 +186,7 @@ const App: React.FC = () => {
 
   // Reset background to default for non-player screens
   // Player screens will set their own background via useThemeBackground hook
-  const isPlayerScreen = ['player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen);
+  const isPlayerScreen = PLAYER_SCREENS.includes(navState.currentScreen);
   useEffect(() => {
     if (!isPlayerScreen) {
       // Reset to default white background for regular screens
@@ -200,7 +252,7 @@ const App: React.FC = () => {
               return { currentScreen: 'home' };
             }
 
-            if (['player_audio', 'player_book', 'player_video', 'tools'].includes(prev.currentScreen) && !prev.params?.collectionId) {
+            if (PLAYER_SCREENS.includes(prev.currentScreen) && !prev.params?.collectionId) {
               return { currentScreen: 'home' };
             }
 
@@ -238,7 +290,7 @@ const App: React.FC = () => {
           }
           // Preserve all other screens (home, search, profile, my_data, player screens, support, admin, etc.)
           // If restoring a player screen, ensure collectionId is present
-          if (['player_audio', 'player_book', 'player_video', 'tools'].includes(prev.currentScreen)) {
+          if (PLAYER_SCREENS.includes(prev.currentScreen)) {
             if (!prev.params?.collectionId) {
               // If player screen but no collectionId, go to home
               return { currentScreen: 'home' };
@@ -392,7 +444,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (navState.params?.collectionId) {
       // Fetch collection for modal (home/search) or player screens
-      if (['home', 'search', 'player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen)) {
+      if (['home', 'search', ...PLAYER_SCREENS].includes(navState.currentScreen)) {
         // First, fetch just the theme color for loading screen
         api.getCollectionById(navState.params.collectionId).then(data => {
           if (data) {
@@ -410,7 +462,7 @@ const App: React.FC = () => {
       }
     } else {
       // Only clear collection when explicitly navigating away from player screens
-      if (!['player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen)) {
+      if (!PLAYER_SCREENS.includes(navState.currentScreen)) {
         setCurrentCollection(undefined);
         setLoadingCollectionTheme(null);
       }
@@ -418,8 +470,17 @@ const App: React.FC = () => {
   }, [navState.params?.collectionId, navState.currentScreen]);
 
   const navigate = (screen: ScreenName, params?: any) => {
+    const normalizedScreen = screen === 'search' ? 'home' : screen;
+    const normalizedParams = screen === 'search'
+      ? {
+          ...params,
+          inlineSearch: true,
+          focusSearch: params?.focusSearch ?? true,
+        }
+      : params;
+
     // Store previous state before navigating to player screens
-    if (['player_audio', 'player_book', 'player_video', 'tools'].includes(screen)) {
+    if (PLAYER_SCREENS.includes(normalizedScreen)) {
       const newPreviousState = {
         screen: navState.currentScreen,
         collectionId: navState.params?.collectionId
@@ -427,11 +488,11 @@ const App: React.FC = () => {
       setPreviousScreenState(newPreviousState);
       savePreviousState(newPreviousState);
     }
-    const newNavState = { currentScreen: screen, params };
+    const newNavState = { currentScreen: normalizedScreen, params: normalizedParams };
     setNavState(newNavState);
     saveNavState(newNavState);
     // Push history entry so browser Back button works
-    history.pushState({ screen, params }, '', `#${screen}`);
+    history.pushState({ screen: normalizedScreen, params: normalizedParams }, '', `#${normalizedScreen}`);
     window.scrollTo(0, 0);
   };
 
@@ -455,12 +516,15 @@ const App: React.FC = () => {
 
     window.addEventListener('popstate', handlePopState);
 
-    // Seed the current history entry once (only if no hash yet)
-    if (!window.location.hash) {
+    const hashState = getNavStateFromHash();
+
+    // Seed the current history entry on first load, respecting the explicit hash when present.
+    if (!window.history.state || hashState) {
+      const seededState = hashState ?? navState;
       history.replaceState(
-        { screen: navState.currentScreen, params: navState.params },
+        { screen: seededState.currentScreen, params: seededState.params },
         '',
-        `#${navState.currentScreen}`
+        `#${seededState.currentScreen}`
       );
     }
 
@@ -469,7 +533,7 @@ const App: React.FC = () => {
   }, [accessProfile]);
 
   const goBack = () => {
-    if (['player_audio', 'player_book', 'player_video', 'tools'].includes(navState.currentScreen)) {
+    if (PLAYER_SCREENS.includes(navState.currentScreen)) {
       // Clear previousScreenState then use browser history so no duplicate entry is pushed
       setPreviousScreenState(null);
       savePreviousState(null);
@@ -493,12 +557,18 @@ const App: React.FC = () => {
     savePreviousState(null);
     // Clear the collectionId from params
     if (navState.params?.collectionId) {
+      const { collectionId: _collectionId, ...remainingParams } = navState.params;
       const newNavState = {
         ...navState,
-        params: { ...navState.params, collectionId: undefined }
+        params: Object.keys(remainingParams).length > 0 ? remainingParams : undefined
       };
       setNavState(newNavState);
       saveNavState(newNavState);
+      history.replaceState(
+        { screen: newNavState.currentScreen, params: newNavState.params },
+        '',
+        `#${newNavState.currentScreen}`
+      );
     }
   };
 
@@ -551,10 +621,10 @@ const App: React.FC = () => {
         return <EmailConfirmationScreen onNavigate={navigate} params={navState.params} />;
 
       case 'home':
-        return <HomeScreen key="home-screen" onNavigate={navigate} params={navState.params} accessProfile={accessProfile} screenName="home" />;
+        return <HomeScreen key="home-screen" onNavigate={navigate} params={navState.params} accessProfile={accessProfile} screenName="home" searchMode={Boolean(navState.params?.inlineSearch)} />;
 
       case 'search':
-        return <HomeScreen key="search-home-screen" onNavigate={navigate} params={navState.params} accessProfile={accessProfile} screenName="search" searchMode />;
+        return <HomeScreen key="search-home-screen" onNavigate={navigate} params={navState.params} accessProfile={accessProfile} screenName="home" searchMode />;
 
       case 'profile':
         return <ProfileScreen onNavigate={navigate} />;
@@ -571,7 +641,14 @@ const App: React.FC = () => {
             </div>
           );
         }
-        return <AudioPlayerScreen collection={currentCollection} onBack={goBack} />;
+        return (
+          <AudioPlayerScreen
+            collection={currentCollection}
+            assetUrl={navState.params?.assetUrl}
+            assetTitle={navState.params?.assetTitle}
+            onBack={goBack}
+          />
+        );
 
       case 'player_book':
         if (!currentCollection) {
@@ -633,7 +710,14 @@ const App: React.FC = () => {
             </div>
           );
         }
-        return <VideoPlayerScreen collection={currentCollection} onBack={goBack} />;
+        return (
+          <VideoPlayerScreen
+            collection={currentCollection}
+            assetUrl={navState.params?.assetUrl}
+            assetTitle={navState.params?.assetTitle}
+            onBack={goBack}
+          />
+        );
 
       case 'tools':
         if (!currentCollection) {
@@ -671,6 +755,9 @@ const App: React.FC = () => {
       case 'admin':
         return <AdminScreen onNavigate={navigate} onBack={goBack} />;
 
+      case 'characters':
+        return <CharactersScreen onNavigate={navigate} />;
+
       case 'design_system':
         return <DesignSystemScreen />;
 
@@ -679,18 +766,18 @@ const App: React.FC = () => {
     }
   };
 
-  const showNav = ['home', 'search', 'support', 'profile', 'my_data', 'admin'].includes(navState.currentScreen);
+  const showNav = ['home', 'search', 'support', 'profile', 'my_data', 'admin', 'characters'].includes(navState.currentScreen);
   // Modal opens immediately when collectionId is present, even if collection is still loading
   const isModalOpen = !!navState.params?.collectionId && ['home', 'search'].includes(navState.currentScreen);
 
   return (
-    <div className="bg-white min-h-screen w-full flex flex-col md:flex-row overflow-hidden">
+    <div className="bg-white min-h-screen w-full flex flex-col md:flex-row overflow-x-hidden">
 
       {showNav && (
-        <BottomNav currentScreen={navState.currentScreen} onNavigate={navigate} />
+        <BottomNav currentScreen={navState.currentScreen} onNavigate={navigate} profile={accessProfile} />
       )}
 
-      <main className={`flex-1 overflow-hidden relative h-screen w-full bg-white`}>
+      <main className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative h-screen w-full bg-white`}>
         {renderScreen()}
       </main>
 

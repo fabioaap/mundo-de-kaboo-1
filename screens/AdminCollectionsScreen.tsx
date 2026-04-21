@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Icons } from '../components/Icons';
-import { Collection, ScreenName, UserAuthStatus, UserProfile, UserRole } from '../types';
+import { Character, Collection, CollectionAsset, CollectionAssetCategory, ScreenName, UserAuthStatus, UserProfile, UserRole } from '../types';
 import { api } from '../lib/api';
 import { canEditCollections, isAdmin } from '../lib/auth';
 import { PageHeader } from '../components/PageHeader';
@@ -13,10 +13,15 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { ColorPicker } from '../components/ColorPicker';
+import { CharacterAvatar } from '../components/CharacterAvatar';
+import { formatSegmentLabel, AVAILABLE_SEGMENTS } from '../constants';
 import useIsMobile from '../hooks/useIsMobile';
 import { placeholderImageUrl } from '../lib/appPaths';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
+import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollectionCharacters } from '../lib/characters';
+import { COLLECTION_ASSET_META, inferCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
+import { getCollectionDisplayCover, getCollectionTypeMeta } from '../lib/collectionPresentation';
 
 interface AdminCollectionsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -28,13 +33,169 @@ export interface AdminCollectionsHandle {
   hasUnsavedChanges: () => boolean;
 }
 
+type CollectionFormData = Partial<Collection> & {
+  collection_assets: CollectionAsset[];
+};
+
+type FixedMediaSlotCategory = Exclude<CollectionAssetCategory, 'extra_material'>;
+
+type FixedMediaSlot = {
+  category: FixedMediaSlotCategory;
+  label: string;
+  folder: 'pdfs' | 'audio' | 'video';
+  accept: string;
+  allowMetadata?: boolean;
+  titlePlaceholder?: string;
+  descriptionPlaceholder?: string;
+};
+
+const EMPTY_COLLECTION_FORM_DATA: CollectionFormData = {
+  title: '',
+  collection_type: 'book',
+  kit_cover_image: null,
+  kit_book_ids: [],
+  level: 'Educação Infantil',
+  segments: [],
+  primary_segment: '',
+  cover_image: placeholderImageUrl,
+  pdf_url: '',
+  audio_url: '',
+  video_url: '',
+  color_theme: '#5D1F58',
+  synopsis: '',
+  theme: '',
+  learning_objectives: '',
+  characters: [],
+  character_ids: [],
+  bncc_skills: [],
+  casel_competencies: [],
+  age_grade: [],
+  extra_materials: [],
+  collection_assets: [],
+};
+
+const createAssetId = (category: CollectionAssetCategory) => {
+  return `${category}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+const inferAssetMediaTypeFromUrl = (url: string): CollectionAsset['media_type'] => {
+  const lowerUrl = url.toLowerCase();
+
+  if (lowerUrl.match(/\.(mp3|wav|ogg|m4a|aac)$/)) {
+    return 'audio';
+  }
+
+  if (lowerUrl.match(/\.(mp4|webm|mov|avi|m4v)$/)) {
+    return 'video';
+  }
+
+  return 'document';
+};
+
+const normalizeAssetTitle = (url: string, fallback: string) => {
+  const fileName = url.split('/').pop() || fallback;
+
+  return fileName
+    .replace(/^\d+-[a-z0-9]+-/i, '')
+    .replace(/\.[a-z0-9]{1,6}$/i, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim() || fallback;
+};
+
+const normalizeKitBookIds = (value?: string[] | null): string[] => {
+  return Array.from(new Set((value || []).map((id) => id?.trim()).filter(Boolean) as string[]));
+};
+
+const buildCollectionFormData = (collection?: Partial<Collection>): CollectionFormData => {
+  const normalizedCollection = syncCollectionCharacters(syncCollectionWithAssets({
+    ...EMPTY_COLLECTION_FORM_DATA,
+    ...collection,
+    collection_assets: inferCollectionAssets(collection ?? {}),
+  }));
+
+  return {
+    ...normalizedCollection,
+    collection_type: normalizedCollection.collection_type || 'book',
+    kit_cover_image: normalizedCollection.kit_cover_image || null,
+    kit_book_ids: normalizeKitBookIds(normalizedCollection.kit_book_ids),
+    segments: [...(normalizedCollection.segments || [])],
+    characters: [...(normalizedCollection.characters || [])],
+    character_ids: [...(normalizedCollection.character_ids || [])],
+    bncc_skills: [...(normalizedCollection.bncc_skills || [])],
+    casel_competencies: [...(normalizedCollection.casel_competencies || [])],
+    age_grade: [...(normalizedCollection.age_grade || [])],
+    extra_materials: [...(normalizedCollection.extra_materials || [])],
+    collection_assets: [...(normalizedCollection.collection_assets || [])],
+  };
+};
+
+const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
+  {
+    category: 'reading',
+    label: COLLECTION_ASSET_META.reading.label,
+    folder: 'pdfs',
+    accept: 'application/pdf',
+  },
+  {
+    category: 'storytelling',
+    label: COLLECTION_ASSET_META.storytelling.label,
+    folder: 'audio',
+    accept: 'audio/*',
+  },
+  {
+    category: 'animation',
+    label: COLLECTION_ASSET_META.animation.label,
+    folder: 'video',
+    accept: 'video/*',
+  },
+  {
+    category: 'accessible_video',
+    label: COLLECTION_ASSET_META.accessible_video.label,
+    folder: 'video',
+    accept: 'video/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: Vídeo com Libras',
+    descriptionPlaceholder: 'Descrição opcional para orientar o uso deste material.',
+  },
+  {
+    category: 'how_to_play',
+    label: COLLECTION_ASSET_META.how_to_play.label,
+    folder: 'video',
+    accept: 'video/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: Tutorial rápido',
+    descriptionPlaceholder: 'Descreva o foco do vídeo de como jogar.',
+  },
+  {
+    category: 'video_lesson',
+    label: COLLECTION_ASSET_META.video_lesson.label,
+    folder: 'video',
+    accept: 'video/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: Videoaula introdutória',
+    descriptionPlaceholder: 'Descreva o conteúdo pedagógico desta videoaula.',
+  },
+  {
+    category: 'teacher_guide',
+    label: COLLECTION_ASSET_META.teacher_guide.label,
+    folder: 'pdfs',
+    accept: 'application/pdf',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: Guia do Professor',
+    descriptionPlaceholder: 'Descreva brevemente o conteúdo do guia.',
+  },
+];
+
 // Componente interno para card com efeito 3D
 const Card3DCover: React.FC<{
   imageUrl: string;
   alt: string;
   level?: string;
+  collectionTypeLabel?: string;
+  collectionTypeBadgeClassName?: string;
   actionsButton?: React.ReactNode;
-}> = ({ imageUrl, alt, level, actionsButton }) => {
+}> = ({ imageUrl, alt, level, collectionTypeLabel, collectionTypeBadgeClassName, actionsButton }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -114,6 +275,16 @@ const Card3DCover: React.FC<{
             mixBlendMode: 'soft-light',
           }}
         />
+        {collectionTypeLabel && collectionTypeBadgeClassName && (
+          <div
+            className={`absolute top-2 left-2 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.14em] border backdrop-blur-sm ${collectionTypeBadgeClassName}`}
+            style={{
+              transform: 'translateZ(30px)',
+            }}
+          >
+            {collectionTypeLabel}
+          </div>
+        )}
         {level && (
           <div
             className="absolute bottom-2 right-2 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-lg text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50"
@@ -121,7 +292,7 @@ const Card3DCover: React.FC<{
               transform: 'translateZ(30px)',
             }}
           >
-            {level.replace('Educação Infantil', 'Ed. Infantil').replace('Fundamental ', 'Fund. ')}
+            {formatSegmentLabel(level)}
           </div>
         )}
       </div>
@@ -151,6 +322,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'identification' | 'media'>('identification');
   const [isSaving, setIsSaving] = useState(false);
+  const [availableCharacters, setAvailableCharacters] = useState<Character[]>([]);
 
   // Users state
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -173,9 +345,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [editUserFormData, setEditUserFormData] = useState<{ full_name: string; role: UserRole }>({ full_name: '', role: 'viewer' });
   const [editUserRoleDropdownOpen, setEditUserRoleDropdownOpen] = useState(false);
   const [loadingUserEdit, setLoadingUserEdit] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(false);
   const [editUserErrorMsg, setEditUserErrorMsg] = useState<string | null>(null);
+  const [showDeleteUserModal, setShowDeleteUserModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const editUserRoleRef = useRef<HTMLDivElement>(null);
-  const [originalFormData, setOriginalFormData] = useState<Partial<Collection> | null>(null);
+  const [originalFormData, setOriginalFormData] = useState<CollectionFormData | null>(null);
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const { toast, showToast, hideToast } = useToast();
@@ -195,22 +370,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const levelDropdownRef = useRef<HTMLDivElement>(null);
   const formLevelDropdownRef = useRef<HTMLDivElement>(null);
   const actionsDropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const [formData, setFormData] = useState<Partial<Collection>>({
-    title: '',
-    level: 'Educação Infantil',
-    cover_image: placeholderImageUrl,
-    pdf_url: '',
-    audio_url: '',
-    video_url: '',
-    color_theme: '#5D1F58',
-    theme: '',
-    learning_objectives: '',
-    characters: [],
-    bncc_skills: [],
-    casel_competencies: [],
-    age_grade: [],
-    extra_materials: []
-  });
+  const [formData, setFormData] = useState<CollectionFormData>(buildCollectionFormData());
 
   const accessSummary = users.reduce((summary, user) => {
     const status = getProfileAccessStatus(user);
@@ -304,9 +464,168 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   };
 
   const pendingInviteCount = users.filter((user) => getUserAuthStatus(user) === 'invite_pending').length;
+  const editingUser = editingUserId ? users.find((user) => user.id === editingUserId) ?? null : null;
+
+  const updateFormWithAssets = (assets: CollectionAsset[]) => {
+    setFormData((currentFormData) => buildCollectionFormData({
+      ...currentFormData,
+      collection_assets: assets,
+    }));
+  };
+
+  const getAssetByCategory = (category: CollectionAssetCategory) => {
+    return formData.collection_assets.find((asset) => asset.category === category);
+  };
+
+  const setAssetUrl = (category: FixedMediaSlotCategory, url: string) => {
+    const trimmedUrl = url.trim();
+    const currentAsset = getAssetByCategory(category);
+    const nextAssets = formData.collection_assets.filter((asset) => asset.category !== category);
+
+    if (trimmedUrl) {
+      const meta = COLLECTION_ASSET_META[category];
+      nextAssets.push({
+        id: currentAsset?.id || createAssetId(category),
+        category,
+        media_type: meta.mediaType,
+        title: currentAsset?.title?.trim() || meta.label,
+        url: trimmedUrl,
+        description: currentAsset?.description?.trim() || null,
+        scope: meta.scope,
+      });
+    }
+
+    updateFormWithAssets(nextAssets);
+  };
+
+  const setAssetTitle = (category: FixedMediaSlotCategory, title: string) => {
+    const currentAsset = getAssetByCategory(category);
+    if (!currentAsset) {
+      return;
+    }
+
+    updateFormWithAssets(
+      formData.collection_assets.map((asset) =>
+        asset.category === category ? { ...asset, title } : asset
+      )
+    );
+  };
+
+  const setAssetDescription = (category: FixedMediaSlotCategory, description: string) => {
+    const currentAsset = getAssetByCategory(category);
+    if (!currentAsset) {
+      return;
+    }
+
+    updateFormWithAssets(
+      formData.collection_assets.map((asset) =>
+        asset.category === category ? { ...asset, description } : asset
+      )
+    );
+  };
+
+  const removeAsset = (category: FixedMediaSlotCategory) => {
+    updateFormWithAssets(formData.collection_assets.filter((asset) => asset.category !== category));
+  };
+
+  const extraMaterialAssets = formData.collection_assets.filter((asset) => asset.category === 'extra_material');
+  const availableKitBooks = collections
+    .filter((collection) => collection.id !== editingId && getCollectionTypeMeta(collection).type === 'book')
+    .sort((firstCollection, secondCollection) => (firstCollection.title || '').localeCompare(secondCollection.title || '', 'pt-BR'));
+  const selectedKitBookIds = normalizeKitBookIds(formData.kit_book_ids);
+  const selectedCharacterIds = Array.from(new Set(formData.character_ids || []));
+  const selectedCharacterNames = resolveCharacterNamesFromIds(selectedCharacterIds);
+  const unmappedLegacyCharacters = (formData.characters || []).filter(
+    (characterName) => !selectedCharacterNames.some(
+      (selectedCharacterName) => normalizeCharacterLookupKey(selectedCharacterName) === normalizeCharacterLookupKey(characterName)
+    )
+  );
+  const selectableCharacters = [...availableCharacters].sort((firstCharacter, secondCharacter) => {
+    const firstSelected = selectedCharacterIds.includes(firstCharacter.id) ? 1 : 0;
+    const secondSelected = selectedCharacterIds.includes(secondCharacter.id) ? 1 : 0;
+
+    if (firstSelected !== secondSelected) {
+      return secondSelected - firstSelected;
+    }
+
+    return firstCharacter.name.localeCompare(secondCharacter.name, 'pt-BR');
+  });
+
+  const toggleKitBookSelection = (bookId: string) => {
+    setFormData((currentFormData) => {
+      const currentKitBookIds = normalizeKitBookIds(currentFormData.kit_book_ids);
+      const nextKitBookIds = currentKitBookIds.includes(bookId)
+        ? currentKitBookIds.filter((id) => id !== bookId)
+        : [...currentKitBookIds, bookId];
+
+      return {
+        ...currentFormData,
+        kit_book_ids: nextKitBookIds,
+      };
+    });
+  };
+
+  const toggleCharacterSelection = (characterId: string) => {
+    setFormData((currentFormData) => {
+      const currentIds = Array.from(new Set(currentFormData.character_ids || []));
+      const currentSelectedNames = resolveCharacterNamesFromIds(currentIds);
+      const nextIds = currentIds.includes(characterId)
+        ? currentIds.filter((id) => id !== characterId)
+        : [...currentIds, characterId];
+
+      const preservedLegacyCharacters = (currentFormData.characters || []).filter(
+        (characterName) => !currentSelectedNames.some(
+          (selectedCharacterName) => normalizeCharacterLookupKey(selectedCharacterName) === normalizeCharacterLookupKey(characterName)
+        )
+      );
+
+      return {
+        ...currentFormData,
+        character_ids: nextIds,
+        characters: [...resolveCharacterNamesFromIds(nextIds), ...preservedLegacyCharacters],
+      };
+    });
+  };
+
+  const setLegacyCharacterNames = (legacyCharacters: string[]) => {
+    const normalizedLegacyCharacters = Array.from(new Set(legacyCharacters.map((character) => character.trim()).filter(Boolean)));
+
+    setFormData((currentFormData) => ({
+      ...currentFormData,
+      characters: [...resolveCharacterNamesFromIds(currentFormData.character_ids || []), ...normalizedLegacyCharacters],
+    }));
+  };
+
+  const setExtraMaterialUrls = (urls: string[]) => {
+    const assetsWithoutExtras = formData.collection_assets.filter((asset) => asset.category !== 'extra_material');
+
+    const nextExtraAssets = urls.reduce<CollectionAsset[]>((assets, url, index) => {
+        const trimmedUrl = url.trim();
+        if (!trimmedUrl) {
+          return assets;
+        }
+
+        const currentAsset = extraMaterialAssets.find((asset) => asset.url === trimmedUrl);
+
+        assets.push({
+          id: currentAsset?.id || createAssetId('extra_material'),
+          category: 'extra_material' as const,
+          media_type: currentAsset?.media_type || inferAssetMediaTypeFromUrl(trimmedUrl),
+          title: currentAsset?.title?.trim() || normalizeAssetTitle(trimmedUrl, `Material Extra ${index + 1}`),
+          url: trimmedUrl,
+          description: currentAsset?.description?.trim() || null,
+          scope: 'library' as const,
+        });
+
+        return assets;
+      }, []);
+
+    updateFormWithAssets([...assetsWithoutExtras, ...nextExtraAssets]);
+  };
 
   useEffect(() => {
     checkPermission();
+    loadCharacters();
     if (mainTab === 'collections') {
       loadCollections();
     } else if (mainTab === 'users') {
@@ -384,6 +703,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       showToast('Erro ao carregar coleções.', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCharacters = async () => {
+    try {
+      const data = await api.getCharacters();
+      setAvailableCharacters(data);
+    } catch (error) {
+      console.error('Error loading characters:', error);
+      showToast('Erro ao carregar personagens.', 'error');
     }
   };
 
@@ -491,23 +820,49 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
   };
 
+  const handleDeleteUserClick = (user: UserProfile) => {
+    if (!isAdminUser) {
+      showToast('Apenas administradores podem excluir usuários.', 'error');
+      return;
+    }
+
+    setUserToDelete(user);
+    setShowDeleteUserModal(true);
+    setEditUserErrorMsg(null);
+  };
+
+  const handleDeleteUserConfirm = async () => {
+    if (!userToDelete || deletingUser) return;
+
+    setDeletingUser(true);
+
+    try {
+      const result = await api.deleteUser(userToDelete.id);
+
+      if (result.success) {
+        showToast(`Usuário ${userToDelete.email ?? userToDelete.full_name ?? ''} excluído com sucesso!`, 'success');
+        setShowDeleteUserModal(false);
+        setUserToDelete(null);
+        setEditingUserId((current) => (current === userToDelete.id ? null : current));
+        loadUsers();
+      } else {
+        const message = result.error || 'Erro ao excluir usuário.';
+        setEditUserErrorMsg(message);
+        showToast(message, 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      showToast('Erro ao excluir usuário. Tente novamente.', 'error');
+    } finally {
+      setDeletingUser(false);
+    }
+  };
+
   const handleEdit = (collection: Collection) => {
-    const initialData = {
-      title: collection.title || '',
-      level: collection.level || 'Educação Infantil',
-      cover_image: collection.cover_image || placeholderImageUrl,
-      pdf_url: collection.pdf_url || '',
-      audio_url: collection.audio_url || '',
-      video_url: collection.video_url || '',
-      color_theme: collection.color_theme || '#5D1F58',
-      theme: collection.theme || '',
-      learning_objectives: collection.learning_objectives || '',
-      characters: collection.characters || [],
-      bncc_skills: collection.bncc_skills || [],
-      casel_competencies: collection.casel_competencies || [],
-      age_grade: collection.age_grade || [],
-      extra_materials: collection.extra_materials || []
-    };
+    const initialData = buildCollectionFormData({
+      ...collection,
+      collection_assets: inferCollectionAssets(collection),
+    });
     setEditingId(collection.id);
     setActiveTab('identification');
     setFormData(initialData);
@@ -530,6 +885,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     try {
       const success = await api.deleteCollection(collectionToDelete);
       if (success) {
+        if (editingId === collectionToDelete) {
+          setEditingId(null);
+          setShowCreateForm(false);
+          setActiveTab('identification');
+          resetForm();
+        }
         showToast('Coleção excluída com sucesso!', 'success');
         loadCollections();
       } else {
@@ -545,26 +906,48 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
   };
 
+  const buildCollectionPayload = (data: Partial<Collection>): Partial<Collection> => {
+    const payload: Partial<Collection> = { ...data };
+
+    if (payload.primary_segment) {
+      if (payload.primary_segment === 'Educação Infantil') {
+        payload.level = 'Educação Infantil';
+      } else {
+        payload.level = 'Fundamental I';
+      }
+    }
+
+    payload.collection_type = payload.collection_type || 'book';
+    payload.kit_cover_image = payload.collection_type === 'kit'
+      ? payload.kit_cover_image?.trim() || null
+      : null;
+    payload.kit_book_ids = payload.collection_type === 'kit'
+      ? normalizeKitBookIds(payload.kit_book_ids)
+      : [];
+
+    return syncCollectionWithAssets(payload);
+  };
+
   const handleSave = async () => {
     if (!formData.title) {
       showToast('Título é obrigatório.', 'error');
       return;
     }
 
+    const normalizedDataToSave = buildCollectionPayload(formData);
+
     setIsSaving(true);
     let success = false;
     let errorMessage = '';
 
     if (editingId) {
-      // Updated collection data
-      const updated = await api.updateCollection(editingId, formData);
+      const updated = await api.updateCollection(editingId, normalizedDataToSave);
       success = !!updated;
       if (!success) {
         errorMessage = 'Erro ao atualizar coleção. Verifique suas permissões e tente novamente.';
       }
     } else {
-      // Creating new collection
-      const created = await api.createCollection(formData);
+      const created = await api.createCollection(normalizedDataToSave);
       success = !!created;
       if (!success) {
         errorMessage = 'Erro ao criar coleção. Verifique suas permissões e tente novamente.';
@@ -572,8 +955,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
 
     if (success) {
-      // Update original form data to reflect saved state
-      setOriginalFormData({ ...formData });
+      setOriginalFormData(buildCollectionFormData(normalizedDataToSave));
       showToast(editingId ? 'Coleção atualizada com sucesso!' : 'Coleção criada com sucesso!', 'success');
       setEditingId(null);
       setShowCreateForm(false);
@@ -597,22 +979,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   }));
 
   const resetForm = () => {
-    setFormData({
-      title: '',
-      level: 'Educação Infantil',
-      cover_image: placeholderImageUrl,
-      pdf_url: '',
-      audio_url: '',
-      video_url: '',
-      color_theme: '#5D1F58',
-      theme: '',
-      learning_objectives: '',
-      characters: [],
-      bncc_skills: [],
-      casel_competencies: [],
-      age_grade: [],
-      extra_materials: []
-    });
+    setFormData(buildCollectionFormData());
     setOriginalFormData(null);
   };
 
@@ -789,6 +1156,34 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
 
                       {/* 1.1. Imagem de Capa and 1.2. Cor da Coleção in same row */}
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Formato exibido na vitrine</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {(['book', 'kit'] as const).map((type) => {
+                            const typeMeta = getCollectionTypeMeta({ collection_type: type });
+                            const isActive = (formData.collection_type || 'book') === type;
+
+                            return (
+                              <button
+                                key={type}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, collection_type: type })}
+                                className={`w-full rounded-2xl border px-4 py-3 text-left transition-all active:scale-[0.99] ${isActive
+                                  ? `${typeMeta.softClassName} shadow-sm`
+                                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                                  }`}
+                              >
+                                <span className="block text-sm font-black uppercase tracking-[0.14em]">{typeMeta.shortLabel}</span>
+                                <span className="block text-xs mt-1 opacity-80">{typeMeta.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500">
+                          Escolha se este item deve aparecer como livro avulso ou kit multimodal. Para kits, você pode enviar uma capa própria de vitrine; sem ela, a interface reaproveita a capa principal.
+                        </p>
+                      </div>
+
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <FileUpload
@@ -811,13 +1206,158 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         </div>
                       </div>
 
+                      {formData.collection_type === 'kit' && (
+                        <>
+                          <div>
+                            <FileUpload
+                              label="Imagem da Capa do Kit"
+                              value={formData.kit_cover_image || ''}
+                              onChange={(url) => setFormData({ ...formData, kit_cover_image: url || null })}
+                              folder="covers"
+                              accept="image/*"
+                              collectionId={editingId || undefined}
+                              hideUrlInput={true}
+                            />
+                          </div>
+
+                          <div className="rounded-2xl border border-gray-200 p-4 bg-white space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <h4 className="text-sm font-bold text-gray-800">Livros do Kit</h4>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Selecione os livros avulsos que fazem parte deste kit. A ordem de seleção define a ordem de exibição no modal.
+                                </p>
+                              </div>
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-[0.12em] border border-amber-200 whitespace-nowrap">
+                                {selectedKitBookIds.length} livro(s)
+                              </span>
+                            </div>
+
+                            {availableKitBooks.length === 0 ? (
+                              <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
+                                Cadastre pelo menos um livro avulso para montar este kit.
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {availableKitBooks.map((book) => {
+                                  const isSelected = selectedKitBookIds.includes(book.id);
+                                  const selectedOrder = selectedKitBookIds.indexOf(book.id) + 1;
+                                  const displayCoverImage = getCollectionDisplayCover(book) || book.cover_image;
+
+                                  return (
+                                    <button
+                                      key={book.id}
+                                      type="button"
+                                      onClick={() => toggleKitBookSelection(book.id)}
+                                      aria-pressed={isSelected}
+                                      className={`w-full rounded-2xl border px-3 py-3 transition-all active:scale-[0.99] ${isSelected
+                                        ? 'border-kaboo-primary bg-kaboo-primary/5 shadow-sm'
+                                        : 'border-gray-200 bg-white hover:bg-gray-50'
+                                        }`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <img
+                                          src={displayCoverImage}
+                                          alt=""
+                                          aria-hidden="true"
+                                          className="w-12 h-12 rounded-xl object-cover border border-gray-200 bg-gray-100 flex-shrink-0"
+                                        />
+
+                                        <div className="min-w-0 flex-1 text-left">
+                                          <p className="text-sm font-bold text-gray-800 line-clamp-1">{book.title}</p>
+                                          <p className="text-xs text-gray-500 line-clamp-1 mt-1">
+                                            {formatSegmentLabel(book.level)}
+                                            {book.theme ? ` • ${book.theme}` : ''}
+                                          </p>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                          {isSelected && (
+                                            <span className="w-6 h-6 rounded-full bg-kaboo-primary text-white text-[11px] font-black flex items-center justify-center">
+                                              {selectedOrder}
+                                            </span>
+                                          )}
+                                          <span className={`w-6 h-6 rounded-full border flex items-center justify-center ${isSelected
+                                            ? 'border-kaboo-primary bg-kaboo-primary text-white'
+                                            : 'border-gray-300 bg-white text-transparent'
+                                            }`}>
+                                            <Icons.Check size={14} />
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+
                       {/* 1.10. Personagens */}
-                      <div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Personagens</label>
+                          <p className="text-xs text-gray-500 mb-3">
+                            Selecione os personagens cadastrados para manter a coleção sincronizada com a vitrine pública.
+                          </p>
+
+                          {selectableCharacters.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
+                              Nenhum personagem cadastrado ainda. Use o módulo Personagens para criar o catálogo.
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {selectableCharacters.map((character) => {
+                                const isSelected = selectedCharacterIds.includes(character.id);
+                                return (
+                                  <button
+                                    key={character.id}
+                                    type="button"
+                                    onClick={() => toggleCharacterSelection(character.id)}
+                                    className={`rounded-2xl border p-3 text-left transition-all active:scale-[0.99] ${isSelected
+                                      ? 'border-kaboo-primary bg-kaboo-primary/5 shadow-sm'
+                                      : 'border-gray-200 bg-white hover:bg-gray-50'
+                                      } ${(character.status || 'active') === 'inactive' ? 'opacity-70' : ''}`}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <CharacterAvatar
+                                        name={character.name}
+                                        className="h-12 w-12 shrink-0 rounded-2xl"
+                                        imageClassName="absolute inset-0 h-full w-full object-cover"
+                                        initialClassName="absolute inset-0 flex items-center justify-center text-sm font-black text-white/80"
+                                      />
+
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="truncate text-sm font-bold text-gray-800">{character.name}</span>
+                                          {(character.status || 'active') === 'inactive' && (
+                                            <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-600">
+                                              Inativo
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                                          {character.description || 'Sem descrição cadastrada.'}
+                                        </p>
+                                      </div>
+
+                                      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-kaboo-primary bg-kaboo-primary text-white' : 'border-gray-300 text-transparent'}`}>
+                                        <Icons.Check size={14} />
+                                      </span>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+
                         <TagInput
-                          label="Personagens"
-                          value={formData.characters || []}
-                          onChange={(tags) => setFormData({ ...formData, characters: tags })}
-                          placeholder="Digite um personagem e pressione Enter"
+                          label="Nomes legados não mapeados"
+                          value={unmappedLegacyCharacters}
+                          onChange={setLegacyCharacterNames}
+                          placeholder="Digite um nome legado e pressione Enter"
                         />
                       </div>
 
@@ -829,15 +1369,15 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         <h3 className="text-lg font-bold text-gray-800 mb-4">Informações Pedagógicas</h3>
                       </div>
 
-                      {/* 1.4. Nível */}
+                      {/* 1.4. Segmento */}
                       <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Nível</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
                         <div className="relative" ref={formLevelDropdownRef}>
                           <button
                             onClick={() => setShowFormLevelDropdown(!showFormLevelDropdown)}
                             className="w-full h-14 bg-white border border-gray-200 rounded-2xl px-4 flex items-center justify-between transition-all active:scale-95 shadow-sm font-bold text-sm text-gray-800 hover:bg-gray-50"
                           >
-                            <span>{formData.level}</span>
+                            <span>{formatSegmentLabel(formData.level)}</span>
                             <Icons.ChevronDown size={16} className={`transition-transform flex-shrink-0 ${showFormLevelDropdown ? 'rotate-180' : ''}`} />
                           </button>
 
@@ -866,11 +1406,66 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                   : 'text-gray-700 hover:bg-gray-50 font-medium'
                                   }`}
                               >
-                                <span>Fundamental I</span>
+                                <span>E.F. Anos Iniciais</span>
                                 {formData.level === 'Fundamental I' && <Icons.Check size={18} className="ml-auto" />}
                               </button>
                             </div>
                           )}
+                        </div>
+                      </div>
+
+                      {/* Multissegmentos */}
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Segmentos</label>
+                        <div className="space-y-2">
+                          {AVAILABLE_SEGMENTS.map((seg) => {
+                            const checked = formData.segments?.includes(seg) ?? false;
+                            const isPrimary = formData.primary_segment === seg;
+                            return (
+                              <div key={seg} className="flex items-center gap-3">
+                                <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => {
+                                      const prev = formData.segments || [];
+                                      let next: string[];
+                                      if (checked) {
+                                        next = prev.filter(s => s !== seg);
+                                        // If removing the primary, pick the first remaining or clear
+                                        if (isPrimary) {
+                                          setFormData({ ...formData, segments: next, primary_segment: next[0] || '' });
+                                          return;
+                                        }
+                                      } else {
+                                        next = [...prev, seg];
+                                        // Auto-set primary if first segment
+                                        if (next.length === 1) {
+                                          setFormData({ ...formData, segments: next, primary_segment: seg });
+                                          return;
+                                        }
+                                      }
+                                      setFormData({ ...formData, segments: next });
+                                    }}
+                                    className="w-4 h-4 rounded border-gray-300 text-kaboo-primary focus:ring-kaboo-primary"
+                                  />
+                                  <span className="text-sm text-gray-800">{seg}</span>
+                                </label>
+                                {checked && (
+                                  <label className="flex items-center gap-1 cursor-pointer text-xs text-gray-500 shrink-0">
+                                    <input
+                                      type="radio"
+                                      name="primary_segment"
+                                      checked={isPrimary}
+                                      onChange={() => setFormData({ ...formData, primary_segment: seg })}
+                                      className="w-3 h-3 text-kaboo-primary focus:ring-kaboo-primary"
+                                    />
+                                    <span className={isPrimary ? 'font-bold text-kaboo-primary' : ''}>Principal</span>
+                                  </label>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -884,7 +1479,18 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         />
                       </div>
 
-                      {/* 1.6. Tema */}
+                      {/* 1.6. Sinopse */}
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Sinopse</label>
+                        <textarea
+                          value={formData.synopsis || ''}
+                          onChange={(e) => setFormData({ ...formData, synopsis: e.target.value })}
+                          className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none min-h-[80px]"
+                          placeholder="Sinopse editorial da coleção (opcional)"
+                        />
+                      </div>
+
+                      {/* 1.7. Tema */}
                       <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Tema</label>
                         <input
@@ -936,57 +1542,69 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         <h3 className="text-lg font-bold text-gray-800 mb-4">Arquivos de Mídia</h3>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        {/* 2.1. PDF do Livro */}
-                        <div>
-                          <FileUpload
-                            label="PDF do Livro"
-                            value={formData.pdf_url || ''}
-                            onChange={(url) => setFormData({ ...formData, pdf_url: url })}
-                            folder="pdfs"
-                            accept="application/pdf"
+                      <div className="space-y-4">
+                        {FIXED_MEDIA_SLOTS.map((slot) => {
+                          const asset = getAssetByCategory(slot.category);
+
+                          return (
+                            <div key={slot.category} className="rounded-2xl border border-gray-200 p-4 space-y-3 bg-white">
+                              <FileUpload
+                                label={slot.label}
+                                value={asset?.url || ''}
+                                onChange={(url) => {
+                                  if (!url) {
+                                    removeAsset(slot.category);
+                                    return;
+                                  }
+
+                                  setAssetUrl(slot.category, url);
+                                }}
+                                folder={slot.folder}
+                                accept={slot.accept}
+                                collectionId={editingId || undefined}
+                                showAsIcon={true}
+                              />
+
+                              {slot.allowMetadata && (
+                                <div className="grid gap-3 md:grid-cols-2">
+                                  <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Título opcional</label>
+                                    <input
+                                      type="text"
+                                      value={asset?.title || ''}
+                                      onChange={(event) => setAssetTitle(slot.category, event.target.value)}
+                                      disabled={!asset?.url}
+                                      placeholder={slot.titlePlaceholder}
+                                      className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none disabled:opacity-60"
+                                    />
+                                  </div>
+
+                                  <div className="md:col-span-2">
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Descrição opcional</label>
+                                    <textarea
+                                      value={asset?.description || ''}
+                                      onChange={(event) => setAssetDescription(slot.category, event.target.value)}
+                                      disabled={!asset?.url}
+                                      placeholder={slot.descriptionPlaceholder}
+                                      className="w-full min-h-[96px] resize-y bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none disabled:opacity-60"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        <div className="rounded-2xl border border-gray-200 p-4 bg-white">
+                          <MultipleFileUpload
+                            label="Materiais da Coleção"
+                            value={extraMaterialAssets.map((asset) => asset.url)}
+                            onChange={setExtraMaterialUrls}
+                            folder="extras"
+                            accept="*/*"
                             collectionId={editingId || undefined}
-                            showAsIcon={true}
                           />
                         </div>
-
-                        {/* 2.2. Áudio */}
-                        <div>
-                          <FileUpload
-                            label="Áudio"
-                            value={formData.audio_url || ''}
-                            onChange={(url) => setFormData({ ...formData, audio_url: url })}
-                            folder="audio"
-                            accept="audio/*"
-                            collectionId={editingId || undefined}
-                            showAsIcon={true}
-                          />
-                        </div>
-                      </div>
-
-                      {/* 2.3. Vídeo - Full width with icon card style */}
-                      <div>
-                        <FileUpload
-                          label="Vídeo"
-                          value={formData.video_url || ''}
-                          onChange={(url) => setFormData({ ...formData, video_url: url })}
-                          folder="video"
-                          accept="video/*"
-                          collectionId={editingId || undefined}
-                          showAsIcon={true}
-                        />
-                      </div>
-
-                      {/* 2.4. Materiais Extras - Full width */}
-                      <div>
-                        <MultipleFileUpload
-                          label="Materiais Extras"
-                          value={formData.extra_materials || []}
-                          onChange={(urls) => setFormData({ ...formData, extra_materials: urls })}
-                          folder="extras"
-                          accept="*/*"
-                          collectionId={editingId || undefined}
-                        />
                       </div>
                     </>
                   )}
@@ -1028,7 +1646,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       </div>
                     </div>
 
-                    {/* Filtro de Nível com Dropdown */}
+                    {/* Filtro de Segmento com Dropdown */}
                     <div className="md:w-48 relative" ref={levelDropdownRef}>
                       <button
                         onClick={() => setShowLevelDropdown(!showLevelDropdown)}
@@ -1038,7 +1656,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           }`}
                       >
                         <span className="truncate">
-                          {levelFilter === 'all' ? 'Todos os níveis' : levelFilter}
+                          {levelFilter === 'all' ? 'Todos os segmentos' : formatSegmentLabel(levelFilter)}
                         </span>
                         <Icons.ChevronDown size={16} className={`transition-transform flex-shrink-0 ${showLevelDropdown ? 'rotate-180' : ''}`} />
                       </button>
@@ -1055,7 +1673,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               : 'text-gray-700 hover:bg-gray-50 font-medium'
                               }`}
                           >
-                            <span>Todos os níveis</span>
+                            <span>Todos os segmentos</span>
                             {levelFilter === 'all' && <Icons.Check size={18} className="ml-auto" />}
                           </button>
                           <button
@@ -1081,7 +1699,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               : 'text-gray-700 hover:bg-gray-50 font-medium'
                               }`}
                           >
-                            <span>Fundamental I</span>
+                            <span>E.F. Anos Iniciais</span>
                             {levelFilter === 'Fundamental I' && <Icons.Check size={18} className="ml-auto" />}
                           </button>
                         </div>
@@ -1165,43 +1783,17 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         onClick={() => {
                           if (hasUnsavedChanges()) {
                             setPendingAction(() => () => {
+                              const emptyFormData = buildCollectionFormData();
                               setShowCreateForm(true);
-                              setOriginalFormData({
-                                title: '',
-                                level: 'Educação Infantil',
-                                cover_image: placeholderImageUrl,
-                                pdf_url: '',
-                                audio_url: '',
-                                video_url: '',
-                                color_theme: '#5D1F58',
-                                theme: '',
-                                learning_objectives: '',
-                                characters: [],
-                                bncc_skills: [],
-                                casel_competencies: [],
-                                age_grade: [],
-                                extra_materials: []
-                              });
+                              setFormData(emptyFormData);
+                              setOriginalFormData(emptyFormData);
                             });
                             setShowUnsavedChangesModal(true);
                           } else {
+                            const emptyFormData = buildCollectionFormData();
                             setShowCreateForm(true);
-                            setOriginalFormData({
-                              title: '',
-                              level: 'Educação Infantil',
-                              cover_image: placeholderImageUrl,
-                              pdf_url: '',
-                              audio_url: '',
-                              video_url: '',
-                              color_theme: '#5D1F58',
-                              theme: '',
-                              learning_objectives: '',
-                              characters: [],
-                              bncc_skills: [],
-                              casel_competencies: [],
-                              age_grade: [],
-                              extra_materials: []
-                            });
+                            setFormData(emptyFormData);
+                            setOriginalFormData(emptyFormData);
                           }
                         }}
                         className="h-11 px-6 rounded-2xl bg-kaboo-primary text-white flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all active:scale-95 shadow-sm font-bold text-sm whitespace-nowrap"
@@ -1304,22 +1896,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               }
                               if (hasUnsavedChanges()) {
                                 setPendingAction(() => () => {
-                                  const initialData = {
-                                    title: collection.title || '',
-                                    level: collection.level || 'Educação Infantil',
-                                    cover_image: collection.cover_image || '',
-                                    pdf_url: collection.pdf_url || '',
-                                    audio_url: collection.audio_url || '',
-                                    video_url: collection.video_url || '',
-                                    color_theme: collection.color_theme || '#5D1F58',
-                                    theme: collection.theme || '',
-                                    learning_objectives: collection.learning_objectives || '',
-                                    characters: collection.characters || [],
-                                    bncc_skills: collection.bncc_skills || [],
-                                    casel_competencies: collection.casel_competencies || [],
-                                    age_grade: collection.age_grade || [],
-                                    extra_materials: collection.extra_materials || []
-                                  };
+                                  const initialData = buildCollectionFormData({
+                                    ...collection,
+                                    collection_assets: inferCollectionAssets(collection),
+                                  });
                                   setEditingId(collection.id);
                                   setActiveTab('identification');
                                   setFormData(initialData);
@@ -1331,20 +1911,33 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               }
                             }}
                           >
-                            {collection.cover_image && (
+                            {collection.cover_image && (() => {
+                              const collectionTypeMeta = getCollectionTypeMeta(collection);
+                              const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
+
+                              return (
                               <Card3DCover
-                                imageUrl={collection.cover_image}
+                                imageUrl={displayCoverImage}
                                 alt={collection.title}
                                 level={collection.level}
+                                collectionTypeLabel={collectionTypeMeta.shortLabel}
+                                collectionTypeBadgeClassName={collectionTypeMeta.coverClassName}
                                 actionsButton={actionsButton}
                               />
-                            )}
+                              );
+                            })()}
 
                             {collection.title && (
                               <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-2 mt-3">
                                 {collection.title}
                               </h3>
                             )}
+
+                            <div className="mb-2">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-[0.14em] ${getCollectionTypeMeta(collection).softClassName}`}>
+                                {getCollectionTypeMeta(collection).label}
+                              </span>
+                            </div>
 
                             {collection.theme && collection.theme.trim() !== '' && (
                               <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">
@@ -1439,6 +2032,17 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                   )}
 
                   <div className="pt-2 flex gap-3">
+                    {editingUser && (
+                      <Button
+                        type="button"
+                        variant="danger"
+                        fullWidth
+                        onClick={() => handleDeleteUserClick(editingUser)}
+                        disabled={loadingUserEdit || deletingUser}
+                      >
+                        {deletingUser && userToDelete?.id === editingUser.id ? 'Excluindo...' : 'Excluir usuário'}
+                      </Button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setEditingUserId(null)}
@@ -1725,13 +2329,22 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               user.role === 'editor' ? 'Editor' : 'Visualizador'}
                           </span>
                           {isAdminUser && (
-                            <button
-                              onClick={() => handleEditUserOpen(user)}
-                              className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-kaboo-primary transition-colors"
-                              title="Editar usuário"
-                            >
-                              <Icons.Edit size={16} />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleEditUserOpen(user)}
+                                className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-kaboo-primary transition-colors"
+                                title="Editar usuário"
+                              >
+                                <Icons.Edit size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUserClick(user)}
+                                className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+                                title="Excluir usuário"
+                              >
+                                <Icons.Trash2 size={16} />
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1771,6 +2384,22 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         loading={isDeleting}
       />
 
+      <ConfirmationModal
+        isOpen={showDeleteUserModal}
+        title="Excluir Usuário"
+        message={`Tem certeza que deseja excluir ${userToDelete?.email ?? userToDelete?.full_name ?? 'este usuário'}? Esta ação remove o acesso e apaga o usuário do banco.`}
+        confirmText="Excluir usuário"
+        cancelText="Cancelar"
+        onConfirm={handleDeleteUserConfirm}
+        onCancel={() => {
+          if (deletingUser) return;
+          setShowDeleteUserModal(false);
+          setUserToDelete(null);
+        }}
+        danger={true}
+        loading={deletingUser}
+      />
+
       {/* Unsaved Changes Modal */}
       <ConfirmationModal
         isOpen={showUnsavedChangesModal}
@@ -1788,12 +2417,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
           }
 
           let success = false;
+          const payload = buildCollectionPayload(formData);
 
           if (editingId) {
-            const updated = await api.updateCollection(editingId, formData);
+            const updated = await api.updateCollection(editingId, payload);
             success = !!updated;
           } else {
-            const created = await api.createCollection(formData);
+            const created = await api.createCollection(payload);
             success = !!created;
           }
 
@@ -1801,7 +2431,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
             setShowUnsavedChangesModal(false);
             showToast(editingId ? 'Coleção atualizada com sucesso!' : 'Coleção criada com sucesso!', 'success');
             // Update original to reflect saved state
-            setOriginalFormData({ ...formData });
+            setOriginalFormData(buildCollectionFormData(payload));
             // Execute pending action (navigate away, etc.)
             if (pendingAction) {
               pendingAction();

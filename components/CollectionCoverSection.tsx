@@ -3,6 +3,7 @@ import { Collection } from '../types';
 import { Icons } from './Icons';
 import useIsMobile from '../hooks/useIsMobile';
 import { GalaxyBackground } from './GalaxyBackground';
+import { getCollectionDisplayCover, getCollectionTypeMeta } from '../lib/collectionPresentation';
 
 // Global state for device orientation (shared across all cards)
 let globalOrientation: { beta: number; gamma: number } | null = null;
@@ -80,6 +81,8 @@ export const CollectionCoverSection: React.FC<CollectionCoverSectionProps> = ({
   const animationFrameRef = useRef<number | null>(null);
   const timeRef = useRef(0);
   const isMobile = useIsMobile();
+  const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
+  const collectionTypeMeta = getCollectionTypeMeta(collection);
 
   // Smooth automatic 3D movement animation (desktop only, when not hovered)
   useEffect(() => {
@@ -267,13 +270,19 @@ export const CollectionCoverSection: React.FC<CollectionCoverSectionProps> = ({
           onMouseLeave={!isMobile ? handleMouseLeave : undefined}
         >
           <img 
-            src={collection.cover_image} 
+            src={displayCoverImage} 
             alt={collection.title}
             className="w-full h-full object-cover bg-gray-200"
             style={{
               transform: 'translateZ(20px)',
             }}
           />
+          <div
+            className={`absolute top-3 left-3 whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-[0.16em] border backdrop-blur-sm ${collectionTypeMeta.coverClassName}`}
+            style={{ transform: 'translateZ(30px)' }}
+          >
+            {collectionTypeMeta.label}
+          </div>
           {/* Light reflection effect - moves based on tilt */}
           <div 
             className="absolute inset-0 pointer-events-none"

@@ -1,14 +1,16 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection, ScreenName, UserContentGrant, UserProfile } from '../types';
-import { api, clearAllUserCache, clearCollectionsCache, getCachedCollectionsSync, getCachedProfileSync } from '../lib/api';
+import { api, clearCollectionsCache, getCachedCollectionsSync, getCachedProfileSync } from '../lib/api';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { getUserRole } from '../lib/auth';
-import { TABS, LOGO_URL, getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
+import { TABS, LOGO_URL, formatSegmentLabel, getCharacterBgColor, getCharacterColor, getCharacterImageUrl } from '../constants';
 import { canAccessCollection, formatAccessDate, getAccessStatusLabel, getDaysUntilAccessExpiry, getProfileAccessStatus } from '../lib/access';
 import { PageHeader } from '../components/PageHeader';
 import { Button, Input } from '../design-system';
 import { Card3D } from '../components/Card3D';
+import { CharacterAvatar } from '../components/CharacterAvatar';
+import { getCollectionDisplayCover, getCollectionTypeMeta } from '../lib/collectionPresentation';
+import { lookupBncc } from '../lib/bnccLookup';
 // @ts-ignore
 import confetti from 'canvas-confetti';
 
@@ -35,6 +37,19 @@ const INITIAL_FILTERS: FilterState = {
   age: []
 };
 
+const getInitialFilters = (params?: any): FilterState => {
+  const filterCharacter = typeof params?.filterCharacter === 'string' ? params.filterCharacter.trim() : '';
+
+  if (!filterCharacter) {
+    return INITIAL_FILTERS;
+  }
+
+  return {
+    ...INITIAL_FILTERS,
+    characters: [filterCharacter],
+  };
+};
+
 const AGE_ORDER = ['3 anos', '4 anos', '5 anos', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano'];
 
 const normalizeSearch = (str: string) => {
@@ -42,6 +57,16 @@ const normalizeSearch = (str: string) => {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
+};
+
+const formatBnccYear = (year: string) => year.replace(/;\s*/g, ' • ');
+
+const formatBnccSelectionLabel = (count: number) => {
+  if (count === 0) {
+    return 'Nenhuma selecionada';
+  }
+
+  return `${count} ${count === 1 ? 'habilidade selecionada' : 'habilidades selecionadas'}`;
 };
 
 const collectionMatchesQuery = (collection: Collection, query: string) => {
@@ -110,7 +135,420 @@ const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, gra
   );
 };
 
+interface CharacterFilterButtonProps {
+  character: string;
+  isActive: boolean;
+  onClick: () => void;
+  onPrepare?: () => void;
+}
+
+const CharacterFilterButton: React.FC<CharacterFilterButtonProps> = ({
+  character,
+  isActive,
+  onClick,
+  onPrepare,
+}) => {
+  const imageSrc = getCharacterImageUrl(character);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={onPrepare}
+      onFocus={onPrepare}
+      className={`inline-flex min-h-12 items-center gap-2 rounded-full border px-2.5 py-2 pr-3 text-sm font-bold leading-none transition-all duration-200 ease-out active:scale-[0.98] ${isActive
+        ? 'border-kaboo-primary/30 bg-kaboo-primary/[0.08] text-kaboo-primary shadow-[0_10px_24px_rgba(111,37,108,0.12)]'
+        : 'border-gray-200 bg-white text-gray-600 hover:border-kaboo-primary/25 hover:bg-kaboo-primary/[0.03]'
+        }`}
+    >
+      <CharacterAvatar
+        name={character}
+        className="h-8 w-8 shrink-0 rounded-full border border-white/80 shadow-sm"
+        imageClassName="relative z-10 h-full w-full object-cover"
+        initialClassName="absolute inset-0 flex items-center justify-center text-[11px] font-black uppercase text-current"
+      />
+      <span className="whitespace-nowrap">{character}</span>
+    </button>
+  );
+};
+
+interface BnccPickerOption {
+  code: string;
+  description: string;
+  component: string;
+  year: string;
+  yearTokens: string[];
+  stage: string;
+  knowledgeObject?: string;
+  searchIndex: string;
+}
+
+interface BnccPickerFilters {
+  stage: string;
+  component: string;
+  year: string;
+}
+
+const INITIAL_BNCC_PICKER_FILTERS: BnccPickerFilters = {
+  stage: '',
+  component: '',
+  year: '',
+};
+
+interface BnccSummaryEntryProps {
+  selectedCodes: string[];
+  onOpen: () => void;
+}
+
+const BnccSummaryEntry: React.FC<BnccSummaryEntryProps> = ({ selectedCodes, onOpen }) => {
+  const previewCodes = selectedCodes.slice(0, 2);
+  const extraCount = selectedCodes.length - previewCodes.length;
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-haspopup="dialog"
+      className="w-full rounded-[24px] border border-gray-200 bg-white p-4 text-left transition-all duration-200 hover:border-green-300 hover:bg-green-50/40 active:scale-[0.99]"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-gray-400">
+            <Icons.BookOpen size={14} />
+            Habilidades BNCC
+          </div>
+          <p className="mt-2 text-sm leading-relaxed text-gray-500">
+            Procure por código, descrição ou componente.
+          </p>
+          <p className={`mt-3 text-sm font-bold ${selectedCodes.length > 0 ? 'text-green-700' : 'text-gray-600'}`}>
+            {formatBnccSelectionLabel(selectedCodes.length)}
+          </p>
+          {selectedCodes.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {previewCodes.map((code) => (
+                <span
+                  key={code}
+                  className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-green-700"
+                >
+                  {code}
+                </span>
+              ))}
+              {extraCount > 0 && (
+                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-gray-500">
+                  +{extraCount}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-green-700">
+          Abrir
+          <Icons.ChevronLeft className="rotate-180" size={14} />
+        </span>
+      </div>
+    </button>
+  );
+};
+
+interface BnccPickerSheetProps {
+  query: string;
+  options: BnccPickerOption[];
+  selectedCodes: string[];
+  filters: BnccPickerFilters;
+  stageOptions: string[];
+  componentOptions: string[];
+  yearOptions: string[];
+  onQueryChange: (value: string) => void;
+  onFilterChange: (category: keyof BnccPickerFilters, value: string) => void;
+  onToggle: (code: string) => void;
+  onClear: () => void;
+  onClose: () => void;
+  onApply: () => void;
+}
+
+const BnccPickerSheet: React.FC<BnccPickerSheetProps> = ({
+  query,
+  options,
+  selectedCodes,
+  filters,
+  stageOptions,
+  componentOptions,
+  yearOptions,
+  onQueryChange,
+  onFilterChange,
+  onToggle,
+  onClear,
+  onClose,
+  onApply,
+}) => {
+  const selectedCount = selectedCodes.length;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center">
+      <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={onClose} />
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bncc-picker-title"
+        aria-describedby="bncc-picker-description"
+        className="relative flex h-full w-full flex-col overflow-hidden bg-[#fcfbff] shadow-2xl md:h-[82vh] md:w-[720px] md:rounded-[32px]"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-gray-100 bg-white px-5 py-4 md:px-6">
+          <div className="min-w-0">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-green-600">Filtro pedagógico</p>
+            <h2 id="bncc-picker-title" className="mt-1 text-xl font-black text-gray-800">Selecionar BNCC</h2>
+            <p id="bncc-picker-description" className="mt-1 text-sm text-gray-500">
+              Encontre habilidades por código ou pelo texto da habilidade.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar seletor de BNCC"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200"
+          >
+            <Icons.X size={16} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-5 md:px-6">
+          <div className="rounded-[28px] border border-gray-200 bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
+            <Input
+              autoFocus
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder="Ex.: EF15LP03, leitura, escuta"
+              aria-label="Buscar habilidades BNCC"
+              hint="Você pode buscar pelo código BNCC ou pela descrição da habilidade."
+              className="rounded-2xl border-gray-200 bg-white"
+            />
+
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <label className="flex flex-col gap-1 text-xs font-black uppercase tracking-[0.12em] text-gray-500">
+                Etapa
+                <select
+                  value={filters.stage}
+                  onChange={(event) => onFilterChange('stage', event.target.value)}
+                  className="h-11 rounded-2xl border border-gray-200 bg-white px-3 text-sm font-bold normal-case text-gray-700"
+                >
+                  <option value="">Todas</option>
+                  {stageOptions.map((stage) => (
+                    <option key={stage} value={stage}>{stage}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1 text-xs font-black uppercase tracking-[0.12em] text-gray-500">
+                Componente
+                <select
+                  value={filters.component}
+                  onChange={(event) => onFilterChange('component', event.target.value)}
+                  className="h-11 rounded-2xl border border-gray-200 bg-white px-3 text-sm font-bold normal-case text-gray-700"
+                >
+                  <option value="">Todos</option>
+                  {componentOptions.map((component) => (
+                    <option key={component} value={component}>{component}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-1 text-xs font-black uppercase tracking-[0.12em] text-gray-500">
+                Faixa
+                <select
+                  value={filters.year}
+                  onChange={(event) => onFilterChange('year', event.target.value)}
+                  className="h-11 rounded-2xl border border-gray-200 bg-white px-3 text-sm font-bold normal-case text-gray-700"
+                >
+                  <option value="">Todas</option>
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-gray-500">
+                {options.length} {options.length === 1 ? 'resultado' : 'resultados'}
+              </span>
+              <span aria-live="polite" className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] ${selectedCount > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                {formatBnccSelectionLabel(selectedCount)}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-5 space-y-3 pb-24">
+            {options.map((option) => {
+              const isSelected = selectedCodes.includes(option.code);
+
+              return (
+                <button
+                  type="button"
+                  key={option.code}
+                  onClick={() => onToggle(option.code)}
+                  aria-pressed={isSelected}
+                  className={`w-full rounded-[26px] border p-4 text-left shadow-sm transition-[transform,border-color,box-shadow,background-color] duration-200 ease-out active:scale-[0.99] ${isSelected
+                    ? 'border-green-400 bg-[linear-gradient(135deg,rgba(240,253,244,0.96)_0%,rgba(255,255,255,1)_72%)] shadow-[0_18px_34px_rgba(34,197,94,0.12)]'
+                    : 'border-gray-200 bg-white hover:-translate-y-0.5 hover:border-green-200 hover:shadow-[0_16px_28px_rgba(15,23,42,0.07)]'
+                    }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border shadow-sm transition-colors ${isSelected
+                      ? 'border-kaboo-primary bg-kaboo-primary text-white'
+                      : 'border-gray-300 bg-white text-transparent'
+                      }`}>
+                      <Icons.Check size={14} />
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${isSelected
+                          ? 'border-green-200 bg-white text-green-700'
+                          : 'border-gray-200 bg-gray-50 text-gray-500'
+                          }`}>
+                          {option.code}
+                        </span>
+                        {isSelected && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-green-700">
+                            <Icons.Check size={11} />
+                            Selecionada
+                          </span>
+                        )}
+                      </span>
+                      <span className="mt-2 block text-sm font-bold leading-relaxed text-gray-800">{option.description}</span>
+                      <span className="mt-2 block text-xs font-medium leading-relaxed text-gray-500">
+                        {option.component} • {formatBnccYear(option.year)}
+                      </span>
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+
+            {options.length === 0 && (
+              <div className="rounded-[24px] border border-dashed border-gray-200 bg-white px-5 py-10 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-50 text-gray-300">
+                  <Icons.Search size={24} />
+                </div>
+                <p className="mt-4 text-sm font-bold text-gray-700">Nenhuma habilidade encontrada</p>
+                <p className="mt-1 text-sm leading-relaxed text-gray-500">Tente outro código, componente ou palavra-chave.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="border-t border-gray-100 bg-white px-4 py-4 md:px-6">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClear}
+              className="rounded-2xl px-5 py-3 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-100"
+            >
+              Limpar
+            </button>
+            <Button fullWidth onClick={onApply}>
+              <Icons.Check size={18} />
+              {selectedCount === 0
+                ? 'Aplicar filtros'
+                : `Aplicar ${selectedCount} ${selectedCount === 1 ? 'habilidade' : 'habilidades'}`}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface SearchResultsListProps {
+  collections: (Collection & { progress?: number })[];
+  onCollectionClick: (collection: Collection) => void;
+  searchTerm: string;
+}
+
+const SearchResultsList: React.FC<SearchResultsListProps> = ({ collections, onCollectionClick, searchTerm }) => {
+  const normalizedTerm = normalizeSearch(searchTerm.trim());
+  const hasSearchTerm = normalizedTerm.length > 0;
+
+  return (
+    <div className="space-y-4 pt-4 animate-fade-in-up">
+      <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
+        {hasSearchTerm
+          ? `${collections.length} ${collections.length === 1 ? 'Resultado encontrado' : 'Resultados encontrados'}`
+          : `${collections.length} ${collections.length === 1 ? 'Coleção disponível' : 'Coleções disponíveis'}`}
+      </h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {collections.map((collection) => {
+          const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
+          const collectionTypeMeta = getCollectionTypeMeta(collection);
+          const segmentLabel = collection.segments?.length
+            ? formatSegmentLabel(collection.segments[0])
+            : formatSegmentLabel(collection.level);
+          const hasMatchingBncc = normalizedTerm
+            ? collection.bncc_skills?.some((skill) => normalizeSearch(skill).includes(normalizedTerm))
+            : false;
+
+          return (
+            <button
+              key={collection.id}
+              type="button"
+              onClick={() => onCollectionClick(collection)}
+              className="flex gap-4 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-kaboo-primary/20 transition-all active:scale-[0.98] cursor-pointer h-full text-left"
+            >
+              <img
+                src={displayCoverImage}
+                alt={collection.title}
+                className="w-16 h-16 rounded-xl object-cover bg-gray-200 shrink-0"
+              />
+
+              <div className="flex-1 flex flex-col justify-center min-w-0">
+                <h3 className="font-bold text-gray-800 text-sm mb-1 leading-tight line-clamp-2">{collection.title}</h3>
+
+                <div className="flex mt-1 gap-1 flex-wrap">
+                  <span className={`text-[10px] px-2 py-0.5 rounded-md font-black uppercase tracking-[0.12em] border ${collectionTypeMeta.softClassName}`}>
+                    {collectionTypeMeta.shortLabel}
+                  </span>
+
+                  {segmentLabel && (
+                    <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md font-bold uppercase">
+                      {segmentLabel}
+                    </span>
+                  )}
+
+                  {hasMatchingBncc && (
+                    <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-md font-bold uppercase">
+                      BNCC
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center text-gray-300 shrink-0">
+                <Icons.ChevronLeft className="rotate-180" size={20} />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {collections.length === 0 && (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
+            <Icons.Search size={32} />
+          </div>
+          <p className="text-gray-600 font-bold">Nenhum resultado encontrado</p>
+          <p className="text-sm text-gray-400 mt-1">Tente buscar por outras palavras-chave.</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, accessProfile, screenName = 'home', searchMode = false }) => {
+  const isSearchExperience = searchMode || Boolean(params?.inlineSearch);
   // Initialize collections from cache if available
   const cachedCollections = getCachedCollectionsSync();
   // Initialize profile from cache if available
@@ -126,14 +564,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
   // Filter State
   const [showFilters, setShowFilters] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [showBnccPicker, setShowBnccPicker] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<FilterState>(() => getInitialFilters(params));
+  const [draftBnccSelection, setDraftBnccSelection] = useState<string[]>([]);
+  const [bnccPickerQuery, setBnccPickerQuery] = useState('');
+  const [bnccPickerFilters, setBnccPickerFilters] = useState<BnccPickerFilters>(INITIAL_BNCC_PICKER_FILTERS);
   const [searchTerm, setSearchTerm] = useState(() => typeof params?.query === 'string' ? params.query : '');
   const [filterDrawerFocus, setFilterDrawerFocus] = useState<keyof FilterState | null>(null);
+  const [sortByAge, setSortByAge] = useState(false);
 
   // User Profile State for Header - Initialize from cache
   const [profile, setProfile] = useState<UserProfile | null>(accessProfile || cachedProfile);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [userRole, setUserRole] = useState<string>('viewer');
   const [dismissedAccessBanner, setDismissedAccessBanner] = useState<string | null>(() => getDismissedAccessBannerKey());
 
   // Welcome Modal State
@@ -241,6 +682,35 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   }, [params?.query]);
 
   useEffect(() => {
+    if (!isSearchExperience) {
+      return;
+    }
+
+    if (typeof params?.query === 'string' || typeof params?.filterCharacter === 'string') {
+      return;
+    }
+
+    setSearchTerm('');
+    setActiveFilters(INITIAL_FILTERS);
+    setActiveTab('all');
+  }, [isSearchExperience, params?.query, params?.filterCharacter, params?.searchNonce]);
+
+  useEffect(() => {
+    const filterCharacter = typeof params?.filterCharacter === 'string' ? params.filterCharacter.trim() : '';
+
+    if (!filterCharacter) {
+      return;
+    }
+
+    setActiveTab('all');
+    setSearchTerm('');
+    setActiveFilters({
+      ...INITIAL_FILTERS,
+      characters: [filterCharacter],
+    });
+  }, [params?.filterCharacter]);
+
+  useEffect(() => {
     if (!showFilters || !filterDrawerFocus) {
       return;
     }
@@ -258,7 +728,36 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   }, [showFilters, filterDrawerFocus]);
 
   useEffect(() => {
-    if (!searchMode && !params?.focusSearch) {
+    if (showFilters) {
+      return;
+    }
+
+    setShowBnccPicker(false);
+    setBnccPickerQuery('');
+    setDraftBnccSelection([]);
+  }, [showFilters]);
+
+  useEffect(() => {
+    if (!showBnccPicker) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      setShowBnccPicker(false);
+      setBnccPickerQuery('');
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showBnccPicker]);
+
+  useEffect(() => {
+    if (!isSearchExperience && !params?.focusSearch) {
       return;
     }
 
@@ -268,7 +767,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     }, 80);
 
     return () => window.clearTimeout(timer);
-  }, [searchMode, params?.focusSearch]);
+  }, [isSearchExperience, params?.focusSearch]);
 
   // Reset canvas ready when modal closes
   useEffect(() => {
@@ -442,9 +941,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
   const loadProfile = async () => {
     try {
-      const role = await getUserRole();
-      setUserRole(role);
-
       // Force refresh to ensure we get the correct user's profile
       // Cache validation will handle user ID mismatch, but force refresh ensures correctness
       const profileData = await api.getProfile(true); // Force refresh to ensure correct user
@@ -459,16 +955,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     } catch (error) {
       console.error(error);
     }
-  };
-
-  const handleLogout = async () => {
-    await api.signOut();
-    onNavigate('login');
-  };
-
-  const getInitials = (name: string) => {
-    if (!name) return 'P';
-    return name.trim().split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
   };
 
   const getFirstName = (name: string) => {
@@ -506,17 +992,97 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     };
   }, [collections]);
 
+  useEffect(() => {
+    availableOptions.characters.forEach(preloadAvatarImage);
+  }, [availableOptions.characters]);
+
+  const bnccPickerOptions = useMemo<BnccPickerOption[]>(() => {
+    return availableOptions.bncc.map((code) => {
+      const info = lookupBncc(code);
+      const description = info?.description || 'Descrição indisponível no momento.';
+      const component = info?.component || 'Componente não informado';
+      const year = info?.year || 'Faixa não informada';
+      const yearTokens = year
+        .split(';')
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      return {
+        code,
+        description,
+        component,
+        year,
+        yearTokens,
+        stage: info?.stage || '',
+        knowledgeObject: info?.knowledge_object,
+        searchIndex: normalizeSearch([code, description, component, year, info?.stage, info?.knowledge_object].filter(Boolean).join(' ')),
+      };
+    });
+  }, [availableOptions.bncc]);
+
+  const bnccPickerFacets = useMemo(() => {
+    const stages = new Set<string>();
+    const components = new Set<string>();
+    const years = new Set<string>();
+
+    bnccPickerOptions.forEach((option) => {
+      if (option.stage) {
+        stages.add(option.stage);
+      }
+      if (option.component) {
+        components.add(option.component);
+      }
+      option.yearTokens.forEach((yearToken) => years.add(yearToken));
+    });
+
+    return {
+      stages: Array.from(stages).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+      components: Array.from(components).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+      years: Array.from(years).sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true })),
+    };
+  }, [bnccPickerOptions]);
+
+  const filteredBnccPickerOptions = useMemo(() => {
+    const normalizedBnccQuery = normalizeSearch(bnccPickerQuery.trim());
+
+    return bnccPickerOptions
+      .filter((option) => !normalizedBnccQuery || option.searchIndex.includes(normalizedBnccQuery))
+      .filter((option) => !bnccPickerFilters.stage || option.stage === bnccPickerFilters.stage)
+      .filter((option) => !bnccPickerFilters.component || option.component === bnccPickerFilters.component)
+      .filter((option) => !bnccPickerFilters.year || option.yearTokens.includes(bnccPickerFilters.year))
+      .sort((optionA, optionB) => {
+        const optionASelected = draftBnccSelection.includes(optionA.code);
+        const optionBSelected = draftBnccSelection.includes(optionB.code);
+
+        if (optionASelected !== optionBSelected) {
+          return optionASelected ? -1 : 1;
+        }
+
+        return optionA.code.localeCompare(optionB.code, undefined, { numeric: true });
+      });
+  }, [bnccPickerOptions, bnccPickerQuery, bnccPickerFilters, draftBnccSelection]);
+
   const normalizedSearchTerm = useMemo(() => normalizeSearch(searchTerm.trim()), [searchTerm]);
   const hasSearchQuery = normalizedSearchTerm.length > 0;
 
   const filteredCollections = useMemo(() => {
     // Explicitly casting the mapped result to ensure correct type inference for filteredCollections
-    return (collections.map(c => ({
+    const result = (collections.map(c => ({
       ...c,
       progress: userProgress[c.id] || undefined
     })) as (Collection & { progress?: number })[]).filter(c => {
-      if (activeTab === 'fund1' && c.level !== 'Educação Infantil') return false;
-      if (activeTab === 'fund2' && c.level !== 'Fundamental I') return false;
+      if (activeTab === 'fund1') {
+        const matchesEI = c.segments?.length
+          ? c.segments.includes('Educação Infantil')
+          : c.level === 'Educação Infantil';
+        if (!matchesEI) return false;
+      }
+      if (activeTab === 'fund2') {
+        const matchesFund = c.segments?.length
+          ? c.segments.includes('E.F. Anos Iniciais')
+          : c.level === 'Fundamental I';
+        if (!matchesFund) return false;
+      }
 
       if (normalizedSearchTerm && !collectionMatchesQuery(c, normalizedSearchTerm)) {
         return false;
@@ -544,7 +1110,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
       return true;
     });
-  }, [collections, userProgress, activeTab, activeFilters, normalizedSearchTerm]);
+
+    if (sortByAge) {
+      result.sort((a, b) => {
+        const numA = parseInt((Array.isArray(a.age_grade) ? a.age_grade[0] : a.age_grade) || '999', 10);
+        const numB = parseInt((Array.isArray(b.age_grade) ? b.age_grade[0] : b.age_grade) || '999', 10);
+        return numA - numB;
+      });
+    }
+
+    return result;
+  }, [collections, userProgress, activeTab, activeFilters, normalizedSearchTerm, sortByAge]);
+
+  const searchBackdropCollections = useMemo(() => {
+    const result = collections.map((collection) => ({
+      ...collection,
+      progress: userProgress[collection.id] || undefined,
+    })) as (Collection & { progress?: number })[];
+
+    if (sortByAge) {
+      result.sort((a, b) => {
+        const numA = parseInt((Array.isArray(a.age_grade) ? a.age_grade[0] : a.age_grade) || '999', 10);
+        const numB = parseInt((Array.isArray(b.age_grade) ? b.age_grade[0] : b.age_grade) || '999', 10);
+        return numA - numB;
+      });
+    }
+
+    return result;
+  }, [collections, userProgress, sortByAge]);
 
   const inProgressCollections = collections.filter(c => (userProgress[c.id] || 0) > 0);
 
@@ -570,10 +1163,66 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     });
   };
 
+  const toggleDraftBncc = (code: string) => {
+    setDraftBnccSelection((prev) => {
+      const exists = prev.includes(code);
+
+      return exists
+        ? prev.filter((item) => item !== code)
+        : [...prev, code];
+    });
+  };
+
+  const resetBnccPickerState = () => {
+    setShowBnccPicker(false);
+    setDraftBnccSelection([]);
+    setBnccPickerQuery('');
+    setBnccPickerFilters(INITIAL_BNCC_PICKER_FILTERS);
+  };
+
+  const clearFilterSelections = () => {
+    setActiveFilters(INITIAL_FILTERS);
+    resetBnccPickerState();
+  };
+
   const resetDiscovery = () => {
     setSearchTerm('');
-    setActiveFilters(INITIAL_FILTERS);
+    clearFilterSelections();
     setActiveTab('all');
+  };
+
+  const openBnccPicker = () => {
+    setDraftBnccSelection(activeFilters.bncc);
+    setBnccPickerQuery('');
+    setBnccPickerFilters(INITIAL_BNCC_PICKER_FILTERS);
+    setShowBnccPicker(true);
+  };
+
+  const closeBnccPicker = () => {
+    setShowBnccPicker(false);
+    setBnccPickerQuery('');
+    setBnccPickerFilters(INITIAL_BNCC_PICKER_FILTERS);
+  };
+
+  const applyBnccPicker = () => {
+    setActiveFilters((prev) => ({
+      ...prev,
+      bncc: draftBnccSelection,
+    }));
+    closeBnccPicker();
+  };
+
+  const clearBnccDraft = () => {
+    setDraftBnccSelection([]);
+    setBnccPickerQuery('');
+    setBnccPickerFilters(INITIAL_BNCC_PICKER_FILTERS);
+  };
+
+  const handleBnccFilterChange = (category: keyof BnccPickerFilters, value: string) => {
+    setBnccPickerFilters((prev) => ({
+      ...prev,
+      [category]: value,
+    }));
   };
 
   const openFilterDrawer = (category?: keyof FilterState) => {
@@ -581,9 +1230,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     setShowFilters(true);
   };
 
+  const closeInlineSearch = () => {
+    onNavigate('home');
+  };
+
+  useEffect(() => {
+    if (!isSearchExperience || showFilters || showBnccPicker) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      closeInlineSearch();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSearchExperience, showFilters, showBnccPicker]);
+
   // Fixed type inference by casting Object.values results to string[][]
   const activeFilterCount = (Object.values(activeFilters) as string[][]).reduce((acc, curr) => acc + curr.length, 0);
   const hasRefinedDiscovery = hasSearchQuery || activeFilterCount > 0 || activeTab !== 'all';
+  const hasFilterOnlySelection = activeFilterCount > 0 && !hasSearchQuery;
+  const showSearchOverlayPanel = hasSearchQuery;
+  const showInlineFilterTrigger = activeFilterCount === 0;
 
   const animationKey = `${activeTab}-${JSON.stringify(activeFilters)}`;
 
@@ -635,6 +1309,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   };
 
   const AccessStatusBanner = () => {
+    if (isSearchExperience) {
+      return null;
+    }
+
     if (!accessBanner || !shouldShowAccessBanner) {
       return null;
     }
@@ -670,98 +1348,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             </button>
           </div>
         </div>
-      </div>
-    );
-  };
-
-  const ProfileHeaderSection = () => {
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-          setIsDropdownOpen(false);
-        }
-      };
-
-      if (isDropdownOpen) {
-        document.addEventListener('mousedown', handleClickOutside);
-      }
-
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }, [isDropdownOpen]);
-
-    if (!profile) return null;
-
-    const hasAvatar = !!profile.avatar_id;
-    const charColor = getCharacterColor(profile.avatar_id);
-
-    return (
-      <div className="relative" ref={dropdownRef}>
-        <button
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="flex items-center gap-4 focus:outline-none group"
-        >
-          <div className="text-right hidden lg:block">
-            <p className="text-sm font-bold text-gray-800">
-              Olá, {getFirstName(profile.full_name || '')}
-            </p>
-            <p className="text-xs text-gray-400 font-medium truncate max-w-[150px]">
-              {profile.email || 'Conta ativa'}
-            </p>
-            {(userRole === 'admin' || userRole === 'editor') && (
-              <div className="mt-1">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${userRole === 'admin'
-                  ? 'bg-purple-100 text-purple-700'
-                  : 'bg-blue-100 text-blue-700'
-                  }`}>
-                  {userRole === 'admin' ? 'Admin' : 'Editor'}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-transparent group-hover:ring-kaboo-primary/10 transition-all overflow-hidden relative border border-gray-100 ${hasAvatar ? charColor : 'bg-kaboo-primary text-white'}`}>
-            {hasAvatar ? (
-              <>
-                <div className={`absolute inset-0 opacity-50 ${getCharacterBgColor(profile.avatar_id)} pointer-events-none`} />
-                <img
-                  key={profile.avatar_id}
-                  src={getCharacterImageUrl(profile.avatar_id!)}
-                  alt="Avatar"
-                  className="w-full h-full object-cover relative z-10"
-                  loading="eager"
-                  fetchPriority="high"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement?.classList.remove('bg-red-100', 'text-red-600');
-                    e.currentTarget.parentElement?.classList.add('bg-kaboo-primary', 'text-white');
-                    const span = document.createElement('span');
-                    span.innerText = getInitials(profile.full_name || '');
-                    e.currentTarget.parentElement?.appendChild(span);
-                  }}
-                />
-              </>
-            ) : (
-              getInitials(profile.full_name || '')
-            )}
-          </div>
-        </button>
-
-        {isDropdownOpen && (
-          <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 animate-fade-in-up origin-top-right">
-            <div className="lg:hidden px-4 py-3 border-b border-gray-100 mb-2">
-              <p className="text-sm font-bold text-gray-800">{profile.full_name}</p>
-              <p className="text-xs text-gray-400">{profile.email || 'Conta ativa'}</p>
-            </div>
-            <button onClick={() => { setIsDropdownOpen(false); onNavigate('my_data'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700 transition-colors text-sm font-bold text-left"><Icons.User size={18} className="text-gray-400" /> Meus Dados</button>
-            <button onClick={() => { setIsDropdownOpen(false); onNavigate('support'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 text-gray-700 transition-colors text-sm font-bold text-left"><Icons.HelpCircle size={18} className="text-gray-400" /> Suporte</button>
-            <div className="h-px bg-gray-100 my-1" />
-            <button onClick={() => { setIsDropdownOpen(false); handleLogout(); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 text-red-500 transition-colors text-sm font-bold text-left"><Icons.LogOut size={18} /> Sair</button>
-          </div>
-        )}
       </div>
     );
   };
@@ -805,16 +1391,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 {availableOptions.characters.map(char => {
                   const isActive = activeFilters.characters.includes(char);
                   return (
-                    <button
+                    <CharacterFilterButton
                       key={char}
+                      character={char}
+                      isActive={isActive}
                       onClick={() => toggleFilter('characters', char)}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all active:scale-95 ${isActive
-                        ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-kaboo-primary/30'
-                        }`}
-                    >
-                      {char}
-                    </button>
+                      onPrepare={() => preloadAvatarImage(char)}
+                    />
                   );
                 })}
               </div>
@@ -856,23 +1439,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
                 <Icons.BookOpen size={14} /> Habilidades BNCC
               </h3>
-              <div className="flex flex-wrap gap-2">
-                {availableOptions.bncc.map(item => {
-                  const isActive = activeFilters.bncc.includes(item);
-                  return (
-                    <button
-                      key={item}
-                      onClick={() => toggleFilter('bncc', item)}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all active:scale-95 text-left leading-tight ${isActive
-                        ? 'bg-green-500 text-white border-green-500 shadow-md shadow-green-500/20'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-green-500/30'
-                        }`}
-                    >
-                      {item}
-                    </button>
-                  );
-                })}
-              </div>
+              <BnccSummaryEntry selectedCodes={activeFilters.bncc} onOpen={openBnccPicker} />
             </section>
           )}
 
@@ -906,7 +1473,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
         <div className="p-4 border-t border-gray-100 bg-white shrink-0 flex gap-4">
           <button
-            onClick={() => setActiveFilters(INITIAL_FILTERS)}
+            onClick={clearFilterSelections}
             className="px-6 py-4 rounded-2xl font-bold text-gray-500 hover:bg-gray-100 transition-colors"
           >
             Limpar
@@ -926,13 +1493,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
   // Skeleton loader component
   const HomeScreenSkeleton = () => (
-    <div className="flex flex-col h-full bg-white md:pb-0 relative" style={{ height: '100vh', minHeight: '100vh' }}>
-      <div className="flex flex-col flex-1 min-h-0" style={{ height: '100%', minHeight: 0, flex: '1 1 0%' }}>
+    <div className="flex flex-col min-h-full bg-white pb-24 md:pb-0 relative">
+      <div className="flex flex-col">
 
         {/* MOBILE HEADER SKELETON */}
-        <div className="md:hidden px-6 py-4 flex justify-between items-center shrink-0 bg-white z-30 border-b border-gray-50">
+        <div className="md:hidden px-6 py-4 flex justify-center items-center shrink-0 bg-white z-30 border-b border-gray-50">
           <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
-          <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
         </div>
 
         {/* DESKTOP HEADER SKELETON */}
@@ -957,9 +1523,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
 
         {/* CONTENT AREA SKELETON */}
-        <div className="px-6 md:px-8 pt-2 md:pt-6 pb-6 flex-1 flex flex-col min-h-0">
+        <div className="px-6 md:px-8 pt-2 md:pt-6 pb-6">
           {/* TITLE AND COUNT SKELETON */}
-          <div className="flex justify-between items-end mb-0 md:mb-4 shrink-0 pb-4 border-b border-gray-100">
+          <div className="flex justify-between items-end pb-4 border-b border-gray-100">
             <div className="h-7 w-48 bg-gray-200 rounded animate-pulse"></div>
             <div className="flex items-center gap-2">
               <div className="h-6 w-8 bg-gray-200 rounded-lg animate-pulse"></div>
@@ -968,7 +1534,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           </div>
 
           {/* GRID SKELETON */}
-          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+          <div className="mt-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
               {[...Array(12)].map((_, i) => (
                 <div key={i} className="w-full animate-pulse">
@@ -989,102 +1555,159 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   }
 
   return (
-    <div className="flex flex-col h-full bg-white md:pb-0 relative" style={{ height: '100vh', minHeight: '100vh' }}>
-      <div className="flex flex-col flex-1 min-h-0" style={{ height: '100%', minHeight: 0, flex: '1 1 0%' }}>
+    <div className="flex flex-col min-h-full bg-white pb-24 md:pb-0 relative">
+      <div className="flex flex-col">
 
-        {/* MOBILE HEADER: Fixed background color, reduced padding, no top margin */}
-        <div className="md:hidden px-6 py-4 flex justify-between items-center shrink-0 bg-white z-30 transition-all border-b border-gray-50">
-          <div className="flex items-center gap-2">
-            <button onClick={() => onNavigate('home')}>
+        <>
+          {/* MOBILE HEADER: Fixed background color, reduced padding, no top margin */}
+          <div className="md:hidden px-6 py-4 flex justify-center items-center shrink-0 bg-white z-30 transition-all border-b border-gray-50">
+            <button onClick={() => onNavigate('home')} aria-label="Ir para a home" className="flex items-center justify-center">
               <img src={LOGO_URL} alt="KABOO" className="h-10 w-auto object-contain" />
             </button>
           </div>
-          <button
-            onClick={() => onNavigate('profile')}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors overflow-hidden border border-gray-100 relative ${!!profile?.avatar_id ? getCharacterColor(profile?.avatar_id) : 'bg-gray-100 text-kaboo-primary hover:bg-kaboo-primary/10'}`}
-          >
-            {profile?.avatar_id ? (
-              <>
-                <div className={`absolute inset-0 rounded-full opacity-50 ${getCharacterBgColor(profile.avatar_id)} pointer-events-none z-0`} />
-                <img
-                  key={profile.avatar_id}
-                  src={getCharacterImageUrl(profile.avatar_id)}
-                  alt="Avatar"
-                  className="w-full h-full object-cover relative z-10"
-                  loading="eager"
-                  fetchPriority="high"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-              </>
-            ) : (
-              <Icons.User size={20} strokeWidth={2.5} />
-            )}
-          </button>
-        </div>
 
-        <div className="hidden md:block shrink-0">
-          <PageHeader title="Coleções" className="!pb-4" rightContent={<ProfileHeaderSection />} />
-        </div>
+          <div className="hidden md:block shrink-0">
+            <PageHeader
+              title="Coleções"
+              className="!pb-4"
+            />
+          </div>
+        </>
 
         <AccessStatusBanner />
 
-        <div className="px-6 md:px-8 mb-4 mt-2 relative z-0 shrink-0 space-y-3">
+        <div className={`px-6 md:px-8 relative z-0 shrink-0 ${isSearchExperience ? 'pb-4 pt-3 space-y-3' : 'mb-4 mt-2 space-y-3'}`}>
+          {isSearchExperience && (
+            <div className="flex items-start justify-between gap-3 rounded-[24px] border border-kaboo-primary/10 bg-kaboo-primary/[0.03] px-4 py-3 animate-fade-in-up md:hidden">
+              <div className="min-w-0">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary">Busca em Coleções</p>
+                <p className="mt-1 text-sm text-gray-500">Pesquise por texto e use os filtros para explorar personagem, CASEL, BNCC ou idade-série.</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeInlineSearch}
+                className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full border border-kaboo-primary/15 bg-white text-kaboo-primary transition-colors hover:bg-kaboo-primary/5"
+                aria-label="Fechar busca"
+              >
+                <Icons.X size={16} />
+              </button>
+            </div>
+          )}
+
+          {isSearchExperience && (
+            <div className="hidden md:flex items-center justify-between gap-4 text-sm text-gray-500 animate-fade-in-up">
+              <p>Pesquise por texto e abra os filtros para refinar por personagem, CASEL, BNCC ou idade-série.</p>
+            </div>
+          )}
+
           <div className="relative w-full">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10">
               <Icons.Search size={18} />
             </div>
 
-            <Input
-              ref={searchInputRef}
-              aria-label="Buscar coleções"
-              placeholder="Buscar por título, tema, BNCC ou personagem"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="h-14 rounded-[28px] border-gray-200 bg-white pl-11 pr-16 md:pr-28 shadow-sm hover:border-kaboo-primary/20 focus:border-kaboo-primary"
-            />
+            {isSearchExperience ? (
+              <>
+                <Input
+                  ref={searchInputRef}
+                  aria-label="Buscar coleções"
+                  placeholder="Título, BNCC, personagem, competência..."
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  className={`h-14 rounded-[28px] pl-11 shadow-sm border-transparent bg-white/90 hover:border-transparent focus:border-kaboo-primary ${showInlineFilterTrigger ? 'pr-24 md:pr-72' : 'pr-24 md:pr-40'}`}
+                />
 
-            <button
-              type="button"
-              onClick={() => openFilterDrawer()}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 h-10 px-3 md:px-4 rounded-[20px] flex items-center gap-2 border transition-all active:scale-95 shadow-sm ${activeFilterCount > 0
-                ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
-                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-white hover:border-kaboo-primary/20'
-                }`}
-              title="Refinar busca"
-            >
-              <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
-              <span className="hidden md:inline text-sm font-bold">Filtros</span>
-              {activeFilterCount > 0 && (
-                <span className={`min-w-5 h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center ${activeFilterCount > 0 ? 'bg-white/20 text-white' : 'bg-kaboo-primary/10 text-kaboo-primary'}`}>
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
+                <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm('')}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition-colors hover:text-gray-600"
+                      title="Limpar busca"
+                    >
+                      <Icons.X size={16} />
+                    </button>
+                  )}
+
+                  {showInlineFilterTrigger && (
+                    <button
+                      type="button"
+                      onClick={() => openFilterDrawer()}
+                      className="inline-flex h-10 items-center gap-2 rounded-[20px] border border-gray-200 bg-white px-3 md:px-4 transition-all active:scale-95 shadow-sm text-gray-600 hover:border-kaboo-primary/20"
+                      title="Refinar busca"
+                    >
+                      <Icons.Filter size={18} strokeWidth={2} />
+                      <span className="hidden md:inline text-sm font-bold">Filtros</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={closeInlineSearch}
+                    className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-gray-200 bg-white px-3 text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
+                    title="Fechar busca"
+                  >
+                    <Icons.X size={16} />
+                    <span className="text-sm font-bold">Fechar</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onNavigate('home', { inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
+                className="w-full h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-16 md:pr-28 shadow-sm hover:border-kaboo-primary/20 text-left text-gray-400 font-medium"
+                aria-label="Abrir pesquisa"
+              >
+                Buscar por título, tema, BNCC ou personagem
+              </button>
+            )}
+
+            {!isSearchExperience && (
+              <button
+                type="button"
+                onClick={() => openFilterDrawer()}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 h-10 px-3 md:px-4 rounded-[20px] flex items-center gap-2 border transition-all active:scale-95 shadow-sm ${activeFilterCount > 0
+                  ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
+                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-white hover:border-kaboo-primary/20'
+                  }`}
+                title="Refinar busca"
+              >
+                <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
+                <span className="hidden md:inline text-sm font-bold">Filtros</span>
+                {activeFilterCount > 0 && (
+                  <span className={`min-w-5 h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center ${activeFilterCount > 0 ? 'bg-white/20 text-white' : 'bg-kaboo-primary/10 text-kaboo-primary'}`}>
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive
-                    ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20'
-                    : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100'
-                    }`}
-                >
-                  {tab.id === 'all' && <Icons.Grid size={14} />}
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+          {!isSearchExperience && (
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+              {TABS.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive
+                      ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20'
+                      : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100'
+                      }`}
+                  >
+                    {tab.id === 'all' && <Icons.Grid size={14} />}
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {(activeFilterCount > 0 || hasSearchQuery) && (
+        {(activeFilterCount > 0 || (!isSearchExperience && hasSearchQuery)) && (
           <div className="px-6 md:px-8 mb-4 flex gap-2 flex-wrap animate-fade-in-up shrink-0">
-            {hasSearchQuery && (
+            {!isSearchExperience && hasSearchQuery && (
               <span onClick={() => setSearchTerm('')} className="cursor-pointer px-3 py-1 rounded-full bg-kaboo-primary/10 text-kaboo-primary text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
                 Busca: {searchTerm.trim()} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
@@ -1109,18 +1732,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 {f} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             ))}
-            <button onClick={resetDiscovery} className="text-xs font-bold text-kaboo-primary hover:underline ml-1">
-              Limpar tudo
-            </button>
+            {!isSearchExperience && (
+              <button onClick={resetDiscovery} className="text-xs font-bold text-kaboo-primary hover:underline ml-1">
+                Limpar tudo
+              </button>
+            )}
           </div>
         )}
 
-        {inProgressCollections.length > 0 && !hasRefinedDiscovery && (
+        {!isSearchExperience && inProgressCollections.length > 0 && !hasRefinedDiscovery && (
           <div className="mb-4 shrink-0">
             <h2 className="px-6 md:px-8 text-xl font-bold text-gray-800 mb-4">Continue onde parou</h2>
             <div className="flex gap-4 overflow-x-auto px-6 md:px-8 pb-6 no-scrollbar snap-x snap-mandatory">
               {inProgressCollections.map((c) => {
                 const progress = userProgress[c.id] || 0;
+                const collectionTypeMeta = getCollectionTypeMeta(c);
+                const displayCoverImage = getCollectionDisplayCover(c) || c.cover_image;
                 return (
                   <div
                     key={c.id}
@@ -1128,9 +1755,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     className="flex-shrink-0 w-64 bg-white rounded-2xl shadow-lg shadow-gray-100/50 p-3 border border-gray-50 snap-center cursor-pointer active:scale-95 transition-transform hover:border-kaboo-primary/30"
                   >
                     <div className="flex gap-4">
-                      <img src={c.cover_image} alt={c.title} className="w-20 h-20 rounded-xl object-cover shadow-sm bg-gray-200" />
+                      <div className="relative flex-shrink-0">
+                        <img src={displayCoverImage} alt={c.title} className="w-20 h-20 rounded-xl object-cover shadow-sm bg-gray-200" />
+                        <span className={`absolute -top-2 left-2 inline-flex items-center px-2 py-1 rounded-full border text-[9px] font-black uppercase tracking-[0.12em] ${collectionTypeMeta.softClassName}`}>
+                          {collectionTypeMeta.shortLabel}
+                        </span>
+                      </div>
                       <div className="flex-1 py-1">
                         <h3 className="font-bold text-gray-800 text-sm leading-tight line-clamp-2 mb-2">{c.title}</h3>
+                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.14em]">{collectionTypeMeta.label}</p>
                       </div>
                     </div>
                     <div className="mt-3 px-1">
@@ -1145,70 +1778,218 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           </div>
         )}
 
-        <div className="px-6 md:px-8 pt-2 md:pt-6 pb-6 flex-1 flex flex-col min-h-0" style={{ minHeight: 0 }}>
-          <div className="flex justify-between items-end mb-0 md:mb-4 shrink-0 pb-4 border-b border-gray-100">
-            <div>
-              {hasSearchQuery && (
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-kaboo-primary mb-1">Busca ativa</p>
-              )}
-              <h2 className="text-xl font-bold text-gray-800">
-                {hasSearchQuery ? 'Resultados da busca' :
-                  activeTab === 'all' && activeFilterCount === 0 ? 'Todas as Coleções' :
-                  activeFilterCount > 0 ? 'Resultados filtrados' :
-                  activeTab === 'fund1' ? 'Educação Infantil' : 'Fundamental I'}
-              </h2>
-              {hasSearchQuery && (
-                <p className="text-sm text-gray-500 mt-1 line-clamp-1">Pesquisando por “{searchTerm.trim()}”</p>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
-                {filteredCollections.length}
-              </span>
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing || loading}
-                className="w-7 h-7 rounded-lg bg-gray-50 hover:bg-gray-100 active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Atualizar coleções"
-              >
-                <Icons.RotateCw
-                  size={14}
-                  className={`text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`}
-                />
-              </button>
-            </div>
-          </div>
+        <div className="px-6 md:px-8 pt-2 md:pt-6 pb-6 relative">
+          {isSearchExperience ? (
+            hasFilterOnlySelection ? (
+              <>
+                <div className="flex justify-between items-end pb-4 border-b border-gray-100">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-kaboo-primary mb-1">Filtros aplicados</p>
+                    <h2 className="text-xl font-bold text-gray-800">Coleções filtradas</h2>
+                    <p className="text-sm text-gray-500 mt-1">{filteredCollections.length} {filteredCollections.length === 1 ? 'coleção disponível' : 'coleções disponíveis'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={resetDiscovery}
+                    className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
+                  >
+                    Limpar
+                  </button>
+                </div>
 
-          {filteredCollections.length > 0 ? (
-            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar" style={{ minHeight: 0 }}>
-              <GridView
-                key={animationKey}
-                collections={filteredCollections}
-                onCollectionClick={handleCollectionClick}
-                grants={contentGrants}
-              />
-            </div>
-          ) : (
-            <div className="py-20 text-center flex flex-col items-center">
-              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4">
-                <Icons.Search size={32} />
+                {filteredCollections.length > 0 ? (
+                  <div className="mt-6">
+                    <GridView
+                      key={`filter-only-${animationKey}`}
+                      collections={filteredCollections}
+                      onCollectionClick={handleCollectionClick}
+                      grants={contentGrants}
+                    />
+                  </div>
+                ) : (
+                  <div className="py-20 text-center flex flex-col items-center">
+                    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4">
+                      <Icons.Search size={32} />
+                    </div>
+                    <h3 className="text-gray-800 font-bold mb-2">Nenhum item encontrado</h3>
+                    <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">
+                      Não encontramos resultados para os filtros selecionados.
+                    </p>
+                    <button
+                      onClick={resetDiscovery}
+                      className="px-6 py-3 bg-kaboo-primary/10 text-kaboo-primary rounded-xl font-bold hover:bg-kaboo-primary/20 transition-colors"
+                    >
+                      Limpar filtros
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+              <div aria-hidden="true" className="select-none">
+                <div className="flex justify-between items-end pb-4 border-b border-gray-100">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400 mb-1">Acervo</p>
+                    <h2 className="text-xl font-bold text-gray-800">Todas as Coleções</h2>
+                    <p className="text-sm text-gray-500 mt-1">{searchBackdropCollections.length} itens disponíveis para navegar</p>
+                  </div>
+                  <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
+                    {searchBackdropCollections.length}
+                  </span>
+                </div>
+
+                <div className="mt-6">
+                  <GridView
+                    key={`search-backdrop-${sortByAge ? 'age' : 'default'}`}
+                    collections={searchBackdropCollections}
+                    onCollectionClick={handleCollectionClick}
+                    grants={contentGrants}
+                  />
+                </div>
               </div>
-              <h3 className="text-gray-800 font-bold mb-2">Nenhum item encontrado</h3>
-              <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">
-                Não encontramos resultados para a combinação atual de busca e filtros.
-              </p>
-              <button
-                onClick={resetDiscovery}
-                className="px-6 py-3 bg-kaboo-primary/10 text-kaboo-primary rounded-xl font-bold hover:bg-kaboo-primary/20 transition-colors"
-              >
-                Limpar busca e filtros
-              </button>
-            </div>
+
+              <div
+                aria-hidden="true"
+                onClick={closeInlineSearch}
+                className="absolute inset-0 z-10 rounded-[32px] bg-white/62 backdrop-blur-[3px]"
+              />
+
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-20">
+                {showSearchOverlayPanel ? (
+                  <div className="mx-auto max-w-5xl pointer-events-auto rounded-[30px] border border-white/80 bg-white/95 p-4 md:p-5 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/80">
+                          {hasSearchQuery ? 'Resultados rápidos' : 'Filtros aplicados'}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500">
+                          A busca fica por cima da grade, mantendo o contexto do acervo enquanto você refina.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={resetDiscovery}
+                        className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
+                      >
+                        Limpar
+                      </button>
+                    </div>
+
+                    <div className="max-h-[min(68vh,calc(100vh-18rem))] overflow-y-auto pr-1">
+                      <SearchResultsList
+                        collections={filteredCollections}
+                        onCollectionClick={handleCollectionClick}
+                        searchTerm={searchTerm}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-center pt-8">
+                    <div className="rounded-full border border-white/80 bg-white/88 px-4 py-2 text-sm font-medium text-gray-500 shadow-[0_14px_34px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+                      Digite para buscar ou abra os filtros, os cards continuam visíveis ao fundo.
+                    </div>
+                  </div>
+                )}
+              </div>
+              </>
+            )
+          ) : (
+            <>
+              <div className="flex justify-between items-end pb-4 border-b border-gray-100">
+                <div>
+                  {hasSearchQuery && (
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-kaboo-primary mb-1">Busca ativa</p>
+                  )}
+                  <h2 className="text-xl font-bold text-gray-800">
+                    {hasSearchQuery ? 'Resultados da busca' :
+                      activeTab === 'all' && activeFilterCount === 0 ? 'Todas as Coleções' :
+                      activeFilterCount > 0 ? 'Resultados filtrados' :
+                      activeTab === 'fund1' ? 'Ed. Infantil' : 'E.F. Anos Iniciais'}
+                  </h2>
+                  {hasSearchQuery && (
+                    <p className="text-sm text-gray-500 mt-1 line-clamp-1">Pesquisando por “{searchTerm.trim()}”</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSortByAge(prev => !prev)}
+                    className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                      sortByAge
+                        ? 'bg-kaboo-primary text-white shadow-sm'
+                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                    }`}
+                    title="Ordenar por faixa etária"
+                  >
+                    <Icons.ArrowUpDown size={12} />
+                    Idade
+                  </button>
+                  <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
+                    {filteredCollections.length}
+                  </span>
+                  <button
+                    onClick={handleRefresh}
+                    disabled={isRefreshing || loading}
+                    className="w-7 h-7 rounded-lg bg-gray-50 hover:bg-gray-100 active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Atualizar coleções"
+                  >
+                    <Icons.RotateCw
+                      size={14}
+                      className={`text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {filteredCollections.length > 0 ? (
+                <div className="mt-6">
+                  <GridView
+                    key={animationKey}
+                    collections={filteredCollections}
+                    onCollectionClick={handleCollectionClick}
+                    grants={contentGrants}
+                  />
+                </div>
+              ) : (
+                <div className="py-20 text-center flex flex-col items-center">
+                  <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4">
+                    <Icons.Search size={32} />
+                  </div>
+                  <h3 className="text-gray-800 font-bold mb-2">Nenhum item encontrado</h3>
+                  <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">
+                    Não encontramos resultados para a combinação atual de busca e filtros.
+                  </p>
+                  <button
+                    onClick={resetDiscovery}
+                    className="px-6 py-3 bg-kaboo-primary/10 text-kaboo-primary rounded-xl font-bold hover:bg-kaboo-primary/20 transition-colors"
+                  >
+                    Limpar busca e filtros
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
 
       {showFilters && <FilterModal />}
+
+      {showBnccPicker && (
+        <BnccPickerSheet
+          query={bnccPickerQuery}
+          options={filteredBnccPickerOptions}
+          selectedCodes={draftBnccSelection}
+          filters={bnccPickerFilters}
+          stageOptions={bnccPickerFacets.stages}
+          componentOptions={bnccPickerFacets.components}
+          yearOptions={bnccPickerFacets.years}
+          onQueryChange={setBnccPickerQuery}
+          onFilterChange={handleBnccFilterChange}
+          onToggle={toggleDraftBncc}
+          onClear={clearBnccDraft}
+          onClose={closeBnccPicker}
+          onApply={applyBnccPicker}
+        />
+      )}
 
       {showWelcome && (
         <div

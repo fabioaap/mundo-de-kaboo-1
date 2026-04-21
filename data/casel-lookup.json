@@ -1,0 +1,57 @@
+{
+  "autoconsciencia": {
+    "label": "Autoconsciência",
+    "dimension": "Reconhecer emoções, valores e pontos fortes",
+    "focus": "Leitura de si e autoestima",
+    "description": "Capacidade de perceber emoções, pensamentos, interesses e forças pessoais, compreendendo como esses elementos influenciam comportamentos e escolhas.",
+    "skills": [
+      "Nomear emoções",
+      "Reconhecer forças e limites",
+      "Fortalecer autoestima"
+    ]
+  },
+  "autogestao": {
+    "label": "Autogestão",
+    "dimension": "Regular emoções e ações",
+    "focus": "Organização, foco e perseverança",
+    "description": "Competência para regular emoções, pensamentos e comportamentos em diferentes situações, mantendo organização, motivação e persistência diante de desafios.",
+    "skills": [
+      "Autocontrole",
+      "Definição de metas",
+      "Persistência"
+    ]
+  },
+  "consciencia_social": {
+    "label": "Consciência Social",
+    "dimension": "Compreender o outro e o contexto",
+    "focus": "Empatia, respeito e valorização da diversidade",
+    "description": "Capacidade de adotar a perspectiva de outras pessoas, demonstrando empatia, respeito por diferenças culturais e sensibilidade ao contexto social e comunitário.",
+    "skills": [
+      "Empatia",
+      "Respeito à diversidade",
+      "Escuta ativa"
+    ]
+  },
+  "habilidades_de_relacionamento": {
+    "label": "Habilidades de Relacionamento",
+    "dimension": "Construir vínculos saudáveis",
+    "focus": "Comunicação, cooperação e resolução de conflitos",
+    "description": "Competência para estabelecer e manter relações saudáveis, comunicar-se com clareza, cooperar, pedir ajuda e lidar com conflitos de maneira construtiva.",
+    "skills": [
+      "Comunicação clara",
+      "Cooperação",
+      "Resolução de conflitos"
+    ]
+  },
+  "tomada_de_decisao_responsavel": {
+    "label": "Tomada de Decisão Responsável",
+    "dimension": "Escolher com consciência",
+    "focus": "Análise de consequências e cuidado coletivo",
+    "description": "Capacidade de fazer escolhas éticas e construtivas sobre comportamento pessoal e social, considerando segurança, normas, bem-estar próprio e impacto sobre os outros.",
+    "skills": [
+      "Analisar consequências",
+      "Pensamento ético",
+      "Cuidado com o coletivo"
+    ]
+  }
+}

@@ -98,8 +98,8 @@ sequenceDiagram
         U->>DS: Clica "Assistir Vídeo"
         DS->>CM: fecha modal
         CM->>HS: onNavigate('player_video', {collectionId})
-    else Materiais Extras
-        U->>DS: Clica "Materiais Extras"
+    else Materiais da Coleção
+        U->>DS: Clica "Materiais da Coleção"
         DS->>DS: abre ExtraToolsScreen inline
     end
 ```
