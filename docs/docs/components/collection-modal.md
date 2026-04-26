@@ -10,7 +10,7 @@ sidebar_position: 3
 
 ## Descrição
 
-Modal exibido ao clicar em uma coleção nas telas `home` ou `search`. Apresenta os detalhes completos da coleção e os botões de acesso ao conteúdo.
+Modal exibido ao clicar em uma coleção nas telas `home` ou `search`. Apresenta os detalhes completos do item, repetindo o formato visual de descoberta com badge de `Kit` ou `Livro` e os botões de acesso ao conteúdo disponível.
 
 ## Props
 
@@ -36,7 +36,9 @@ const isModalOpen =
 
 ## Conteúdo exibido
 
-- **Capa da coleção** com cor de tema como fundo
+- **Capa condicional** do item, respeitando `kit_cover_image` quando o formato for kit
+- **Badge de formato** para distinguir `Kit multimodal` e `Livro avulso`
+- **Seção "Livros do Kit"** apenas quando o kit tiver mais de um livro vinculado
 - **Título e nível escolar**
 - **Tema e objetivos de aprendizagem**
 - **Personagens** da história
@@ -49,14 +51,20 @@ const isModalOpen =
 
 | Botão | Navega para | Condição |
 |-------|------------|---------|
-| 📖 Ler livro | `player_book` | `pdf_url` definido |
-| 🎧 Ouvir áudio | `player_audio` | `audio_url` definido |
-| 🎥 Assistir vídeo | `player_video` | `video_url` definido |
-| 🔧 Ferramentas | `tools` | `extra_materials` não vazio |
+| Leitura | `player_book` | ativo tipado `reading` disponível |
+| Contação da História | `player_audio` | ativo tipado `storytelling` disponível |
+| Desenho Animado / Com Libras | `player_video` | ativo tipado de vídeo disponível |
+| Materiais da Coleção | preview e download local | biblioteca tipada ou `extra_materials` não vazio |
 
 ## Loading state
 
 O modal abre imediatamente quando `collectionId` está nos params, mas exibe um skeleton (`ModalSkeleton`) enquanto os dados da coleção ainda estão sendo carregados.
+
+## Drill-down interno
+
+- Kits reais continuam usando `kit_book_ids`, mas a UX agora trata 0 ou 1 vínculo como experiência direta do próprio kit.
+- Quando houver só 1 livro vinculado, o CTA raiz de `Leitura` permanece nos acessos rápidos do kit e não existe drill-down intermediário.
+- O drill-down interno e o CTA `Voltar ao kit` ficam reservados para kits com mais de um livro vinculado.
 
 ## Subcomponentes
 

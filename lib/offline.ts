@@ -1,4 +1,5 @@
 import { Collection } from '../types';
+import { logger } from './logger';
 
 const CACHE_NAME = 'kaboo-offline-v1';
 const STORAGE_KEY = 'offline_collections';
@@ -44,11 +45,11 @@ export const offlineManager = {
         // os outros continuem sendo salvos.
         await Promise.allSettled(
           urlsToCache.map(url => 
-            cache.add(url).catch(e => console.warn(`Falha ao cachear ${url}:`, e))
+            cache.add(url).catch(e => logger.warn(`Falha ao cachear ${url}:`, e))
           )
         );
       } catch (e) {
-        console.error('Erro ao acessar Cache API:', e);
+        logger.error('Erro ao acessar Cache API:', e);
       }
     }
   },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Icons } from './Icons';
-import { Button } from './Button';
+import { Button } from '../design-system';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -40,14 +40,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-100" />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-100">
+      <div role="dialog" aria-modal="true" aria-labelledby="confirmation-modal-title" className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-100">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
               <Icons.AlertCircle size={20} className="text-red-600" />
             </div>
-            <h2 className="text-lg font-bold text-gray-800">{title}</h2>
+            <h2 id="confirmation-modal-title" className="text-lg font-bold text-gray-800">{title}</h2>
           </div>
         </div>
 

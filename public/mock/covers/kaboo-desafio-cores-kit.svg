@@ -1,0 +1,22 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="140" y1="100" x2="980" y2="1030" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EEF7FF"/>
+      <stop offset="1" stop-color="#D8EAFF"/>
+    </linearGradient>
+    <filter id="shadow" x="80" y="40" width="980" height="1040" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="30" stdDeviation="24" flood-color="#184A77" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="1200" rx="56" fill="url(#bg)"/>
+  <g filter="url(#shadow)">
+    <path d="M270 120H830L950 224H390L270 120Z" fill="#6CA6D4"/>
+    <path d="M830 120L950 224V920L830 826V120Z" fill="#1D64A1"/>
+    <rect x="190" y="224" width="640" height="704" rx="28" fill="#F9FDFF"/>
+    <rect x="236" y="270" width="548" height="612" rx="24" fill="#FFFFFF"/>
+    <image href="/mock/covers/kaboo-desafio-cores.png" x="274" y="308" width="472" height="536" preserveAspectRatio="xMidYMid slice"/>
+    <rect x="274" y="308" width="472" height="536" rx="20" fill="none" stroke="#C8E0F2" stroke-width="8"/>
+    <rect x="274" y="868" width="472" height="80" rx="20" fill="#1D64A1"/>
+    <text x="510" y="916" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="38" font-weight="700">KIT MULTIMODAL</text>
+  </g>
+</svg>

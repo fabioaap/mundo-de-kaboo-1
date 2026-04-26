@@ -1,6 +1,11 @@
+/// <reference types="vitest/config" />
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'node:url';
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+import { playwright } from '@vitest/browser-playwright';
+const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
 const normalizeBasePath = (basePath: string): string => {
   if (basePath === '' || basePath === '.' || basePath === './') {
@@ -15,6 +20,7 @@ const base = normalizeBasePath(
   process.env.VITE_PUBLIC_BASE || (process.env.GITHUB_ACTIONS === 'true' ? './' : '/')
 );
 
+// More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   base,
   server: {
@@ -34,7 +40,7 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom']
   },
-  assetsInclude: ['**/*.css'],
+  assetsInclude: ['**/*.pdf'],
   optimizeDeps: {
     include: ['react-pdf', 'pdfjs-dist'],
     esbuildOptions: {
@@ -46,5 +52,37 @@ export default defineConfig({
       transformMixedEsModules: true,
       include: [/node_modules/]
     }
+  },
+  test: {
+    projects: [
+      {
+        test: {
+          name: 'unit',
+          environment: 'node',
+          include: ['**/*.test.ts'],
+          exclude: ['**/*.stories.*', 'node_modules/**', 'dist/**'],
+        }
+      },
+      {
+        extends: true,
+        plugins: [
+        // The plugin will run tests for the stories defined in your Storybook config
+        // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
+        storybookTest({
+          configDir: path.join(dirname, '.storybook')
+        })],
+        test: {
+          name: 'storybook',
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright({}),
+            instances: [{
+              browser: 'chromium'
+            }]
+          }
+        }
+      }
+    ]
   }
 });

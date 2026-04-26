@@ -15,6 +15,8 @@ interface BookReaderScreenProps {
 export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, onBack }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [forcePortrait, setForcePortrait] = useState(false);
+  const [textMode, setTextMode] = useState(false);
   const flipbookRef = useRef<any>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -126,8 +128,8 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const rgb = hexToRgb(themeColor);
   const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 
-  // Show orientation overlay if in portrait mode
-  if (!isLandscape) {
+  // Show orientation overlay if in portrait mode (but not if user chose to continue)
+  if (!isLandscape && !forcePortrait) {
     return (
       <div 
         className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden" 
@@ -183,6 +185,12 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
           <p className="text-lg text-white/90 mb-6 drop-shadow-md">
             Para uma melhor experiência de leitura, gire seu dispositivo para o modo horizontal.
           </p>
+          <button
+            onClick={() => setForcePortrait(true)}
+            className="text-sm text-white/60 underline underline-offset-2 hover:text-white/90 transition-colors mt-2"
+          >
+            Continuar em retrato mesmo assim
+          </button>
         </div>
       </div>
     );
@@ -222,7 +230,18 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             </div>
           </div>
 
-          <div className="w-12" />
+          <div className="w-12">
+            {collection.text_content && (
+              <button
+                onClick={() => setTextMode(prev => !prev)}
+                className={`w-12 h-12 rounded-full backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-95 border border-white/30 ${textMode ? 'bg-white/40 text-white' : 'bg-black/20 text-white hover:bg-black/30'}`}
+                aria-label={textMode ? 'Modo flipbook' : 'Modo texto'}
+                title={textMode ? 'Voltar ao flipbook' : 'Ler em modo texto'}
+              >
+                <Icons.Type size={20} strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -237,7 +256,35 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
         </button>
       )}
 
-      {/* Book Container - Full screen centered for mobile landscape */}
+      {/* Text mode toggle for mobile landscape */}
+      {isMobileLandscape && collection.text_content && (
+        <button
+          onClick={() => setTextMode(prev => !prev)}
+          className={`fixed top-4 right-4 z-30 w-12 h-12 rounded-full backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-95 border border-white/30 ${textMode ? 'bg-white/40 text-white' : 'bg-black/20 text-white hover:bg-black/30'}`}
+          aria-label={textMode ? 'Modo flipbook' : 'Modo texto'}
+          title={textMode ? 'Voltar ao flipbook' : 'Ler em modo texto'}
+        >
+          <Icons.Type size={20} strokeWidth={2.5} />
+        </button>
+      )}
+
+      {/* Text Mode View */}
+      {textMode && collection.text_content ? (
+        <div className="flex-1 relative z-10 overflow-auto">
+          <div
+            className="max-w-2xl mx-auto px-6 py-8 text-gray-800 bg-white min-h-full rounded-t-2xl mt-2"
+            role="article"
+            aria-label={`Texto do livro: ${collection.title}`}
+          >
+            <h1 className="text-2xl font-bold mb-6">{collection.title}</h1>
+            {collection.text_content.split('\n\n').map((paragraph, i) => (
+              <p key={i} className="text-base leading-relaxed mb-4">{paragraph}</p>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Book Container - Full screen centered for mobile landscape */}
       <div 
         className={`${isMobileLandscape ? 'fixed inset-0 flex items-center justify-center z-10' : 'flex-1 relative z-10 overflow-hidden'}`} 
         style={isMobileLandscape ? { minHeight: 0 } : { minHeight: 0 }}
@@ -326,6 +373,8 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             <Icons.ChevronLeft size={28} className="rotate-180" strokeWidth={2.5} />
           </button>
         </div>
+      )}
+        </>
       )}
     </div>
   );

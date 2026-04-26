@@ -17,6 +17,35 @@
 BEGIN;
 
 -- ============================================================
+-- 0. CHARACTERS (catálogo canônico)
+-- ============================================================
+INSERT INTO characters (
+  id,
+  name,
+  description,
+  traits,
+  aliases,
+  image_url,
+  status
+) VALUES
+  ('kaboo', 'Kaboo', 'O protagonista curioso que adora aventuras e mistérios.', ARRAY['Curioso','Corajoso','Amigo'], ARRAY[]::text[], NULL, 'active'),
+  ('baratao', 'Baratão', 'O grande aventureiro do grupo, sempre pronto para uma nova empreitada.', ARRAY['Aventureiro','Forte','Protetor'], ARRAY['Baratao'], NULL, 'active'),
+  ('baratinha', 'Baratinha', 'A mais esperta do grupo, resolve problemas com criatividade.', ARRAY['Esperta','Criativa','Engenhosa'], ARRAY[]::text[], NULL, 'active'),
+  ('batatinha', 'Batatinha', 'O mais gentil de todos, sempre ajuda quem precisa.', ARRAY['Gentil','Generoso','Paciente'], ARRAY[]::text[], NULL, 'active'),
+  ('blado', 'Blado', 'O amigo brincalhão que transforma tudo em diversão.', ARRAY['Brincalhão','Alegre','Divertido'], ARRAY[]::text[], NULL, 'active'),
+  ('dr-ratazana', 'Dr. Ratazana', 'O vilão intelectual que desafia os heróis com enigmas.', ARRAY['Inteligente','Astuto','Misterioso'], ARRAY['Dr Ratazana','Ratazana'], NULL, 'active'),
+  ('gaio', 'Gaio', 'O artista do grupo, expressivo e cheio de cor.', ARRAY['Artístico','Expressivo','Sensível'], ARRAY[]::text[], NULL, 'active'),
+  ('papa', 'Papa', 'O protetor do grupo, sábio e carinhoso.', ARRAY['Sábio','Carinhoso','Protetor'], ARRAY[]::text[], NULL, 'active')
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  traits = EXCLUDED.traits,
+  aliases = EXCLUDED.aliases,
+  image_url = EXCLUDED.image_url,
+  status = EXCLUDED.status,
+  updated_at = NOW();
+
+-- ============================================================
 -- 1. COLLECTIONS (16 registros)
 -- ============================================================
 INSERT INTO collections (
@@ -293,7 +322,7 @@ INSERT INTO collections (
   '#E35E37',
   'Cooperação, pensamento investigativo e brincadeira simbólica',
   'Participar de brincadeiras cooperativas com pistas e desafios; Fazer inferências com base em indícios visuais ou verbais; Respeitar diferentes formas de participação nas brincadeiras em grupo; Demonstrar curiosidade e persistência ao seguir pistas; Relatar como se sentiu e reconhecer o valor do trabalho em equipe.',
-  ARRAY[]::text[],
+  ARRAY['Gaio'],
   ARRAY['EI03ET03','EI03EO01','EI03CG05','EI03EO03','EI03EF03','EI03CG04','EI03ET06'],
   ARRAY['Habilidades de Relacionamento','Tomada de Decisão Responsável'],
   ARRAY['3 anos','4 anos','5 anos'],
@@ -356,6 +385,27 @@ ON CONFLICT (id) DO UPDATE SET
   audio_url           = EXCLUDED.audio_url,
   video_url           = EXCLUDED.video_url,
   extra_materials     = EXCLUDED.extra_materials;
+
+UPDATE collections c
+SET character_ids = COALESCE(
+  ARRAY(
+    SELECT resolved.id
+    FROM (
+      SELECT DISTINCT ON (matched.id) matched.id, legacy.ord
+      FROM unnest(COALESCE(c.characters, '{}'::text[])) WITH ORDINALITY AS legacy(name, ord)
+      JOIN characters matched
+        ON lower(matched.name) = lower(legacy.name)
+        OR EXISTS (
+          SELECT 1
+          FROM unnest(matched.aliases) AS alias(name_alias)
+          WHERE lower(name_alias) = lower(legacy.name)
+        )
+      ORDER BY matched.id, legacy.ord
+    ) AS resolved
+    ORDER BY resolved.ord
+  ),
+  '{}'::text[]
+);
 
 -- ============================================================
 -- 2. COLLECTION_RESOURCES (14 registros)

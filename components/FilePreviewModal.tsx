@@ -18,8 +18,12 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  const stripUrlDecorators = (url: string) => {
+    return url.split('#')[0]?.split('?')[0] ?? url;
+  };
+
   const getFileTypeFromUrl = (url: string): 'pdf' | 'audio' | 'video' | 'image' | 'other' => {
-    const lowerUrl = url.toLowerCase();
+    const lowerUrl = stripUrlDecorators(url).toLowerCase();
     if (lowerUrl.includes('.pdf')) return 'pdf';
     if (lowerUrl.match(/\.(mp3|wav|ogg|m4a|aac)$/)) return 'audio';
     if (lowerUrl.match(/\.(mp4|webm|ogg|mov|avi)$/)) return 'video';

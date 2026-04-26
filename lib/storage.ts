@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { logger } from './logger';
 
 const STORAGE_BUCKET = 'collections'; // Bucket name for collections files
 
@@ -62,7 +63,7 @@ export function extractOriginalFileName(url: string): string {
  */
 export async function uploadFile(
   file: File,
-  folder: 'covers' | 'pdfs' | 'audio' | 'video' | 'extras',
+  folder: 'covers' | 'characters' | 'pdfs' | 'audio' | 'video' | 'extras',
   collectionId?: string,
   onProgress?: UploadProgressCallback
 ): Promise<UploadResult> {
@@ -70,7 +71,7 @@ export async function uploadFile(
     // Check if bucket exists first (non-blocking - we'll try upload anyway)
     const bucketCheck = await checkBucketExists();
     if (!bucketCheck.exists && bucketCheck.error) {
-      console.warn('Bucket check warning:', bucketCheck.error);
+      logger.warn('Bucket check warning:', bucketCheck.error);
       // Don't return early - try the upload anyway to get the real error
     }
 
@@ -89,7 +90,7 @@ export async function uploadFile(
       : `${folder}/temp/${fileName}`;
 
     // Upload file with progress simulation
-    console.log('Uploading to path:', path, 'File size:', file.size, 'File type:', file.type);
+    logger.log('Uploading to path:', path, 'File size:', file.size, 'File type:', file.type);
     
     // Start progress simulation
     let currentProgress = 10;
@@ -122,7 +123,7 @@ export async function uploadFile(
 
     if (error) {
       // Don't set progress to 100 on error
-      console.error('Upload error details:', {
+      logger.error('Upload error details:', {
         message: error.message,
         statusCode: (error as any).statusCode,
         error: error
@@ -188,7 +189,7 @@ export async function uploadFile(
 
     return { url: urlData.publicUrl, error: null, originalFileName };
   } catch (error: any) {
-    console.error('Upload exception:', error);
+    logger.error('Upload exception:', error);
     return { url: null, error: error.message || 'Erro ao fazer upload do arquivo' };
   }
 }
@@ -204,7 +205,7 @@ export async function deleteFile(fileUrl: string): Promise<boolean> {
     const bucketIndex = pathParts.indexOf(STORAGE_BUCKET);
     
     if (bucketIndex === -1) {
-      console.error('Invalid file URL');
+      logger.error('Invalid file URL');
       return false;
     }
 
@@ -215,13 +216,13 @@ export async function deleteFile(fileUrl: string): Promise<boolean> {
       .remove([path]);
 
     if (error) {
-      console.error('Delete error:', error);
+      logger.error('Delete error:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Delete exception:', error);
+    logger.error('Delete exception:', error);
     return false;
   }
 }
@@ -234,7 +235,7 @@ export async function checkBucketExists(): Promise<{ exists: boolean; error?: st
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
     
     if (listError) {
-      console.error('Error listing buckets:', listError);
+      logger.error('Error listing buckets:', listError);
       // If we can't list buckets, we might not have permission
       if (listError.message?.includes('permission') || listError.message?.includes('policy') || listError.message?.includes('row-level security')) {
         return { 
@@ -246,7 +247,7 @@ export async function checkBucketExists(): Promise<{ exists: boolean; error?: st
     }
 
     const bucketNames = buckets?.map(b => b.name) || [];
-    console.log('Available buckets:', bucketNames);
+    logger.log('Available buckets:', bucketNames);
     
     const bucketExists = buckets?.some(bucket => bucket.name === STORAGE_BUCKET);
     
@@ -264,7 +265,7 @@ export async function checkBucketExists(): Promise<{ exists: boolean; error?: st
       .list('', { limit: 1 });
 
     if (testError) {
-      console.error('Error accessing bucket:', testError);
+      logger.error('Error accessing bucket:', testError);
       if (testError.message?.includes('permission') || testError.message?.includes('policy') || testError.message?.includes('row-level security')) {
         return {
           exists: true,
@@ -276,7 +277,7 @@ export async function checkBucketExists(): Promise<{ exists: boolean; error?: st
 
     return { exists: true };
   } catch (error: any) {
-    console.error('Exception checking bucket:', error);
+    logger.error('Exception checking bucket:', error);
     return { exists: false, error: error.message || 'Erro ao verificar bucket' };
   }
 }

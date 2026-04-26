@@ -1,8 +1,9 @@
-import React from 'react';
-import { Button } from '../components/Button';
+import React, { useEffect } from 'react';
+import { Button } from '../design-system';
 import { ScreenName } from '../types';
 import { Icons } from '../components/Icons';
 import { LOGO_URL } from '../constants';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface EmailConfirmationScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -15,6 +16,17 @@ interface EmailConfirmationScreenProps {
 
 export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = ({ onNavigate, params }) => {
   const isPendingConfirmation = params?.status === 'pending';
+
+  // Redireciona para home se a sessão já estiver ativa (executa só no mount)
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        onNavigate('home');
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const title = isPendingConfirmation ? 'Confirme seu e-mail' : 'E-mail Confirmado!';
   const description = isPendingConfirmation
     ? params?.message || 'Enviamos um link de confirmação para o seu e-mail. Verifique sua caixa de entrada e a pasta de spam antes de tentar entrar.'

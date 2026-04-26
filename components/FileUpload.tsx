@@ -11,7 +11,7 @@ interface FileUploadProps {
   label: string;
   value: string; // Current URL value
   onChange: (url: string) => void;
-  folder: 'covers' | 'pdfs' | 'audio' | 'video';
+  folder: 'covers' | 'characters' | 'pdfs' | 'audio' | 'video';
   accept: string; // File types to accept (e.g., "image/*", "application/pdf")
   collectionId?: string;
   disabled?: boolean;
@@ -101,7 +101,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     showToast('Arquivo removido com sucesso!', 'success');
   };
 
-  const isImage = folder === 'covers' || value.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+  const isImage = folder === 'covers' || folder === 'characters' || !!value.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i);
 
 
   return (
@@ -280,6 +280,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {/* File Type Hints */}
         <p className="mt-1 text-xs text-gray-500">
           {folder === 'covers' && 'Formatos aceitos: JPG, PNG, WebP (máx. 500MB)'}
+          {folder === 'characters' && 'Formatos aceitos: JPG, PNG, WebP e SVG (máx. 500MB)'}
           {folder === 'pdfs' && 'Formatos aceitos: PDF (máx. 500MB)'}
           {folder === 'audio' && 'Formatos aceitos: MP3, WAV, OGG (máx. 500MB)'}
           {folder === 'video' && 'Formatos aceitos: MP4, WebM (máx. 500MB)'}
@@ -300,7 +301,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         isOpen={showPreview}
         fileUrl={value}
         fileName={extractOriginalFileName(value)}
-        fileType={folder === 'pdfs' ? 'pdf' : folder === 'audio' ? 'audio' : folder === 'video' ? 'video' : 'other'}
+        fileType={folder === 'characters' ? 'image' : folder === 'pdfs' ? 'pdf' : folder === 'audio' ? 'audio' : folder === 'video' ? 'video' : 'other'}
         onClose={() => setShowPreview(false)}
       />
 

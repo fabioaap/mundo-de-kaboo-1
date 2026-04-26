@@ -1,56 +1,55 @@
 ---
 id: search
-title: SearchScreen
+title: Search Alias
 sidebar_position: 4
 ---
 
-# SearchScreen
+# Search Alias
 
-**Arquivo:** `screens/SearchScreen.tsx`  
+**Arquivo principal:** `screens/HomeScreen.tsx`  
 **ScreenName:** `search`
 
 ## Descrição
 
-Tela de busca de coleções por texto. Permite pesquisar por título, tema, personagens e outras propriedades das coleções.
+A rota `search` continua existindo por compatibilidade de navegação e histórico, mas agora renderiza a mesma experiência de descoberta da home. O objetivo é abrir a home em modo de busca, com foco no campo principal e os mesmos filtros disponíveis no topo da tela.
 
 ## Props
 
 ```typescript
-interface SearchScreenProps {
+interface HomeScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
   params?: any;
+  accessProfile?: UserProfile | null;
+  screenName?: 'home' | 'search';
+  searchMode?: boolean;
 }
 ```
 
 ## Funcionalidades
 
-- Campo de busca com **debounce** (evita chamadas excessivas)
-- Busca em tempo real enquanto o usuário digita
-- Exibe resultados com **highlighting** do termo buscado
-- Ao clicar em um resultado, abre o `CollectionModal`
-- Estado vazio quando não há resultados
+- Reaproveita a **mesma home** com a barra de busca integrada
+- Entra com **foco no campo de busca** quando acionada pela navegação
+- Mantém **tabs, filtros rápidos e sheet avançado** disponíveis no mesmo contexto
+- Abre `CollectionModal` sem sair da rota `search`, preservando o estado local da busca
+- Serve como **alias transitório** enquanto a descoberta fica consolidada em uma única experiência
 
-## Hook utilizado
+## Fluxo de navegação
 
-Usa o hook `useDebounce` para aguardar a pausa na digitação antes de executar a busca:
-
-```typescript
-const debouncedQuery = useDebounce(query, 300);
+```text
+BottomNav → search → HomeScreen(searchMode)
 ```
 
-## Fluxo de busca
-
-```
-Usuário digita → useDebounce (300ms) → filtra coleções locais
-```
-
-A busca é realizada **localmente** sobre o cache de coleções já carregadas, sem novas chamadas à API.
+Ao recarregar a rota `#search`, o usuário continua vendo a mesma interface da home, já orientada para busca.
 
 ## Interações
 
 | Ação | Resultado |
 |------|-----------|
-| Digitar no campo | Filtra coleções após 300ms |
-| Clicar em resultado | Abre `CollectionModal` |
-| Limpar campo | Mostra todas as coleções |
-| Pressionar voltar | Retorna para `home` |
+| Tocar em `Buscar` na navegação | Abre a home em modo focado na busca |
+| Digitar no campo | Refina a grade instantaneamente |
+| Abrir filtros pela barra | Mantém busca e filtros no mesmo contexto |
+| Pressionar voltar | Retorna para `home` padrão |
+
+## Observação
+
+O arquivo `screens/SearchScreen.tsx` permanece no repositório apenas como legado temporário. A implementação ativa da rota `search` já foi absorvida por `screens/HomeScreen.tsx`.

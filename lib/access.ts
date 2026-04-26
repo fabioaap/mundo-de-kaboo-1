@@ -1,12 +1,12 @@
 import { AccessStatus, UserContentGrant, UserProfile, VoucherDurationMonths, VoucherErrorCode } from '../types';
 
 const voucherMessages: Record<VoucherErrorCode, string> = {
-    invalid_code: 'Codigo de acesso invalido.',
-    already_redeemed: 'Este codigo ja foi utilizado.',
-    voucher_expired: 'Este codigo de acesso expirou.',
-    voucher_disabled: 'Este codigo de acesso nao esta mais disponivel.',
-    not_authenticated: 'Faça login para ativar um novo codigo de acesso.',
-    unknown: 'Nao foi possivel validar o codigo de acesso.'
+    invalid_code: 'Código de acesso inválido.',
+    already_redeemed: 'Este código já foi utilizado.',
+    voucher_expired: 'Este código de acesso expirou.',
+    voucher_disabled: 'Este código de acesso não está mais disponível.',
+    not_authenticated: 'Faça login para ativar um novo código de acesso.',
+    unknown: 'Não foi possível validar o código de acesso.'
 };
 
 export const normalizeVoucherCode = (value: string): string => value.trim().toUpperCase();

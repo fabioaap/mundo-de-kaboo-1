@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Icons } from '../components/Icons';
 import { ScreenName, UserProfile } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor, AVATAR_CHARACTERS } from '../constants';
+import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
+import { getAvatarCharacters } from '../lib/characters';
 import { canEditCollections, getUserRole } from '../lib/auth';
 import { PageHeader } from '../components/PageHeader';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { api, clearAllUserCache, getCachedProfileSync } from '../lib/api';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 interface ProfileScreenProps {
   onNavigate: (screen: ScreenName) => void;
@@ -25,6 +27,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Preload avatar image to ensure it's cached
   const preloadAvatarImage = (avatarId: string | null) => {
@@ -99,6 +102,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
   const handleLogout = async () => {
     await api.signOut();
     onNavigate('login');
+  };
+
+  const handleLogoutRequest = () => {
+    setShowLogoutConfirm(true);
   };
 
   const getInitials = (name: string) => {
@@ -178,10 +185,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
             {loading ? 'Carregando...' : (profile?.full_name || 'Usuário')}
           </h1>
           <p className="text-gray-500 text-sm font-medium mt-2 flex items-center justify-center gap-2">
-            <Icons.Home size={16} className="text-gray-500" />
-            {loading ? '...' : (profile?.school_name || 'Adicione sua escola')}
-          </p>
-          <p className="text-gray-500 text-sm font-medium mt-1 flex items-center justify-center gap-2">
             <Icons.Mail size={16} className="text-gray-500" />
             {profile?.email}
           </p>
@@ -212,7 +215,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
         {[
           { icon: Icons.User, label: 'Meus Dados', action: () => onNavigate('my_data') },
           { icon: Icons.Mail, label: 'Fale Conosco', action: () => onNavigate('support') },
-          { icon: Icons.LogOut, label: 'Sair do App', color: 'text-red-500', bg: 'bg-red-50', action: handleLogout },
+          { icon: Icons.LogOut, label: 'Sair do App', color: 'text-red-500', bg: 'bg-red-50', action: handleLogoutRequest },
         ].map((item, idx) => (
           <button
             key={idx}
@@ -227,6 +230,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
           </button>
         ))}
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutConfirm}
+        title="Sair do App"
+        message="Tem certeza que deseja sair? Você precisará fazer login novamente para acessar o conteúdo."
+        confirmText="Sair"
+        cancelText="Cancelar"
+        danger
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
 
       {/* Avatar Selection Modal */}
       {isAvatarModalOpen && (
@@ -263,7 +278,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
               </button>
 
               {/* Character Options */}
-              {AVATAR_CHARACTERS.map((char) => {
+              {getAvatarCharacters().map((char) => {
                 const isSelected = selectedAvatarId === char;
                 const charColor = getCharacterColor(char);
 

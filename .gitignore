@@ -29,3 +29,6 @@ supabase/.temp/
 # Docusaurus build output
 docs/.docusaurus
 docs/build
+
+*storybook.log
+storybook-static

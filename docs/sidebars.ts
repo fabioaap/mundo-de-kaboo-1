@@ -1,4 +1,4 @@
-import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
+import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 
 const sidebars: SidebarsConfig = {
   docsSidebar: [
@@ -77,6 +77,33 @@ const sidebars: SidebarsConfig = {
         'lib/storage',
         'lib/logger',
         'lib/offline',
+      ],
+    },
+    {
+      type: 'category',
+      label: '🗺️ Jornadas',
+      collapsed: false,
+      items: [
+        'journeys/journeys',
+        'journeys/auth',
+        'journeys/post-login',
+        'journeys/reference',
+      ],
+    },
+    {
+      type: 'category',
+      label: '🗺️ Roadmap',
+      items: [
+        'roadmap/index',
+        'roadmap/roadmap-central-coruja-v1.2',
+        'roadmap/plano-execucao-mini-youtube-spotify',
+        'roadmap/especificacao-arquitetura-mini-youtube-spotify',
+        'roadmap/especificacao-ux-ui-mini-youtube-spotify',
+        'roadmap/backlog-executavel-mini-youtube-spotify',
+        'roadmap/consolidado-backlog-reuniao-15abr2026',
+        'roadmap/backlog-central-coruja-15abr2026',
+        'roadmap/prd-vouchers-por-conteudo',
+        'roadmap/qa-validation-plan-v1.2',
       ],
     },
     'contributing',

@@ -63,7 +63,6 @@ Perfil do usuário autenticado.
 export interface UserProfile {
   id: string;
   full_name: string | null;
-  school_name: string | null;
   email: string | null;
   avatar_id: string | null; // Nome do personagem avatar (ex: "Kaboo")
 }

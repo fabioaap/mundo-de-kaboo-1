@@ -22,6 +22,8 @@ Esta pasta contém a documentação automática e manual do projeto Mundo de Kab
 | **prd-vouchers-por-conteudo.md** | PRD do módulo de vouchers |
 | **wireframe-cms-admin.md** | Wireframes do painel admin |
 | **benchmark-fluxo-vouchers-grafica.md** | Análise benchmark do fluxo |
+| **qa-validation-plan-v1.2.md** | Plano operacional de QA para validar o escopo entregue |
+| **qa-report-2026-04-20-smoke.md** | Relatório da rodada inicial de smoke QA |
 
 ### Na Raiz do Projeto
 

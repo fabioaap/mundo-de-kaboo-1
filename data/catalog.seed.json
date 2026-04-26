@@ -14,8 +14,18 @@
             "id": "784b3238-0916-4922-af3c-8627d74cc16c",
             "title": "Kaboo e a Carta Misteriosa",
             "cover_image": "/mock/covers/kaboo-carta-misteriosa.png",
+            "collection_type": "kit",
+            "kit_cover_image": "/mock/covers/kaboo-carta-misteriosa-kit.svg",
+            "kit_book_ids": [
+                "5993fc3f-8e1f-4d32-98f8-447676e31a39"
+            ],
             "level": "Fundamental I",
+            "segments": [
+                "E.F. Anos Iniciais"
+            ],
+            "primary_segment": "E.F. Anos Iniciais",
             "color_theme": "#B9373B",
+            "synopsis": "Uma aventura encantadora sobre amizade e coragem no mundo de Kaboo, onde uma carta misteriosa revela que a diversidade é a maior força de todas.",
             "theme": "Pertencimento e diversidade",
             "learning_objectives": "Convidar ao pertencimento e à descoberta de que a diversidade é força. A história mostra que pertencer significa escutar, valorizar e respeitar as diferenças; a amizade protege, permitindo compartilhar histórias, brincar, rir e chorar juntos.",
             "characters": [
@@ -53,14 +63,64 @@
             "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/784b3238-0916-4922-af3c-8627d74cc16c/1769708145715-6jwjx6e-08_Kaboo_e_a_carta_misteriosa_OK.WAV",
             "extra_materials": [
                 "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/784b3238-0916-4922-af3c-8627d74cc16c/1771619357711-x4phiuh-Guia_do_Professor_-_Kaboo_e_a_Carta_Misteriosa.pdf"
-            ]
+            ],
+            "collection_assets": [
+                {
+                    "id": "carta-animation",
+                    "category": "animation",
+                    "media_type": "video",
+                    "title": "Desenho Animado",
+                    "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/video/33efdbb5-abed-4037-9eed-bb7017d19f7a/1769203911843-r8hqd9p-Gaio_e_vento_da_coragem_OK.mov#carta-animation",
+                    "description": "Versão animada demonstrativa para validar a superfície do recurso no catálogo mock.",
+                    "scope": "primary"
+                },
+                {
+                    "id": "carta-accessible",
+                    "category": "accessible_video",
+                    "media_type": "video",
+                    "title": "Com Libras",
+                    "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/video/33efdbb5-abed-4037-9eed-bb7017d19f7a/1769203911843-r8hqd9p-Gaio_e_vento_da_coragem_OK.mov#carta-accessible",
+                    "description": "Versão demonstrativa com Libras para validar a experiência acessível no detalhe da coleção.",
+                    "scope": "primary"
+                },
+                {
+                    "id": "carta-how-to-play",
+                    "category": "how_to_play",
+                    "media_type": "video",
+                    "title": "Como Jogar com a Coleção",
+                    "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/video/33efdbb5-abed-4037-9eed-bb7017d19f7a/1769203911843-r8hqd9p-Gaio_e_vento_da_coragem_OK.mov#carta-how-to-play",
+                    "description": "Vídeo curto de orientação pedagógica para uso do material em aula ou mediação.",
+                    "scope": "library"
+                },
+                {
+                    "id": "carta-video-lesson",
+                    "category": "video_lesson",
+                    "media_type": "video",
+                    "title": "Videoaula de Mediação",
+                    "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/video/33efdbb5-abed-4037-9eed-bb7017d19f7a/1769203911843-r8hqd9p-Gaio_e_vento_da_coragem_OK.mov#carta-video-lesson",
+                    "description": "Exemplo de videoaula para demonstrar a superfície de recurso tipado sem depender de integração externa.",
+                    "scope": "library"
+                }
+            ],
+            "text_content": "Capítulo 1 — A carta misteriosa\n\nEra uma manhã ensolarada no Mundo de Kaboo quando algo inesperado aconteceu. Uma carta apareceu na porta da casa de Kaboo, sem remetente, sem selo, apenas um envelope dourado com um símbolo que ninguém reconhecia.\n\n\"Que estranho\", disse Kaboo, segurando a carta com cuidado. \"Quem terá deixado isso aqui?\"\n\nBatatinha, que estava brincando por perto, correu para ver. \"Abre logo, Kaboo! Pode ser uma aventura!\"\n\nKaboo abriu o envelope devagar. Dentro havia um papel com letras brilhantes que dizia: \"Nem tudo que parece diferente é estranho. Às vezes, o que parece estranho é exatamente o que faltava.\"\n\nCapítulo 2 — A busca começa\n\nIntrigados com a mensagem, Kaboo e Batatinha decidiram investigar. Chamaram Blado, Papa e Gaio para ajudar. Juntos, seguiram as pistas que a carta trazia.\n\n\"Olhem!\", apontou Gaio. \"Há pegadas que levam até a Floresta das Vozes!\"\n\nNa floresta, cada árvore parecia sussurrar uma história diferente. Blado, que sempre gostou de ouvir, parou e prestou atenção.\n\n\"As árvores estão contando sobre alguém que chegou de longe\", disse Blado. \"Alguém que precisa de amigos.\"\n\nCapítulo 3 — O encontro\n\nNo coração da floresta, encontraram Dr. Ratazana, que parecia perdido e assustado.\n\n\"Eu enviei a carta\", confessou Dr. Ratazana. \"Vim de muito longe e não conheço ninguém aqui. Pensei que se vocês lessem a mensagem, talvez entendessem.\"\n\nKaboo sorriu. \"E entendemos! Ser diferente não é ser estranho. É ser especial.\"\n\nTodos se abraçaram, e naquele dia o Mundo de Kaboo ficou um pouquinho maior, porque agora tinha mais um amigo.\n\nFim."
         },
         {
             "id": "c6334710-6117-426f-995c-07be8d87d872",
             "title": "Mensageiro e a Canção Certa",
             "cover_image": "/mock/covers/mensageiro-cancao-certa.png",
+            "collection_type": "kit",
+            "kit_cover_image": "/mock/covers/mensageiro-cancao-certa-kit.svg",
+            "kit_book_ids": [
+                "66627622-235a-43f6-ba4b-35522086165c"
+            ],
             "level": "Fundamental I",
+            "segments": [
+                "Educação Infantil",
+                "E.F. Anos Iniciais"
+            ],
+            "primary_segment": "E.F. Anos Iniciais",
             "color_theme": "#325C41",
+            "synopsis": "Mensageiro descobre que o silêncio guarda os sons mais bonitos e que escutar com atenção é um ato de carinho.",
             "theme": "Sensibilidade, regulação sensorial e respeito ao silêncio",
             "learning_objectives": "Valorizar sons sutis e o silêncio como parte da escuta atenta. Regular a atenção e os sentidos para “escutar com o coração, com o olhar atento e com a presença”.",
             "characters": [
@@ -95,14 +155,21 @@
             "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/c6334710-6117-426f-995c-07be8d87d872/1769477855454-zibkmtu-06_O_mensageiro_e_a_can__o_certa_ok.WAV",
             "extra_materials": [
                 "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/c6334710-6117-426f-995c-07be8d87d872/1771619379928-bj8hhqu-Guia_do_Professor_-_Mensageiro_e_a_Can__o_Certa.pd"
-            ]
+            ],
+            "text_content": "Capítulo 1 — O silêncio da manhã\n\nO sol ainda não tinha nascido quando Mensageiro abriu os olhos. O mundo estava em silêncio, mas não era um silêncio vazio. Era cheio de sons pequeninos: o vento nas folhas, o rio ao longe, o coração batendo devagar.\n\n\"Hoje eu vou encontrar a canção certa\", disse Mensageiro para si mesmo.\n\nEle sabia que em algum lugar, escondida entre os sons do mundo, havia uma canção especial. Uma canção que só podia ser ouvida por quem soubesse escutar de verdade.\n\nCapítulo 2 — Sons por toda parte\n\nMensageiro caminhou pela Vila dos Amigos. Cada um de seus amigos fazia um som diferente.\n\nBatatinha cantarolava enquanto pulava. \"Lá lá lá!\"\n\nBlado batucava nos troncos das árvores. \"Tum tum tum!\"\n\nPapa assobiava melodias que inventava na hora. \"Fiu fiu fiu!\"\n\nGaio tentava imitar todos ao mesmo tempo, criando uma confusão sonora. \"Lá tum fiu... ai, não deu certo!\"\n\nMensageiro riu. \"Cada um tem o seu som. Será que a canção certa é quando todos os sons se encontram?\"\n\nCapítulo 3 — A canção de todos\n\nNo fim da tarde, Mensageiro reuniu os amigos na clareira. \"Vamos tentar algo\", propôs. \"Cada um faz o seu som, mas devagar, escutando o do outro.\"\n\nBatatinha começou suave. Blado entrou no ritmo. Papa acrescentou seu assobio. Gaio, desta vez, esperou o momento certo e completou a harmonia.\n\nA canção que surgiu era simples, mas era perfeita. Não era de nenhum deles sozinho, era de todos juntos.\n\n\"É essa!\", exclamou Mensageiro, com lágrimas nos olhos. \"A canção certa é a que a gente faz quando escuta com o coração.\"\n\nFim."
         },
         {
             "id": "6a93b60f-b4e9-4fe6-9fed-7c6f7391745c",
             "title": "Baratinha e Baratão no Labirinto do Eco",
             "cover_image": "/mock/covers/baratinha-baratao-labirinto-eco.png",
+            "collection_type": "kit",
+            "kit_cover_image": "/mock/covers/baratinha-baratao-labirinto-eco-kit.svg",
+            "kit_book_ids": [
+                "5ff4a457-5cc8-4095-8a2d-f51604bbc7f8"
+            ],
             "level": "Fundamental I",
             "color_theme": "#2E4179",
+            "synopsis": null,
             "theme": "Escuta ativa e diálogo",
             "learning_objectives": "Perceber que repetir não é compreender; escutar “com o corpo, os olhos e o coração” favorece entendimento e convivência. A magia acontece com o diálogo, quando todos escutam e são escutados.",
             "characters": [
@@ -139,6 +206,11 @@
             "id": "ad037be3-ad9f-43d3-a913-549337aef9ef",
             "title": "Kaboo e o Desafio das Cores",
             "cover_image": "/mock/covers/kaboo-desafio-cores.png",
+            "collection_type": "kit",
+            "kit_cover_image": "/mock/covers/kaboo-desafio-cores-kit.svg",
+            "kit_book_ids": [
+                "5993fc3f-8e1f-4d32-98f8-447676e31a39"
+            ],
             "level": "Fundamental I",
             "color_theme": "#1D64A1",
             "theme": "Conflitos, respeito e reconciliação",
@@ -186,6 +258,11 @@
             "title": "Gaio e a Hora de Voar Alto",
             "cover_image": "/mock/covers/gaio-hora-voar-alto.png",
             "level": "Fundamental I",
+            "segments": [
+                "E.F. Anos Iniciais",
+                "E.F. Anos Finais"
+            ],
+            "primary_segment": "E.F. Anos Iniciais",
             "color_theme": "#D94625",
             "theme": "Coragem e superação",
             "learning_objectives": "Entender que coragem não é ausência de medo, mas avançar com ele ao lado, em passos pequenos e determinados. Enfrentar medos traz conquistas e fortalece a autoconfiança.",
@@ -355,6 +432,10 @@
             "title": "Gaio e o Vento da Coragem",
             "cover_image": "/mock/covers/gaio-vento-coragem.png",
             "level": "Educação Infantil",
+            "segments": [
+                "Educação Infantil"
+            ],
+            "primary_segment": "Educação Infantil",
             "color_theme": "#5C3B77",
             "theme": "Coragem, enfrentamento do medo e autoconfiança",
             "learning_objectives": "Identificar situações que despertam medo; Reconhecer que sentir medo é natural e válido, e que em muitas situações ele pode nos proteger; Usar gestos, desenhos ou palavras para expressar seu medo e sua coragem; Participar de rituais coletivos de acolhimento (como mural ou roda); Compreender que coragem é aprender a seguir adiante mesmo com medo.",
@@ -540,7 +621,9 @@
             "color_theme": "#E35E37",
             "theme": "Cooperação, pensamento investigativo e brincadeira simbólica",
             "learning_objectives": "Participar de brincadeiras cooperativas com pistas e desafios; Fazer inferências com base em indícios visuais ou verbais; Respeitar diferentes formas de participação nas brincadeiras em grupo; Demonstrar curiosidade e persistência ao seguir pistas; Relatar como se sentiu e reconhecer o valor do trabalho em equipe.",
-            "characters": [],
+            "characters": [
+                "Gaio"
+            ],
             "bncc_skills": [
                 "EI03ET03",
                 "EI03EO01",

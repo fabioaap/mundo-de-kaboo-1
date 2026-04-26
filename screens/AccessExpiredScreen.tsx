@@ -1,19 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { Icons } from '../components/Icons';
 import { Collection, ScreenName, UserProfile, Voucher } from '../types';
+import { PENDING_SIGNUP_VOUCHER_STORAGE_KEY, formatSegmentLabel } from '../constants';
 import { api } from '../lib/api';
 import { formatAccessDate, getProfileAccessStatus } from '../lib/access';
 import { isSupabaseConfigured } from '../lib/supabase';
-
-const PENDING_SIGNUP_VOUCHER_STORAGE_KEY = 'kaboo_pending_signup_voucher';
 
 const getPendingSignupVoucher = (): string => {
     if (typeof window === 'undefined') {
         return '';
     }
 
-    return sessionStorage.getItem(PENDING_SIGNUP_VOUCHER_STORAGE_KEY) || '';
+    return localStorage.getItem(PENDING_SIGNUP_VOUCHER_STORAGE_KEY) || '';
 };
 
 const clearPendingSignupVoucher = () => {
@@ -21,7 +20,7 @@ const clearPendingSignupVoucher = () => {
         return;
     }
 
-    sessionStorage.removeItem(PENDING_SIGNUP_VOUCHER_STORAGE_KEY);
+    localStorage.removeItem(PENDING_SIGNUP_VOUCHER_STORAGE_KEY);
 };
 
 interface AccessExpiredScreenProps {
@@ -220,7 +219,7 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
                                 <img src={col.cover_image} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-bold text-gray-800 truncate">{col.title}</p>
-                                    {col.level && <p className="text-xs text-gray-400">{col.level}</p>}
+                                    {col.level && <p className="text-xs text-gray-400">{formatSegmentLabel(col.level)}</p>}
                                 </div>
                             </div>
                         ))}

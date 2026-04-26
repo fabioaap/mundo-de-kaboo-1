@@ -1,9 +1,9 @@
 import React from 'react';
-import { Button } from './Button';
+import { Button } from '../design-system';
 import { Icons } from './Icons';
 
 interface VouchersOnboardingBannerProps {
-    onDismiss: () => void;
+    description: 'Gere códigos únicos para campanha, parceiros ou operação interna.',
     onCreateFirstModel?: () => void;
 }
 

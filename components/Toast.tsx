@@ -38,7 +38,7 @@ export const Toast: React.FC<ToastProps> = ({
   );
 
   return (
-    <div className="fixed top-4 right-4 z-[300] animate-in slide-in-from-top-5 duration-300">
+    <div className="fixed top-0 right-0 z-[300] pt-[max(1rem,env(safe-area-inset-top))] pr-4 animate-in slide-in-from-top-5 duration-300">
       <div className={`${bgColor} text-white rounded-xl shadow-lg px-4 py-3 flex flex-col gap-2 min-w-[300px] max-w-md`}>
         <div className="flex items-center gap-3">
           <div className="flex-shrink-0">

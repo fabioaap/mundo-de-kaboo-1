@@ -1,0 +1,436 @@
+{
+  "_meta": {
+    "lastUpdated": "2026-04-20",
+    "updatedBy": "Fabio",
+    "version": "v1.2",
+    "description": "Panorama de produto — Central Coruja / Mundo de Kaboo"
+  },
+  "categories": [
+    {
+      "id": "auth",
+      "label": "Auth e acesso",
+      "features": [
+        {
+          "id": "auth-email-senha",
+          "name": "Login e cadastro por e-mail/senha",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-10",
+          "notes": []
+        },
+        {
+          "id": "voucher-temporal",
+          "name": "Voucher temporal (resgate, renovação, expiração)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-10",
+          "notes": []
+        },
+        {
+          "id": "voucher-duracao",
+          "name": "Duração de voucher 1/3/6/9/12 meses",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-10",
+          "notes": []
+        },
+        {
+          "id": "content-grants",
+          "name": "Content grants (liberação de conteúdo por voucher)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-10",
+          "notes": []
+        },
+        {
+          "id": "invite-flow",
+          "name": "Convite de colaboradores (invite flow)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-15",
+          "notes": []
+        },
+        {
+          "id": "cpf-cadastro",
+          "name": "CPF opcional no cadastro (ECA digital)",
+          "status": "pending",
+          "version": "v1.3",
+          "deliveredAt": null,
+          "notes": [
+            "Pendente validação jurídica ECA"
+          ]
+        },
+        {
+          "id": "assinatura-digital",
+          "name": "Assinatura digital pós-voucher",
+          "status": "pending",
+          "version": "v1.3",
+          "deliveredAt": null,
+          "notes": [
+            "UX do fluxo ainda não definida"
+          ]
+        },
+        {
+          "id": "oauth-educacross",
+          "name": "Login com Educa Cross (OAuth)",
+          "status": "pending",
+          "version": "v2.0",
+          "deliveredAt": null,
+          "notes": [
+            "Depende de API OAuth do Educa Cross"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "catalogo",
+      "label": "Catálogo e vitrine",
+      "features": [
+        {
+          "id": "catalogo-16-colecoes",
+          "name": "16 coleções reais com covers",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-12",
+          "notes": []
+        },
+        {
+          "id": "kit-vs-livro",
+          "name": "Distinção kit vs livro com badge visual e capa própria",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-19",
+          "notes": []
+        },
+        {
+          "id": "segmentos",
+          "name": "Segmentos editoriais (E.F. Anos Iniciais, Ed. Infantil)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-19",
+          "notes": []
+        },
+        {
+          "id": "sinopse",
+          "name": "Sinopse por coleção",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-19",
+          "notes": []
+        },
+        {
+          "id": "ordenacao-ano",
+          "name": "Ordenação por ano escolar",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-15",
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "detalhe",
+      "label": "Detalhe da coleção",
+      "features": [
+        {
+          "id": "leitor-pdf",
+          "name": "Leitor de PDF (flipbook)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-12",
+          "notes": []
+        },
+        {
+          "id": "modo-texto",
+          "name": "Modo texto acessível no leitor",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-15",
+          "notes": []
+        },
+        {
+          "id": "ctas-tipados",
+          "name": "CTAs tipados (Leitura, Contação, Animado, Libras, Como Jogar, Videoaula)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-19",
+          "notes": []
+        },
+        {
+          "id": "biblioteca-materiais",
+          "name": "Biblioteca estruturada de Materiais da Coleção",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-19",
+          "notes": []
+        },
+        {
+          "id": "tooltip-bncc",
+          "name": "Tooltip BNCC rico (1.397 habilidades)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-18",
+          "notes": []
+        },
+        {
+          "id": "tooltip-casel",
+          "name": "Tooltip CASEL rico (5 competências)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-19",
+          "notes": []
+        },
+        {
+          "id": "video-libras",
+          "name": "Vídeo com Libras (campo existe, UX não exposta sem arquivo real)",
+          "status": "partial",
+          "version": "v1.3",
+          "deliveredAt": null,
+          "notes": [
+            "Campo accessible_video_url presente no modelo; aguarda arquivos reais"
+          ]
+        },
+        {
+          "id": "video-animado",
+          "name": "Vídeo animado/IA",
+          "status": "partial",
+          "version": "v1.3",
+          "deliveredAt": null,
+          "notes": [
+            "Campo animated_video_url presente no modelo; aguarda arquivos reais"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "home",
+      "label": "Descoberta / Home",
+      "features": [
+        {
+          "id": "busca-inline",
+          "name": "Busca inline com overlay sobre a grade",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-20",
+          "notes": []
+        },
+        {
+          "id": "filtro-puro",
+          "name": "Filtro puro mostra grade direta com chip ativa",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-20",
+          "notes": []
+        },
+        {
+          "id": "chips-ano-escolar",
+          "name": "Chips de ano escolar na Home",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-15",
+          "notes": []
+        },
+        {
+          "id": "filtro-personagem",
+          "name": "Filtro por personagem com avatares",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-20",
+          "notes": []
+        },
+        {
+          "id": "bncc-picker-mobile",
+          "name": "Afuniladores avançados de BNCC no mobile (BnccPickerSheet)",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-04-20",
+          "notes": [
+            "[2026-04-20] Afuniladores por etapa, componente e faixa entregues no BnccPickerSheet"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "personagens",
+      "label": "Personagens",
+      "features": [
+        {
+          "id": "catalogo-personagens",
+          "name": "Catálogo canônico com 8 personagens",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-20",
+          "notes": []
+        },
+        {
+          "id": "cms-personagens",
+          "name": "CMS admin: CRUD, foto, aliases, status",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-20",
+          "notes": []
+        },
+        {
+          "id": "personagens-supabase",
+          "name": "Persistência remota de personagens no Supabase",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-20",
+          "notes": []
+        },
+        {
+          "id": "pagina-publica-personagens",
+          "name": "Página pública de personagens",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-20",
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "cms",
+      "label": "CMS Admin",
+      "features": [
+        {
+          "id": "crud-colecoes",
+          "name": "CRUD de coleções (kit e livro)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-15",
+          "notes": []
+        },
+        {
+          "id": "cms-vouchers",
+          "name": "CMS de vouchers (modelos, lotes, códigos, auditoria)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-12",
+          "notes": []
+        },
+        {
+          "id": "export-xlsx",
+          "name": "Exportação XLSX para gráfica",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-15",
+          "notes": []
+        },
+        {
+          "id": "dados-resgate",
+          "name": "Dados de resgate: usuário, e-mail, data de ativação",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-15",
+          "notes": []
+        },
+        {
+          "id": "gestao-usuarios",
+          "name": "Gestão de usuários com convite e exclusão",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-16",
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "infra",
+      "label": "Infraestrutura",
+      "features": [
+        {
+          "id": "deploy-github-pages",
+          "name": "Deploy GitHub Pages (modo demo)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-16",
+          "notes": []
+        },
+        {
+          "id": "design-system",
+          "name": "Design system (17+ componentes)",
+          "status": "done",
+          "version": "v1.2",
+          "deliveredAt": "2026-04-15",
+          "notes": []
+        },
+        {
+          "id": "supabase-remoto",
+          "name": "Backend Supabase remoto (validação end-to-end)",
+          "status": "partial",
+          "version": "v1.3",
+          "deliveredAt": null,
+          "notes": [
+            "Migrations criadas e aplicadas; validação ponta a ponta ainda incompleta"
+          ]
+        },
+        {
+          "id": "servidor-separado",
+          "name": "Servidor/banco separado para Central Coruja",
+          "status": "pending",
+          "version": "v1.3",
+          "deliveredAt": null,
+          "notes": [
+            "Depende de conta Empatia e decisão de infra (Maxwell)"
+          ]
+        },
+        {
+          "id": "conta-lojas",
+          "name": "Conta Empatia registrada no Google Play e Apple",
+          "status": "pending",
+          "version": "v1.3",
+          "deliveredAt": null,
+          "notes": [
+            "Responsável: Douglas + Rafael + Maxwell"
+          ]
+        },
+        {
+          "id": "app-nativo",
+          "name": "Build nativo (Capacitor/TWA)",
+          "status": "pending",
+          "version": "v1.3",
+          "deliveredAt": null,
+          "notes": [
+            "Depende de conta nas lojas e build estável"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "v2",
+      "label": "v2.0 — Expansão",
+      "features": [
+        {
+          "id": "academia",
+          "name": "Academia/formação do professor",
+          "status": "pending",
+          "version": "v2.0",
+          "deliveredAt": null,
+          "notes": [
+            "Pré-condição: v1.3 estável, conteúdo de formação produzido"
+          ]
+        },
+        {
+          "id": "gamificacao",
+          "name": "Gamificação adulta (metas, progresso, conquistas)",
+          "status": "pending",
+          "version": "v2.0",
+          "deliveredAt": null,
+          "notes": [
+            "Pré-condição: design de mecânicas aprovado"
+          ]
+        },
+        {
+          "id": "perfil-infantil",
+          "name": "Perfil infantil com interface simplificada",
+          "status": "pending",
+          "version": "v2.0",
+          "deliveredAt": null,
+          "notes": [
+            "Pré-condição: validação jurídica ECA, design infantil aprovado"
+          ]
+        }
+      ]
+    }
+  ]
+}

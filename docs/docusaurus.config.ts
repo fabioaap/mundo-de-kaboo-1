@@ -1,5 +1,5 @@
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
+import { themes as prismThemes } from 'prism-react-renderer';
+import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
@@ -22,10 +22,21 @@ const config: Config = {
   onBrokenLinks: 'throw',
 
   markdown: {
+    mermaid: true,
     hooks: {
       onBrokenMarkdownLinks: 'warn',
     },
   },
+
+  themes: ['@docusaurus/theme-mermaid'],
+
+  plugins: [
+    'docusaurus-plugin-image-zoom',
+  ],
+
+  clientModules: [
+    './src/clientModules/mermaidZoom.js',
+  ],
 
   i18n: {
     defaultLocale: 'pt-BR',
@@ -80,29 +91,29 @@ const config: Config = {
         {
           title: 'Documentação',
           items: [
-            {label: 'Introdução', to: '/docs/intro'},
-            {label: 'Começando', to: '/docs/getting-started/installation'},
-            {label: 'Arquitetura', to: '/docs/architecture/overview'},
+            { label: 'Introdução', to: '/docs/intro' },
+            { label: 'Começando', to: '/docs/getting-started/installation' },
+            { label: 'Arquitetura', to: '/docs/architecture/overview' },
           ],
         },
         {
           title: 'Referência',
           items: [
-            {label: 'Telas', to: '/docs/screens/overview'},
-            {label: 'Componentes', to: '/docs/components/overview'},
-            {label: 'Hooks', to: '/docs/hooks/overview'},
-            {label: 'Biblioteca', to: '/docs/lib/api'},
+            { label: 'Telas', to: '/docs/screens/overview' },
+            { label: 'Componentes', to: '/docs/components/overview' },
+            { label: 'Hooks', to: '/docs/hooks/overview' },
+            { label: 'Biblioteca', to: '/docs/lib/api' },
           ],
         },
         {
           title: 'Projeto',
           items: [
-            {label: 'Contribuindo', to: '/docs/contributing'},
+            { label: 'Contribuindo', to: '/docs/contributing' },
             {
               label: 'GitHub',
               href: 'https://github.com/fabioeducacross/mundo-de-kaboo',
             },
-            {label: 'Suporte', href: 'mailto:suporte@mundodekaboo.com'},
+            { label: 'Suporte', href: 'mailto:suporte@mundodekaboo.com' },
           ],
         },
       ],
@@ -112,6 +123,16 @@ const config: Config = {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
       additionalLanguages: ['bash', 'typescript', 'tsx'],
+    },
+    zoom: {
+      selector: '.markdown img',
+      background: {
+        light: 'rgba(0,0,0,0.7)',
+        dark: 'rgba(0,0,0,0.85)',
+      },
+      config: {
+        margin: 32,
+      },
     },
   } satisfies Preset.ThemeConfig,
 };

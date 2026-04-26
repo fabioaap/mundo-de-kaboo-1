@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
-import { Button } from '../components/Button';
+import { Button } from '../design-system';
 import { supabase } from '../lib/supabase';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { api } from '../lib/api';
 import { PageHeader } from '../components/PageHeader';
-import { AVATAR_CHARACTERS, getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
+import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
+import { getAvatarCharacters } from '../lib/characters';
 
 interface MyDataScreenProps {
     onBack: () => void;
@@ -23,7 +24,6 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
 
     const [formData, setFormData] = useState({
         full_name: '',
-        school_name: '',
         email: '',
         password: '', // Only for updating
         confirmPassword: '',
@@ -42,7 +42,6 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                 setFormData(prev => ({
                     ...prev,
                     full_name: profile?.full_name || '',
-                    school_name: profile?.school_name || '',
                     email: profile?.email || '',
                     avatar_id: profile?.avatar_id || null
                 }));
@@ -62,14 +61,12 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
 
             // Priority: 1. Profile Table, 2. Auth Metadata, 3. Empty string
             const fullName = profile?.full_name || user.user_metadata?.full_name || '';
-            const schoolName = profile?.school_name || user.user_metadata?.school_name || '';
             const email = user.email || '';
             const avatarId = profile?.avatar_id || null;
 
             setFormData(prev => ({
                 ...prev,
                 full_name: fullName,
-                school_name: schoolName,
                 email: email,
                 avatar_id: avatarId
             }));
@@ -102,7 +99,6 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
 
                 const updatedProfile = await api.updateProfile({
                     full_name: formData.full_name,
-                    school_name: formData.school_name,
                     email: formData.email,
                     avatar_id: formData.avatar_id,
                 });
@@ -114,7 +110,6 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                 setFormData(prev => ({
                     ...prev,
                     full_name: updatedProfile.full_name || '',
-                    school_name: updatedProfile.school_name || '',
                     email: updatedProfile.email || '',
                     avatar_id: updatedProfile.avatar_id,
                     password: '',
@@ -134,12 +129,12 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error('Usuário não autenticado');
 
-            // 1. Update Profile Data (Name, School, Avatar)
+            // 1. Update Profile Data (Name and Avatar)
             const updates = {
                 id: user.id,
                 email: formData.email,
                 full_name: formData.full_name,
-                school_name: formData.school_name,
+                school_name: null,
                 avatar_id: formData.avatar_id,
                 updated_at: new Date().toISOString(),
             };
@@ -155,7 +150,7 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
 
             authUpdates.data = {
                 full_name: formData.full_name,
-                school_name: formData.school_name
+                school_name: null
             };
 
             if (formData.email !== user.email) {
@@ -174,7 +169,14 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
             const { error: authError } = await supabase.auth.updateUser(authUpdates);
             if (authError) throw authError;
 
-            setMsg({ type: 'success', text: 'Dados atualizados com sucesso!' });
+            // If email changed, Supabase sends a confirmation link to the new address
+            const emailChanged = formData.email !== user.email;
+            setMsg({
+                type: 'success',
+                text: emailChanged
+                    ? 'Dados salvos! Um link de confirmação foi enviado para o novo e-mail. O endereço atual permanece ativo até a confirmação.'
+                    : 'Dados atualizados com sucesso!'
+            });
 
             // Clear password fields
             setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
@@ -247,9 +249,10 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide">Informações Pessoais</h3>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 ml-1">Nome Completo</label>
+                            <label htmlFor="mydata-full-name" className="text-sm font-bold text-gray-700 ml-1">Nome Completo</label>
                             <div className="relative">
                                 <input
+                                    id="mydata-full-name"
                                     type="text"
                                     value={formData.full_name}
                                     onChange={(e) => handleChange('full_name', e.target.value)}
@@ -257,20 +260,6 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                                     placeholder="Seu nome"
                                 />
                                 <Icons.User className="absolute left-4 top-4 text-gray-400" size={20} />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 ml-1">Escola</label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={formData.school_name}
-                                    onChange={(e) => handleChange('school_name', e.target.value)}
-                                    className="w-full bg-gray-50 border border-transparent focus:border-kaboo-primary/30 rounded-2xl p-4 pl-12 text-gray-800 outline-none transition-all"
-                                    placeholder="Nome da sua escola"
-                                />
-                                <Icons.Home className="absolute left-4 top-4 text-gray-400" size={20} />
                             </div>
                         </div>
                     </div>
@@ -282,14 +271,15 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                         <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide">Conta e Segurança</h3>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 ml-1">E-mail</label>
+                            <label htmlFor="mydata-email" className="text-sm font-bold text-gray-700 ml-1">E-mail</label>
                             <div className="relative">
                                 <input
+                                    id="mydata-email"
                                     type="email"
                                     value={formData.email}
                                     onChange={(e) => handleChange('email', e.target.value)}
                                     className="w-full bg-gray-50 border border-transparent focus:border-kaboo-primary/30 rounded-2xl p-4 pl-12 text-gray-800 outline-none transition-all"
-                                    placeholder="email@escola.com.br"
+                                    placeholder="email@exemplo.com.br"
                                 />
                                 <Icons.Mail className="absolute left-4 top-4 text-gray-400" size={20} />
                             </div>
@@ -297,9 +287,10 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-gray-700 ml-1">Nova Senha (Opcional)</label>
+                            <label htmlFor="mydata-password" className="text-sm font-bold text-gray-700 ml-1">Nova Senha (Opcional)</label>
                             <div className="relative">
                                 <input
+                                    id="mydata-password"
                                     type={showPassword ? 'text' : 'password'}
                                     value={formData.password}
                                     onChange={(e) => handleChange('password', e.target.value)}
@@ -318,9 +309,10 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
 
                         {formData.password && (
                             <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                <label className="text-sm font-bold text-gray-700 ml-1">Confirmar Nova Senha</label>
+                                <label htmlFor="mydata-confirm-password" className="text-sm font-bold text-gray-700 ml-1">Confirmar Nova Senha</label>
                                 <div className="relative">
                                     <input
+                                        id="mydata-confirm-password"
                                         type={showConfirmPassword ? 'text' : 'password'}
                                         value={formData.confirmPassword}
                                         onChange={(e) => handleChange('confirmPassword', e.target.value)}
@@ -387,7 +379,7 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                             </button>
 
                             {/* Character Options */}
-                            {AVATAR_CHARACTERS.map((char, idx) => {
+                            {getAvatarCharacters().map((char) => {
                                 const isSelected = formData.avatar_id === char;
                                 const charColor = getCharacterColor(char);
 
