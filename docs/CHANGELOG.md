@@ -1,13 +1,13 @@
 # Changelog - Análise Automática
 
-**Data**: 15/04/2026, 18:00:53
+**Data**: 26/04/2026, 12:49:15
 
 ## Resumo do Projeto
 
-- **Componentes**: 23
-- **Telas**: 17
+- **Componentes**: 25
+- **Telas**: 22
 - **Hooks**: 7
-- **Tipos**: 29
+- **Tipos**: 54
 
 ## Ultimas Mudanças Detectadas
 
@@ -19,9 +19,9 @@
 - PdfPage
 
 ### Telas
-- MyDataScreen
 - ProfileScreen
 - SearchScreen
+- SetPasswordScreen
 - VideoPlayerScreen
 - VouchersModule
 

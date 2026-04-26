@@ -1,13 +1,14 @@
 # Documentação de Componentes
 
-**Atualizado em**: 15/04/2026, 18:00:53
+**Atualizado em**: 26/04/2026, 12:49:15
 
 ## Índice
 
 - [BottomNav](#bottomnav)
-- [Button](#button)
 - [Card3D](#card3d)
+- [CharacterAvatar](#characteravatar)
 - [CollectionCoverSection](#collectioncoversection)
+- [CollectionFiltersModal](#collectionfiltersmodal)
 - [CollectionModal](#collectionmodal)
 - [ColorPicker](#colorpicker)
 - [ConfirmationModal](#confirmationmodal)
@@ -22,6 +23,7 @@
 - [Tabs](#tabs)
 - [TagInput](#taginput)
 - [Toast](#toast)
+- [UserIdentityCard](#useridentitycard)
 - [VouchersOnboardingBanner](#vouchersonboardingbanner)
 - [Flipbook](#flipbook)
 - [FlipbookLoader](#flipbookloader)
@@ -42,18 +44,6 @@
 
 ---
 
-## Button
-
-**Arquivo**: `components/Button.tsx`
-
-
-
-
-
-**Exports**: `Button`
-
----
-
 ## Card3D
 
 **Arquivo**: `components/Card3D.tsx`
@@ -66,6 +56,18 @@
 
 ---
 
+## CharacterAvatar
+
+**Arquivo**: `components/CharacterAvatar.tsx`
+
+
+
+
+
+**Exports**: `CharacterAvatar`
+
+---
+
 ## CollectionCoverSection
 
 **Arquivo**: `components/CollectionCoverSection.tsx`
@@ -75,6 +77,18 @@
 
 
 **Exports**: `CollectionCoverSection`
+
+---
+
+## CollectionFiltersModal
+
+**Arquivo**: `components/CollectionFiltersModal.tsx`
+
+
+
+
+
+**Exports**: `CollectionFilterState`, `CollectionFilterOptions`, `CollectionFiltersModal`
 
 ---
 
@@ -243,6 +257,18 @@
 
 
 **Exports**: `ToastType`, `Toast`
+
+---
+
+## UserIdentityCard
+
+**Arquivo**: `components/UserIdentityCard.tsx`
+
+
+
+
+
+**Exports**: `UserIdentityCard`
 
 ---
 

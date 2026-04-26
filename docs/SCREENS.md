@@ -1,30 +1,35 @@
 # Documentação de Telas (Screens)
 
-**Atualizado em**: 15/04/2026, 18:00:53
+**Atualizado em**: 26/04/2026, 12:49:15
 
 ## Resumo
 
-- **Total de telas**: 17
+- **Total de telas**: 22
 - **Telas protegidas**: 0
-- **Telas públicas**: 17
+- **Telas públicas**: 22
 
 ## Telas Públicas
 
 - **AccessExpiredScreen** (`screens/AccessExpiredScreen.tsx`)
+- **AdminCharactersScreen** (`screens/AdminCharactersScreen.tsx`)
 - **AdminCollectionsScreen** (`screens/AdminCollectionsScreen.tsx`)
 - **AdminScreen** (`screens/AdminScreen.tsx`)
 - **AudioPlayerScreen** (`screens/AudioPlayerScreen.tsx`)
 - **BookReaderScreen** (`screens/BookReaderScreen.tsx`)
+- **CharactersScreen** (`screens/CharactersScreen.tsx`)
+- **DesignSystemScreen** (`screens/DesignSystemScreen.tsx`)
 - **DetailsScreen** (`screens/DetailsScreen.tsx`)
 - **EmailConfirmationScreen** (`screens/EmailConfirmationScreen.tsx`)
 - **ExtraToolsScreen** (`screens/ExtraToolsScreen.tsx`)
 - **ForgotPasswordScreen** (`screens/ForgotPasswordScreen.tsx`)
 - **HomeScreen** (`screens/HomeScreen.tsx`)
+- **LibraryHubScreen** (`screens/LibraryHubScreen.tsx`)
 - **LibraryScreen** (`screens/LibraryScreen.tsx`)
 - **LoginScreen** (`screens/LoginScreen.tsx`)
 - **MyDataScreen** (`screens/MyDataScreen.tsx`)
 - **ProfileScreen** (`screens/ProfileScreen.tsx`)
 - **SearchScreen** (`screens/SearchScreen.tsx`)
+- **SetPasswordScreen** (`screens/SetPasswordScreen.tsx`)
 - **VideoPlayerScreen** (`screens/VideoPlayerScreen.tsx`)
 - **VouchersModule** (`screens/VouchersModule.tsx`)
 
