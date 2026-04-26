@@ -36,6 +36,8 @@ const getYouTubeVideoId = (value?: string | null): string | null => {
   return null;
 };
 
+type PlayerState = 'loading' | 'playing' | 'paused' | 'error' | 'error_persistent' | 'ended';
+
 export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   collection,
   mediaItemId,
@@ -60,13 +62,20 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const [itemDescription, setItemDescription] = useState<string>('');
   const [showShortcutsHint, setShowShortcutsHint] = useState(true);
   const [showMobileQueue, setShowMobileQueue] = useState(false);
+  const [showDesktopRelated, setShowDesktopRelated] = useState(false);
+  const [isDesktopDescriptionExpanded, setIsDesktopDescriptionExpanded] = useState(false);
+  const [playerState, setPlayerState] = useState<PlayerState>('loading');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const controlsContainerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<any>(null);
   const lastSavedAtRef = useRef(0);
   const lastSavedPositionRef = useRef(0);
   const saveInFlightRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const endedFocusRef = useRef<HTMLButtonElement>(null);
+  const errorPersistentFocusRef = useRef<HTMLButtonElement>(null);
 
   const themeColor = collection.color_theme || '#5D1F58';
   const resolvedVideoUrl = resolvedPlaybackUrl ?? assetUrl ?? collection.video_url;
@@ -102,6 +111,8 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
     setResolvedPlaybackUrl(null);
     setResolvedPlaybackTitle(null);
+    setPlayerState('loading');
+    retryCountRef.current = 0;
 
     if (!mediaItemId) {
       return () => {
@@ -250,13 +261,16 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       if (isPlaying) {
         videoRef.current.pause();
         setIsPlaying(false);
+        setPlayerState('paused');
       } else {
         await videoRef.current.play();
         setIsPlaying(true);
+        setPlayerState('playing');
       }
     } catch {
       setPlayError('Não foi possível reproduzir o vídeo. Toque novamente para tentar.');
       setIsPlaying(false);
+      setPlayerState('error');
     }
   };
 
@@ -271,6 +285,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
     }
+    setPlayerState((prev) => prev === 'loading' ? 'paused' : prev);
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -356,6 +371,12 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
   const remainingTime = Math.max(duration - currentTime, 0);
   const leadRelatedItem = relatedItems[0];
+  const overlayActive = playerState === 'ended' || playerState === 'error_persistent';
+  const desktopDockRightPadding = showDesktopRelated
+    ? 'var(--player-right-rail)'
+    : 'var(--player-edge-gap)';
+  const panelChromeClass = 'rounded-2xl border border-white/20 bg-black/52 backdrop-blur-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]';
+  const cardChromeClass = 'rounded-xl border border-white/20 bg-white/8 transition-colors hover:bg-white/14';
 
   const retryPlayback = async () => {
     resetControlsTimeout();
@@ -364,17 +385,29 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       return;
     }
 
+    retryCountRef.current += 1;
+    const isPersistent = retryCountRef.current >= 2;
+
     setPlayError(null);
     setIsLoading(true);
+    setPlayerState('loading');
     videoRef.current.load();
 
     try {
       await videoRef.current.play();
       setIsPlaying(true);
+      setPlayerState('playing');
+      retryCountRef.current = 0;
     } catch {
-      setPlayError('Não foi possível iniciar o vídeo neste momento.');
       setIsPlaying(false);
       setIsLoading(false);
+      if (isPersistent) {
+        setPlayError('Não foi possível iniciar o vídeo após várias tentativas.');
+        setPlayerState('error_persistent');
+      } else {
+        setPlayError('Não foi possível iniciar o vídeo neste momento.');
+        setPlayerState('error');
+      }
     }
   };
 
@@ -469,10 +502,47 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     };
   }, [showControls, showShortcutsHint]);
 
+  // Auto-focus primary CTA when modals appear
+  useEffect(() => {
+    if (playerState === 'ended') {
+      endedFocusRef.current?.focus();
+    }
+  }, [playerState === 'ended']);
+
+  useEffect(() => {
+    if (playerState === 'error_persistent') {
+      errorPersistentFocusRef.current?.focus();
+    }
+  }, [playerState === 'error_persistent']);
+
+  useEffect(() => {
+    const controlsElement = controlsContainerRef.current;
+
+    if (!controlsElement) {
+      return;
+    }
+
+    if (overlayActive) {
+      controlsElement.setAttribute('inert', '');
+    } else {
+      controlsElement.removeAttribute('inert');
+    }
+
+    return () => {
+      controlsElement.removeAttribute('inert');
+    };
+  }, [overlayActive]);
+
   return (
     <div
       ref={containerRef}
       className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden group"
+      style={{
+        '--player-sidebar-width': '340px',
+        '--player-edge-gap': '24px',
+        '--player-right-rail': 'calc(var(--player-sidebar-width) + var(--player-edge-gap) * 2)',
+        '--player-dock-right': desktopDockRightPadding,
+      } as React.CSSProperties}
       role="dialog"
       aria-modal="true"
       aria-label="Player de vídeo"
@@ -491,7 +561,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           className="w-full h-full"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
-          onLoad={() => setIsLoading(false)}
+          onLoad={() => { setIsLoading(false); setPlayerState('playing'); }}
         />
       ) : resolvedVideoUrl ? (
         <video
@@ -502,19 +572,23 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           onClick={(e) => { e.stopPropagation(); togglePlay(); }}
           onTimeUpdate={handleTimeUpdate}
           onLoadedData={handleLoadedData}
-          onWaiting={() => setIsLoading(true)}
-          onPlaying={() => setIsLoading(false)}
+          onWaiting={() => { setIsLoading(true); }}
+          onPlaying={() => { setIsLoading(false); setPlayerState('playing'); }}
           onPause={() => {
             setIsPlaying(false);
+            setPlayerState('paused');
             maybeSaveProgress(true);
           }}
           onError={() => {
             setIsLoading(false);
             setIsPlaying(false);
             setPlayError('Não foi possível carregar o vídeo nesta conexão.');
+            const isPersistent = retryCountRef.current >= 2;
+            setPlayerState(isPersistent ? 'error_persistent' : 'error');
           }}
           onEnded={() => {
             setIsPlaying(false);
+            setPlayerState('ended');
             setShowControls(true);
             maybeSaveProgress(true);
           }}
@@ -556,30 +630,129 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         </div>
       )}
 
-      {/* Play Error Message */}
-      {playError && (
-        <div className="absolute bottom-28 left-1/2 z-20 max-w-xs -translate-x-1/2 rounded-2xl border border-red-300/30 bg-red-500/85 px-4 py-3 text-center text-sm text-white backdrop-blur-sm">
-          <p>{playError}</p>
-          {resolvedVideoUrl && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                retryPlayback();
-              }}
-              className="mt-2 rounded-lg border border-white/35 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white"
-            >
-              Tentar novamente
-            </button>
-          )}
+      {/* Ended Overlay */}
+      {playerState === 'ended' && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="overlay-ended-title"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/75 backdrop-blur-sm"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex flex-col items-center gap-6 px-6 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-white/40 bg-white/10 backdrop-blur-md">
+              <Icons.Check size={40} className="text-white" strokeWidth={2.5} />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-white/60">Concluído</p>
+              <h2 id="overlay-ended-title" className="mt-1 text-2xl font-black text-white">{resolvedTitle}</h2>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                ref={endedFocusRef}
+                autoFocus
+                type="button"
+                onClick={() => {
+                  if (videoRef.current) {
+                    videoRef.current.currentTime = 0;
+                    videoRef.current.play().then(() => {
+                      setIsPlaying(true);
+                      setPlayerState('playing');
+                      retryCountRef.current = 0;
+                    }).catch(() => undefined);
+                  }
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/25 active:scale-95"
+                aria-label="Assistir novamente"
+              >
+                <Icons.RotateCw size={16} /> Assistir novamente
+              </button>
+              {leadRelatedItem && (
+                <button
+                  type="button"
+                  onClick={() => openRelatedItem(leadRelatedItem)}
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-black text-black transition-colors hover:bg-white/90 active:scale-95"
+                  aria-label={`Próximo: ${leadRelatedItem.title}`}
+                >
+                  <Icons.ChevronRight size={16} />
+                  <span className="max-w-[180px] truncate">{leadRelatedItem.title}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleBack}
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/20 active:scale-95"
+              >
+                <Icons.ChevronLeft size={16} /> Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Persistent Overlay */}
+      {playerState === 'error_persistent' && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="overlay-error-title"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mx-6 w-full max-w-md rounded-2xl border border-red-400/30 bg-red-900/60 p-8 text-center backdrop-blur-md shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+            <div className="mb-4 flex h-16 w-16 mx-auto items-center justify-center rounded-full border border-red-400/40 bg-red-500/20">
+              <Icons.AlertCircle size={32} className="text-red-300" />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-300/80">Falha persistente</p>
+            <h2 id="overlay-error-title" className="mt-2 text-xl font-black text-white">Não foi possível carregar o vídeo</h2>
+            <p className="mt-2 text-sm text-white/70">
+              Verifique sua conexão e tente novamente, ou acesse outro conteúdo.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button
+                ref={errorPersistentFocusRef}
+                autoFocus
+                type="button"
+                onClick={() => {
+                  retryCountRef.current = 0;
+                  setPlayerState('loading');
+                  retryPlayback();
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/25 active:scale-95"
+              >
+                <Icons.RotateCw size={16} /> Tentar novamente
+              </button>
+              {leadRelatedItem && (
+                <button
+                  type="button"
+                  onClick={() => openRelatedItem(leadRelatedItem)}
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-black text-black transition-colors hover:bg-white/90 active:scale-95"
+                >
+                  <Icons.ChevronRight size={16} />
+                  <span className="max-w-[160px] truncate">{leadRelatedItem.title}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleBack}
+                className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/20 active:scale-95"
+              >
+                <Icons.ChevronLeft size={16} /> Voltar
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Overlay Gradient for controls visibility */}
       <div className={`absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 transition-opacity duration-300 pointer-events-none ${showControls ? 'opacity-100' : 'opacity-0'}`} />
 
-      {/* Controls Container */}
-      <div className={`absolute inset-0 flex flex-col justify-between p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] md:p-6 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      {/* Controls Container — hidden behind modal overlays */}
+      <div
+        ref={controlsContainerRef}
+        aria-hidden={overlayActive}
+        className={`absolute inset-0 flex flex-col justify-between p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] transition-opacity duration-300 md:p-6 lg:pr-[var(--player-dock-right)] ${overlayActive ? 'opacity-0 pointer-events-none' : showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      >
 
         {/* Top Bar */}
         <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
@@ -599,12 +772,20 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={toggleSpeed}
-            className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30 font-bold text-sm"
-          >
-            {playbackRate}x
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setShowDesktopRelated((prev) => !prev);
+              }}
+              aria-label={showDesktopRelated ? 'Ocultar relacionados' : 'Mostrar relacionados'}
+              className="hidden h-10 items-center gap-1.5 rounded-full border border-white/25 bg-black/30 px-3 text-[11px] font-bold text-white/90 transition-colors hover:bg-black/45 lg:inline-flex"
+            >
+              {showDesktopRelated ? 'Ocultar' : 'Relacionados'}
+              <Icons.ChevronRight size={13} className={`transition-transform ${showDesktopRelated ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {showShortcutsHint && (
@@ -652,103 +833,150 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
             {/* Bottom Control Dock */}
             <div className="w-full flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-              <div className="mx-auto w-full max-w-[min(100%,980px)] rounded-2xl border border-white/20 bg-black/55 px-3 pb-3 pt-2 backdrop-blur-md shadow-[0_16px_40px_rgba(0,0,0,0.35)] md:px-4">
-                <div className="flex items-center gap-2.5 text-[11px] font-bold text-white/85 md:text-xs">
-                  <span className="tabular-nums">{formatTime(currentTime)}</span>
-                  <div className="relative flex-1 h-4 flex items-center">
-                    <input
-                      type="range"
-                      min={0}
-                      max={duration || 100}
-                      value={currentTime}
-                      onChange={handleSeek}
-                      onMouseUp={handleSeekEnd}
-                      onTouchEnd={handleSeekEnd}
-                      className="w-full h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer focus:outline-none relative z-20 transition-all hover:h-2"
-                      style={{
-                        background: `linear-gradient(to right, ${themeColor} ${progressPercent}%, rgba(255,255,255,0.3) ${progressPercent}%)`
-                      }}
-                    />
+              {playError && (
+                <div className="mx-auto w-full max-w-[min(100%,980px)] lg:max-w-none lg:ml-0 lg:mr-[var(--player-dock-right)]">
+                  <div role="alert" className="rounded-2xl border border-red-300/35 bg-red-500/82 px-4 py-3 text-sm text-white backdrop-blur-md shadow-[0_14px_26px_rgba(0,0,0,0.28)]">
+                    <p>{playError}</p>
+                    {resolvedVideoUrl && (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          retryPlayback();
+                        }}
+                        className="mt-2 rounded-lg border border-white/35 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white"
+                      >
+                        Tentar novamente
+                      </button>
+                    )}
                   </div>
-                  <span className="tabular-nums text-white/70">-{formatTime(remainingTime)}</span>
                 </div>
+              )}
 
-                <div className="mt-2.5 flex items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-1.5 md:gap-2.5">
-                    <button
-                      onClick={() => skip(-10)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white/90 transition-colors hover:bg-white/15"
-                      aria-label="Voltar 10 segundos"
-                      title="Voltar 10s (J)"
-                    >
-                      <Icons.SkipBack size={18} />
-                    </button>
-                    <button
-                      onClick={(e) => togglePlay(e)}
-                      className="inline-flex h-11 min-w-[52px] items-center justify-center rounded-xl border border-white/25 bg-white/10 px-3 text-white transition-colors hover:bg-white/20"
-                      aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
-                      title="Play/Pause (Espaço ou K)"
-                    >
-                      {isPlaying ? <Icons.Pause size={20} fill="currentColor" /> : <Icons.Play size={20} fill="currentColor" className="ml-0.5" />}
-                    </button>
-                    <button
-                      onClick={() => skip(10)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white/90 transition-colors hover:bg-white/15"
-                      aria-label="Avançar 10 segundos"
-                      title="Avançar 10s (L)"
-                    >
-                      <Icons.SkipForward size={18} />
-                    </button>
-                    <p className="hidden text-xs font-bold text-white/80 sm:block">
-                      <span className="tabular-nums">{formatTime(currentTime)}</span>
-                      <span className="mx-1 text-white/45">/</span>
-                      <span className="tabular-nums">{formatTime(duration)}</span>
-                    </p>
+              <div className="mx-auto w-full max-w-[min(100%,980px)] lg:max-w-none lg:ml-0 lg:mr-[var(--player-dock-right)]">
+                <div className={`${panelChromeClass} px-3 pb-3 pt-2 md:px-4`}>
+                  <div className="flex items-center gap-2.5 text-[11px] font-bold text-white/85 md:text-xs">
+                    <span className="tabular-nums">{formatTime(currentTime)}</span>
+                    <div className="relative flex-1 h-4 flex items-center">
+                      <input
+                        type="range"
+                        min={0}
+                        max={duration || 100}
+                        value={currentTime}
+                        onChange={handleSeek}
+                        onMouseUp={handleSeekEnd}
+                        onTouchEnd={handleSeekEnd}
+                        className="w-full h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer focus:outline-none relative z-20 transition-all hover:h-2"
+                        style={{
+                          background: `linear-gradient(to right, ${themeColor} ${progressPercent}%, rgba(255,255,255,0.3) ${progressPercent}%)`
+                        }}
+                      />
+                    </div>
+                    <span className="tabular-nums text-white/70">-{formatTime(remainingTime)}</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 md:gap-2">
-                    <button
-                      onClick={toggleMute}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white/90 transition-colors hover:bg-white/15"
-                      title="Ativar/desativar som (M)"
-                    >
-                      {isMuted || volume === 0 ? <Icons.VolumeX size={18} /> : <Icons.Volume2 size={18} />}
-                    </button>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={volume}
-                      onChange={handleVolumeChange}
-                      className="hidden h-1 w-20 appearance-none rounded-lg bg-white/30 md:block"
-                      style={{
-                        background: `linear-gradient(to right, white ${volume * 100}%, rgba(255,255,255,0.3) ${volume * 100}%)`
-                      }}
-                    />
-                    <button
-                      onClick={toggleSpeed}
-                      className="inline-flex h-9 min-w-[44px] items-center justify-center rounded-lg border border-white/20 bg-white/5 px-2.5 text-xs font-black text-white transition-colors hover:bg-white/15"
-                      title="Velocidade"
-                    >
-                      {playbackRate}x
-                    </button>
-                    <button
-                      onClick={toggleFullscreen}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white/90 transition-colors hover:bg-white/15"
-                      title="Tela cheia (F)"
-                    >
-                      {isFullscreen ? <Icons.Minimize size={18} /> : <Icons.Maximize size={18} />}
-                    </button>
+                  <div className="mt-2.5 flex items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-1.5 md:gap-2.5">
+                      <button
+                        onClick={() => skip(-10)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/8 text-white/90 transition-colors hover:bg-white/14"
+                        aria-label="Voltar 10 segundos"
+                        title="Voltar 10s (J)"
+                      >
+                        <Icons.SkipBack size={18} />
+                      </button>
+                      <button
+                        onClick={(e) => togglePlay(e)}
+                        className="inline-flex h-11 min-w-[52px] items-center justify-center rounded-xl border border-white/25 bg-white/8 px-3 text-white transition-colors hover:bg-white/18"
+                        aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
+                        title="Play/Pause (Espaço ou K)"
+                      >
+                        {isPlaying ? <Icons.Pause size={20} fill="currentColor" /> : <Icons.Play size={20} fill="currentColor" className="ml-0.5" />}
+                      </button>
+                      <button
+                        onClick={() => skip(10)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/8 text-white/90 transition-colors hover:bg-white/14"
+                        aria-label="Avançar 10 segundos"
+                        title="Avançar 10s (L)"
+                      >
+                        <Icons.SkipForward size={18} />
+                      </button>
+                      <p className="hidden text-xs font-bold text-white/80 sm:block">
+                        <span className="tabular-nums">{formatTime(currentTime)}</span>
+                        <span className="mx-1 text-white/45">/</span>
+                        <span className="tabular-nums">{formatTime(duration)}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 md:gap-2">
+                      <button
+                        onClick={toggleMute}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/8 text-white/90 transition-colors hover:bg-white/14"
+                        title="Ativar/desativar som (M)"
+                      >
+                        {isMuted || volume === 0 ? <Icons.VolumeX size={18} /> : <Icons.Volume2 size={18} />}
+                      </button>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={volume}
+                        onChange={handleVolumeChange}
+                        className="hidden h-1 w-20 appearance-none rounded-lg bg-white/30 md:block"
+                        style={{
+                          background: `linear-gradient(to right, white ${volume * 100}%, rgba(255,255,255,0.3) ${volume * 100}%)`
+                        }}
+                      />
+                      <button
+                        onClick={toggleSpeed}
+                        className="inline-flex h-9 min-w-[44px] items-center justify-center rounded-lg border border-white/20 bg-white/8 px-2.5 text-xs font-black text-white transition-colors hover:bg-white/14"
+                        title="Velocidade"
+                      >
+                        {playbackRate}x
+                      </button>
+                      <button
+                        onClick={toggleFullscreen}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/8 text-white/90 transition-colors hover:bg-white/14"
+                        title="Tela cheia (F)"
+                      >
+                        {isFullscreen ? <Icons.Minimize size={18} /> : <Icons.Maximize size={18} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {itemDescription && (
+                <section className="pointer-events-auto mx-auto hidden w-full max-w-[min(100%,980px)] lg:block lg:max-w-none lg:ml-0 lg:mr-[var(--player-dock-right)]">
+                  <div className={`${panelChromeClass} p-4`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Descrição</p>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setIsDesktopDescriptionExpanded((prev) => !prev);
+                        }}
+                        aria-label={isDesktopDescriptionExpanded ? 'Recolher descrição' : 'Expandir descrição'}
+                        className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/6 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white/75 transition-colors hover:bg-white/12"
+                      >
+                        {isDesktopDescriptionExpanded ? 'Recolher' : 'Expandir'}
+                        <Icons.ChevronRight size={12} className={`transition-transform ${isDesktopDescriptionExpanded ? 'rotate-90' : ''}`} />
+                      </button>
+                    </div>
+                    <p className={`mt-2 text-sm leading-6 text-white/90 overflow-y-auto pr-1 ${isDesktopDescriptionExpanded ? 'max-h-[180px]' : 'max-h-[68px]'}`}>
+                      {itemDescription}
+                    </p>
+                  </div>
+                </section>
+              )}
 
               {leadRelatedItem && (
                 <button
                   type="button"
                   onClick={() => openRelatedItem(leadRelatedItem)}
-                  className="mt-2 inline-flex w-full items-center justify-between rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-left text-xs text-white/85 transition-colors hover:bg-white/10 lg:hidden"
+                  className="mt-2 inline-flex w-full items-center justify-between rounded-xl border border-white/20 bg-white/8 px-3 py-2 text-left text-xs text-white/85 transition-colors hover:bg-white/14 lg:hidden"
                 >
                   <span className="min-w-0">
                     <span className="text-[10px] uppercase tracking-[0.12em] text-white/60">Próximo</span>
@@ -768,14 +996,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         )}
       </div>
 
-      {itemDescription && (
-        <section className="pointer-events-auto absolute bottom-5 left-6 right-6 z-30 hidden rounded-2xl border border-white/15 bg-black/45 p-4 backdrop-blur-md lg:block lg:right-[380px]">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Descrição</p>
-          <p className="mt-2 text-sm leading-6 text-white/90 line-clamp-3">{itemDescription}</p>
-        </section>
-      )}
-
-      <aside className="pointer-events-auto absolute bottom-6 right-6 top-24 z-30 hidden w-[340px] flex-col overflow-hidden rounded-2xl border border-white/15 bg-black/45 backdrop-blur-md lg:flex">
+      <aside className={`pointer-events-auto absolute bottom-6 right-[var(--player-edge-gap)] top-24 z-30 hidden w-[var(--player-sidebar-width)] flex-col overflow-hidden ${panelChromeClass} lg:flex ${showDesktopRelated ? '' : 'opacity-0 pointer-events-none translate-x-4'}`}>
         <div className="border-b border-white/10 px-4 py-3">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos</p>
           <h2 className="mt-1 text-sm font-black text-white">Relacionados</h2>
@@ -783,7 +1004,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
         <div className="flex-1 space-y-2 overflow-y-auto p-3">
           {relatedItems.length === 0 && (
-            <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-white/70">
+            <p className="rounded-xl border border-white/20 bg-white/8 px-3 py-3 text-xs text-white/70">
               Sem relacionados para este vídeo.
             </p>
           )}
@@ -793,10 +1014,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
               key={item.id}
               type="button"
               onClick={() => openRelatedItem(item)}
-              className="flex w-full items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10"
+              className={`flex w-full items-start gap-3 p-2.5 text-left ${cardChromeClass}`}
             >
               <div
-                className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-white/10"
+                className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/8"
                 style={item.thumbnailUrl ? {
                   backgroundImage: `url(${item.thumbnailUrl})`,
                   backgroundSize: 'cover',
@@ -823,7 +1044,8 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           <button
             type="button"
             onClick={() => setShowMobileQueue((prev) => !prev)}
-            className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/5 px-2 py-1 text-[10px] font-bold text-white/75"
+            aria-label={showMobileQueue ? 'Ocultar fila de vídeos' : 'Mostrar fila de vídeos'}
+            className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/8 px-2 py-1 text-[10px] font-bold text-white/75"
           >
             {showMobileQueue ? 'Ocultar' : 'Mostrar'}
             <Icons.ChevronRight size={12} className={`transition-transform ${showMobileQueue ? 'rotate-90' : ''}`} />
@@ -835,7 +1057,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
             {relatedItems.length > 0 ? `${relatedItems.length} vídeos na fila` : 'Sem vídeos na fila'}
           </p>
         ) : relatedItems.length === 0 ? (
-          <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
+          <p className="rounded-xl border border-white/20 bg-white/8 px-3 py-2 text-xs text-white/70">
             Sem relacionados para este vídeo.
           </p>
         ) : (
@@ -845,10 +1067,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => openRelatedItem(item)}
-                className="flex w-full items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 p-2 text-left transition-colors hover:bg-white/10"
+                className="flex w-full items-center gap-2.5 rounded-xl border border-white/20 bg-white/8 p-2 text-left transition-colors hover:bg-white/14"
               >
                 <div
-                  className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-white/10"
+                  className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/8"
                   style={item.thumbnailUrl ? {
                     backgroundImage: `url(${item.thumbnailUrl})`,
                     backgroundSize: 'cover',

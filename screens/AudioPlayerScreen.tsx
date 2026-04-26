@@ -37,6 +37,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const [resolvedPlaybackTitle, setResolvedPlaybackTitle] = useState<string | null>(null);
   const [relatedTracks, setRelatedTracks] = useState<MediaItemCard[]>([]);
   const [trackDescription, setTrackDescription] = useState<string>('');
+  const [trackEnded, setTrackEnded] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rotationIntervalRef = useRef<number | null>(null);
@@ -78,6 +80,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
 
     setResolvedPlaybackUrl(null);
     setResolvedPlaybackTitle(null);
+    setTrackEnded(false);
 
     if (!mediaItemId) {
       return () => {
@@ -334,6 +337,28 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
     };
   }, [maybeSaveProgress]);
 
+  const handleReplay = () => {
+    if (!audioRef.current) return;
+    audioRef.current.currentTime = 0;
+    audioRef.current.play();
+    setIsPlaying(true);
+    setTrackEnded(false);
+  };
+
+  const SkipBack15Icon = ({ size = 28 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
+      <text x="12" y="16.5" textAnchor="middle" fontSize="6" fontWeight="900" fill="currentColor">15</text>
+    </svg>
+  );
+
+  const SkipForward15Icon = ({ size = 28 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 5V1l5 5-5 5V7C8.69 7 6 9.69 6 13s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" />
+      <text x="12" y="16.5" textAnchor="middle" fontSize="6" fontWeight="900" fill="currentColor">15</text>
+    </svg>
+  );
+
   const handleBack = () => {
     maybeSaveProgress(true);
     onBack();
@@ -369,6 +394,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => {
             setIsPlaying(false);
+            setTrackEnded(true);
             maybeSaveProgress(true);
           }}
           onPlay={() => setIsPlaying(true)}
@@ -398,174 +424,248 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
         </div>
 
         <button
-          onClick={toggleSpeed}
-          aria-label={`Velocidade de reprodução: ${playbackRate}x`}
-          className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30 font-bold text-sm"
+          onClick={() => setShowSidebar(s => !s)}
+          aria-label={showSidebar ? 'Ocultar sugestões' : 'Ver sugestões'}
+          className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md ${showSidebar
+              ? 'border-white/40 bg-white/20'
+              : 'border-white/25 bg-black/30 hover:bg-black/45'
+            }`}
         >
-          {playbackRate}x
+          {showSidebar ? 'Ocultar' : 'Sugestões'}
+          <Icons.ChevronRight size={13} className={`transition-transform ${showSidebar ? 'rotate-180' : ''}`} />
         </button>
       </div>
 
-      {/* Main Content - CD/Vinyl Section */}
-      <div className="flex-1 flex flex-col items-center justify-center relative z-10 overflow-hidden">
-        {/* CD/Vinyl Disc */}
-        <div className="relative mb-12">
-          <div
-            className="w-72 h-72 md:w-96 md:h-96 rounded-full relative cursor-pointer select-none"
-            style={{
-              transform: `rotate(${cdRotation}deg) scale(${isHoveringCd ? 1.05 : 1})`,
-              transition: isDragging ? 'none' : 'transform 0.05s linear',
-              willChange: 'transform'
-            }}
-            onMouseEnter={() => setIsHoveringCd(true)}
-            onMouseLeave={() => setIsHoveringCd(false)}
-            onClick={(e) => {
-              e.stopPropagation();
-              togglePlay();
-            }}
-          >
-            {/* Outer Ring - Vinyl Grooves */}
-            <div className="absolute inset-0 rounded-full border-8 border-black/40 shadow-2xl">
-              {/* Groove lines */}
-              <div className="absolute inset-2 rounded-full border border-white/10" />
-              <div className="absolute inset-4 rounded-full border border-white/10" />
-              <div className="absolute inset-6 rounded-full border border-white/10" />
-              <div className="absolute inset-8 rounded-full border border-white/10" />
-            </div>
-
-            {/* Album Cover */}
-            <div className="absolute inset-4 rounded-full overflow-hidden shadow-inner">
-              <img
-                src={collection.cover_image || placeholderImageUrl}
-                alt={collection.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            {/* Center Label - CD/Vinyl Center */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 md:w-20 md:h-20 rounded-full bg-black/60 backdrop-blur-sm border-2 border-white/20 shadow-inner flex items-center justify-center">
-              <div className="w-4 h-4 md:w-6 md:h-6 rounded-full bg-black/80" />
-            </div>
-          </div>
-        </div>
-
-        {/* Controls Section */}
-        <div className="w-full max-w-md px-6 pb-8 space-y-6">
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="relative">
-              <input
-                type="range"
-                min={0}
-                max={duration || 100}
-                value={currentTime}
-                onMouseDown={handleSeekStart}
-                onTouchStart={handleSeekStart}
-                onChange={handleSeek}
-                onMouseUp={handleSeekEnd}
-                onTouchEnd={handleSeekEnd}
-                className="w-full h-2 bg-white/20 rounded-full appearance-none cursor-pointer"
-                style={{
-                  background: `linear-gradient(to right, white ${progressPercent}%, rgba(255,255,255,0.2) ${progressPercent}%)`
-                }}
-              />
-            </div>
-            <div className="flex justify-between text-xs font-bold text-white/80 px-1">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
-          </div>
-
-          {/* Main Controls */}
-          <div className="flex items-center justify-center gap-8">
-            {/* Skip Backward */}
-            <button
-              onClick={skipBackward}
-              className="w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
-              aria-label="Retroceder 15 segundos"
-            >
-              <Icons.SkipBack size={28} strokeWidth={2.5} />
-            </button>
-
-            {/* Play/Pause */}
-            <button
-              onClick={togglePlay}
-              className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-md shadow-2xl flex items-center justify-center text-white border-2 border-white/40 transition-all active:scale-95 hover:bg-white/30 hover:scale-110"
-              aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
-            >
-              {isPlaying ? (
-                <Icons.Pause size={36} fill="currentColor" strokeWidth={2} />
-              ) : (
-                <Icons.Play size={36} fill="currentColor" strokeWidth={2} className="ml-1" />
-              )}
-            </button>
-
-            {/* Skip Forward */}
-            <button
-              onClick={skipForward}
-              className="w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
-              aria-label="Avançar 15 segundos"
-            >
-              <Icons.SkipForward size={28} strokeWidth={2.5} />
-            </button>
-          </div>
-
-          {/* Play Error Message */}
-          {playError && (
-            <div className="mt-4 bg-red-500/80 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full text-center max-w-xs">
-              {playError}
-            </div>
-          )}
-
-          {trackDescription && (
-            <div className="rounded-2xl border border-white/20 bg-black/20 p-4 text-white/90 backdrop-blur-md">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Sobre esta faixa</p>
-              <p className="mt-2 text-sm leading-6 line-clamp-3">{trackDescription}</p>
-            </div>
-          )}
-
-          <div className="rounded-2xl border border-white/20 bg-black/20 p-3 text-white backdrop-blur-md">
-            <div className="mb-2 px-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Catálogo relacionado</p>
-              <h2 className="mt-1 text-sm font-black">Sugestões da biblioteca</h2>
-            </div>
-
-            <div className="space-y-2">
-              {relatedTracks.length === 0 && (
-                <p className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/75">
-                  Sem outras faixas relacionadas no momento.
-                </p>
-              )}
-
-              {relatedTracks.slice(0, 4).map((item) => (
+      {/* Track Ended Overlay */}
+      {trackEnded && (
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/70 backdrop-blur-md">
+          <div className="text-center px-8 space-y-5 w-full max-w-sm">
+            <div className="text-5xl select-none">🎵</div>
+            <h2 className="text-xl font-black text-white">Faixa concluída!</h2>
+            <p className="text-sm text-white/70">O que você quer fazer agora?</p>
+            <div className="space-y-3">
+              <button
+                onClick={handleReplay}
+                className="w-full py-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 text-white font-bold text-base transition-all active:scale-95 hover:bg-white/30"
+              >
+                Ouvir novamente
+              </button>
+              {relatedTracks.length > 0 && (
                 <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => openRelatedTrack(item)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10"
+                  onClick={() => {
+                    setTrackEnded(false);
+                    openRelatedTrack(relatedTracks[0]);
+                  }}
+                  className="w-full py-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white/80 font-semibold text-sm transition-all active:scale-95 hover:bg-white/20"
                 >
-                  <div
-                    className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-white/10"
-                    style={item.thumbnailUrl ? {
-                      backgroundImage: `url(${item.thumbnailUrl})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    } : undefined}
-                  >
-                    <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/65 text-white">
-                      <Icons.Play size={9} className="ml-0.5 fill-current stroke-none" />
-                    </span>
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="line-clamp-1 text-xs font-bold">{item.title}</p>
-                    <p className="text-[11px] text-white/70">{item.collectionTitle ?? 'Kaboo'}</p>
-                  </div>
+                  Próxima: {relatedTracks[0].title}
                 </button>
-              ))}
+              )}
+              <button
+                onClick={handleBack}
+                className="w-full py-2 text-white/60 font-medium text-sm transition-all active:scale-95 hover:text-white/80"
+              >
+                Voltar ao catálogo
+              </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Main Content - two-column layout on desktop */}
+      <div className="flex-1 flex flex-col lg:flex-row relative z-10 overflow-hidden">
+
+        {/* Player Column */}
+        <div className="flex flex-col items-center justify-start pt-3 overflow-y-auto min-w-0 flex-1">
+          {/* CD/Vinyl Disc */}
+          <div className="relative mb-2">
+            <div
+              className="w-56 h-56 md:w-72 md:h-72 rounded-full relative cursor-pointer select-none"
+              style={{
+                transform: `rotate(${cdRotation}deg) scale(${isHoveringCd ? 1.05 : 1})`,
+                transition: isDragging ? 'none' : 'transform 0.05s linear',
+                willChange: 'transform'
+              }}
+              onMouseEnter={() => setIsHoveringCd(true)}
+              onMouseLeave={() => setIsHoveringCd(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePlay();
+              }}
+            >
+              {/* Outer Ring - Vinyl Grooves */}
+              <div className="absolute inset-0 rounded-full border-8 border-black/40 shadow-2xl">
+                {/* Groove lines */}
+                <div className="absolute inset-2 rounded-full border border-white/10" />
+                <div className="absolute inset-4 rounded-full border border-white/10" />
+                <div className="absolute inset-6 rounded-full border border-white/10" />
+                <div className="absolute inset-8 rounded-full border border-white/10" />
+              </div>
+
+              {/* Album Cover */}
+              <div className="absolute inset-4 rounded-full overflow-hidden shadow-inner">
+                <img
+                  src={collection.cover_image || placeholderImageUrl}
+                  alt={collection.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Center Label - CD/Vinyl Center */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/60 backdrop-blur-sm border-2 border-white/20 shadow-inner flex items-center justify-center">
+                <div className="w-4 h-4 rounded-full bg-black/80" />
+              </div>
+
+              {/* Play/Pause Affordance Overlay */}
+              <div
+                className={`absolute inset-0 rounded-full flex items-center justify-center bg-black/25 transition-opacity duration-200 pointer-events-none ${!isPlaying ? 'opacity-100' : isHoveringCd ? 'opacity-100' : 'opacity-0'
+                  }`}
+              >
+                {isPlaying ? (
+                  <Icons.Pause size={44} fill="white" strokeWidth={0} className="text-white drop-shadow-lg" />
+                ) : (
+                  <Icons.Play size={44} fill="white" strokeWidth={0} className="text-white drop-shadow-lg ml-2" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Controls Section */}
+          <div className="w-full max-w-md px-6 pb-5 space-y-4">
+            {/* Progress Bar */}
+            <div className="space-y-2">
+              <div className="relative">
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 100}
+                  value={currentTime}
+                  onMouseDown={handleSeekStart}
+                  onTouchStart={handleSeekStart}
+                  onChange={handleSeek}
+                  onMouseUp={handleSeekEnd}
+                  onTouchEnd={handleSeekEnd}
+                  className="w-full h-3 bg-white/20 rounded-full appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, white ${progressPercent}%, rgba(255,255,255,0.2) ${progressPercent}%)`
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-xs font-bold text-white/80 px-1">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+            </div>
+
+            {/* Speed Control */}
+            <div className="flex justify-center">
+              <button
+                onClick={toggleSpeed}
+                aria-label={`Velocidade: ${playbackRate}x`}
+                className="px-5 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/30 text-white font-bold text-sm hover:bg-black/30 transition-all active:scale-95"
+              >
+                {playbackRate}x
+              </button>
+            </div>
+
+            {/* Main Controls */}
+            <div className="flex items-center justify-center gap-7">
+              {/* Skip Backward */}
+              <button
+                onClick={skipBackward}
+                className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
+                aria-label="Retroceder 15 segundos"
+              >
+                <SkipBack15Icon size={24} />
+              </button>
+
+              {/* Play/Pause */}
+              <button
+                onClick={togglePlay}
+                className="w-[4.5rem] h-[4.5rem] rounded-full bg-white/20 backdrop-blur-md shadow-2xl flex items-center justify-center text-white border-2 border-white/40 transition-all active:scale-95 hover:bg-white/30 hover:scale-110"
+                aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
+              >
+                {isPlaying ? (
+                  <Icons.Pause size={32} fill="currentColor" strokeWidth={2} />
+                ) : (
+                  <Icons.Play size={32} fill="currentColor" strokeWidth={2} className="ml-1" />
+                )}
+              </button>
+
+              {/* Skip Forward */}
+              <button
+                onClick={skipForward}
+                className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
+                aria-label="Avançar 15 segundos"
+              >
+                <SkipForward15Icon size={24} />
+              </button>
+            </div>
+
+            {/* Play Error Message */}
+            {playError && (
+              <div className="mt-4 bg-red-500/80 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full text-center max-w-xs">
+                {playError}
+              </div>
+            )}
+
+            {trackDescription && (
+              <div className="rounded-xl border border-white/20 bg-black/20 px-3 py-3 text-white/90 backdrop-blur-md">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/60">Sobre esta faixa</p>
+                <p className="mt-1 text-sm leading-5 line-clamp-2">{trackDescription}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar — catálogo relacionado */}
+        <div
+          className={`flex-shrink-0 overflow-y-auto transition-all duration-300 border-t lg:border-t-0 lg:border-l border-white/10 bg-black/25 backdrop-blur-md ${showSidebar
+              ? 'w-full h-72 lg:h-auto lg:w-80 xl:w-96'
+              : 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none border-0'
+            }`}
+          style={{ scrollbarWidth: 'none' } as React.CSSProperties}
+        >
+          <div className="p-4 space-y-3 min-w-[280px]">
+            <div className="px-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Catálogo relacionado</p>
+              <h2 className="mt-1 text-sm font-black text-white">Sugestões da biblioteca</h2>
+            </div>
+
+            {relatedTracks.length === 0 && (
+              <p className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/75">
+                Sem outras faixas relacionadas no momento.
+              </p>
+            )}
+
+            {relatedTracks.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => openRelatedTrack(item)}
+                className="flex w-full items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10 text-white"
+              >
+                <div
+                  className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-white/10"
+                  style={item.thumbnailUrl ? {
+                    backgroundImage: `url(${item.thumbnailUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  } : undefined}
+                >
+                  <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/65 text-white">
+                    <Icons.Play size={9} className="ml-0.5 fill-current stroke-none" />
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <p className="line-clamp-1 text-xs font-bold">{item.title}</p>
+                  <p className="text-[11px] text-white/70">{item.collectionTitle ?? 'Kaboo'}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
 
       <style>{`

@@ -34,6 +34,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
       return false;
     }
   });
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -42,6 +43,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
       console.warn('Failed to save sidebar state:', error);
     }
   }, [isCollapsed]);
+
+  useEffect(() => {
+    setIsMoreMenuOpen(false);
+  }, [currentScreen]);
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -101,50 +106,105 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     ...(adminNavItem ? [{ title: 'Gestão', items: [adminNavItem] }] : []),
   ];
 
-  const mobileNavItems = [
-    ...catalogNavItems,
-    ...libraryNavItems,
+  const mobilePrimaryNavItems: NavItem[] = [
+    catalogNavItems[0],
+    libraryNavItems[0],
+    libraryNavItems[1],
+    libraryNavItems[3],
+  ];
+
+  const mobileMoreNavItems: NavItem[] = [
+    catalogNavItems[1],
+    libraryNavItems[2],
     ...(adminNavItem ? [adminNavItem] : []),
     { key: 'profile', screen: 'profile', icon: Icons.User, label: 'Perfil' },
   ];
 
+  const isMoreItemActive = mobileMoreNavItems.some((item) => isItemActive(item));
+
+  const handleMobileNavigate = (screen: ScreenName, params?: any) => {
+    setIsMoreMenuOpen(false);
+    onNavigate(screen, params);
+  };
+
   return (
     <>
       {/* MOBILE BOTTOM NAV */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50">
-        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
-          {mobileNavItems.map((item) => {
+      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-gray-100/90 bg-white/95 backdrop-blur-md px-3 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2 rounded-t-3xl shadow-[0_-8px_24px_rgba(15,23,42,0.08)] z-50">
+        <div className="grid grid-cols-5 gap-1">
+          {mobilePrimaryNavItems.map((item) => {
             const isActive = isItemActive(item);
             const Icon = item.icon;
             return (
               <button
                 key={item.key}
-                onClick={() => onNavigate(item.screen, item.params)}
+                onClick={() => handleMobileNavigate(item.screen, item.params)}
                 aria-label={item.label}
-                className="flex flex-col items-center gap-1 min-w-[68px] pb-1"
+                className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-all duration-200 ${isActive ? 'bg-kaboo-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
               >
-                <div className={`p-2 rounded-xl transition-colors ${isActive ? 'bg-kaboo-primary/10' : 'bg-transparent'}`}>
+                <div className={`rounded-xl p-2 transition-colors ${isActive ? 'bg-kaboo-primary/12' : 'bg-transparent'}`}>
                   <Icon
-                    size={24}
+                    size={22}
                     className={`transition-colors ${isActive ? 'text-kaboo-primary stroke-[3px]' : 'text-gray-400 stroke-[2px]'}`}
                   />
                 </div>
-                <span className={`text-[10px] font-bold ${isActive ? 'text-kaboo-primary' : 'text-gray-400'}`}>
+                <span className={`text-[10px] font-bold leading-none ${isActive ? 'text-kaboo-primary' : 'text-gray-400'}`}>
                   {item.label}
                 </span>
               </button>
             );
           })}
+
+          <button
+            onClick={() => setIsMoreMenuOpen((open) => !open)}
+            aria-label={isMoreMenuOpen ? 'Fechar menu' : 'Abrir mais opções'}
+            className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-all duration-200 ${isMoreItemActive || isMoreMenuOpen ? 'bg-kaboo-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
+          >
+            <div className={`rounded-xl p-2 transition-colors ${isMoreItemActive || isMoreMenuOpen ? 'bg-kaboo-primary/12' : 'bg-transparent'}`}>
+              <Icons.MoreHorizontal size={22} className={`transition-colors ${isMoreItemActive || isMoreMenuOpen ? 'text-kaboo-primary stroke-[2.8px]' : 'text-gray-400 stroke-[2px]'}`} />
+            </div>
+            <span className={`text-[10px] font-bold leading-none ${isMoreItemActive || isMoreMenuOpen ? 'text-kaboo-primary' : 'text-gray-400'}`}>
+              Mais
+            </span>
+          </button>
         </div>
       </div>
 
+      {isMoreMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]" onClick={() => setIsMoreMenuOpen(false)}>
+          <div
+            className="absolute bottom-[88px] left-3 right-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="px-2 pb-2 text-[11px] font-black uppercase tracking-[0.15em] text-gray-400">Mais opções</p>
+            <div className="space-y-1">
+              {mobileMoreNavItems.map((item) => {
+                const isActive = isItemActive(item);
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => handleMobileNavigate(item.screen, item.params)}
+                    aria-label={item.label}
+                    className={`flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 transition-all duration-200 ${isActive ? 'bg-kaboo-primary text-white shadow-sm shadow-kaboo-primary/25' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 active:scale-[0.99]'}`}
+                  >
+                    <Icon size={18} className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'} />
+                    <span className="text-sm font-bold">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* DESKTOP SIDEBAR */}
-      <div className={`hidden md:flex flex-col h-screen bg-white border-r border-gray-100 shrink-0 z-50 shadow-sm transition-all duration-300 ease-in-out relative ${isCollapsed ? 'w-20' : 'w-64'
+      <div className={`hidden md:flex flex-col h-screen bg-white border-r border-gray-100 shrink-0 z-50 shadow-sm transition-all duration-300 ease-in-out relative ${isCollapsed ? 'w-20' : 'w-[268px]'
         }`}>
         {/* Toggle Button - Top Border */}
         <button
           onClick={toggleSidebar}
-          className="absolute -right-3 top-4 w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200 z-10"
+          className="absolute -right-3 top-4 w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 hover:shadow-md hover:scale-105 transition-all duration-200 z-10"
           aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
           title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
@@ -177,7 +237,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
           {desktopNavSections.map((section, sectionIndex) => (
             <div key={section.title} className={`space-y-2 ${sectionIndex > 0 ? 'pt-4 border-t border-gray-100' : ''}`}>
               {!isCollapsed && (
-                <p className="px-4 text-[11px] font-black uppercase tracking-[0.2em] text-gray-300">
+                <p className="px-4 text-[11px] font-black uppercase tracking-[0.2em] text-gray-300/90">
                   {section.title}
                 </p>
               )}
@@ -190,14 +250,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                     key={item.key}
                     onClick={() => onNavigate(item.screen, item.params)}
                     aria-label={item.label}
-                    className={`w-full flex items-center rounded-[100px] transition-all duration-200 group ${isCollapsed
+                    className={`relative w-full flex items-center rounded-[100px] transition-all duration-200 group ${isCollapsed
                       ? 'justify-center px-3 py-4'
                       : 'gap-4 px-6 py-4'
                       } ${isActive
                         ? 'bg-kaboo-primary text-white shadow-md shadow-kaboo-primary/20'
-                        : 'bg-transparent text-gray-500 hover:bg-gray-50'
+                        : 'bg-transparent text-gray-500 hover:bg-gray-50/90'
                       }`}
                   >
+                    {!isCollapsed && isActive && (
+                      <span className="absolute left-2 h-5 w-1 rounded-full bg-white/85" aria-hidden="true" />
+                    )}
                     <Icon
                       size={22}
                       className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px] group-hover:text-kaboo-primary'}
