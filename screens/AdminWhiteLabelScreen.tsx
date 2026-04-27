@@ -1178,7 +1178,15 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                     </div>
                 </section>
             </div>
-            {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} progress={toast.progress} />}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    isVisible={toast.isVisible}
+                    onClose={hideToast}
+                    progress={toast.progress}
+                />
+            )}
         </div>
     );
 };
