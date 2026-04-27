@@ -10,6 +10,8 @@ import { Button, Input } from '../design-system';
 import { Card3D } from '../components/Card3D';
 import { CharacterAvatar } from '../components/CharacterAvatar';
 import { CollectionFiltersModal } from '../components/CollectionFiltersModal';
+import { HeroParallaxBackdrop } from '../components/HeroParallaxBackdrop';
+import { useBrandConfig } from '../hooks/useBrandConfig';
 import { getCollectionDisplayCover, getCollectionTypeMeta } from '../lib/collectionPresentation';
 import { lookupBncc } from '../lib/bnccLookup';
 // @ts-ignore
@@ -402,7 +404,7 @@ const BnccPickerSheet: React.FC<BnccPickerSheetProps> = ({
                   aria-pressed={isSelected}
                   className={`w-full rounded-[26px] border p-4 text-left shadow-sm transition-[transform,border-color,box-shadow,background-color] duration-200 ease-out active:scale-[0.99] ${isSelected
                     ? 'border-green-400 bg-[linear-gradient(135deg,rgba(240,253,244,0.96)_0%,rgba(255,255,255,1)_72%)] shadow-[0_18px_34px_rgba(34,197,94,0.12)]'
-                    : 'border-gray-200 bg-white hover:-translate-y-0.5 hover:border-green-200 hover:shadow-[0_16px_28px_rgba(15,23,42,0.07)]'
+                    : 'border-gray-200 bg-white md:hover:-translate-y-0.5 hover:border-green-200 hover:shadow-[0_16px_28px_rgba(15,23,42,0.07)]'
                     }`}
                 >
                   <div className="flex items-start gap-3">
@@ -575,6 +577,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const searchCollectionGroupTitle = currentCollectionGroup === 'books' ? 'Busca em Livros' : 'Busca em Coleções';
   const availableLabelSingular = currentCollectionGroup === 'books' ? 'livro disponível' : 'coleção disponível';
   const availableLabelPlural = currentCollectionGroup === 'books' ? 'livros disponíveis' : 'coleções disponíveis';
+  const { bootstrap: brandBootstrap, slug: brandSlug, isFeatureEnabled } = useBrandConfig();
   // Initialize collections from cache if available
   const cachedCollections = getCachedCollectionsSync();
   // Initialize profile from cache if available
@@ -652,6 +655,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       preloadedAvatarsRef.current.delete(avatarId);
     };
   };
+
+  const isCentralCoruja = brandSlug === 'central-coruja';
+  const heroParallaxFeature = brandBootstrap.features['hero.parallax'];
+  const heroParallaxModeRaw = heroParallaxFeature?.config?.mode;
+  const heroParallaxMode =
+    heroParallaxModeRaw === 'subtle' || heroParallaxModeRaw === 'standard' || heroParallaxModeRaw === 'off'
+      ? heroParallaxModeRaw
+      : (isFeatureEnabled('hero.parallax') ? 'subtle' : 'off');
+
+  const shouldRenderWhiteLabelParallax =
+    isCentralCoruja &&
+    isFeatureEnabled('hero.parallax') &&
+    !isSearchExperience;
 
   // Preload avatar image immediately if cached profile exists
   useEffect(() => {
@@ -1488,132 +1504,142 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         <AccessStatusBanner />
 
         <div className={`px-6 md:px-8 relative z-0 shrink-0 ${isSearchExperience ? 'pb-4 pt-3 space-y-3' : 'mb-4 mt-2 space-y-3'}`}>
-          {isSearchExperience && (
-            <div className="flex items-start justify-between gap-3 rounded-[24px] border border-kaboo-primary/10 bg-kaboo-primary/[0.03] px-4 py-3 animate-fade-in-up md:hidden">
-              <div className="min-w-0">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary">{searchCollectionGroupTitle}</p>
-                <p className="mt-1 text-sm text-gray-500">Pesquise por texto e use os filtros para explorar personagem, CASEL, BNCC ou idade-série.</p>
+          {shouldRenderWhiteLabelParallax && (
+            <HeroParallaxBackdrop
+              enabled
+              brandId={isCentralCoruja ? 'central-coruja' : 'kaboo'}
+              mode={heroParallaxMode}
+            />
+          )}
+
+          <div className="relative z-10 space-y-3">
+            {isSearchExperience && (
+              <div className="flex items-start justify-between gap-3 rounded-[24px] border border-kaboo-primary/10 bg-kaboo-primary/[0.03] px-4 py-3 animate-fade-in-up md:hidden">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary">{searchCollectionGroupTitle}</p>
+                  <p className="mt-1 text-sm text-gray-500">Pesquise por texto e use os filtros para explorar personagem, CASEL, BNCC ou idade-série.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeInlineSearch}
+                  className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full border border-kaboo-primary/15 bg-white text-kaboo-primary transition-colors hover:bg-kaboo-primary/5"
+                  aria-label="Fechar busca"
+                >
+                  <Icons.X size={16} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={closeInlineSearch}
-                className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full border border-kaboo-primary/15 bg-white text-kaboo-primary transition-colors hover:bg-kaboo-primary/5"
-                aria-label="Fechar busca"
-              >
-                <Icons.X size={16} />
-              </button>
-            </div>
-          )}
+            )}
 
-          {isSearchExperience && (
-            <div className="hidden md:flex items-center justify-between gap-4 text-sm text-gray-500 animate-fade-in-up">
-              <p>Pesquise por texto e abra os filtros para refinar por personagem, CASEL, BNCC ou idade-série.</p>
-            </div>
-          )}
+            {isSearchExperience && (
+              <div className="hidden md:flex items-center justify-between gap-4 text-sm text-gray-500 animate-fade-in-up">
+                <p>Pesquise por texto e abra os filtros para refinar por personagem, CASEL, BNCC ou idade-série.</p>
+              </div>
+            )}
 
-          <div className="relative w-full">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10">
-              <Icons.Search size={18} />
-            </div>
+            <div className="relative w-full">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10">
+                <Icons.Search size={18} />
+              </div>
 
-            {isSearchExperience ? (
-              <>
-                <Input
-                  ref={searchInputRef}
-                  aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
-                  placeholder="Título, BNCC, personagem, competência..."
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  className={`h-14 rounded-[28px] pl-11 shadow-sm border-transparent bg-white/90 hover:border-transparent focus:border-kaboo-primary ${showInlineFilterTrigger ? 'pr-24 md:pr-72' : 'pr-24 md:pr-40'}`}
-                />
+              {isSearchExperience ? (
+                <>
+                  <Input
+                    ref={searchInputRef}
+                    aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
+                    placeholder="Título, BNCC, personagem, competência..."
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    className={`h-14 rounded-[28px] pl-11 shadow-sm border-transparent bg-white/90 hover:border-transparent focus:border-kaboo-primary ${showInlineFilterTrigger ? 'pr-24 md:pr-72' : 'pr-24 md:pr-40'}`}
+                  />
 
-                <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
-                  {searchTerm && (
+                  <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
+                    {searchTerm && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchTerm('')}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition-colors hover:text-gray-600"
+                        title="Limpar busca"
+                      >
+                        <Icons.X size={16} />
+                      </button>
+                    )}
+
+                    {showInlineFilterTrigger && (
+                      <button
+                        type="button"
+                        onClick={() => openFilterDrawer()}
+                        className="inline-flex h-10 items-center gap-2 rounded-[20px] border border-gray-200 bg-white px-3 md:px-4 transition-all active:scale-95 shadow-sm text-gray-600 hover:border-kaboo-primary/20"
+                        title="Refinar busca"
+                      >
+                        <Icons.Filter size={18} strokeWidth={2} />
+                        <span className="hidden md:inline text-sm font-bold">Filtros</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
-                      onClick={() => setSearchTerm('')}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition-colors hover:text-gray-600"
-                      title="Limpar busca"
+                      onClick={closeInlineSearch}
+                      className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-gray-200 bg-white px-3 text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
+                      title="Fechar busca"
                     >
                       <Icons.X size={16} />
+                      <span className="text-sm font-bold">Fechar</span>
                     </button>
-                  )}
+                  </div>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
+                  className="w-full h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-16 md:pr-28 shadow-sm hover:border-kaboo-primary/20 text-left text-gray-400 font-medium"
+                  aria-label="Abrir pesquisa"
+                >
+                  Buscar por título, tema, BNCC ou personagem
+                </button>
+              )}
 
-                  {showInlineFilterTrigger && (
-                    <button
-                      type="button"
-                      onClick={() => openFilterDrawer()}
-                      className="inline-flex h-10 items-center gap-2 rounded-[20px] border border-gray-200 bg-white px-3 md:px-4 transition-all active:scale-95 shadow-sm text-gray-600 hover:border-kaboo-primary/20"
-                      title="Refinar busca"
-                    >
-                      <Icons.Filter size={18} strokeWidth={2} />
-                      <span className="hidden md:inline text-sm font-bold">Filtros</span>
-                    </button>
+              {!isSearchExperience && (
+                <button
+                  type="button"
+                  onClick={() => openFilterDrawer()}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 h-10 px-3 md:px-4 rounded-[20px] flex items-center gap-2 border transition-all active:scale-95 shadow-sm ${activeFilterCount > 0
+                    ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-white hover:border-kaboo-primary/20'
+                    }`}
+                  title="Refinar busca"
+                >
+                  <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
+                  <span className="hidden md:inline text-sm font-bold">Filtros</span>
+                  {activeFilterCount > 0 && (
+                    <span className={`min-w-5 h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center ${activeFilterCount > 0 ? 'bg-white/20 text-white' : 'bg-kaboo-primary/10 text-kaboo-primary'}`}>
+                      {activeFilterCount}
+                    </span>
                   )}
-
-                  <button
-                    type="button"
-                    onClick={closeInlineSearch}
-                    className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-gray-200 bg-white px-3 text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
-                    title="Fechar busca"
-                  >
-                    <Icons.X size={16} />
-                    <span className="text-sm font-bold">Fechar</span>
-                  </button>
-                </div>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
-                className="w-full h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-16 md:pr-28 shadow-sm hover:border-kaboo-primary/20 text-left text-gray-400 font-medium"
-                aria-label="Abrir pesquisa"
-              >
-                Buscar por título, tema, BNCC ou personagem
-              </button>
-            )}
+                </button>
+              )}
+            </div>
 
             {!isSearchExperience && (
-              <button
-                type="button"
-                onClick={() => openFilterDrawer()}
-                className={`absolute right-2 top-1/2 -translate-y-1/2 h-10 px-3 md:px-4 rounded-[20px] flex items-center gap-2 border transition-all active:scale-95 shadow-sm ${activeFilterCount > 0
-                  ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
-                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-white hover:border-kaboo-primary/20'
-                  }`}
-                title="Refinar busca"
-              >
-                <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
-                <span className="hidden md:inline text-sm font-bold">Filtros</span>
-                {activeFilterCount > 0 && (
-                  <span className={`min-w-5 h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center ${activeFilterCount > 0 ? 'bg-white/20 text-white' : 'bg-kaboo-primary/10 text-kaboo-primary'}`}>
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
+              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                {TABS.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive
+                        ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20'
+                        : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100'
+                        }`}
+                    >
+                      {tab.id === 'all' && <Icons.Grid size={14} />}
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
-
-          {!isSearchExperience && (
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-              {TABS.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive
-                      ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20'
-                      : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100'
-                      }`}
-                  >
-                    {tab.id === 'all' && <Icons.Grid size={14} />}
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {(activeFilterCount > 0 || (!isSearchExperience && hasSearchQuery)) && (

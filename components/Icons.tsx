@@ -35,6 +35,15 @@ import {
   Edit,
   Trash2,
   AlertCircle,
+  AlertTriangle,
+  CheckCircle,
+  Database,
+  Send,
+  BarChart3,
+  History,
+  LineChart,
+  RotateCcw,
+  TrendingUp,
   Upload,
   ExternalLink,
   RotateCw,
@@ -55,5 +64,5 @@ export const Icons = {
   Play, Pause, SkipBack, SkipForward, BookOpen, Book, Headphones,
   Video, Paperclip, Download, FileText, Settings, LogOut,
   HelpCircle, Mail, Grid, Volume2, VolumeX, Maximize, Minimize,
-  Eye, EyeOff, X, Filter, Check, Plus, Edit, Trash2, AlertCircle, Upload, ExternalLink, RotateCw, Smartphone, Image, ArrowUpDown, ArrowDown, ArrowUp, ChevronDown, Ticket, Lock, Users, Type
+  Eye, EyeOff, X, Filter, Check, Plus, Edit, Trash2, AlertCircle, AlertTriangle, CheckCircle, Database, Send, BarChart3, History, LineChart, RotateCcw, TrendingUp, Upload, ExternalLink, RotateCw, Smartphone, Image, ArrowUpDown, ArrowDown, ArrowUp, ChevronDown, Ticket, Lock, Users, Type
 };

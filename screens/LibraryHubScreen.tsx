@@ -1300,7 +1300,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
 
                 {shouldUseMediaApi && mediaSourceStatus !== 'fallback'
                   ? renderMediaRailBlocks(
-                    'group rounded-[1.2rem] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
+                    'group rounded-[1.2rem] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
                     'sm:grid-cols-2 xl:grid-cols-3',
                     'Ajuste a busca ou limpe os filtros para voltar ao acervo completo.',
                     {
@@ -1314,7 +1314,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                         {sortedVideoItems.map((item, itemIndex) => renderLibraryGridCard(
                           item,
                           itemIndex,
-                          'group rounded-[1.2rem] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
+                          'group rounded-[1.2rem] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
                         ))}
                       </div>
 
@@ -1485,7 +1485,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
 
                 {isMusicHub && shouldUseMediaApi && mediaSourceStatus !== 'fallback'
                   ? renderMediaRailBlocks(
-                    `group rounded-[1.2rem] border border-kaboo-primary/10 p-2.5 shadow-[0_10px_24px_rgba(27,31,35,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(27,31,35,0.08)] active:scale-[0.995] ${screenSurface.card}`,
+                    `group rounded-[1.2rem] border border-kaboo-primary/10 p-2.5 shadow-[0_10px_24px_rgba(27,31,35,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(27,31,35,0.08)] active:scale-[0.995] ${screenSurface.card}`,
                     'sm:grid-cols-2 xl:grid-cols-3',
                     'Ajuste a busca ou limpe os filtros para voltar ao acervo completo.',
                     {
@@ -1499,7 +1499,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                         {sortedCompactItems.map((item, itemIndex) => renderLibraryGridCard(
                           item,
                           itemIndex,
-                          `group ${isMusicHub ? 'rounded-[1.2rem] p-2.5' : 'flex items-center gap-3 rounded-[1.2rem] p-3'} border border-kaboo-primary/10 shadow-[0_10px_24px_rgba(27,31,35,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(27,31,35,0.08)] active:scale-[0.995] ${screenSurface.card}`,
+                          `group ${isMusicHub ? 'rounded-[1.2rem] p-2.5' : 'flex items-center gap-3 rounded-[1.2rem] p-3'} border border-kaboo-primary/10 shadow-[0_10px_24px_rgba(27,31,35,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(27,31,35,0.08)] active:scale-[0.995] ${screenSurface.card}`,
                         ))}
                       </div>
 

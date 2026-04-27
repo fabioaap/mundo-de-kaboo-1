@@ -3,6 +3,7 @@ import { NavState, ScreenName, Collection, UserProfile } from './types';
 import { api, clearAllUserCache, getCachedProfileSync, isDevMockSession } from './lib/api';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { useThemeBackground } from './hooks/useThemeBackground';
+import { useBrandConfig } from './hooks/useBrandConfig';
 import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
 import { logger } from './lib/logger';
 import { clearPendingPasswordSetup, hasPendingPasswordSetup, isInvitedAuthUser, markPendingPasswordSetup } from './lib/passwordSetupFlow';
@@ -182,6 +183,10 @@ const App: React.FC = () => {
   });
   // Store collection theme color for loading screen
   const [loadingCollectionTheme, setLoadingCollectionTheme] = useState<string | null>(null);
+
+  // Brand config — bootstrapada uma vez por sessão; aplica tema e resolve menu flags.
+  const { enabledMenuItems } = useBrandConfig();
+  const brandEnabledMenuKeys = new Set(enabledMenuItems.map(item => item.key));
 
   // Save navState to localStorage whenever it changes
   useEffect(() => {
@@ -878,7 +883,13 @@ const App: React.FC = () => {
     <div className="bg-white min-h-screen w-full flex flex-col md:flex-row overflow-x-hidden">
 
       {showNav && (
-        <BottomNav currentScreen={navState.currentScreen} currentParams={navState.params} onNavigate={navigate} profile={accessProfile} />
+        <BottomNav
+          currentScreen={navState.currentScreen}
+          currentParams={navState.params}
+          onNavigate={navigate}
+          profile={accessProfile}
+          enabledMenuKeys={brandEnabledMenuKeys}
+        />
       )}
 
       <main className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative h-screen w-full bg-white`}>

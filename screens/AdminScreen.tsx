@@ -6,6 +6,7 @@ import useIsMobile from '../hooks/useIsMobile';
 // Re-export the legacy admin screen so existing code keeps working
 import { AdminCollectionsScreen, AdminCollectionsHandle } from './AdminCollectionsScreen';
 import { AdminCharactersHandle, AdminCharactersScreen } from './AdminCharactersScreen';
+import { AdminWhiteLabelScreen } from './AdminWhiteLabelScreen';
 import { VouchersModule } from './VouchersModule';
 
 interface AdminScreenProps {
@@ -22,9 +23,10 @@ const MODULE_META: Record<AdminModule, { icon: React.FC<{ className?: string }>;
     users: { icon: Icons.User, label: 'Usuários' },
     vouchers: { icon: Icons.Ticket, label: 'Vouchers' },
     characters: { icon: Icons.Users, label: 'Personagens' },
+    white_label: { icon: Icons.Settings, label: 'White Label' },
 };
 
-const MODULES: AdminModule[] = ['collections', 'videos', 'music', 'formations', 'materials', 'users', 'characters', 'vouchers'];
+const MODULES: AdminModule[] = ['collections', 'videos', 'music', 'formations', 'materials', 'users', 'characters', 'vouchers', 'white_label'];
 
 const COLLECTION_SCREEN_MODULES: AdminModule[] = ['collections', 'users', 'videos', 'music', 'formations', 'materials'];
 
@@ -169,6 +171,8 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) 
                 return <VouchersModule />;
             case 'characters':
                 return <AdminCharactersScreen ref={charactersRef} onNavigate={onNavigate} onBack={onBack} />;
+            case 'white_label':
+                return <AdminWhiteLabelScreen />;
             default:
                 return null;
         }

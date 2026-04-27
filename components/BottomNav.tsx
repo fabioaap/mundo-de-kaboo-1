@@ -13,6 +13,11 @@ interface BottomNavProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
   currentParams?: any;
   profile?: UserProfile | null;
+  /**
+   * Conjunto de chaves de menu habilitadas pela configuração de marca.
+   * Quando omitido, todos os itens canônicos são exibidos (comportamento padrão).
+   */
+  enabledMenuKeys?: Set<string>;
 }
 
 type NavItem = {
@@ -25,7 +30,10 @@ type NavItem = {
 
 const STORAGE_SIDEBAR_COLLAPSED = 'kaboo_sidebar_collapsed';
 
-export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate, currentParams, profile }) => {
+export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate, currentParams, profile, enabledMenuKeys }) => {
+  /** Retorna true se a chave de menu deve aparecer. Sem restrição = tudo habilitado. */
+  const isMenuKeyEnabled = (key: string): boolean =>
+    !enabledMenuKeys || enabledMenuKeys.has(key);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_SIDEBAR_COLLAPSED);
@@ -81,17 +89,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     return currentScreen === item.screen;
   };
 
-  const catalogNavItems: NavItem[] = [
+  const catalogNavItems: NavItem[] = ([
     { key: 'collections', screen: 'home', icon: Icons.Library, label: 'Coleções', params: { collectionGroup: 'kits' } },
     { key: 'books', screen: 'home', icon: Icons.BookOpen, label: 'Livros', params: { collectionGroup: 'books' } },
-  ];
+  ] as NavItem[]).filter(item => isMenuKeyEnabled(item.key));
 
-  const libraryNavItems: NavItem[] = [
+  const libraryNavItems: NavItem[] = ([
     { key: 'videos', screen: 'videos', icon: Icons.Video, label: 'Vídeos' },
     { key: 'music', screen: 'music', icon: Icons.Headphones, label: 'Músicas' },
     { key: 'formations', screen: 'formations', icon: Icons.BookOpen, label: 'Formações' },
     { key: 'materials', screen: 'materials', icon: Icons.FileText, label: 'Materiais' },
-  ];
+  ] as NavItem[]).filter(item => isMenuKeyEnabled(item.key));
 
   const footerNavItems: NavItem[] = [];
 
@@ -108,17 +116,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
 
   const mobilePrimaryNavItems: NavItem[] = [
     catalogNavItems[0],
+    catalogNavItems[1],
     libraryNavItems[0],
     libraryNavItems[1],
-    libraryNavItems[3],
-  ];
+  ].filter((item): item is NavItem => Boolean(item));
 
   const mobileMoreNavItems: NavItem[] = [
-    catalogNavItems[1],
     libraryNavItems[2],
+    libraryNavItems[3],
     ...(adminNavItem ? [adminNavItem] : []),
     { key: 'profile', screen: 'profile', icon: Icons.User, label: 'Perfil' },
-  ];
+  ].filter((item): item is NavItem => Boolean(item));
 
   const isMoreItemActive = mobileMoreNavItems.some((item) => isItemActive(item));
 

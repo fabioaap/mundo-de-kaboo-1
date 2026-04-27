@@ -403,7 +403,8 @@ export type AdminModule =
   | 'materials'
   | 'users'
   | 'vouchers'
-  | 'characters';
+  | 'characters'
+  | 'white_label';
 
 export interface NavState {
   currentScreen: ScreenName;
