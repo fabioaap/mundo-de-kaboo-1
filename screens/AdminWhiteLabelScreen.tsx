@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '../design-system';
 import { Icons } from '../components/Icons';
+import { Toast } from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 import {
     getWhiteLabelAlertingConfig,
     canUseRemoteWhiteLabel,
@@ -84,6 +86,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const { toast, showToast, hideToast } = useToast();
     const remoteEnabled = canUseRemoteWhiteLabel();
 
     const selectedBrand = useMemo(
@@ -351,8 +354,13 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             return;
         }
 
-        await persistFeature('menu.music', false, {});
-        await persistFeature('hero.parallax', true, { mode: 'subtle' });
+        try {
+            await persistFeature('menu.music', false, {});
+            await persistFeature('hero.parallax', true, { mode: 'subtle' });
+            showToast('Preset Central Coruja aplicado com sucesso!', 'success');
+        } catch (err) {
+            showToast('Erro ao aplicar preset Central Coruja.', 'error');
+        }
     };
 
     const applyKabooBaseline = async () => {
@@ -360,8 +368,13 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             return;
         }
 
-        await persistFeature('menu.music', true, {});
-        await persistFeature('hero.parallax', false, { mode: 'off' });
+        try {
+            await persistFeature('menu.music', true, {});
+            await persistFeature('hero.parallax', false, { mode: 'off' });
+            showToast('Baseline Kaboo aplicado com sucesso!', 'success');
+        } catch (err) {
+            showToast('Erro ao aplicar baseline Kaboo.', 'error');
+        }
     };
 
     const rollbackAuditEntry = async (entry: WhiteLabelAuditEntry) => {
@@ -404,8 +417,10 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             const updated = await publishWhiteLabelBrand(selectedBrandId);
             setPublicationState(updated);
             await hydrateBrandFeatures(selectedBrandId);
+            showToast(`Marca publicada com sucesso! Versão ${updated.version} ativa.`, 'success');
         } catch (err) {
             setError('Falha ao publicar a versão atual da marca.');
+            showToast('Erro ao publicar marca.', 'error');
             console.error('[AdminWhiteLabelScreen] publishCurrentVersion error:', err);
         } finally {
             setSaving(false);
@@ -438,8 +453,11 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             setRolloutConfig(nextConfig);
             const metrics = await getWhiteLabelRolloutMetrics(selectedBrandId);
             setRolloutMetrics(metrics);
+            const waveLabel = wave === 'pilot' ? 'Piloto' : wave === 'group' ? 'Grupo' : 'Geral';
+            showToast(`Rollout alterado para ${waveLabel}!`, 'success');
         } catch (err) {
             setError('Falha ao atualizar a onda de rollout.');
+            showToast('Erro ao mudar rollout.', 'error');
             console.error('[AdminWhiteLabelScreen] changeRolloutWave error:', err);
         } finally {
             setSaving(false);
@@ -1160,6 +1178,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                     </div>
                 </section>
             </div>
+            {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} progress={toast.progress} />}
         </div>
     );
 };
