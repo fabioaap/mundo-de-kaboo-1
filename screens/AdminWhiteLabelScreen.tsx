@@ -82,6 +82,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const [operationalTimeline, setOperationalTimeline] = useState<WhiteLabelOperationalEvent[]>([]);
     const [healthCheck, setHealthCheck] = useState<WhiteLabelHealthCheck | null>(null);
     const [reason, setReason] = useState('');
+    const [contextChangedAt, setContextChangedAt] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -93,6 +94,15 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         () => brands.find((brand) => brand.id === selectedBrandId) ?? null,
         [brands, selectedBrandId],
     );
+
+    const selectedBrandLabel = selectedBrand?.display_name || selectedBrand?.name || 'Nenhuma marca';
+    const selectedBrandAccent = BRAND_ACCENTS[selectedBrand?.slug ?? 'kaboo'] ?? BRAND_ACCENTS.kaboo;
+
+    const rolloutLabel = rolloutConfig.wave === 'pilot'
+        ? 'Piloto'
+        : rolloutConfig.wave === 'group'
+            ? 'Grupo'
+            : 'Geral';
 
     const operationalAlerts = useMemo(() => {
         const alerts: Array<{ level: 'critical' | 'warning'; title: string; description: string }> = [];
@@ -247,6 +257,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
                 if (firstBrandId) {
                     await hydrateBrandFeatures(firstBrandId);
+                    setContextChangedAt(new Date().toISOString());
                 }
             } catch (err) {
                 if (!cancelled) {
@@ -315,12 +326,21 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             return;
         }
 
+        const previousBrandId = selectedBrandId;
+        const nextBrand = brands.find((brand) => brand.id === brandId) ?? null;
         setSelectedBrandId(brandId);
+
         try {
             setError(null);
             await hydrateBrandFeatures(brandId);
+            setContextChangedAt(new Date().toISOString());
+            if (nextBrand) {
+                showToast(`Contexto alterado: agora você está editando ${nextBrand.display_name || nextBrand.name}.`, 'success');
+            }
         } catch (err) {
+            setSelectedBrandId(previousBrandId);
             setError('Falha ao carregar flags da marca selecionada.');
+            showToast('Não foi possível trocar o contexto da marca.', 'error');
             console.error('[AdminWhiteLabelScreen] selectBrand error:', err);
         }
     };
@@ -641,6 +661,59 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                     </section>
                 )}
 
+                {selectedBrand && (
+                    <section className="rounded-[28px] border border-kaboo-primary/15 bg-white p-5 shadow-sm md:p-6">
+                        <div className="sr-only" aria-live="polite">
+                            {`Contexto ativo atualizado para ${selectedBrandLabel}, slug ${selectedBrand.slug}.`}
+                        </div>
+
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="flex items-start gap-4">
+                                <div className={`rounded-[22px] bg-gradient-to-br ${selectedBrandAccent} p-4`}>
+                                    <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-white/80 text-kaboo-primary shadow-sm">
+                                        <Icons.CheckCircle size={22} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary">Contexto ativo</p>
+                                    <h2 className="mt-2 text-2xl font-black tracking-tight text-gray-900">{selectedBrandLabel}</h2>
+                                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-600">
+                                        Você está editando a marca <span className="font-black text-gray-900">{selectedBrand.slug}</span>. Toda mudança de flag,
+                                        rollout e publicação abaixo afeta este contexto.
+                                    </p>
+                                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
+                                        {contextChangedAt
+                                            ? `Troca de contexto às ${new Date(contextChangedAt).toLocaleTimeString('pt-BR')}`
+                                            : 'Contexto carregado nesta sessão'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-2 sm:grid-cols-2 lg:w-[320px]">
+                                <div className="rounded-[18px] border border-gray-200 bg-gray-50 px-4 py-3">
+                                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Fonte</p>
+                                    <p className="mt-1 text-sm font-bold text-gray-900">{remoteEnabled ? 'Supabase' : 'Mock local'}</p>
+                                </div>
+                                <div className="rounded-[18px] border border-gray-200 bg-gray-50 px-4 py-3">
+                                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Rollout</p>
+                                    <p className="mt-1 text-sm font-bold text-gray-900">{rolloutLabel}</p>
+                                </div>
+                                <div className="rounded-[18px] border border-gray-200 bg-gray-50 px-4 py-3">
+                                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Publicação</p>
+                                    <p className="mt-1 text-sm font-bold text-gray-900">
+                                        {publicationState.published_at ? `v${publicationState.version}` : 'Não publicada'}
+                                    </p>
+                                </div>
+                                <div className="rounded-[18px] border border-gray-200 bg-gray-50 px-4 py-3">
+                                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Status</p>
+                                    <p className="mt-1 text-sm font-bold text-gray-900">{selectedBrand.is_active ? 'Marca habilitada' : 'Marca inativa'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
                 <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
                     <div className="rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm md:p-6">
                         <div className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-gray-400">
@@ -671,8 +744,9 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     <p className="mt-2 text-xs leading-relaxed text-gray-600">slug: {brand.slug}</p>
                                                 </div>
                                                 {active && (
-                                                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-kaboo-primary text-white shadow-sm">
-                                                        <Icons.Check size={16} />
+                                                    <span className="inline-flex items-center gap-2 rounded-full bg-kaboo-primary px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-white shadow-sm">
+                                                        <Icons.Check size={14} />
+                                                        Contexto ativo
                                                     </span>
                                                 )}
                                             </div>
