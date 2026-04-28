@@ -578,6 +578,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const availableLabelSingular = currentCollectionGroup === 'books' ? 'livro disponível' : 'coleção disponível';
   const availableLabelPlural = currentCollectionGroup === 'books' ? 'livros disponíveis' : 'coleções disponíveis';
   const { bootstrap: brandBootstrap, slug: brandSlug, isFeatureEnabled } = useBrandConfig();
+  const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
+  const brandLogoUrl = brandBootstrap.settings.logo_url || LOGO_URL;
+  const brandHomeHeroImageUrl = brandBootstrap.settings.home_hero_image_url || '';
   // Initialize collections from cache if available
   const cachedCollections = getCachedCollectionsSync();
   // Initialize profile from cache if available
@@ -1489,7 +1492,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           {/* MOBILE HEADER: Fixed background color, reduced padding, no top margin */}
           <div className="md:hidden px-6 py-4 flex justify-center items-center shrink-0 bg-white z-30 transition-all border-b border-gray-50">
             <button onClick={() => onNavigate('home', baseHomeParams)} aria-label="Ir para a home" className="flex items-center justify-center">
-              <img src={LOGO_URL} alt="KABOO" className="h-10 w-auto object-contain" />
+              <img src={brandLogoUrl} alt={brandDisplayName} className="h-10 w-auto object-contain" />
             </button>
           </div>
 
@@ -1513,6 +1516,31 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           )}
 
           <div className="relative z-10 space-y-3">
+            {!isSearchExperience && brandHomeHeroImageUrl && (
+              <section
+                className="relative overflow-hidden rounded-[30px] border border-white/70 p-5 text-white shadow-[0_24px_50px_rgba(15,23,42,0.16)]"
+                style={{
+                  backgroundImage: `linear-gradient(135deg, ${brandBootstrap.settings.primary_color ?? '#5D1F58'}CC, ${brandBootstrap.settings.accent_color ?? '#4EA8DE'}88), url(${brandHomeHeroImageUrl})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  fontFamily: brandBootstrap.settings.font_family || undefined,
+                }}
+              >
+                <div className="absolute inset-0 bg-black/10" />
+                <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div className="max-w-2xl">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/80">Marca ativa</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight md:text-3xl">{brandDisplayName}</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-white/85">
+                      Identidade visual aplicada no hero inicial desta experiência white label.
+                    </p>
+                  </div>
+
+                  <img src={brandLogoUrl} alt={brandDisplayName} className="h-12 w-auto max-w-[180px] object-contain drop-shadow-[0_12px_24px_rgba(15,23,42,0.22)]" />
+                </div>
+              </section>
+            )}
+
             {isSearchExperience && (
               <div className="flex items-start justify-between gap-3 rounded-[24px] border border-kaboo-primary/10 bg-kaboo-primary/[0.03] px-4 py-3 animate-fade-in-up md:hidden">
                 <div className="min-w-0">
@@ -1954,7 +1982,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           <div className={`bg-white rounded-3xl p-8 w-full max-w-sm text-center relative z-[80] shadow-2xl transform transition-all duration-300 ease-in-out ${isClosingWelcome ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}>
             <div className="mb-6 flex justify-center">
-              <img src={LOGO_URL} alt="Mundo de Kaboo" className="w-40 h-auto" />
+              <img src={brandLogoUrl} alt={brandDisplayName} className="w-40 h-auto" />
             </div>
             <h2 className="text-2xl font-black text-kaboo-primary mb-2">
               Olá, {getFirstName(profile?.full_name || '')}!

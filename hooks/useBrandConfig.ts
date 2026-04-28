@@ -12,6 +12,12 @@ import { useEffect, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockSession } from '../lib/api';
 import { applyTheme, themes, BrandTheme } from '../design-system/tokens/themes';
+import {
+    extractBrandVisualIdentity,
+    getMockBrandSettingsOverride,
+    mergeBrandVisualIdentity,
+    MockBrandSettingsOverride,
+} from '../lib/whiteLabelBranding';
 
 // ── Tipos públicos ────────────────────────────────────────
 
@@ -31,6 +37,8 @@ export interface BrandSettings {
     bg_color: string | null;
     accent_color: string | null;
     font_family: string | null;
+    login_background_url: string | null;
+    home_hero_image_url: string | null;
     menu_config: Record<string, unknown>;
 }
 
@@ -62,6 +70,7 @@ export interface BrandConfig {
 // ── Constantes ────────────────────────────────────────────
 
 const CACHE_KEY = 'kaboo:brand_bootstrap_cache';
+const BRAND_BOOTSTRAP_REFRESH_EVENT = 'kaboo:brand-bootstrap-refresh';
 
 const DEFAULT_MENU: BrandMenuItem[] = [
     { key: 'collections', label: 'Coleções', route: 'home', enabled: true, order: 10 },
@@ -96,6 +105,8 @@ const MOCK_BRAND_OVERRIDES: Record<string, Partial<BrandBootstrap>> = {
             bg_color: '#F1F8E9',
             accent_color: '#F9A825',
             font_family: null,
+            login_background_url: null,
+            home_hero_image_url: null,
             menu_config: {},
         },
         features: {
@@ -126,6 +137,66 @@ function resolveBrandSlug(): string {
     return 'kaboo';
 }
 
+function normalizeNullableString(value: string | null | undefined): string | null {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : null;
+}
+
+function normalizeBrandSettings(settings: BrandSettings): BrandSettings {
+    const visualIdentity = extractBrandVisualIdentity(settings.menu_config);
+
+    return {
+        ...settings,
+        display_name: settings.display_name?.trim() || 'Mundo de Kaboo',
+        logo_url: normalizeNullableString(settings.logo_url),
+        primary_color: normalizeNullableString(settings.primary_color),
+        light_color: normalizeNullableString(settings.light_color),
+        bg_color: normalizeNullableString(settings.bg_color),
+        accent_color: normalizeNullableString(settings.accent_color),
+        font_family: normalizeNullableString(settings.font_family),
+        login_background_url: normalizeNullableString(settings.login_background_url) ?? visualIdentity.login_background_url,
+        home_hero_image_url: normalizeNullableString(settings.home_hero_image_url) ?? visualIdentity.home_hero_image_url,
+        menu_config: settings.menu_config ?? {},
+    };
+}
+
+function applyMockOverrideToSettings(settings: BrandSettings, override: MockBrandSettingsOverride | null): BrandSettings {
+    if (!override) {
+        return normalizeBrandSettings(settings);
+    }
+
+    const nextVisualIdentity = extractBrandVisualIdentity(settings.menu_config);
+
+    if (Object.prototype.hasOwnProperty.call(override, 'login_background_url')) {
+        nextVisualIdentity.login_background_url = override.login_background_url ?? null;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(override, 'home_hero_image_url')) {
+        nextVisualIdentity.home_hero_image_url = override.home_hero_image_url ?? null;
+    }
+
+    return normalizeBrandSettings({
+        ...settings,
+        display_name: override.display_name ?? settings.display_name,
+        logo_url: Object.prototype.hasOwnProperty.call(override, 'logo_url') ? override.logo_url ?? null : settings.logo_url,
+        primary_color: Object.prototype.hasOwnProperty.call(override, 'primary_color') ? override.primary_color ?? null : settings.primary_color,
+        light_color: Object.prototype.hasOwnProperty.call(override, 'light_color') ? override.light_color ?? null : settings.light_color,
+        bg_color: Object.prototype.hasOwnProperty.call(override, 'bg_color') ? override.bg_color ?? null : settings.bg_color,
+        accent_color: Object.prototype.hasOwnProperty.call(override, 'accent_color') ? override.accent_color ?? null : settings.accent_color,
+        font_family: Object.prototype.hasOwnProperty.call(override, 'font_family') ? override.font_family ?? null : settings.font_family,
+        login_background_url: nextVisualIdentity.login_background_url,
+        home_hero_image_url: nextVisualIdentity.home_hero_image_url,
+        menu_config: mergeBrandVisualIdentity(settings.menu_config, nextVisualIdentity),
+    });
+}
+
+function normalizeBootstrap(bootstrap: BrandBootstrap): BrandBootstrap {
+    return {
+        ...bootstrap,
+        settings: normalizeBrandSettings(bootstrap.settings),
+    };
+}
+
 function buildMockBootstrap(slug: string): BrandBootstrap {
     const kabooBase: BrandBootstrap = {
         brand: { id: 'mock-kaboo', slug: 'kaboo', name: 'Mundo de Kaboo' },
@@ -137,6 +208,8 @@ function buildMockBootstrap(slug: string): BrandBootstrap {
             bg_color: '#F9F5F9',
             accent_color: '#4EA8DE',
             font_family: null,
+            login_background_url: null,
+            home_hero_image_url: null,
             menu_config: {},
         },
         menu: DEFAULT_MENU,
@@ -146,15 +219,21 @@ function buildMockBootstrap(slug: string): BrandBootstrap {
     };
 
     const overrides = MOCK_BRAND_OVERRIDES[slug];
-    if (!overrides) return kabooBase;
-
-    return {
+    const nextBootstrap = !overrides ? kabooBase : {
         ...kabooBase,
         ...overrides,
         settings: { ...kabooBase.settings, ...(overrides.settings ?? {}) },
         features: overrides.features ?? kabooBase.features,
         menu: overrides.menu ?? kabooBase.menu,
     };
+
+    const settingsOverride = getMockBrandSettingsOverride(nextBootstrap.brand.id);
+
+    return normalizeBootstrap({
+        ...nextBootstrap,
+        settings: applyMockOverrideToSettings(nextBootstrap.settings, settingsOverride),
+        updated_at: new Date().toISOString(),
+    });
 }
 
 function tryApplyTheme(settings: BrandSettings, slug: string): void {
@@ -185,7 +264,7 @@ function readCache(slug: string): BrandBootstrap | null {
         if (parsed.slug !== slug) return null;
         // Cache válido por 60 s.
         if (Date.now() - parsed.ts > 60_000) return null;
-        return parsed.bootstrap;
+        return normalizeBootstrap(parsed.bootstrap);
     } catch {
         return null;
     }
@@ -193,7 +272,7 @@ function readCache(slug: string): BrandBootstrap | null {
 
 function writeCache(slug: string, bootstrap: BrandBootstrap): void {
     try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ slug, bootstrap, ts: Date.now() }));
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ slug, bootstrap: normalizeBootstrap(bootstrap), ts: Date.now() }));
     } catch {
         // sessionStorage pode estar indisponível; ignorar silenciosamente.
     }
@@ -210,10 +289,24 @@ async function fetchBootstrap(slug: string): Promise<BrandBootstrap | null> {
             console.warn('[useBrandConfig] RPC get_brand_bootstrap falhou, usando mock:', error?.message);
             return buildMockBootstrap(slug);
         }
-        return data as BrandBootstrap;
+        return normalizeBootstrap(data as BrandBootstrap);
     } catch (err) {
         console.warn('[useBrandConfig] Erro ao buscar bootstrap de marca:', err);
         return buildMockBootstrap(slug);
+    }
+}
+
+export function invalidateBrandBootstrapCache(targetSlug?: string): void {
+    try {
+        sessionStorage.removeItem(CACHE_KEY);
+    } catch {
+        // sessionStorage indisponível; segue apenas com o evento.
+    }
+
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(BRAND_BOOTSTRAP_REFRESH_EVENT, {
+            detail: targetSlug ? { slug: targetSlug } : undefined,
+        }));
     }
 }
 
@@ -249,8 +342,22 @@ export function useBrandConfig(): BrandConfig {
             setLoading(false);
         }
 
-        load();
-        return () => { cancelled = true; };
+        const handleRefresh = (event: Event) => {
+            const detail = (event as CustomEvent<{ slug?: string }>).detail;
+            if (detail?.slug && detail.slug !== slug) {
+                return;
+            }
+
+            void load();
+        };
+
+        void load();
+        window.addEventListener(BRAND_BOOTSTRAP_REFRESH_EVENT, handleRefresh as EventListener);
+
+        return () => {
+            cancelled = true;
+            window.removeEventListener(BRAND_BOOTSTRAP_REFRESH_EVENT, handleRefresh as EventListener);
+        };
     }, [slug]);
 
     const enabledMenuItems = bootstrap.menu

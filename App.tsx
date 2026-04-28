@@ -185,8 +185,11 @@ const App: React.FC = () => {
   const [loadingCollectionTheme, setLoadingCollectionTheme] = useState<string | null>(null);
 
   // Brand config — bootstrapada uma vez por sessão; aplica tema e resolve menu flags.
-  const { enabledMenuItems } = useBrandConfig();
+  const { bootstrap: brandBootstrap, enabledMenuItems } = useBrandConfig();
   const brandEnabledMenuKeys = new Set(enabledMenuItems.map(item => item.key));
+  const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
+  const brandLogoUrl = brandBootstrap.settings.logo_url || LOGO_URL;
+  const brandLoginBackgroundUrl = brandBootstrap.settings.login_background_url || undefined;
 
   // Save navState to localStorage whenever it changes
   useEffect(() => {
@@ -668,7 +671,7 @@ const App: React.FC = () => {
   if (!sessionChecked) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6">
-        <img src={LOGO_URL} alt="Mundo de Kaboo" className="w-32 h-32 object-contain animate-pulse" />
+        <img src={brandLogoUrl} alt={brandDisplayName} className="w-32 h-32 object-contain animate-pulse" />
         <div className="w-8 h-8 border-4 border-kaboo-primary/30 border-t-kaboo-primary rounded-full animate-spin" />
       </div>
     );
@@ -687,7 +690,15 @@ const App: React.FC = () => {
 
     switch (navState.currentScreen) {
       case 'login':
-        return <LoginScreen onNavigate={navigate} onAuthSuccess={(profile) => setAccessProfile(profile)} />;
+        return (
+          <LoginScreen
+            onNavigate={navigate}
+            onAuthSuccess={(profile) => setAccessProfile(profile)}
+            brandLogoUrl={brandLogoUrl}
+            brandName={brandDisplayName}
+            backgroundImageUrl={brandLoginBackgroundUrl}
+          />
+        );
 
       case 'access_expired':
         return (
@@ -711,7 +722,7 @@ const App: React.FC = () => {
         );
 
       case 'email_confirmation':
-        return <EmailConfirmationScreen onNavigate={navigate} params={navState.params} />;
+        return <EmailConfirmationScreen onNavigate={navigate} params={navState.params} brandLogoUrl={brandLogoUrl} brandName={brandDisplayName} />;
 
       case 'home':
         return <HomeScreen key="home-screen" onNavigate={navigate} params={navState.params} accessProfile={accessProfile} screenName="home" searchMode={Boolean(navState.params?.inlineSearch)} />;
@@ -888,6 +899,8 @@ const App: React.FC = () => {
           currentParams={navState.params}
           onNavigate={navigate}
           profile={accessProfile}
+          brandLogoUrl={brandLogoUrl}
+          brandName={brandDisplayName}
           enabledMenuKeys={brandEnabledMenuKeys}
         />
       )}

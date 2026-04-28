@@ -1,10 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ColorPicker } from '../components/ColorPicker';
+import { FileUpload } from '../components/FileUpload';
 import { Button } from '../design-system';
 import { Icons } from '../components/Icons';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { LOGO_URL } from '../constants';
+import { invalidateBrandBootstrapCache } from '../hooks/useBrandConfig';
 import {
     getWhiteLabelAlertingConfig,
+    getWhiteLabelBrandIdentity,
     canUseRemoteWhiteLabel,
     dispatchWhiteLabelOperationalAlerts,
     dispatchWhiteLabelAlertTest,
@@ -20,6 +25,7 @@ import {
     listWhiteLabelBrands,
     publishWhiteLabelBrand,
     resolveHeroParallaxMode,
+    setWhiteLabelBrandIdentity,
     setWhiteLabelAlertingConfig,
     setWhiteLabelRolloutWave,
     setWhiteLabelFeature,
@@ -30,6 +36,7 @@ import {
     WhiteLabelHealthCheck,
     WhiteLabelOperationalEvent,
     WhiteLabelPublicationState,
+    WhiteLabelBrandIdentity,
     WhiteLabelRolloutConfig,
     WhiteLabelRolloutMetrics,
     WhiteLabelRolloutWave,
@@ -67,6 +74,18 @@ const DEFAULT_ALERTING_CONFIG: WhiteLabelAlertingConfig = {
     last_live_alert_signature: null,
 };
 
+const DEFAULT_BRAND_IDENTITY: WhiteLabelBrandIdentity = {
+    display_name: 'Mundo de Kaboo',
+    logo_url: '',
+    primary_color: '#5D1F58',
+    light_color: '#883E82',
+    bg_color: '#F9F5F9',
+    accent_color: '#4EA8DE',
+    font_family: '',
+    login_background_url: '',
+    home_hero_image_url: '',
+};
+
 export const AdminWhiteLabelScreen: React.FC = () => {
     const [brands, setBrands] = useState<WhiteLabelBrandRow[]>([]);
     const [selectedBrandId, setSelectedBrandId] = useState<string>('');
@@ -78,6 +97,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const [rolloutConfig, setRolloutConfig] = useState<WhiteLabelRolloutConfig>({ enabled: true, wave: 'pilot', started_at: null, last_changed_at: null, last_reason: null });
     const [rolloutMetrics, setRolloutMetrics] = useState<WhiteLabelRolloutMetrics>({ enabled_flags: 0, total_changes: 0, changes_24h: 0, last_publish_at: null });
     const [alertingConfig, setAlertingConfig] = useState<WhiteLabelAlertingConfig>(DEFAULT_ALERTING_CONFIG);
+    const [brandIdentity, setBrandIdentity] = useState<WhiteLabelBrandIdentity>(DEFAULT_BRAND_IDENTITY);
+    const [activeTab, setActiveTab] = useState<'identidade' | 'operacoes' | 'auditoria'>('identidade');
     const [alertDispatchHistory, setAlertDispatchHistory] = useState<WhiteLabelAlertDispatchEntry[]>([]);
     const [operationalTimeline, setOperationalTimeline] = useState<WhiteLabelOperationalEvent[]>([]);
     const [healthCheck, setHealthCheck] = useState<WhiteLabelHealthCheck | null>(null);
@@ -97,6 +118,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
     const selectedBrandLabel = selectedBrand?.display_name || selectedBrand?.name || 'Nenhuma marca';
     const selectedBrandAccent = BRAND_ACCENTS[selectedBrand?.slug ?? 'kaboo'] ?? BRAND_ACCENTS.kaboo;
+    const brandPreviewLogo = brandIdentity.logo_url || LOGO_URL;
 
     const rolloutLabel = rolloutConfig.wave === 'pilot'
         ? 'Piloto'
@@ -168,7 +190,22 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         return JSON.stringify(operationalAlertPayload, null, 2);
     }, [operationalAlertPayload]);
 
+    const updateBrandIdentityField = useCallback(<T extends keyof WhiteLabelBrandIdentity>(field: T, value: WhiteLabelBrandIdentity[T]) => {
+        setBrandIdentity((current) => ({
+            ...current,
+            [field]: value,
+        }));
+    }, []);
+
     const hydrateBrandFeatures = useCallback(async (brandId: string) => {
+        try {
+            const identity = await getWhiteLabelBrandIdentity(brandId);
+            setBrandIdentity(identity);
+        } catch (err) {
+            console.error('[AdminWhiteLabelScreen] brand identity load error:', err);
+            setBrandIdentity(DEFAULT_BRAND_IDENTITY);
+        }
+
         const features = await getWhiteLabelFeatures(brandId, ['menu.music', 'hero.parallax']);
         setMenuMusicEnabled(features['menu.music']?.enabled ?? true);
         setHeroParallaxEnabled(features['hero.parallax']?.enabled ?? false);
@@ -364,6 +401,53 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         } catch (err) {
             setError('Falha ao salvar alteração de feature flag.');
             console.error('[AdminWhiteLabelScreen] persistFeature error:', err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const saveBrandIdentity = async () => {
+        if (!selectedBrandId || saving) {
+            return;
+        }
+
+        if (!brandIdentity.display_name.trim()) {
+            setError('Informe o nome exibido da marca para salvar a identidade visual.');
+            return;
+        }
+
+        if (!brandIdentity.primary_color || !brandIdentity.light_color || !brandIdentity.bg_color || !brandIdentity.accent_color) {
+            setError('Preencha as quatro cores principais da identidade visual.');
+            return;
+        }
+
+        const targetSlug = selectedBrand?.slug;
+
+        try {
+            setSaving(true);
+            setError(null);
+
+            const updatedIdentity = await setWhiteLabelBrandIdentity({
+                brandId: selectedBrandId,
+                ...brandIdentity,
+            });
+
+            setBrandIdentity(updatedIdentity);
+
+            const loadedBrands = await listWhiteLabelBrands();
+            setBrands(loadedBrands);
+
+            await hydrateBrandFeatures(selectedBrandId);
+
+            if (targetSlug) {
+                invalidateBrandBootstrapCache(targetSlug);
+            }
+
+            showToast(`Identidade visual de ${updatedIdentity.display_name} salva com sucesso!`, 'success');
+        } catch (err) {
+            setError('Falha ao salvar identidade visual da marca.');
+            showToast('Erro ao salvar identidade visual.', 'error');
+            console.error('[AdminWhiteLabelScreen] saveBrandIdentity error:', err);
         } finally {
             setSaving(false);
         }
@@ -581,7 +665,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
     return (
         <div className="min-h-full bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_24%)] p-4 md:p-6">
-            <div className="mx-auto max-w-5xl space-y-6">
+            <div className="mx-auto max-w-6xl space-y-5">
+                {/* ─── Health Check ─── */}
                 {healthCheck && (
                     <section className={`rounded-[28px] border-2 p-5 md:p-6 ${healthCheck.status === 'critical' ? 'border-red-200 bg-red-50' :
                         healthCheck.status === 'warning' ? 'border-yellow-200 bg-yellow-50' :
@@ -603,7 +688,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                         )}
                                     </div>
                                     <div>
-                                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-gray-600">Status de Saúde</p>
                                         <h3 className="text-lg font-black tracking-tight text-gray-900">
                                             {healthCheck.status === 'critical' ? 'Crítico' :
                                                 healthCheck.status === 'warning' ? 'Aviso' :
@@ -638,620 +722,790 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                     </section>
                 )}
 
-                <section className="rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm md:p-6">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                        <div>
-                            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary">White Label</p>
-                            <h1 className="mt-2 text-2xl font-black tracking-tight text-gray-900">Flags de Marca e Parallax</h1>
-                            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-500">
-                                Sprint 2: este painel já persiste flags por marca no backend quando o Supabase está ativo.
-                            </p>
-                        </div>
-
-                        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-gray-500">
-                            <Icons.Database size={14} />
-                            {remoteEnabled ? 'Fonte: Supabase' : 'Fonte: Mock local'}
-                        </div>
+                {/* ─── Page Header ─── */}
+                <header className="flex flex-col gap-3 rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between md:p-6">
+                    <div>
+                        <h1 className="text-2xl font-black tracking-tight text-gray-900">Gestão de Marca</h1>
+                        <p className="mt-1 text-sm text-gray-500">Console White Label — identidade visual, feature flags e governança operacional.</p>
                     </div>
-                </section>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-500">
+                        <Icons.Database size={14} />
+                        {remoteEnabled ? 'Supabase' : 'Mock local'}
+                    </div>
+                </header>
 
+                {/* ─── Error ─── */}
                 {error && (
                     <section className="rounded-[20px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                         {error}
                     </section>
                 )}
 
-                {selectedBrand && (
-                    <section className="rounded-[28px] border border-kaboo-primary/15 bg-white p-5 shadow-sm md:p-6">
-                        <div className="sr-only" aria-live="polite">
-                            {`Contexto ativo atualizado para ${selectedBrandLabel}, slug ${selectedBrand.slug}.`}
-                        </div>
-
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="flex items-start gap-4">
-                                <div className={`rounded-[22px] bg-gradient-to-br ${selectedBrandAccent} p-4`}>
-                                    <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-white/80 text-kaboo-primary shadow-sm">
-                                        <Icons.CheckCircle size={22} />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary">Contexto ativo</p>
-                                    <h2 className="mt-2 text-2xl font-black tracking-tight text-gray-900">{selectedBrandLabel}</h2>
-                                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-600">
-                                        Você está editando a marca <span className="font-black text-gray-900">{selectedBrand.slug}</span>. Toda mudança de flag,
-                                        rollout e publicação abaixo afeta este contexto.
-                                    </p>
-                                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
-                                        {contextChangedAt
-                                            ? `Troca de contexto às ${new Date(contextChangedAt).toLocaleTimeString('pt-BR')}`
-                                            : 'Contexto carregado nesta sessão'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="grid gap-2 sm:grid-cols-2 lg:w-[320px]">
-                                <div className="rounded-[18px] border border-gray-200 bg-gray-50 px-4 py-3">
-                                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Fonte</p>
-                                    <p className="mt-1 text-sm font-bold text-gray-900">{remoteEnabled ? 'Supabase' : 'Mock local'}</p>
-                                </div>
-                                <div className="rounded-[18px] border border-gray-200 bg-gray-50 px-4 py-3">
-                                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Rollout</p>
-                                    <p className="mt-1 text-sm font-bold text-gray-900">{rolloutLabel}</p>
-                                </div>
-                                <div className="rounded-[18px] border border-gray-200 bg-gray-50 px-4 py-3">
-                                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Publicação</p>
-                                    <p className="mt-1 text-sm font-bold text-gray-900">
-                                        {publicationState.published_at ? `v${publicationState.version}` : 'Não publicada'}
-                                    </p>
-                                </div>
-                                <div className="rounded-[18px] border border-gray-200 bg-gray-50 px-4 py-3">
-                                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-gray-400">Status</p>
-                                    <p className="mt-1 text-sm font-bold text-gray-900">{selectedBrand.is_active ? 'Marca habilitada' : 'Marca inativa'}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                )}
-
-                <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                    <div className="rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm md:p-6">
-                        <div className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-gray-400">
-                            <Icons.Type size={16} />
-                            Marcas
-                        </div>
-
-                        <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {/* ─── Brand Selector + Context ─── */}
+                <section className="rounded-[28px] border border-gray-200 bg-white p-4 shadow-sm md:p-5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="mr-1 text-xs font-semibold text-gray-400">Marca:</span>
                             {brands.map((brand) => {
                                 const active = brand.id === selectedBrandId;
-                                const accent = BRAND_ACCENTS[brand.slug] ?? BRAND_ACCENTS.kaboo;
-
                                 return (
                                     <button
                                         key={brand.id}
                                         type="button"
                                         onClick={() => selectBrand(brand.id)}
-                                        className={`rounded-[24px] border p-4 text-left transition-all duration-200 ${active
-                                            ? 'border-kaboo-primary bg-kaboo-primary/[0.04] shadow-[0_20px_35px_rgba(111,37,108,0.12)]'
-                                            : 'border-gray-200 bg-white hover:border-kaboo-primary/30 hover:bg-gray-50'
+                                        className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${active
+                                            ? 'border-kaboo-primary bg-kaboo-primary text-white shadow-md'
+                                            : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-kaboo-primary/40 hover:bg-gray-100'
                                             }`}
                                         disabled={loading || saving}
                                     >
-                                        <div className={`rounded-[20px] bg-gradient-to-br ${accent} p-4`}>
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <p className="text-sm font-black text-gray-900">{brand.display_name || brand.name}</p>
-                                                    <p className="mt-2 text-xs leading-relaxed text-gray-600">slug: {brand.slug}</p>
-                                                </div>
-                                                {active && (
-                                                    <span className="inline-flex items-center gap-2 rounded-full bg-kaboo-primary px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-white shadow-sm">
-                                                        <Icons.Check size={14} />
-                                                        Contexto ativo
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
+                                        {brand.display_name || brand.name}
+                                        {active && <Icons.Check size={14} className="ml-1.5 inline" />}
                                     </button>
                                 );
                             })}
                         </div>
-                    </div>
 
-                    <div className="rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm md:p-6">
-                        <div className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-gray-400">
-                            <Icons.Settings size={16} />
-                            Feature Flags
-                        </div>
-
-                        <div className="mt-4 space-y-5">
-                            <div className="rounded-[22px] border border-gray-200 bg-gray-50 p-4">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-900">Menu: Músicas</p>
-                                        <p className="mt-1 text-sm leading-relaxed text-gray-500">
-                                            Liga ou desliga o item de menu músicas para a marca selecionada.
-                                        </p>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        role="switch"
-                                        aria-checked={menuMusicEnabled}
-                                        onClick={() => persistFeature('menu.music', !menuMusicEnabled, {})}
-                                        className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${menuMusicEnabled ? 'bg-kaboo-primary' : 'bg-gray-300'}`}
-                                        disabled={loading || saving || !selectedBrand}
-                                    >
-                                        <span
-                                            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${menuMusicEnabled ? 'translate-x-7' : 'translate-x-1'}`}
-                                        />
-                                    </button>
-                                </div>
+                        {selectedBrand && (
+                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 font-semibold text-gray-600">
+                                    {selectedBrand.slug}
+                                </span>
+                                <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 font-semibold text-gray-600">
+                                    Rollout: {rolloutLabel}
+                                </span>
+                                <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 font-semibold text-gray-600">
+                                    {publicationState.published_at ? `v${publicationState.version}` : 'Não publicada'}
+                                </span>
+                                <span className={`rounded-full px-3 py-1.5 font-semibold ${selectedBrand.is_active
+                                    ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                                    : 'border border-red-200 bg-red-50 text-red-700'
+                                    }`}>
+                                    {selectedBrand.is_active ? 'Ativa' : 'Inativa'}
+                                </span>
                             </div>
-
-                            <div className="rounded-[22px] border border-gray-200 bg-gray-50 p-4">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-900">Hero Parallax</p>
-                                        <p className="mt-1 text-sm leading-relaxed text-gray-500">
-                                            Controla o efeito de parallax do hero para a marca selecionada.
-                                        </p>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        role="switch"
-                                        aria-checked={heroParallaxEnabled}
-                                        onClick={() => {
-                                            const nextEnabled = !heroParallaxEnabled;
-                                            const nextMode: HeroParallaxMode = nextEnabled ? (heroParallaxMode === 'off' ? 'subtle' : heroParallaxMode) : 'off';
-                                            persistFeature('hero.parallax', nextEnabled, { mode: nextMode });
-                                        }}
-                                        className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${heroParallaxEnabled ? 'bg-kaboo-primary' : 'bg-gray-300'}`}
-                                        disabled={loading || saving || !selectedBrand}
-                                    >
-                                        <span
-                                            className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${heroParallaxEnabled ? 'translate-x-7' : 'translate-x-1'}`}
-                                        />
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <p className="text-sm font-bold text-gray-900">Modo do Parallax</p>
-                                <div className="mt-3 space-y-2">
-                                    {MODE_OPTIONS.map((option) => {
-                                        const isSelected = heroParallaxMode === option.value;
-
-                                        return (
-                                            <button
-                                                key={option.value}
-                                                type="button"
-                                                onClick={() => persistFeature('hero.parallax', option.value !== 'off', { mode: option.value })}
-                                                className={`w-full rounded-[18px] border px-4 py-3 text-left transition-all ${isSelected
-                                                    ? 'border-kaboo-primary bg-kaboo-primary/[0.05] text-kaboo-primary'
-                                                    : 'border-gray-200 bg-white text-gray-700 hover:border-kaboo-primary/25 hover:bg-gray-50'
-                                                    }`}
-                                                disabled={loading || saving || !selectedBrand}
-                                            >
-                                                <div className="flex items-start justify-between gap-4">
-                                                    <div>
-                                                        <p className="text-sm font-bold">{option.label}</p>
-                                                        <p className="mt-1 text-xs leading-relaxed text-gray-500">{option.description}</p>
-                                                    </div>
-                                                    {isSelected && <Icons.Check size={16} className="mt-1 shrink-0" />}
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="mb-2 block text-xs font-black uppercase tracking-[0.12em] text-gray-400" htmlFor="flag-reason">
-                                    Motivo da mudança (auditoria)
-                                </label>
-                                <textarea
-                                    id="flag-reason"
-                                    value={reason}
-                                    onChange={(event) => setReason(event.target.value)}
-                                    placeholder="Ex.: Desligar música para piloto da Central Coruja"
-                                    className="min-h-[88px] w-full rounded-[16px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
-                                />
-                            </div>
-
-                            <Button
-                                variant="secondary"
-                                onClick={applyCorujaPreset}
-                                fullWidth
-                                disabled={loading || saving || selectedBrand?.slug !== 'central-coruja'}
-                            >
-                                Aplicar preset Central Coruja
-                            </Button>
-
-                            <Button
-                                variant="ghost"
-                                onClick={applyKabooBaseline}
-                                fullWidth
-                                disabled={loading || saving || selectedBrand?.slug !== 'kaboo'}
-                            >
-                                Aplicar baseline Kaboo
-                            </Button>
-
-                            <div className="rounded-[20px] border border-gray-200 bg-gray-50 p-4">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-900">Publicação da Marca</p>
-                                        <p className="mt-1 text-xs text-gray-500">
-                                            Versão atual: <span className="font-black text-gray-700">v{publicationState.version}</span>
-                                        </p>
-                                        <p className="mt-1 text-xs text-gray-500">
-                                            Última publicação:{' '}
-                                            {publicationState.published_at
-                                                ? new Date(publicationState.published_at).toLocaleString('pt-BR')
-                                                : 'não publicada'}
-                                        </p>
-                                    </div>
-
-                                    <Button
-                                        variant="secondary"
-                                        onClick={publishCurrentVersion}
-                                        disabled={loading || saving || !selectedBrand}
-                                    >
-                                        Publicar agora
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="rounded-[20px] border border-gray-200 bg-gray-50 p-4 space-y-4">
-                                <div>
-                                    <p className="text-sm font-bold text-gray-900">Rollout por Ondas</p>
-                                    <p className="mt-1 text-xs text-gray-500">
-                                        Onda atual: <span className="font-black uppercase text-gray-700">{rolloutConfig.wave}</span>
-                                        {rolloutConfig.last_changed_at && (
-                                            <span> · atualizado em {new Date(rolloutConfig.last_changed_at).toLocaleString('pt-BR')}</span>
-                                        )}
-                                    </p>
-                                    {rolloutConfig.last_reason && (
-                                        <p className="mt-1 text-xs text-gray-500">Último motivo: {rolloutConfig.last_reason}</p>
-                                    )}
-                                </div>
-
-                                <div className="grid gap-2">
-                                    {ROLLOUT_WAVES.map((wave) => {
-                                        const active = rolloutConfig.wave === wave.value;
-                                        return (
-                                            <button
-                                                key={wave.value}
-                                                type="button"
-                                                onClick={() => changeRolloutWave(wave.value)}
-                                                disabled={loading || saving || !selectedBrand}
-                                                className={`w-full rounded-[16px] border px-3 py-2 text-left transition-colors ${active
-                                                    ? 'border-kaboo-primary bg-kaboo-primary/[0.06]'
-                                                    : 'border-gray-200 bg-white hover:border-kaboo-primary/25'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <p className="text-sm font-bold text-gray-800">{wave.label}</p>
-                                                    {active && <Icons.Check size={14} className="text-kaboo-primary" />}
-                                                </div>
-                                                <p className="mt-1 text-xs text-gray-500">{wave.description}</p>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            <div className="rounded-[20px] border border-gray-200 bg-gray-50 p-4">
-                                <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-gray-400">
-                                    <Icons.BarChart3 size={14} />
-                                    Métricas de rollout
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="rounded-[12px] border border-gray-200 bg-white p-3">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">Flags ativas</p>
-                                        <p className="mt-1 text-lg font-black text-gray-800">{rolloutMetrics.enabled_flags}</p>
-                                    </div>
-                                    <div className="rounded-[12px] border border-gray-200 bg-white p-3">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">Mudanças 24h</p>
-                                        <p className="mt-1 text-lg font-black text-gray-800">{rolloutMetrics.changes_24h}</p>
-                                    </div>
-                                    <div className="rounded-[12px] border border-gray-200 bg-white p-3 col-span-2">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">Mudanças totais</p>
-                                        <p className="mt-1 text-lg font-black text-gray-800">{rolloutMetrics.total_changes}</p>
-                                        <p className="mt-1 text-xs text-gray-500">
-                                            Última publicação: {rolloutMetrics.last_publish_at
-                                                ? new Date(rolloutMetrics.last_publish_at).toLocaleString('pt-BR')
-                                                : 'não publicada'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="rounded-[20px] border border-gray-200 bg-gray-50 p-4">
-                                <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-gray-400">
-                                    <Icons.AlertCircle size={14} />
-                                    Alertas operacionais
-                                </div>
-
-                                {operationalAlerts.length === 0 ? (
-                                    <div className="rounded-[12px] border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                                        Nenhum alerta ativo no momento.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {operationalAlerts.map((alert) => (
-                                            <div
-                                                key={`${alert.level}-${alert.title}`}
-                                                className={`rounded-[12px] border px-3 py-2 ${alert.level === 'critical'
-                                                    ? 'border-red-200 bg-red-50'
-                                                    : 'border-amber-200 bg-amber-50'
-                                                    }`}
-                                            >
-                                                <p className={`text-xs font-black uppercase tracking-[0.08em] ${alert.level === 'critical' ? 'text-red-700' : 'text-amber-700'}`}>
-                                                    {alert.level === 'critical' ? 'Crítico' : 'Atenção'}
-                                                </p>
-                                                <p className="mt-1 text-sm font-bold text-gray-800">{alert.title}</p>
-                                                <p className="mt-1 text-xs text-gray-600">{alert.description}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="rounded-[20px] border border-gray-200 bg-gray-50 p-4 space-y-4">
-                                <div>
-                                    <p className="text-sm font-bold text-gray-900">Alertas externos</p>
-                                    <p className="mt-1 text-xs text-gray-500">
-                                        Persistência da configuração para webhook/canal operacional por marca.
-                                    </p>
-                                    {alertingConfig.last_reason && (
-                                        <p className="mt-1 text-xs text-gray-500">Último motivo: {alertingConfig.last_reason}</p>
-                                    )}
-                                </div>
-
-                                <label className="flex items-center justify-between gap-3 rounded-[16px] border border-gray-200 bg-white px-3 py-3">
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-800">Habilitar alertas externos</p>
-                                        <p className="text-xs text-gray-500">Ativa destino operacional para incidentes e limites.</p>
-                                    </div>
-                                    <input
-                                        type="checkbox"
-                                        checked={alertingConfig.enabled}
-                                        onChange={(event) => setAlertingConfig((current) => ({ ...current, enabled: event.target.checked }))}
-                                        className="h-4 w-4 accent-kaboo-primary"
-                                        disabled={loading || saving || !selectedBrand}
-                                    />
-                                </label>
-
-                                <div className="grid gap-3">
-                                    <div>
-                                        <label className="mb-1 block text-xs font-black uppercase tracking-[0.1em] text-gray-400">Webhook URL</label>
-                                        <input
-                                            type="url"
-                                            value={alertingConfig.webhook_url}
-                                            onChange={(event) => setAlertingConfig((current) => ({ ...current, webhook_url: event.target.value }))}
-                                            placeholder="https://hooks.exemplo.com/white-label"
-                                            className="w-full rounded-[14px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-kaboo-primary/40"
-                                            disabled={loading || saving || !selectedBrand}
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-3 md:grid-cols-2">
-                                        <div>
-                                            <label className="mb-1 block text-xs font-black uppercase tracking-[0.1em] text-gray-400">Canal</label>
-                                            <input
-                                                type="text"
-                                                value={alertingConfig.channel}
-                                                onChange={(event) => setAlertingConfig((current) => ({ ...current, channel: event.target.value }))}
-                                                placeholder="ops-central-coruja"
-                                                className="w-full rounded-[14px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-kaboo-primary/40"
-                                                disabled={loading || saving || !selectedBrand}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="mb-1 block text-xs font-black uppercase tracking-[0.1em] text-gray-400">Limite mudanças 24h</label>
-                                            <input
-                                                type="number"
-                                                min={1}
-                                                value={alertingConfig.changes_24h_threshold}
-                                                onChange={(event) => setAlertingConfig((current) => ({ ...current, changes_24h_threshold: Number(event.target.value || 1) }))}
-                                                className="w-full rounded-[14px] border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-kaboo-primary/40"
-                                                disabled={loading || saving || !selectedBrand}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <label className="flex items-center gap-2 text-sm text-gray-700">
-                                    <input
-                                        type="checkbox"
-                                        checked={alertingConfig.notify_on_general_without_publish}
-                                        onChange={(event) => setAlertingConfig((current) => ({ ...current, notify_on_general_without_publish: event.target.checked }))}
-                                        className="h-4 w-4 accent-kaboo-primary"
-                                        disabled={loading || saving || !selectedBrand}
-                                    />
-                                    Notificar rollout geral sem publicação
-                                </label>
-
-                                <Button
-                                    variant="secondary"
-                                    onClick={saveAlertingConfig}
-                                    fullWidth
-                                    disabled={loading || saving || !selectedBrand}
-                                >
-                                    Salvar alertas externos
-                                </Button>
-
-                                <Button
-                                    variant="ghost"
-                                    onClick={sendAlertTest}
-                                    fullWidth
-                                    disabled={loading || saving || !selectedBrand || !alertingConfig.enabled || !alertingConfig.webhook_url}
-                                >
-                                    Enviar teste de alerta
-                                </Button>
-
-                                <Button
-                                    variant="secondary"
-                                    onClick={sendOperationalAlerts}
-                                    fullWidth
-                                    disabled={loading || saving || !selectedBrand || !alertingConfig.enabled || !alertingConfig.webhook_url || operationalAlerts.length === 0}
-                                >
-                                    Disparar alertas ativos
-                                </Button>
-
-                                <div className="rounded-[14px] border border-gray-200 bg-white p-3 text-xs text-gray-600">
-                                    <p>
-                                        Último dispatch: {alertingConfig.last_dispatch_at
-                                            ? new Date(alertingConfig.last_dispatch_at).toLocaleString('pt-BR')
-                                            : 'nenhum envio ainda'}
-                                    </p>
-                                    <p className="mt-1">
-                                        Status: <span className={`font-bold ${alertingConfig.last_dispatch_status === 'success'
-                                            ? 'text-emerald-700'
-                                            : alertingConfig.last_dispatch_status === 'error'
-                                                ? 'text-red-700'
-                                                : 'text-gray-700'
-                                            }`}>{alertingConfig.last_dispatch_status}</span>
-                                        {alertingConfig.last_dispatch_http_status !== null && (
-                                            <span> · HTTP {alertingConfig.last_dispatch_http_status}</span>
-                                        )}
-                                    </p>
-                                    {alertingConfig.last_dispatch_error && (
-                                        <p className="mt-1 text-red-600">Erro: {alertingConfig.last_dispatch_error}</p>
-                                    )}
-                                </div>
-
-                                <div className="rounded-[14px] border border-gray-200 bg-white p-3">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">Histórico de entregas</p>
-                                    {alertDispatchHistory.length === 0 ? (
-                                        <p className="mt-2 text-xs text-gray-500">Sem entregas registradas ainda.</p>
-                                    ) : (
-                                        <div className="mt-2 space-y-2">
-                                            {alertDispatchHistory.map((entry) => (
-                                                <div key={entry.id} className="rounded-[10px] border border-gray-200 px-3 py-2 text-xs text-gray-600">
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <span className="font-bold text-gray-800">{new Date(entry.sent_at).toLocaleString('pt-BR')}</span>
-                                                        <span className="flex items-center gap-2">
-                                                            <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-gray-500">{entry.mode}</span>
-                                                            <span className={`font-bold ${entry.status === 'success' ? 'text-emerald-700' : 'text-red-700'}`}>{entry.status}</span>
-                                                        </span>
-                                                    </div>
-                                                    <p className="mt-1">Canal: {entry.channel || 'n/a'} · Tentativas: {entry.attempts}</p>
-                                                    {entry.http_status !== null && <p className="mt-1">HTTP: {entry.http_status}</p>}
-                                                    {entry.error && <p className="mt-1 text-red-600">Erro: {entry.error}</p>}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="rounded-[14px] border border-gray-200 bg-white p-3">
-                                    <p className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">Preview do payload</p>
-                                    <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words text-[11px] leading-relaxed text-gray-600">{alertPayloadPreview}</pre>
-                                </div>
-                            </div>
-
-                            <div className="rounded-[20px] border border-gray-200 bg-gray-50 p-4">
-                                <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-gray-400">
-                                    <Icons.History size={14} />
-                                    Auditoria recente
-                                </div>
-
-                                {auditEntries.length === 0 ? (
-                                    <p className="text-sm text-gray-500">Sem eventos recentes para esta marca.</p>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {auditEntries.map((entry) => (
-                                            <div key={entry.id} className="rounded-[14px] border border-gray-200 bg-white px-3 py-2">
-                                                <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
-                                                    <span className="font-bold text-gray-700">{entry.feature_key}</span>
-                                                    <span>{new Date(entry.changed_at).toLocaleString('pt-BR')}</span>
-                                                </div>
-                                                <div className="mt-1 text-xs text-gray-600">
-                                                    {entry.enabled_before === null ? 'init' : entry.enabled_before ? 'on' : 'off'}
-                                                    {' -> '}
-                                                    {entry.enabled_after ? 'on' : 'off'}
-                                                </div>
-                                                {entry.reason && (
-                                                    <p className="mt-1 text-xs text-gray-500">Motivo: {entry.reason}</p>
-                                                )}
-
-                                                <div className="mt-2 flex justify-end">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => rollbackAuditEntry(entry)}
-                                                        disabled={saving || loading || entry.enabled_before === null}
-                                                        className="inline-flex items-center gap-1.5 rounded-full border border-kaboo-primary/25 px-3 py-1 text-[11px] font-black uppercase tracking-[0.1em] text-kaboo-primary transition-colors hover:bg-kaboo-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
-                                                    >
-                                                        <Icons.RotateCcw size={12} />
-                                                        Reverter
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="rounded-[20px] border border-gray-200 bg-gray-50 p-4">
-                                <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-gray-400">
-                                    <Icons.LineChart size={14} />
-                                    Timeline de eventos operacionais
-                                </div>
-
-                                {operationalTimeline.length === 0 ? (
-                                    <p className="text-sm text-gray-500">Sem eventos operacionais registrados para esta marca.</p>
-                                ) : (
-                                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                                        {operationalTimeline.map((event) => {
-                                            let icon: React.ReactNode = null;
-                                            let label: string = '';
-                                            let details: string = '';
-
-                                            if (event.type === 'alert_dispatch') {
-                                                icon = <Icons.Send size={12} />;
-                                                label = `Alerta ${event.data.dispatch?.mode === 'live' ? 'live' : 'teste'}`;
-                                                details = `Canal: ${event.data.dispatch?.channel} · ${event.data.dispatch?.status}`;
-                                            } else if (event.type === 'flag_change') {
-                                                icon = <Icons.Settings size={12} />;
-                                                label = `Flag: ${event.data.flag?.feature_key}`;
-                                                details = `${event.data.flag?.enabled_before === null ? 'init' : event.data.flag?.enabled_before ? 'on' : 'off'} → ${event.data.flag?.enabled_after ? 'on' : 'off'}`;
-                                            } else if (event.type === 'rollout_wave') {
-                                                icon = <Icons.TrendingUp size={12} />;
-                                                label = `Rollout: ${event.data.rollout?.wave_after}`;
-                                                details = `Wave anterior: ${event.data.rollout?.wave_before}`;
-                                            } else if (event.type === 'publication') {
-                                                icon = <Icons.CheckCircle size={12} />;
-                                                label = `Publicação`;
-                                                details = `Versão: ${event.data.publication?.version}`;
-                                            }
-
-                                            return (
-                                                <div key={event.id} className="rounded-[12px] border border-gray-200 bg-white px-3 py-2">
-                                                    <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
-                                                        <div className="flex items-center gap-2 text-gray-700 font-bold">
-                                                            {icon}
-                                                            <span>{label}</span>
-                                                        </div>
-                                                        <span className="text-gray-400">{new Date(event.occurred_at).toLocaleString('pt-BR')}</span>
-                                                    </div>
-                                                    <div className="mt-1 text-xs text-gray-600">{details}</div>
-                                                    {event.reason && (
-                                                        <p className="mt-1 text-xs text-gray-500">Motivo: {event.reason}</p>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </section>
+
+                {/* ─── Tabs + Content ─── */}
+                {selectedBrand && (
+                    <>
+                        <nav className="flex gap-1 border-b border-gray-200" aria-label="Seções do White Label">
+                            {([
+                                { key: 'identidade' as const, label: 'Identidade Visual', icon: <Icons.Palette size={16} /> },
+                                { key: 'operacoes' as const, label: 'Operações', icon: <Icons.Settings size={16} /> },
+                                { key: 'auditoria' as const, label: 'Auditoria', icon: <Icons.History size={16} /> },
+                            ]).map((tab) => (
+                                <button
+                                    key={tab.key}
+                                    type="button"
+                                    onClick={() => setActiveTab(tab.key)}
+                                    className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold transition-colors ${activeTab === tab.key
+                                        ? 'border-kaboo-primary text-kaboo-primary'
+                                        : 'border-transparent text-gray-400 hover:text-gray-600'
+                                        }`}
+                                >
+                                    {tab.icon}
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </nav>
+
+                        {/* ═══ Tab: Identidade Visual ═══ */}
+                        {activeTab === 'identidade' && (
+                            <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
+                                <div className="space-y-5">
+                                    {/* Dados da marca */}
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
+                                        <h3 className="text-lg font-bold text-gray-900">Dados da marca</h3>
+                                        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                                            <div>
+                                                <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="brand-display-name">
+                                                    Nome exibido
+                                                </label>
+                                                <input
+                                                    id="brand-display-name"
+                                                    type="text"
+                                                    value={brandIdentity.display_name}
+                                                    onChange={(event) => updateBrandIdentityField('display_name', event.target.value)}
+                                                    placeholder="Ex.: Central Coruja"
+                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                                    disabled={loading || saving}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="brand-font-family">
+                                                    Família tipográfica
+                                                </label>
+                                                <input
+                                                    id="brand-font-family"
+                                                    type="text"
+                                                    value={brandIdentity.font_family}
+                                                    onChange={(event) => updateBrandIdentityField('font_family', event.target.value)}
+                                                    placeholder="Ex.: Nunito, Poppins"
+                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                                    disabled={loading || saving}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Imagens */}
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
+                                        <h3 className="text-lg font-bold text-gray-900">Imagens</h3>
+                                        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                                            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                                                <FileUpload
+                                                    inputId="brand-logo-upload"
+                                                    label="Logo da marca"
+                                                    value={brandIdentity.logo_url}
+                                                    onChange={(url) => updateBrandIdentityField('logo_url', url)}
+                                                    folder="extras"
+                                                    accept="image/*"
+                                                    collectionId={selectedBrandId}
+                                                    disabled={loading || saving}
+                                                />
+                                            </div>
+                                            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                                                <FileUpload
+                                                    inputId="brand-login-background-upload"
+                                                    label="Fundo do login"
+                                                    value={brandIdentity.login_background_url}
+                                                    onChange={(url) => updateBrandIdentityField('login_background_url', url)}
+                                                    folder="extras"
+                                                    accept="image/*"
+                                                    collectionId={selectedBrandId}
+                                                    disabled={loading || saving}
+                                                />
+                                            </div>
+                                            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 lg:col-span-2">
+                                                <FileUpload
+                                                    inputId="brand-home-hero-upload"
+                                                    label="Hero da home"
+                                                    value={brandIdentity.home_hero_image_url}
+                                                    onChange={(url) => updateBrandIdentityField('home_hero_image_url', url)}
+                                                    folder="extras"
+                                                    accept="image/*"
+                                                    collectionId={selectedBrandId}
+                                                    disabled={loading || saving}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Paleta de cores */}
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
+                                        <div className="flex items-center gap-2">
+                                            <Icons.Droplets size={16} className="text-gray-400" />
+                                            <h3 className="text-lg font-bold text-gray-900">Paleta de cores</h3>
+                                        </div>
+                                        <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                            <ColorPicker
+                                                label="Cor principal"
+                                                value={brandIdentity.primary_color}
+                                                onChange={(value) => updateBrandIdentityField('primary_color', value)}
+                                            />
+                                            <ColorPicker
+                                                label="Cor clara"
+                                                value={brandIdentity.light_color}
+                                                onChange={(value) => updateBrandIdentityField('light_color', value)}
+                                            />
+                                            <ColorPicker
+                                                label="Cor de fundo"
+                                                value={brandIdentity.bg_color}
+                                                onChange={(value) => updateBrandIdentityField('bg_color', value)}
+                                            />
+                                            <ColorPicker
+                                                label="Cor de destaque"
+                                                value={brandIdentity.accent_color}
+                                                onChange={(value) => updateBrandIdentityField('accent_color', value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Salvar identidade */}
+                                    <Button
+                                        variant="secondary"
+                                        onClick={saveBrandIdentity}
+                                        disabled={loading || saving || !selectedBrand}
+                                        fullWidth
+                                    >
+                                        Salvar identidade visual
+                                    </Button>
+                                </div>
+
+                                {/* ── Sticky Preview ── */}
+                                <div className="xl:sticky xl:top-4 xl:self-start">
+                                    <div className="rounded-[24px] border border-gray-200 bg-gray-50 p-4">
+                                        <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-gray-400">
+                                            <Icons.Eye size={14} />
+                                            Prévia ao vivo
+                                        </div>
+
+                                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                                            {/* Login atmosphere */}
+                                            <div
+                                                className="relative min-h-[140px] p-4"
+                                                style={{
+                                                    backgroundImage: brandIdentity.login_background_url
+                                                        ? `linear-gradient(135deg, ${brandIdentity.primary_color}CC, ${brandIdentity.accent_color}99), url(${brandIdentity.login_background_url})`
+                                                        : `linear-gradient(135deg, ${brandIdentity.primary_color}, ${brandIdentity.light_color})`,
+                                                    backgroundSize: 'cover',
+                                                    backgroundPosition: 'center',
+                                                    fontFamily: brandIdentity.font_family || undefined,
+                                                }}
+                                            >
+                                                <div className="absolute inset-0 bg-black/10" />
+                                                <div className="relative z-10 flex flex-col gap-4">
+                                                    {brandIdentity.logo_url ? (
+                                                        <img src={brandIdentity.logo_url} alt={brandIdentity.display_name} className="h-10 w-auto max-w-[140px] object-contain" />
+                                                    ) : (
+                                                        <div className="flex h-10 w-28 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm">
+                                                            <span className="text-[11px] font-bold text-white/80">Sem logo</span>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="max-w-[200px] rounded-2xl bg-white/92 p-3 shadow-lg backdrop-blur-sm">
+                                                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: brandIdentity.primary_color }}>
+                                                            Login
+                                                        </p>
+                                                        <h3 className="mt-1 text-base font-black text-gray-900">{brandIdentity.display_name}</h3>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Home preview */}
+                                            <div className="space-y-3 p-3" style={{ backgroundColor: brandIdentity.bg_color, fontFamily: brandIdentity.font_family || undefined }}>
+                                                <div className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 shadow-sm">
+                                                    <p className="text-xs font-bold text-gray-900">{brandIdentity.display_name}</p>
+                                                    {brandIdentity.logo_url ? (
+                                                        <img src={brandIdentity.logo_url} alt="" className="h-7 w-auto max-w-[80px] object-contain" />
+                                                    ) : (
+                                                        <div className="h-7 w-14 rounded-lg bg-gray-200" />
+                                                    )}
+                                                </div>
+
+                                                {brandIdentity.home_hero_image_url && (
+                                                    <div
+                                                        className="h-20 rounded-xl border border-white/70 bg-cover bg-center shadow-sm"
+                                                        style={{ backgroundImage: `linear-gradient(135deg, ${brandIdentity.primary_color}33, ${brandIdentity.accent_color}22), url(${brandIdentity.home_hero_image_url})` }}
+                                                    />
+                                                )}
+
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="rounded-xl bg-white p-3 shadow-sm">
+                                                        <p className="text-[10px] font-semibold text-gray-400">Principal</p>
+                                                        <div className="mt-2 h-7 rounded-lg" style={{ backgroundColor: brandIdentity.primary_color }} />
+                                                    </div>
+                                                    <div className="rounded-xl bg-white p-3 shadow-sm">
+                                                        <p className="text-[10px] font-semibold text-gray-400">Destaque</p>
+                                                        <div className="mt-2 h-7 rounded-lg" style={{ backgroundColor: brandIdentity.accent_color }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
+                                            Prévia usa a paleta e ativos em edição. Ao salvar, o cache é invalidado.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ═══ Tab: Operações ═══ */}
+                        {activeTab === 'operacoes' && (
+                            <div className="grid gap-5 lg:grid-cols-2">
+                                {/* Feature Flags */}
+                                <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-5">
+                                    <h3 className="text-lg font-bold text-gray-900">Feature Flags</h3>
+
+                                    {/* Music toggle */}
+                                    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900">Menu: Músicas</p>
+                                                <p className="mt-1 text-sm text-gray-500">
+                                                    Liga ou desliga o item de menu músicas para a marca.
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={menuMusicEnabled}
+                                                onClick={() => persistFeature('menu.music', !menuMusicEnabled, {})}
+                                                className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${menuMusicEnabled ? 'bg-kaboo-primary' : 'bg-gray-300'}`}
+                                                disabled={loading || saving || !selectedBrand}
+                                            >
+                                                <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${menuMusicEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Parallax toggle */}
+                                    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900">Hero Parallax</p>
+                                                <p className="mt-1 text-sm text-gray-500">
+                                                    Efeito parallax do hero para a marca selecionada.
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={heroParallaxEnabled}
+                                                onClick={() => {
+                                                    const nextEnabled = !heroParallaxEnabled;
+                                                    const nextMode: HeroParallaxMode = nextEnabled ? (heroParallaxMode === 'off' ? 'subtle' : heroParallaxMode) : 'off';
+                                                    persistFeature('hero.parallax', nextEnabled, { mode: nextMode });
+                                                }}
+                                                className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${heroParallaxEnabled ? 'bg-kaboo-primary' : 'bg-gray-300'}`}
+                                                disabled={loading || saving || !selectedBrand}
+                                            >
+                                                <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${heroParallaxEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Parallax mode */}
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-900">Modo do Parallax</p>
+                                        <div className="mt-2 space-y-2">
+                                            {MODE_OPTIONS.map((option) => {
+                                                const isSelected = heroParallaxMode === option.value;
+                                                return (
+                                                    <button
+                                                        key={option.value}
+                                                        type="button"
+                                                        onClick={() => persistFeature('hero.parallax', option.value !== 'off', { mode: option.value })}
+                                                        className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${isSelected
+                                                            ? 'border-kaboo-primary bg-kaboo-primary/[0.05] text-kaboo-primary'
+                                                            : 'border-gray-200 bg-white text-gray-700 hover:border-kaboo-primary/25'
+                                                            }`}
+                                                        disabled={loading || saving || !selectedBrand}
+                                                    >
+                                                        <div className="flex items-start justify-between gap-4">
+                                                            <div>
+                                                                <p className="text-sm font-bold">{option.label}</p>
+                                                                <p className="mt-1 text-xs text-gray-500">{option.description}</p>
+                                                            </div>
+                                                            {isSelected && <Icons.Check size={16} className="mt-1 shrink-0" />}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Reason */}
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="flag-reason">
+                                            Motivo da mudança
+                                        </label>
+                                        <textarea
+                                            id="flag-reason"
+                                            value={reason}
+                                            onChange={(event) => setReason(event.target.value)}
+                                            placeholder="Ex.: Desligar música para piloto da Central Coruja"
+                                            className="min-h-[80px] w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                        />
+                                    </div>
+
+                                    {/* Presets */}
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="secondary"
+                                            onClick={applyCorujaPreset}
+                                            disabled={loading || saving || selectedBrand?.slug !== 'central-coruja'}
+                                        >
+                                            Preset Coruja
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            onClick={applyKabooBaseline}
+                                            disabled={loading || saving || selectedBrand?.slug !== 'kaboo'}
+                                        >
+                                            Baseline Kaboo
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Rollout + Publication + Metrics + Alerts */}
+                                <div className="space-y-5">
+                                    {/* Publication */}
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
+                                        <h3 className="text-lg font-bold text-gray-900">Publicação</h3>
+                                        <div className="mt-3 flex items-center justify-between gap-3">
+                                            <div className="text-sm text-gray-600">
+                                                <p>Versão: <span className="font-bold text-gray-900">v{publicationState.version}</span></p>
+                                                <p className="mt-1">
+                                                    {publicationState.published_at
+                                                        ? `Publicada em ${new Date(publicationState.published_at).toLocaleString('pt-BR')}`
+                                                        : 'Não publicada'}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="secondary"
+                                                onClick={publishCurrentVersion}
+                                                disabled={loading || saving || !selectedBrand}
+                                            >
+                                                Publicar
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {/* Rollout */}
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-900">Rollout por Ondas</h3>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                Onda atual: <span className="font-bold uppercase text-gray-900">{rolloutConfig.wave}</span>
+                                                {rolloutConfig.last_changed_at && (
+                                                    <span> · {new Date(rolloutConfig.last_changed_at).toLocaleString('pt-BR')}</span>
+                                                )}
+                                            </p>
+                                            {rolloutConfig.last_reason && (
+                                                <p className="mt-1 text-xs text-gray-400">Motivo: {rolloutConfig.last_reason}</p>
+                                            )}
+                                        </div>
+                                        <div className="grid gap-2">
+                                            {ROLLOUT_WAVES.map((wave) => {
+                                                const active = rolloutConfig.wave === wave.value;
+                                                return (
+                                                    <button
+                                                        key={wave.value}
+                                                        type="button"
+                                                        onClick={() => changeRolloutWave(wave.value)}
+                                                        disabled={loading || saving || !selectedBrand}
+                                                        className={`w-full rounded-2xl border px-3 py-2 text-left transition-colors ${active
+                                                            ? 'border-kaboo-primary bg-kaboo-primary/[0.06]'
+                                                            : 'border-gray-200 bg-white hover:border-kaboo-primary/25'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <p className="text-sm font-bold text-gray-800">{wave.label}</p>
+                                                            {active && <Icons.Check size={14} className="text-kaboo-primary" />}
+                                                        </div>
+                                                        <p className="mt-1 text-xs text-gray-500">{wave.description}</p>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Metrics */}
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
+                                        <div className="flex items-center gap-2">
+                                            <Icons.BarChart3 size={16} className="text-gray-400" />
+                                            <h3 className="text-lg font-bold text-gray-900">Métricas</h3>
+                                        </div>
+                                        <div className="mt-3 grid grid-cols-3 gap-2">
+                                            <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
+                                                <p className="text-lg font-black text-gray-800">{rolloutMetrics.enabled_flags}</p>
+                                                <p className="text-[11px] text-gray-400">Flags ativas</p>
+                                            </div>
+                                            <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
+                                                <p className="text-lg font-black text-gray-800">{rolloutMetrics.changes_24h}</p>
+                                                <p className="text-[11px] text-gray-400">Mudanças 24h</p>
+                                            </div>
+                                            <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
+                                                <p className="text-lg font-black text-gray-800">{rolloutMetrics.total_changes}</p>
+                                                <p className="text-[11px] text-gray-400">Total</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Operational Alerts */}
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
+                                        <h3 className="text-lg font-bold text-gray-900">Alertas operacionais</h3>
+                                        <div className="mt-3">
+                                            {operationalAlerts.length === 0 ? (
+                                                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                                                    Nenhum alerta ativo.
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    {operationalAlerts.map((alert) => (
+                                                        <div
+                                                            key={`${alert.level}-${alert.title}`}
+                                                            className={`rounded-xl border px-3 py-2 ${alert.level === 'critical'
+                                                                ? 'border-red-200 bg-red-50'
+                                                                : 'border-amber-200 bg-amber-50'
+                                                                }`}
+                                                        >
+                                                            <p className={`text-xs font-bold uppercase ${alert.level === 'critical' ? 'text-red-700' : 'text-amber-700'}`}>
+                                                                {alert.level === 'critical' ? 'Crítico' : 'Atenção'}
+                                                            </p>
+                                                            <p className="mt-1 text-sm font-bold text-gray-800">{alert.title}</p>
+                                                            <p className="mt-1 text-xs text-gray-600">{alert.description}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* External Alerting */}
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-900">Alertas externos</h3>
+                                            <p className="mt-1 text-sm text-gray-500">Webhook e canal operacional por marca.</p>
+                                            {alertingConfig.last_reason && (
+                                                <p className="mt-1 text-xs text-gray-400">Último motivo: {alertingConfig.last_reason}</p>
+                                            )}
+                                        </div>
+
+                                        <label className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-gray-50 px-3 py-3">
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-800">Habilitar alertas externos</p>
+                                                <p className="text-xs text-gray-500">Ativa destino operacional para incidentes.</p>
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                checked={alertingConfig.enabled}
+                                                onChange={(event) => setAlertingConfig((current) => ({ ...current, enabled: event.target.checked }))}
+                                                className="h-4 w-4 accent-kaboo-primary"
+                                                disabled={loading || saving || !selectedBrand}
+                                            />
+                                        </label>
+
+                                        <div className="grid gap-3">
+                                            <div>
+                                                <label className="mb-1 block text-xs font-semibold text-gray-500">Webhook URL</label>
+                                                <input
+                                                    type="url"
+                                                    value={alertingConfig.webhook_url}
+                                                    onChange={(event) => setAlertingConfig((current) => ({ ...current, webhook_url: event.target.value }))}
+                                                    placeholder="https://hooks.exemplo.com/white-label"
+                                                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-kaboo-primary/40"
+                                                    disabled={loading || saving || !selectedBrand}
+                                                />
+                                            </div>
+                                            <div className="grid gap-3 md:grid-cols-2">
+                                                <div>
+                                                    <label className="mb-1 block text-xs font-semibold text-gray-500">Canal</label>
+                                                    <input
+                                                        type="text"
+                                                        value={alertingConfig.channel}
+                                                        onChange={(event) => setAlertingConfig((current) => ({ ...current, channel: event.target.value }))}
+                                                        placeholder="ops-central-coruja"
+                                                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-kaboo-primary/40"
+                                                        disabled={loading || saving || !selectedBrand}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="mb-1 block text-xs font-semibold text-gray-500">Limite mudanças 24h</label>
+                                                    <input
+                                                        type="number"
+                                                        min={1}
+                                                        value={alertingConfig.changes_24h_threshold}
+                                                        onChange={(event) => setAlertingConfig((current) => ({ ...current, changes_24h_threshold: Number(event.target.value || 1) }))}
+                                                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-kaboo-primary/40"
+                                                        disabled={loading || saving || !selectedBrand}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <label className="flex items-center gap-2 text-sm text-gray-700">
+                                            <input
+                                                type="checkbox"
+                                                checked={alertingConfig.notify_on_general_without_publish}
+                                                onChange={(event) => setAlertingConfig((current) => ({ ...current, notify_on_general_without_publish: event.target.checked }))}
+                                                className="h-4 w-4 accent-kaboo-primary"
+                                                disabled={loading || saving || !selectedBrand}
+                                            />
+                                            Notificar rollout geral sem publicação
+                                        </label>
+
+                                        <div className="flex flex-wrap gap-2">
+                                            <Button
+                                                variant="secondary"
+                                                onClick={saveAlertingConfig}
+                                                disabled={loading || saving || !selectedBrand}
+                                            >
+                                                Salvar alertas
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                onClick={sendAlertTest}
+                                                disabled={loading || saving || !selectedBrand || !alertingConfig.enabled || !alertingConfig.webhook_url}
+                                            >
+                                                Enviar teste
+                                            </Button>
+                                            <Button
+                                                variant="secondary"
+                                                onClick={sendOperationalAlerts}
+                                                disabled={loading || saving || !selectedBrand || !alertingConfig.enabled || !alertingConfig.webhook_url || operationalAlerts.length === 0}
+                                            >
+                                                Disparar ativos
+                                            </Button>
+                                        </div>
+
+                                        <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600">
+                                            <p>
+                                                Último dispatch: {alertingConfig.last_dispatch_at
+                                                    ? new Date(alertingConfig.last_dispatch_at).toLocaleString('pt-BR')
+                                                    : 'nenhum'}
+                                            </p>
+                                            <p className="mt-1">
+                                                Status:{' '}
+                                                <span className={`font-bold ${alertingConfig.last_dispatch_status === 'success'
+                                                    ? 'text-emerald-700'
+                                                    : alertingConfig.last_dispatch_status === 'error'
+                                                        ? 'text-red-700'
+                                                        : 'text-gray-700'
+                                                    }`}>{alertingConfig.last_dispatch_status}</span>
+                                                {alertingConfig.last_dispatch_http_status !== null && (
+                                                    <span> · HTTP {alertingConfig.last_dispatch_http_status}</span>
+                                                )}
+                                            </p>
+                                            {alertingConfig.last_dispatch_error && (
+                                                <p className="mt-1 text-red-600">Erro: {alertingConfig.last_dispatch_error}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ═══ Tab: Auditoria ═══ */}
+                        {activeTab === 'auditoria' && (
+                            <div className="grid gap-5 lg:grid-cols-2">
+                                {/* Audit entries */}
+                                <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
+                                    <h3 className="text-lg font-bold text-gray-900">Auditoria recente</h3>
+                                    <div className="mt-3">
+                                        {auditEntries.length === 0 ? (
+                                            <p className="text-sm text-gray-500">Sem eventos recentes para esta marca.</p>
+                                        ) : (
+                                            <div className="max-h-[500px] space-y-2 overflow-y-auto">
+                                                {auditEntries.map((entry) => (
+                                                    <div key={entry.id} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+                                                        <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+                                                            <span className="font-bold text-gray-700">{entry.feature_key}</span>
+                                                            <span>{new Date(entry.changed_at).toLocaleString('pt-BR')}</span>
+                                                        </div>
+                                                        <div className="mt-1 text-xs text-gray-600">
+                                                            {entry.enabled_before === null ? 'init' : entry.enabled_before ? 'on' : 'off'}
+                                                            {' → '}
+                                                            {entry.enabled_after ? 'on' : 'off'}
+                                                        </div>
+                                                        {entry.reason && (
+                                                            <p className="mt-1 text-xs text-gray-400">Motivo: {entry.reason}</p>
+                                                        )}
+                                                        <div className="mt-2 flex justify-end">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => rollbackAuditEntry(entry)}
+                                                                disabled={saving || loading || entry.enabled_before === null}
+                                                                className="inline-flex items-center gap-1.5 rounded-full border border-kaboo-primary/25 px-3 py-1 text-[11px] font-bold text-kaboo-primary transition-colors hover:bg-kaboo-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            >
+                                                                <Icons.RotateCcw size={12} />
+                                                                Reverter
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Timeline */}
+                                <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
+                                    <h3 className="text-lg font-bold text-gray-900">Timeline operacional</h3>
+                                    <div className="mt-3">
+                                        {operationalTimeline.length === 0 ? (
+                                            <p className="text-sm text-gray-500">Sem eventos operacionais registrados.</p>
+                                        ) : (
+                                            <div className="max-h-[500px] space-y-2 overflow-y-auto">
+                                                {operationalTimeline.map((event) => {
+                                                    let icon: React.ReactNode = null;
+                                                    let label: string = '';
+                                                    let details: string = '';
+
+                                                    if (event.type === 'alert_dispatch') {
+                                                        icon = <Icons.Send size={12} />;
+                                                        label = `Alerta ${event.data.dispatch?.mode === 'live' ? 'live' : 'teste'}`;
+                                                        details = `Canal: ${event.data.dispatch?.channel} · ${event.data.dispatch?.status}`;
+                                                    } else if (event.type === 'flag_change') {
+                                                        icon = <Icons.Settings size={12} />;
+                                                        label = `Flag: ${event.data.flag?.feature_key}`;
+                                                        details = `${event.data.flag?.enabled_before === null ? 'init' : event.data.flag?.enabled_before ? 'on' : 'off'} → ${event.data.flag?.enabled_after ? 'on' : 'off'}`;
+                                                    } else if (event.type === 'rollout_wave') {
+                                                        icon = <Icons.TrendingUp size={12} />;
+                                                        label = `Rollout: ${event.data.rollout?.wave_after}`;
+                                                        details = `Wave anterior: ${event.data.rollout?.wave_before}`;
+                                                    } else if (event.type === 'publication') {
+                                                        icon = <Icons.CheckCircle size={12} />;
+                                                        label = `Publicação`;
+                                                        details = `Versão: ${event.data.publication?.version}`;
+                                                    }
+
+                                                    return (
+                                                        <div key={event.id} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+                                                            <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+                                                                <div className="flex items-center gap-2 font-bold text-gray-700">
+                                                                    {icon}
+                                                                    <span>{label}</span>
+                                                                </div>
+                                                                <span className="text-gray-400">{new Date(event.occurred_at).toLocaleString('pt-BR')}</span>
+                                                            </div>
+                                                            <div className="mt-1 text-xs text-gray-600">{details}</div>
+                                                            {event.reason && (
+                                                                <p className="mt-1 text-xs text-gray-400">Motivo: {event.reason}</p>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Dispatch History */}
+                                <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
+                                    <h3 className="text-lg font-bold text-gray-900">Histórico de entregas</h3>
+                                    <div className="mt-3">
+                                        {alertDispatchHistory.length === 0 ? (
+                                            <p className="text-sm text-gray-500">Sem entregas registradas.</p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {alertDispatchHistory.map((entry) => (
+                                                    <div key={entry.id} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="font-bold text-gray-800">{new Date(entry.sent_at).toLocaleString('pt-BR')}</span>
+                                                            <span className="flex items-center gap-2">
+                                                                <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase text-gray-500">{entry.mode}</span>
+                                                                <span className={`font-bold ${entry.status === 'success' ? 'text-emerald-700' : 'text-red-700'}`}>{entry.status}</span>
+                                                            </span>
+                                                        </div>
+                                                        <p className="mt-1">Canal: {entry.channel || 'n/a'} · Tentativas: {entry.attempts}</p>
+                                                        {entry.http_status !== null && <p className="mt-1">HTTP: {entry.http_status}</p>}
+                                                        {entry.error && <p className="mt-1 text-red-600">Erro: {entry.error}</p>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Payload Preview */}
+                                <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
+                                    <h3 className="text-lg font-bold text-gray-900">Payload de alertas</h3>
+                                    <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-gray-50 p-3 text-[11px] leading-relaxed text-gray-600">
+                                        {alertPayloadPreview}
+                                    </pre>
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
+
             {toast && (
                 <Toast
                     message={toast.message}

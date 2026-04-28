@@ -1,5 +1,11 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { isDevMockSession } from './api';
+import {
+    extractBrandVisualIdentity,
+    getMockBrandSettingsOverride,
+    mergeBrandVisualIdentity,
+    writeMockBrandSettingsOverride,
+} from './whiteLabelBranding';
 
 export type HeroParallaxMode = 'off' | 'subtle' | 'standard';
 
@@ -30,6 +36,18 @@ export interface WhiteLabelAuditEntry {
 export interface WhiteLabelPublicationState {
     version: number;
     published_at: string | null;
+}
+
+export interface WhiteLabelBrandIdentity {
+    display_name: string;
+    logo_url: string;
+    primary_color: string;
+    light_color: string;
+    bg_color: string;
+    accent_color: string;
+    font_family: string;
+    login_background_url: string;
+    home_hero_image_url: string;
 }
 
 export type WhiteLabelRolloutWave = 'pilot' | 'group' | 'general';
@@ -192,7 +210,61 @@ const MOCK_ALERTING_HISTORY: Record<string, WhiteLabelAlertDispatchEntry[]> = {
     'mock-central-coruja': [],
 };
 
+const DEFAULT_BRAND_IDENTITY_BY_BRAND: Record<string, WhiteLabelBrandIdentity> = {
+    'mock-kaboo': {
+        display_name: 'Mundo de Kaboo',
+        logo_url: '',
+        primary_color: '#5D1F58',
+        light_color: '#883E82',
+        bg_color: '#F9F5F9',
+        accent_color: '#4EA8DE',
+        font_family: '',
+        login_background_url: '',
+        home_hero_image_url: '',
+    },
+    'mock-central-coruja': {
+        display_name: 'Central Coruja',
+        logo_url: '',
+        primary_color: '#1B5E20',
+        light_color: '#388E3C',
+        bg_color: '#F1F8E9',
+        accent_color: '#F9A825',
+        font_family: '',
+        login_background_url: '',
+        home_hero_image_url: '',
+    },
+};
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function normalizeText(value: string | null | undefined): string {
+    return value?.trim() ?? '';
+}
+
+function buildMockBrandIdentity(brandId: string): WhiteLabelBrandIdentity {
+    const brand = MOCK_BRANDS.find((row) => row.id === brandId);
+    const defaults = DEFAULT_BRAND_IDENTITY_BY_BRAND[brandId] ?? DEFAULT_BRAND_IDENTITY_BY_BRAND['mock-kaboo'];
+    const override = getMockBrandSettingsOverride(brandId);
+
+    return {
+        display_name: override?.display_name ?? brand?.display_name ?? defaults.display_name,
+        logo_url: Object.prototype.hasOwnProperty.call(override ?? {}, 'logo_url') ? normalizeText(override?.logo_url ?? '') : defaults.logo_url,
+        primary_color: Object.prototype.hasOwnProperty.call(override ?? {}, 'primary_color') ? normalizeText(override?.primary_color ?? '') : defaults.primary_color,
+        light_color: Object.prototype.hasOwnProperty.call(override ?? {}, 'light_color') ? normalizeText(override?.light_color ?? '') : defaults.light_color,
+        bg_color: Object.prototype.hasOwnProperty.call(override ?? {}, 'bg_color') ? normalizeText(override?.bg_color ?? '') : defaults.bg_color,
+        accent_color: Object.prototype.hasOwnProperty.call(override ?? {}, 'accent_color') ? normalizeText(override?.accent_color ?? '') : defaults.accent_color,
+        font_family: Object.prototype.hasOwnProperty.call(override ?? {}, 'font_family') ? normalizeText(override?.font_family ?? '') : defaults.font_family,
+        login_background_url: Object.prototype.hasOwnProperty.call(override ?? {}, 'login_background_url') ? normalizeText(override?.login_background_url ?? '') : defaults.login_background_url,
+        home_hero_image_url: Object.prototype.hasOwnProperty.call(override ?? {}, 'home_hero_image_url') ? normalizeText(override?.home_hero_image_url ?? '') : defaults.home_hero_image_url,
+    };
+}
+
+function getMockBrands(): WhiteLabelBrandRow[] {
+    return MOCK_BRANDS.map((brand) => ({
+        ...brand,
+        display_name: buildMockBrandIdentity(brand.id).display_name,
+    }));
+}
 
 function buildDispatchEntry(input: {
     sentAt: string;
@@ -228,7 +300,7 @@ export const canUseRemoteWhiteLabel = (): boolean => {
 
 export async function listWhiteLabelBrands(): Promise<WhiteLabelBrandRow[]> {
     if (!canUseRemoteWhiteLabel()) {
-        return MOCK_BRANDS;
+        return getMockBrands();
     }
 
     const { data: brands, error: brandsError } = await supabase
@@ -239,7 +311,7 @@ export async function listWhiteLabelBrands(): Promise<WhiteLabelBrandRow[]> {
 
     if (brandsError) {
         console.warn('[whiteLabelAdminApi] listWhiteLabelBrands remote failed, using mock fallback:', brandsError);
-        return MOCK_BRANDS;
+        return getMockBrands();
     }
 
     const brandIds = (brands ?? []).map((brand) => brand.id);
@@ -253,7 +325,7 @@ export async function listWhiteLabelBrands(): Promise<WhiteLabelBrandRow[]> {
 
         if (settingsError) {
             console.warn('[whiteLabelAdminApi] listWhiteLabelBrands settings remote failed, using mock fallback:', settingsError);
-            return MOCK_BRANDS;
+            return getMockBrands();
         }
 
         settingsByBrandId = new Map((settings ?? []).map((row) => [row.brand_id as string, (row.display_name as string) ?? '']));
@@ -266,6 +338,121 @@ export async function listWhiteLabelBrands(): Promise<WhiteLabelBrandRow[]> {
         is_active: brand.is_active,
         display_name: settingsByBrandId.get(brand.id) || brand.name,
     }));
+}
+
+export async function getWhiteLabelBrandIdentity(brandId: string): Promise<WhiteLabelBrandIdentity> {
+    if (!canUseRemoteWhiteLabel()) {
+        return buildMockBrandIdentity(brandId);
+    }
+
+    const { data, error } = await supabase
+        .from('brand_settings')
+        .select('display_name, logo_url, primary_color, light_color, bg_color, accent_color, font_family, menu_config')
+        .eq('brand_id', brandId)
+        .single();
+
+    if (error) {
+        console.warn('[whiteLabelAdminApi] getWhiteLabelBrandIdentity remote failed, using mock fallback:', error);
+        return buildMockBrandIdentity(brandId);
+    }
+
+    const defaults = DEFAULT_BRAND_IDENTITY_BY_BRAND[brandId] ?? DEFAULT_BRAND_IDENTITY_BY_BRAND['mock-kaboo'];
+    const visualIdentity = extractBrandVisualIdentity((data.menu_config as Record<string, unknown> | null) ?? {});
+
+    return {
+        display_name: normalizeText((data.display_name as string | null | undefined) ?? defaults.display_name) || defaults.display_name,
+        logo_url: normalizeText((data.logo_url as string | null | undefined) ?? defaults.logo_url),
+        primary_color: normalizeText((data.primary_color as string | null | undefined) ?? defaults.primary_color) || defaults.primary_color,
+        light_color: normalizeText((data.light_color as string | null | undefined) ?? defaults.light_color) || defaults.light_color,
+        bg_color: normalizeText((data.bg_color as string | null | undefined) ?? defaults.bg_color) || defaults.bg_color,
+        accent_color: normalizeText((data.accent_color as string | null | undefined) ?? defaults.accent_color) || defaults.accent_color,
+        font_family: normalizeText((data.font_family as string | null | undefined) ?? defaults.font_family),
+        login_background_url: normalizeText(visualIdentity.login_background_url ?? defaults.login_background_url),
+        home_hero_image_url: normalizeText(visualIdentity.home_hero_image_url ?? defaults.home_hero_image_url),
+    };
+}
+
+export async function setWhiteLabelBrandIdentity(input: {
+    brandId: string;
+    display_name: string;
+    logo_url: string;
+    primary_color: string;
+    light_color: string;
+    bg_color: string;
+    accent_color: string;
+    font_family?: string;
+    login_background_url?: string;
+    home_hero_image_url?: string;
+}): Promise<WhiteLabelBrandIdentity> {
+    const normalizedDisplayName = normalizeText(input.display_name);
+    const normalizedLogoUrl = normalizeText(input.logo_url);
+    const normalizedFontFamily = normalizeText(input.font_family);
+    const normalizedLoginBackgroundUrl = normalizeText(input.login_background_url);
+    const normalizedHomeHeroImageUrl = normalizeText(input.home_hero_image_url);
+
+    if (!normalizedDisplayName) {
+        throw new Error('display_name_required');
+    }
+
+    if (!canUseRemoteWhiteLabel()) {
+        writeMockBrandSettingsOverride(input.brandId, {
+            display_name: normalizedDisplayName,
+            logo_url: normalizedLogoUrl || null,
+            primary_color: input.primary_color,
+            light_color: input.light_color,
+            bg_color: input.bg_color,
+            accent_color: input.accent_color,
+            font_family: normalizedFontFamily || null,
+            login_background_url: normalizedLoginBackgroundUrl || null,
+            home_hero_image_url: normalizedHomeHeroImageUrl || null,
+        });
+
+        const publication = MOCK_PUBLICATION_STATE[input.brandId] ?? { version: 1, published_at: null };
+        MOCK_PUBLICATION_STATE[input.brandId] = { ...publication, version: publication.version + 1 };
+
+        return buildMockBrandIdentity(input.brandId);
+    }
+
+    const nowIso = new Date().toISOString();
+    const { data: currentSettings, error: currentSettingsError } = await supabase
+        .from('brand_settings')
+        .select('menu_config, version')
+        .eq('brand_id', input.brandId)
+        .single();
+
+    if (currentSettingsError) {
+        throw currentSettingsError;
+    }
+
+    const nextMenuConfig = mergeBrandVisualIdentity(
+        (currentSettings.menu_config as Record<string, unknown> | null) ?? {},
+        {
+            login_background_url: normalizedLoginBackgroundUrl || null,
+            home_hero_image_url: normalizedHomeHeroImageUrl || null,
+        },
+    );
+
+    const { error: updateError } = await supabase
+        .from('brand_settings')
+        .update({
+            display_name: normalizedDisplayName,
+            logo_url: normalizedLogoUrl || null,
+            primary_color: input.primary_color,
+            light_color: input.light_color,
+            bg_color: input.bg_color,
+            accent_color: input.accent_color,
+            font_family: normalizedFontFamily || null,
+            menu_config: nextMenuConfig,
+            version: Number(currentSettings.version ?? 1) + 1,
+            updated_at: nowIso,
+        })
+        .eq('brand_id', input.brandId);
+
+    if (updateError) {
+        throw updateError;
+    }
+
+    return getWhiteLabelBrandIdentity(input.brandId);
 }
 
 export async function getWhiteLabelFeatures(

@@ -68,6 +68,11 @@ export const themes: Record<string, BrandTheme> = {
 // ─── Aplicador de tema ─────────────────────────────────────
 export function applyTheme(theme: BrandTheme, root: HTMLElement = document.documentElement): void {
   const { colors, font } = theme
+  root.style.setProperty('--color-kaboo-primary', colors.primary)
+  root.style.setProperty('--color-kaboo-light', colors.light)
+  root.style.setProperty('--color-kaboo-bg', colors.bg)
+  root.style.setProperty('--color-kaboo-accent', colors.accent)
+  root.style.setProperty('--color-kaboo-green', colors.green)
   root.style.setProperty('--color-brand-primary', colors.primary)
   root.style.setProperty('--color-brand-light', colors.light)
   root.style.setProperty('--color-brand-bg', colors.bg)

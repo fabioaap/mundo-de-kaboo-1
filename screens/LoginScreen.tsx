@@ -31,6 +31,9 @@ const StepDots: React.FC<{ current: number; total: number }> = ({ current, total
 interface LoginScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
   onAuthSuccess?: (profile: UserProfile | null) => void | Promise<void>;
+  brandLogoUrl?: string;
+  brandName?: string;
+  backgroundImageUrl?: string;
 }
 
 import backgroundImage from '../assets/images/background-login.jpg';
@@ -84,7 +87,10 @@ const normalizeAuthError = (message: string): { message: string; requiresEmailCo
   return { message: message || 'Ocorreu um erro. Tente novamente.' };
 };
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSuccess }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSuccess, brandLogoUrl, brandName, backgroundImageUrl }) => {
+  const resolvedBrandLogoUrl = brandLogoUrl || LOGO_URL;
+  const resolvedBrandName = brandName || 'Mundo de Kaboo';
+  const resolvedBackgroundImageUrl = backgroundImageUrl || BG_IMAGE;
   const [step, setStep] = useState<LoginStep>('login');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -297,7 +303,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
   return (
     <div
       className="relative flex h-[100dvh] overflow-hidden bg-gray-50 bg-cover bg-center bg-no-repeat p-0 md:items-center md:justify-center md:p-6 lg:p-8"
-      style={{ backgroundImage: `url(${BG_IMAGE})` }}
+      style={{ backgroundImage: `url(${resolvedBackgroundImageUrl})` }}
     >
       <div className="absolute inset-0 bg-kaboo-primary/20 backdrop-blur-[2px]" />
 
@@ -314,7 +320,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
             >
               <Icons.ChevronLeft size={22} />
             </button>
-            <img src={LOGO_URL} alt="Mundo de Kaboo" className="h-12 w-auto object-contain" />
+            <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="h-12 w-auto object-contain" />
           </div>
         )}
 
@@ -535,7 +541,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         {step === 'login' && (
           <div className="flex min-h-0 flex-col flex-1 overflow-y-auto no-scrollbar px-6 pt-5 pb-8 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="mb-6 flex justify-center pt-1">
-              <img src={LOGO_URL} alt="Mundo de Kaboo" className="h-14 w-auto object-contain" />
+              <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="h-14 w-auto object-contain" />
             </div>
             <h2 className="text-xl font-bold text-gray-800 mb-1">Bem-vindo de volta!</h2>
             <p className="text-sm text-gray-500 mb-5">Entre com seu e-mail e senha para continuar.</p>

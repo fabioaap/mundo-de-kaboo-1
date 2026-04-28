@@ -13,6 +13,8 @@ interface BottomNavProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
   currentParams?: any;
   profile?: UserProfile | null;
+  brandLogoUrl?: string;
+  brandName?: string;
   /**
    * Conjunto de chaves de menu habilitadas pela configuração de marca.
    * Quando omitido, todos os itens canônicos são exibidos (comportamento padrão).
@@ -30,10 +32,12 @@ type NavItem = {
 
 const STORAGE_SIDEBAR_COLLAPSED = 'kaboo_sidebar_collapsed';
 
-export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate, currentParams, profile, enabledMenuKeys }) => {
+export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate, currentParams, profile, brandLogoUrl, brandName, enabledMenuKeys }) => {
   /** Retorna true se a chave de menu deve aparecer. Sem restrição = tudo habilitado. */
   const isMenuKeyEnabled = (key: string): boolean =>
     !enabledMenuKeys || enabledMenuKeys.has(key);
+  const resolvedBrandLogoUrl = brandLogoUrl || LOGO_URL;
+  const resolvedBrandName = brandName || 'Mundo de Kaboo';
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_SIDEBAR_COLLAPSED);
@@ -232,10 +236,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
           title="Ir para o Início"
         >
           {!isCollapsed && (
-            <img src={LOGO_URL} alt="Kaboo" className="w-32 h-auto" />
+            <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="w-32 h-auto" />
           )}
           {isCollapsed && (
-            <img src={LOGO_URL} alt="Kaboo" className="w-10 h-auto" />
+            <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="w-10 h-auto" />
           )}
         </button>
 
