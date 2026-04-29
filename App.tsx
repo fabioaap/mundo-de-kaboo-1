@@ -187,8 +187,10 @@ const App: React.FC = () => {
   // Brand config — bootstrapada uma vez por sessão; aplica tema e resolve menu flags.
   const { bootstrap: brandBootstrap, enabledMenuItems } = useBrandConfig();
   const brandEnabledMenuKeys = new Set(enabledMenuItems.map(item => item.key));
+  const brandSlug = brandBootstrap.brand.slug;
+  const isCentralCorujaBrand = brandSlug === 'central-coruja';
   const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
-  const brandLogoUrl = brandBootstrap.settings.logo_url || LOGO_URL;
+  const brandLogoUrl = brandBootstrap.settings.logo_url || (brandBootstrap.brand.slug === 'kaboo' ? LOGO_URL : undefined);
   const brandLoginBackgroundUrl = brandBootstrap.settings.login_background_url || undefined;
 
   // Save navState to localStorage whenever it changes
@@ -671,7 +673,13 @@ const App: React.FC = () => {
   if (!sessionChecked) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6">
-        <img src={brandLogoUrl} alt={brandDisplayName} className="w-32 h-32 object-contain animate-pulse" />
+        {brandLogoUrl ? (
+          <img src={brandLogoUrl} alt={brandDisplayName} className="w-32 h-32 object-contain animate-pulse" />
+        ) : (
+          <div className="rounded-[28px] border border-gray-200 bg-white px-6 py-4 text-center text-lg font-black text-gray-800 shadow-sm animate-pulse">
+            {brandDisplayName}
+          </div>
+        )}
         <div className="w-8 h-8 border-4 border-kaboo-primary/30 border-t-kaboo-primary rounded-full animate-spin" />
       </div>
     );
@@ -694,6 +702,7 @@ const App: React.FC = () => {
           <LoginScreen
             onNavigate={navigate}
             onAuthSuccess={(profile) => setAccessProfile(profile)}
+            brandSlug={brandSlug}
             brandLogoUrl={brandLogoUrl}
             brandName={brandDisplayName}
             backgroundImageUrl={brandLoginBackgroundUrl}
@@ -710,7 +719,15 @@ const App: React.FC = () => {
         );
 
       case 'forgot_password':
-        return <ForgotPasswordScreen onNavigate={navigate} />;
+        return (
+          <ForgotPasswordScreen
+            onNavigate={navigate}
+            brandSlug={brandSlug}
+            brandLogoUrl={brandLogoUrl}
+            brandName={brandDisplayName}
+            backgroundImageUrl={brandLoginBackgroundUrl}
+          />
+        );
 
       case 'set_password':
         return (
@@ -718,11 +735,24 @@ const App: React.FC = () => {
             onNavigate={navigate}
             onPasswordSet={() => navigate('login')}
             linkExpired={navState.params?.linkExpired === true}
+            brandSlug={brandSlug}
+            brandLogoUrl={brandLogoUrl}
+            brandName={brandDisplayName}
+            backgroundImageUrl={brandLoginBackgroundUrl}
           />
         );
 
       case 'email_confirmation':
-        return <EmailConfirmationScreen onNavigate={navigate} params={navState.params} brandLogoUrl={brandLogoUrl} brandName={brandDisplayName} />;
+        return (
+          <EmailConfirmationScreen
+            onNavigate={navigate}
+            params={navState.params}
+            brandSlug={brandSlug}
+            brandLogoUrl={brandLogoUrl}
+            brandName={brandDisplayName}
+            backgroundImageUrl={brandLoginBackgroundUrl}
+          />
+        );
 
       case 'home':
         return <HomeScreen key="home-screen" onNavigate={navigate} params={navState.params} accessProfile={accessProfile} screenName="home" searchMode={Boolean(navState.params?.inlineSearch)} />;
@@ -889,9 +919,10 @@ const App: React.FC = () => {
   const showNav = ['home', 'search', 'videos', 'music', 'formations', 'materials', 'support', 'profile', 'my_data', 'admin', 'characters'].includes(navState.currentScreen);
   // Modal opens immediately when collectionId is present, even if collection is still loading
   const isModalOpen = !!navState.params?.collectionId && ['home', 'search'].includes(navState.currentScreen);
+  const isCorujaDiscoveryScreen = isCentralCorujaBrand && ['home', 'search'].includes(navState.currentScreen);
 
   return (
-    <div className="bg-white min-h-screen w-full flex flex-col md:flex-row overflow-x-hidden">
+    <div className={`min-h-screen w-full flex flex-col md:flex-row overflow-x-hidden ${isCentralCorujaBrand ? 'bg-[#081524]' : 'bg-white'}`}>
 
       {showNav && (
         <BottomNav
@@ -899,13 +930,18 @@ const App: React.FC = () => {
           currentParams={navState.params}
           onNavigate={navigate}
           profile={accessProfile}
+          brandSlug={brandSlug}
           brandLogoUrl={brandLogoUrl}
           brandName={brandDisplayName}
           enabledMenuKeys={brandEnabledMenuKeys}
         />
       )}
 
-      <main className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative h-screen w-full bg-white`}>
+      <main className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative h-screen w-full ${isCentralCorujaBrand
+        ? (isCorujaDiscoveryScreen
+          ? 'bg-[radial-gradient(14%_12%_at_84%_7%,rgba(230,184,71,0.10),transparent_72%),radial-gradient(14%_11%_at_10%_10%,rgba(53,112,69,0.10),transparent_76%),radial-gradient(32%_22%_at_50%_-2%,rgba(255,255,255,0.025),transparent_82%),linear-gradient(180deg,#050c14_0%,#07131d_22%,#081925_52%,#08131e_100%)]'
+          : 'bg-[radial-gradient(60%_36%_at_88%_0%,rgba(245,191,52,0.18),transparent_60%),radial-gradient(42%_26%_at_16%_8%,rgba(58,143,82,0.18),transparent_65%),linear-gradient(180deg,#12243f_0%,#16344e_32%,#10283d_100%)]')
+        : 'bg-white'}`}>
         {renderScreen()}
       </main>
 

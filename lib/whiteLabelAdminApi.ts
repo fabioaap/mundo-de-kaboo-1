@@ -1,8 +1,10 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { isDevMockSession } from './api';
 import {
+    extractBrandDesignTokens,
     extractBrandVisualIdentity,
     getMockBrandSettingsOverride,
+    mergeBrandDesignTokens,
     mergeBrandVisualIdentity,
     writeMockBrandSettingsOverride,
 } from './whiteLabelBranding';
@@ -46,6 +48,10 @@ export interface WhiteLabelBrandIdentity {
     bg_color: string;
     accent_color: string;
     font_family: string;
+    green_color: string;
+    radius_xl: string;
+    radius_2xl: string;
+    radius_3xl: string;
     login_background_url: string;
     home_hero_image_url: string;
 }
@@ -219,17 +225,25 @@ const DEFAULT_BRAND_IDENTITY_BY_BRAND: Record<string, WhiteLabelBrandIdentity> =
         bg_color: '#F9F5F9',
         accent_color: '#4EA8DE',
         font_family: '',
+        green_color: '#70E000',
+        radius_xl: '1rem',
+        radius_2xl: '1.5rem',
+        radius_3xl: '2rem',
         login_background_url: '',
         home_hero_image_url: '',
     },
     'mock-central-coruja': {
         display_name: 'Central Coruja',
-        logo_url: '',
+        logo_url: '/central-coruja-logo.svg',
         primary_color: '#1B5E20',
         light_color: '#388E3C',
         bg_color: '#F1F8E9',
         accent_color: '#F9A825',
         font_family: '',
+        green_color: '#70E000',
+        radius_xl: '1rem',
+        radius_2xl: '1.5rem',
+        radius_3xl: '2rem',
         login_background_url: '',
         home_hero_image_url: '',
     },
@@ -254,6 +268,10 @@ function buildMockBrandIdentity(brandId: string): WhiteLabelBrandIdentity {
         bg_color: Object.prototype.hasOwnProperty.call(override ?? {}, 'bg_color') ? normalizeText(override?.bg_color ?? '') : defaults.bg_color,
         accent_color: Object.prototype.hasOwnProperty.call(override ?? {}, 'accent_color') ? normalizeText(override?.accent_color ?? '') : defaults.accent_color,
         font_family: Object.prototype.hasOwnProperty.call(override ?? {}, 'font_family') ? normalizeText(override?.font_family ?? '') : defaults.font_family,
+        green_color: Object.prototype.hasOwnProperty.call(override ?? {}, 'green_color') ? normalizeText(override?.green_color ?? '') || defaults.green_color : defaults.green_color,
+        radius_xl: Object.prototype.hasOwnProperty.call(override ?? {}, 'radius_xl') ? normalizeText(override?.radius_xl ?? '') || defaults.radius_xl : defaults.radius_xl,
+        radius_2xl: Object.prototype.hasOwnProperty.call(override ?? {}, 'radius_2xl') ? normalizeText(override?.radius_2xl ?? '') || defaults.radius_2xl : defaults.radius_2xl,
+        radius_3xl: Object.prototype.hasOwnProperty.call(override ?? {}, 'radius_3xl') ? normalizeText(override?.radius_3xl ?? '') || defaults.radius_3xl : defaults.radius_3xl,
         login_background_url: Object.prototype.hasOwnProperty.call(override ?? {}, 'login_background_url') ? normalizeText(override?.login_background_url ?? '') : defaults.login_background_url,
         home_hero_image_url: Object.prototype.hasOwnProperty.call(override ?? {}, 'home_hero_image_url') ? normalizeText(override?.home_hero_image_url ?? '') : defaults.home_hero_image_url,
     };
@@ -357,7 +375,9 @@ export async function getWhiteLabelBrandIdentity(brandId: string): Promise<White
     }
 
     const defaults = DEFAULT_BRAND_IDENTITY_BY_BRAND[brandId] ?? DEFAULT_BRAND_IDENTITY_BY_BRAND['mock-kaboo'];
-    const visualIdentity = extractBrandVisualIdentity((data.menu_config as Record<string, unknown> | null) ?? {});
+    const menuConfig = (data.menu_config as Record<string, unknown> | null) ?? {};
+    const visualIdentity = extractBrandVisualIdentity(menuConfig);
+    const designTokens = extractBrandDesignTokens(menuConfig);
 
     return {
         display_name: normalizeText((data.display_name as string | null | undefined) ?? defaults.display_name) || defaults.display_name,
@@ -367,6 +387,10 @@ export async function getWhiteLabelBrandIdentity(brandId: string): Promise<White
         bg_color: normalizeText((data.bg_color as string | null | undefined) ?? defaults.bg_color) || defaults.bg_color,
         accent_color: normalizeText((data.accent_color as string | null | undefined) ?? defaults.accent_color) || defaults.accent_color,
         font_family: normalizeText((data.font_family as string | null | undefined) ?? defaults.font_family),
+        green_color: normalizeText(designTokens.green_color ?? defaults.green_color) || defaults.green_color,
+        radius_xl: normalizeText(designTokens.radius_xl ?? defaults.radius_xl) || defaults.radius_xl,
+        radius_2xl: normalizeText(designTokens.radius_2xl ?? defaults.radius_2xl) || defaults.radius_2xl,
+        radius_3xl: normalizeText(designTokens.radius_3xl ?? defaults.radius_3xl) || defaults.radius_3xl,
         login_background_url: normalizeText(visualIdentity.login_background_url ?? defaults.login_background_url),
         home_hero_image_url: normalizeText(visualIdentity.home_hero_image_url ?? defaults.home_hero_image_url),
     };
@@ -381,12 +405,20 @@ export async function setWhiteLabelBrandIdentity(input: {
     bg_color: string;
     accent_color: string;
     font_family?: string;
+    green_color?: string;
+    radius_xl?: string;
+    radius_2xl?: string;
+    radius_3xl?: string;
     login_background_url?: string;
     home_hero_image_url?: string;
 }): Promise<WhiteLabelBrandIdentity> {
     const normalizedDisplayName = normalizeText(input.display_name);
     const normalizedLogoUrl = normalizeText(input.logo_url);
     const normalizedFontFamily = normalizeText(input.font_family);
+    const normalizedGreenColor = normalizeText(input.green_color);
+    const normalizedRadiusXl = normalizeText(input.radius_xl);
+    const normalizedRadius2xl = normalizeText(input.radius_2xl);
+    const normalizedRadius3xl = normalizeText(input.radius_3xl);
     const normalizedLoginBackgroundUrl = normalizeText(input.login_background_url);
     const normalizedHomeHeroImageUrl = normalizeText(input.home_hero_image_url);
 
@@ -403,6 +435,10 @@ export async function setWhiteLabelBrandIdentity(input: {
             bg_color: input.bg_color,
             accent_color: input.accent_color,
             font_family: normalizedFontFamily || null,
+            green_color: normalizedGreenColor || null,
+            radius_xl: normalizedRadiusXl || null,
+            radius_2xl: normalizedRadius2xl || null,
+            radius_3xl: normalizedRadius3xl || null,
             login_background_url: normalizedLoginBackgroundUrl || null,
             home_hero_image_url: normalizedHomeHeroImageUrl || null,
         });
@@ -424,11 +460,19 @@ export async function setWhiteLabelBrandIdentity(input: {
         throw currentSettingsError;
     }
 
-    const nextMenuConfig = mergeBrandVisualIdentity(
-        (currentSettings.menu_config as Record<string, unknown> | null) ?? {},
+    const nextMenuConfig = mergeBrandDesignTokens(
+        mergeBrandVisualIdentity(
+            (currentSettings.menu_config as Record<string, unknown> | null) ?? {},
+            {
+                login_background_url: normalizedLoginBackgroundUrl || null,
+                home_hero_image_url: normalizedHomeHeroImageUrl || null,
+            },
+        ),
         {
-            login_background_url: normalizedLoginBackgroundUrl || null,
-            home_hero_image_url: normalizedHomeHeroImageUrl || null,
+            green_color: normalizedGreenColor || null,
+            radius_xl: normalizedRadiusXl || null,
+            radius_2xl: normalizedRadius2xl || null,
+            radius_3xl: normalizedRadius3xl || null,
         },
     );
 

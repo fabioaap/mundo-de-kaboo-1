@@ -31,6 +31,7 @@ const StepDots: React.FC<{ current: number; total: number }> = ({ current, total
 interface LoginScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
   onAuthSuccess?: (profile: UserProfile | null) => void | Promise<void>;
+  brandSlug?: string;
   brandLogoUrl?: string;
   brandName?: string;
   backgroundImageUrl?: string;
@@ -87,10 +88,25 @@ const normalizeAuthError = (message: string): { message: string; requiresEmailCo
   return { message: message || 'Ocorreu um erro. Tente novamente.' };
 };
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSuccess, brandLogoUrl, brandName, backgroundImageUrl }) => {
-  const resolvedBrandLogoUrl = brandLogoUrl || LOGO_URL;
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSuccess, brandSlug, brandLogoUrl, brandName, backgroundImageUrl }) => {
+  const isCentralCoruja = brandSlug === 'central-coruja';
+  const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
   const resolvedBrandName = brandName || 'Mundo de Kaboo';
   const resolvedBackgroundImageUrl = backgroundImageUrl || BG_IMAGE;
+  const shellBackgroundStyle = isCentralCoruja
+    ? {
+      backgroundImage: resolvedBackgroundImageUrl
+        ? `linear-gradient(135deg, rgba(9, 26, 38, 0.72), rgba(9, 26, 38, 0.18)), url(${resolvedBackgroundImageUrl})`
+        : undefined,
+      backgroundColor: '#132842',
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+    }
+    : {
+      backgroundImage: `url(${resolvedBackgroundImageUrl})`,
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+    };
   const [step, setStep] = useState<LoginStep>('login');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -254,6 +270,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
   };
 
   const isFullScreenMax = step === 'register';
+  const titleClassName = isCentralCoruja ? 'text-[#17384c]' : 'text-gray-800';
+  const bodyClassName = isCentralCoruja ? 'text-[#5f766f]' : 'text-gray-500';
+  const labelClassName = isCentralCoruja ? 'text-[#35524d]' : 'text-gray-600';
+  const iconClassName = isCentralCoruja ? 'text-[#5f766f]' : 'text-gray-400';
+  const inputBaseClassName = isCentralCoruja
+    ? 'w-full bg-[#fff9ef]/96 border border-[#d6e1d8] rounded-[22px] text-[#1c3440] placeholder:text-[#91a099] outline-none transition-all focus:border-[#d49e29] focus:ring-4 focus:ring-[#d49e29]/15'
+    : 'w-full bg-gray-50 border-none rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all';
 
   // Shared error/success feedback
   const FeedbackArea = (
@@ -274,12 +297,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
   const PurchaseLink = (
     <div className="text-center">
-      <p className="text-xs font-medium text-gray-500">Ainda não tem voucher?</p>
+      <p className={`text-xs font-medium ${isCentralCoruja ? 'text-[#617671]' : 'text-gray-500'}`}>Ainda não tem voucher?</p>
       <a
         href={LEAD_CAPTURE_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-kaboo-primary transition-colors hover:text-kaboo-primary/80"
+        className={`mt-1 inline-flex items-center gap-1 text-sm font-bold transition-colors ${isCentralCoruja ? 'text-[#d49e29] hover:text-[#b97c17]' : 'text-kaboo-primary hover:text-kaboo-primary/80'}`}
       >
         Entender como funciona e comprar meu acesso{' '}
         <span className="inline-block">→</span>
@@ -289,10 +312,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
   const SupportLink = (
     <div className="text-center">
-      <p className="text-xs font-medium text-gray-500">Precisa de ajuda com o voucher?</p>
+      <p className={`text-xs font-medium ${isCentralCoruja ? 'text-[#617671]' : 'text-gray-500'}`}>Precisa de ajuda com o voucher?</p>
       <a
         href={SUPPORT_CONTACT_URL}
-        className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-gray-600 transition-colors hover:text-kaboo-primary"
+        className={`mt-1 inline-flex items-center gap-1 text-sm font-semibold transition-colors ${isCentralCoruja ? 'text-[#35524d] hover:text-[#d49e29]' : 'text-gray-600 hover:text-kaboo-primary'}`}
       >
         Falar com o suporte{' '}
         <span className="inline-block">→</span>
@@ -300,27 +323,53 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     </div>
   );
 
+  const renderBrandMark = (mode: 'compact' | 'hero' = 'compact') => {
+    if (resolvedBrandLogoUrl) {
+      return (
+        <img
+          src={resolvedBrandLogoUrl}
+          alt={resolvedBrandName}
+          className={mode === 'hero' ? 'h-14 w-auto object-contain' : 'h-12 w-auto object-contain'}
+        />
+      );
+    }
+
+    return (
+      <div
+        className={`inline-flex items-center justify-center text-center font-black leading-none ${isCentralCoruja
+          ? `border border-[#e0d5ae]/55 bg-[#fff7e1]/85 text-[#17384c] shadow-[0_16px_34px_rgba(17,42,60,0.12)] ${mode === 'hero' ? 'rounded-[28px] px-6 py-4 text-[2rem]' : 'rounded-[24px] px-5 py-3 text-xl'}`
+          : `border border-gray-200 bg-white text-gray-800 shadow-sm ${mode === 'hero' ? 'rounded-[28px] px-5 py-3 text-xl' : 'rounded-full px-4 py-2 text-base'}`}`}
+      >
+        {resolvedBrandName}
+      </div>
+    );
+  };
+
   return (
     <div
-      className="relative flex h-[100dvh] overflow-hidden bg-gray-50 bg-cover bg-center bg-no-repeat p-0 md:items-center md:justify-center md:p-6 lg:p-8"
-      style={{ backgroundImage: `url(${resolvedBackgroundImageUrl})` }}
+      className={`relative flex h-[100dvh] overflow-hidden p-0 md:items-center md:justify-center md:p-6 lg:p-8 ${isCentralCoruja ? 'bg-[#132842]' : 'bg-gray-50 bg-no-repeat'}`}
+      style={shellBackgroundStyle}
     >
-      <div className="absolute inset-0 bg-kaboo-primary/20 backdrop-blur-[2px]" />
+      <div className={`absolute inset-0 ${isCentralCoruja
+        ? 'bg-[radial-gradient(56%_42%_at_14%_8%,rgba(245,191,52,0.18),transparent_55%),radial-gradient(46%_34%_at_88%_12%,rgba(61,131,84,0.18),transparent_58%),linear-gradient(180deg,rgba(9,23,35,0.34),rgba(9,23,35,0.1))] backdrop-blur-[1px]'
+        : 'bg-kaboo-primary/20 backdrop-blur-[2px]'}`} />
 
-      <div className={`relative z-10 flex h-[100dvh] w-full flex-col overflow-hidden bg-white transition-all duration-300 md:h-auto md:max-h-[calc(100dvh-3rem)] md:max-w-md md:rounded-3xl md:shadow-2xl lg:max-h-[calc(100dvh-4rem)] ${isFullScreenMax ? 'md:max-w-lg' : ''}`}>
+      <div className={`relative z-10 flex h-[100dvh] w-full flex-col overflow-hidden transition-all duration-300 md:h-auto md:max-h-[calc(100dvh-3rem)] md:max-w-md lg:max-h-[calc(100dvh-4rem)] ${isCentralCoruja
+        ? 'bg-[linear-gradient(180deg,rgba(249,245,235,0.98)_0%,rgba(243,239,227,0.97)_100%)] md:rounded-[36px] md:border md:border-white/35 md:shadow-[0_34px_84px_rgba(6,18,31,0.34)]'
+        : 'bg-white md:rounded-3xl md:shadow-2xl'} ${isFullScreenMax ? 'md:max-w-lg' : ''}`}>
 
         {/* ─── HEADER: back button + centered logo (voucher/register) ─── */}
         {step !== 'login' && (
-          <div className="relative flex shrink-0 items-center justify-center border-b border-gray-100 px-5 py-3">
+          <div className={`relative flex shrink-0 items-center justify-center px-5 py-3 ${isCentralCoruja ? 'border-b border-[#e4ddc8]' : 'border-b border-gray-100'}`}>
             <button
               type="button"
               onClick={goBack}
               aria-label="Voltar"
-              className="absolute left-4 w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-600"
+              className={`absolute left-4 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${isCentralCoruja ? 'bg-[#fff7e1] text-[#35524d] hover:bg-[#ffefc5]' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
             >
               <Icons.ChevronLeft size={22} />
             </button>
-            <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="h-12 w-auto object-contain" />
+            {renderBrandMark('compact')}
           </div>
         )}
 
@@ -328,8 +377,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         {step === 'voucher' && (
           <div className="flex flex-col flex-1 px-6 pt-4 pb-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <StepDots current={1} total={2} />
-            <h2 className="text-xl font-bold text-gray-800 mt-3 mb-1">Qual é o seu voucher?</h2>
-            <p className="text-sm text-gray-500 mb-5">Use o voucher impresso no seu material de acesso</p>
+            <h2 className={`text-xl font-bold mt-3 mb-1 ${titleClassName}`}>Qual é o seu voucher?</h2>
+            <p className={`text-sm mb-5 ${bodyClassName}`}>Use o voucher impresso no seu material de acesso</p>
 
             <div className="space-y-3">
               <div className="relative">
@@ -339,9 +388,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                   type="text"
                   value={voucherCode}
                   onChange={(e) => handleVoucherCodeChange(e.target.value)}
-                  className={`w-full bg-gray-50 border-2 rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 outline-none transition-all text-base tracking-widest font-mono uppercase ${validatedVoucher
-                    ? 'border-green-300 bg-green-50/50 focus:border-green-400'
-                    : 'border-gray-100 focus:border-kaboo-primary'
+                  className={`${isCentralCoruja
+                    ? 'w-full border-2 rounded-[22px] p-4 pl-12 text-[#1c3440] placeholder:text-[#91a099] outline-none transition-all text-base tracking-widest font-mono uppercase'
+                    : 'w-full bg-gray-50 border-2 rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 outline-none transition-all text-base tracking-widest font-mono uppercase'} ${validatedVoucher
+                    ? (isCentralCoruja ? 'border-green-400 bg-[#edf8ef] focus:border-green-500' : 'border-green-300 bg-green-50/50 focus:border-green-400')
+                    : (isCentralCoruja ? 'border-[#d6e1d8] bg-[#fff9ef] focus:border-[#d49e29] focus:ring-4 focus:ring-[#d49e29]/15' : 'border-gray-100 focus:border-kaboo-primary')
                     }`}
                   placeholder="Ex.: KABOO-3MESES-2026"
                   autoComplete="one-time-code"
@@ -352,7 +403,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                 <span className="absolute left-4 top-4">
                   {validatedVoucher
                     ? <Icons.Check size={20} className="text-green-500" />
-                    : <Icons.Ticket size={20} className="text-gray-400" />
+                    : <Icons.Ticket size={20} className={iconClassName} />
                   }
                 </span>
               </div>
@@ -390,7 +441,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                   <button
                     type="button"
                     onClick={handleUseAnotherVoucher}
-                    className="w-full text-sm text-gray-400 hover:text-gray-600 py-2 transition-colors"
+                    className={`w-full text-sm py-2 transition-colors ${isCentralCoruja ? 'text-[#617671] hover:text-[#35524d]' : 'text-gray-400 hover:text-gray-600'}`}
                   >
                     Usar outro voucher
                   </button>
@@ -407,98 +458,98 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         {/* ─── STEP 2A: REGISTER (novo usuário com código) ─── */}
         {step === 'register' && (
           <div className="flex flex-col flex-1 px-6 pt-4 overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
-            <h2 className="text-xl font-bold text-gray-800 mb-1">Crie sua conta</h2>
-            <p className="text-sm text-gray-500">Preencha seus dados e informe o voucher para liberar o acesso.</p>
+            <h2 className={`text-xl font-bold mb-1 ${titleClassName}`}>Crie sua conta</h2>
+            <p className={`text-sm ${bodyClassName}`}>Preencha seus dados e informe o voucher para liberar o acesso.</p>
 
             <form onSubmit={handleAuth} className="space-y-4 mt-4 pb-8">
               <div className="space-y-2">
-                <label htmlFor="field-voucher-register" className="text-sm font-bold text-gray-600 ml-2">Voucher de acesso</label>
+                <label htmlFor="field-voucher-register" className={`text-sm font-bold ml-2 ${labelClassName}`}>Voucher de acesso</label>
                 <div className="relative">
                   <input
                     id="field-voucher-register"
                     type="text"
                     value={voucherCode}
                     onChange={(e) => handleVoucherCodeChange(e.target.value)}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 outline-none transition-all text-base tracking-widest font-mono uppercase focus:ring-2 focus:ring-kaboo-primary"
+                    className={`${inputBaseClassName} p-4 pl-12 text-base tracking-widest font-mono uppercase`}
                     placeholder="Ex.: KABOO-3MESES-2026"
                     autoComplete="one-time-code"
                     autoCapitalize="characters"
                     autoFocus
                   />
-                  <Icons.Ticket className="absolute left-4 top-4 text-gray-400" size={20} />
+                  <Icons.Ticket className={`absolute left-4 top-4 ${iconClassName}`} size={20} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="field-name" className="text-sm font-bold text-gray-600 ml-2">Nome Completo</label>
+                <label htmlFor="field-name" className={`text-sm font-bold ml-2 ${labelClassName}`}>Nome Completo</label>
                 <div className="relative">
                   <input
                     id="field-name"
                     type="text"
                     value={fullName}
                     onChange={(e) => { setFullName(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pl-12`}
                     placeholder="Seu nome"
                     required
                     minLength={3}
                     autoComplete="name"
                   />
-                  <Icons.User className="absolute left-4 top-4 text-gray-400" size={20} />
+                  <Icons.User className={`absolute left-4 top-4 ${iconClassName}`} size={20} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="field-email-reg" className="text-sm font-bold text-gray-600 ml-2">E-mail</label>
+                <label htmlFor="field-email-reg" className={`text-sm font-bold ml-2 ${labelClassName}`}>E-mail</label>
                 <div className="relative">
                   <input
                     id="field-email-reg"
                     type="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pl-12`}
                     placeholder="email@exemplo.com.br"
                     required
                     autoComplete="email"
                   />
-                  <Icons.Mail className="absolute left-4 top-4 text-gray-400" size={20} />
+                  <Icons.Mail className={`absolute left-4 top-4 ${iconClassName}`} size={20} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="field-password-reg" className="text-sm font-bold text-gray-600 ml-2">Senha</label>
+                <label htmlFor="field-password-reg" className={`text-sm font-bold ml-2 ${labelClassName}`}>Senha</label>
                 <div className="relative">
                   <input
                     id="field-password-reg"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pr-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pr-12`}
                     placeholder="••••••••"
                     required
                     minLength={6}
                     autoComplete="new-password"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#617671] hover:text-[#35524d]' : 'text-gray-400 hover:text-gray-600'}`}>
                     {showPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
                   </button>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="field-confirm-password" className="text-sm font-bold text-gray-600 ml-2">Confirmar Senha</label>
+                <label htmlFor="field-confirm-password" className={`text-sm font-bold ml-2 ${labelClassName}`}>Confirmar Senha</label>
                 <div className="relative">
                   <input
                     id="field-confirm-password"
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => { setConfirmPassword(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pr-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pr-12`}
                     placeholder="••••••••"
                     required
                     minLength={6}
                     autoComplete="new-password"
                   />
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? 'Ocultar confirmação' : 'Mostrar confirmação'} className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none">
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? 'Ocultar confirmação' : 'Mostrar confirmação'} className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#617671] hover:text-[#35524d]' : 'text-gray-400 hover:text-gray-600'}`}>
                     {showConfirmPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
                   </button>
                 </div>
@@ -511,11 +562,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                     id="terms"
                     checked={acceptedTerms}
                     onChange={(e) => { setAcceptedTerms(e.target.checked); clearError(); }}
-                    className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-300 transition-all checked:border-kaboo-primary checked:bg-kaboo-primary focus:ring-2 focus:ring-kaboo-primary/30 outline-none"
+                    className={`peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 transition-all outline-none ${isCentralCoruja
+                      ? 'border-[#b8c5bc] checked:border-[#2f7d4d] checked:bg-[#2f7d4d] focus:ring-2 focus:ring-[#d49e29]/30'
+                      : 'border-gray-300 checked:border-kaboo-primary checked:bg-kaboo-primary focus:ring-2 focus:ring-kaboo-primary/30'}`}
                   />
                   <Icons.Check size={14} strokeWidth={4} className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                 </div>
-                <label htmlFor="terms" className="text-sm text-gray-600 cursor-pointer select-none leading-tight">
+                <label htmlFor="terms" className={`text-sm cursor-pointer select-none leading-tight ${isCentralCoruja ? 'text-[#5f766f]' : 'text-gray-600'}`}>
                   Li e concordo com a{' '}
                   <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-kaboo-primary font-bold hover:underline">
                     política de privacidade
@@ -541,45 +594,45 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         {step === 'login' && (
           <div className="flex min-h-0 flex-col flex-1 overflow-y-auto no-scrollbar px-6 pt-5 pb-8 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="mb-6 flex justify-center pt-1">
-              <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="h-14 w-auto object-contain" />
+              {renderBrandMark('hero')}
             </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-1">Bem-vindo de volta!</h2>
-            <p className="text-sm text-gray-500 mb-5">Entre com seu e-mail e senha para continuar.</p>
+            <h2 className={`text-xl font-bold mb-1 ${titleClassName}`}>Bem-vindo de volta!</h2>
+            <p className={`text-sm mb-5 ${bodyClassName}`}>Entre com seu e-mail e senha para continuar.</p>
 
             <form onSubmit={handleAuth} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="field-email" className="text-sm font-bold text-gray-600 ml-2">E-mail</label>
+                <label htmlFor="field-email" className={`text-sm font-bold ml-2 ${labelClassName}`}>E-mail</label>
                 <div className="relative">
                   <input
                     id="field-email"
                     type="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pl-12`}
                     placeholder="email@exemplo.com.br"
                     required
                     autoComplete="email"
                     autoFocus
                   />
-                  <Icons.Mail className="absolute left-4 top-4 text-gray-400" size={20} />
+                  <Icons.Mail className={`absolute left-4 top-4 ${iconClassName}`} size={20} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="field-password" className="text-sm font-bold text-gray-600 ml-2">Senha</label>
+                <label htmlFor="field-password" className={`text-sm font-bold ml-2 ${labelClassName}`}>Senha</label>
                 <div className="relative">
                   <input
                     id="field-password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pr-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pr-12`}
                     placeholder="••••••••"
                     required
                     minLength={6}
                     autoComplete="current-password"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#617671] hover:text-[#35524d]' : 'text-gray-400 hover:text-gray-600'}`}>
                     {showPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
                   </button>
                 </div>
@@ -596,22 +649,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
               <button
                 type="button"
                 onClick={() => onNavigate('forgot_password')}
-                className="text-sm font-semibold text-gray-500 hover:text-gray-800 hover:bg-gray-100 py-2 px-3 rounded-lg transition-all duration-200"
+                className={`text-sm font-semibold py-2 px-3 rounded-lg transition-all duration-200 ${isCentralCoruja
+                  ? 'text-[#5f766f] hover:text-[#17384c] hover:bg-[#fff4d5]'
+                  : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'}`}
               >
                 Esqueci minha senha
               </button>
             </div>
 
             <div className="mt-auto space-y-4 pt-8">
-              <div className="rounded-3xl border border-kaboo-primary/15 bg-gradient-to-br from-kaboo-primary/[0.08] via-white to-white p-4 text-left shadow-sm">
+              <div className={`rounded-3xl border p-4 text-left shadow-sm ${isCentralCoruja
+                ? 'border-[#e1d5ae]/55 bg-[linear-gradient(135deg,rgba(255,247,229,0.92)_0%,rgba(250,238,205,0.78)_100%)] shadow-[0_18px_38px_rgba(17,42,60,0.08)]'
+                : 'border-kaboo-primary/15 bg-gradient-to-br from-kaboo-primary/[0.08] via-white to-white'}`}>
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-kaboo-primary shadow-sm ring-1 ring-kaboo-primary/10">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm ${isCentralCoruja
+                    ? 'bg-[#fffaf0] text-[#d49e29] ring-1 ring-[#e7d9ad]/80'
+                    : 'bg-white text-kaboo-primary ring-1 ring-kaboo-primary/10'}`}>
                     <Icons.Ticket size={18} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/70">Primeiro acesso</p>
-                    <p className="mt-1 text-base font-bold text-gray-800">Ainda não tem cadastro?</p>
-                    <p className="mt-1 text-sm leading-5 text-gray-600">Insira seu voucher de acesso para criar sua conta e liberar a plataforma.</p>
+                    <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCentralCoruja ? 'text-[#a06b14]' : 'text-kaboo-primary/70'}`}>Primeiro acesso</p>
+                    <p className={`mt-1 text-base font-bold ${titleClassName}`}>Ainda não tem cadastro?</p>
+                    <p className={`mt-1 text-sm leading-5 ${isCentralCoruja ? 'text-[#5f766f]' : 'text-gray-600'}`}>Insira seu voucher de acesso para criar sua conta e liberar a plataforma.</p>
                   </div>
                 </div>
 
@@ -624,7 +683,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                     setSuccessMsg(null);
                     setStep('register');
                   }}
-                  className="mt-4"
+                  className={`mt-4 ${isCentralCoruja ? '!rounded-[20px]' : ''}`}
                 >
                   Inserir voucher de acesso
                 </Button>

@@ -4,17 +4,61 @@ import { ScreenName } from '../types';
 import { supabase } from '../lib/supabase';
 import { clearPendingPasswordSetup } from '../lib/passwordSetupFlow';
 import { Icons } from '../components/Icons';
+import { LOGO_URL } from '../constants';
 import backgroundImage from '../assets/images/background-login.jpg';
 
 interface SetPasswordScreenProps {
   onNavigate: (screen: ScreenName) => void;
   onPasswordSet?: () => void;
   linkExpired?: boolean;
+  brandSlug?: string;
+  brandLogoUrl?: string;
+  brandName?: string;
+  backgroundImageUrl?: string;
 }
 
 const BG_IMAGE = backgroundImage;
 
-export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate, onPasswordSet, linkExpired }) => {
+export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate, onPasswordSet, linkExpired, brandSlug, brandLogoUrl, brandName, backgroundImageUrl }) => {
+  const isCentralCoruja = brandSlug === 'central-coruja';
+  const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
+  const resolvedBrandName = brandName || 'Mundo de Kaboo';
+  const resolvedBackgroundImageUrl = backgroundImageUrl || BG_IMAGE;
+  const shellBackgroundStyle = isCentralCoruja
+    ? {
+      backgroundImage: resolvedBackgroundImageUrl
+        ? `linear-gradient(135deg, rgba(9, 26, 38, 0.72), rgba(9, 26, 38, 0.18)), url(${resolvedBackgroundImageUrl})`
+        : undefined,
+      backgroundColor: '#132842',
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+    }
+    : {
+      backgroundImage: `url(${resolvedBackgroundImageUrl})`,
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+    };
+  const titleClassName = isCentralCoruja ? 'text-[#17384c]' : 'text-gray-800';
+  const bodyClassName = isCentralCoruja ? 'text-[#5f766f]' : 'text-gray-500';
+  const labelClassName = isCentralCoruja ? 'text-[#35524d]' : 'text-gray-600';
+  const inputBaseClassName = isCentralCoruja
+    ? 'w-full bg-[#fff9ef]/96 border border-[#d6e1d8] rounded-[22px] text-[#1c3440] placeholder:text-[#91a099] outline-none transition-all focus:border-[#d49e29] focus:ring-4 focus:ring-[#d49e29]/15'
+    : 'w-full bg-gray-50 border-none rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all';
+
+  const renderBrandMark = () => {
+    if (resolvedBrandLogoUrl) {
+      return <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="h-12 w-auto object-contain" />;
+    }
+
+    return (
+      <div className={`inline-flex items-center justify-center text-center font-black leading-none ${isCentralCoruja
+        ? 'rounded-[24px] border border-[#e0d5ae]/55 bg-[#fff7e1]/85 px-5 py-3 text-xl text-[#17384c] shadow-[0_16px_34px_rgba(17,42,60,0.12)]'
+        : 'rounded-full border border-gray-200 bg-white px-4 py-2 text-base text-gray-800 shadow-sm'}`}>
+        {resolvedBrandName}
+      </div>
+    );
+  };
+
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -81,19 +125,20 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
 
   return (
     <div
-      className="flex min-h-screen bg-gray-50 items-center justify-center p-0 md:p-8 relative bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url(${BG_IMAGE})` }}
+      className={`flex min-h-screen items-center justify-center p-0 md:p-8 relative overflow-hidden ${isCentralCoruja ? 'bg-[#132842]' : 'bg-gray-50 bg-no-repeat'}`}
+      style={shellBackgroundStyle}
     >
-      <div className="absolute inset-0 bg-kaboo-primary/20 backdrop-blur-[2px]" />
+      <div className={`absolute inset-0 ${isCentralCoruja
+        ? 'bg-[radial-gradient(56%_42%_at_14%_8%,rgba(245,191,52,0.18),transparent_55%),radial-gradient(46%_34%_at_88%_12%,rgba(61,131,84,0.18),transparent_58%),linear-gradient(180deg,rgba(9,23,35,0.34),rgba(9,23,35,0.1))] backdrop-blur-[1px]'
+        : 'bg-kaboo-primary/20 backdrop-blur-[2px]'}`} />
 
-      <div className="relative z-10 w-full bg-white min-h-screen md:min-h-0 md:h-auto md:max-w-md md:rounded-3xl md:shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+      <div className={`relative z-10 w-full min-h-screen md:min-h-0 md:h-auto md:max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300 ${isCentralCoruja
+        ? 'bg-[linear-gradient(180deg,rgba(249,245,235,0.98)_0%,rgba(243,239,227,0.97)_100%)] md:rounded-[36px] md:border md:border-white/35 md:shadow-[0_34px_84px_rgba(6,18,31,0.34)]'
+        : 'bg-white md:rounded-3xl md:shadow-2xl'}`}>
 
         {/* Header */}
-        <div className="px-6 pt-12 pb-4 flex items-center gap-4 border-b border-gray-100 shrink-0 md:pt-8">
-          <div className="w-10 h-10 rounded-full bg-kaboo-primary/10 flex items-center justify-center text-kaboo-primary">
-            <Icons.Lock size={22} />
-          </div>
-          <h1 className="text-xl font-bold text-gray-800 flex-1">Criar sua senha</h1>
+        <div className={`px-6 pt-12 pb-4 flex items-center justify-center shrink-0 md:pt-8 ${isCentralCoruja ? 'border-b border-[#e4ddc8]' : 'border-b border-gray-100'}`}>
+          {renderBrandMark()}
         </div>
 
         <div className="w-full mx-auto flex-1 flex flex-col justify-center px-6 py-6 md:pb-12">
@@ -101,44 +146,49 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
           {/* Link expirado */}
           {linkExpired ? (
             <div className="flex flex-col items-center gap-5 text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isCentralCoruja
+                ? 'bg-[#fff0c7] text-[#bd7a16] shadow-[0_16px_30px_rgba(189,122,22,0.18)]'
+                : 'bg-amber-50 text-amber-500'}`}>
                 <Icons.AlertCircle size={32} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-800 mb-2">Link de convite expirado</h2>
-                <p className="text-gray-500 text-sm leading-relaxed">
+                <h2 className={`text-lg font-bold mb-2 ${titleClassName}`}>Link de convite expirado</h2>
+                <p className={`text-sm leading-relaxed ${bodyClassName}`}>
                   O link que você recebeu por e-mail já foi usado ou expirou.
                   Solicite ao administrador que reenvie o convite.
                 </p>
               </div>
-              <Button variant="secondary" onClick={() => onNavigate('login')}>
+              <Button variant="secondary" onClick={() => onNavigate('login')} className={isCentralCoruja ? '!rounded-[20px]' : undefined}>
                 Voltar ao login
               </Button>
             </div>
           ) : successMsg ? (
             <div className="flex flex-col items-center gap-4 text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isCentralCoruja
+                ? 'bg-[#e2f2e5] text-[#2f7d4d] shadow-[0_16px_30px_rgba(47,125,77,0.16)]'
+                : 'bg-emerald-50 text-emerald-500'}`}>
                 <Icons.Check size={32} />
               </div>
-              <p className="text-gray-700 font-medium">{successMsg}</p>
+              <p className={`font-medium ${isCentralCoruja ? 'text-[#35524d]' : 'text-gray-700'}`}>{successMsg}</p>
             </div>
           ) : (
             <>
               <div className="text-center mb-6">
-                <p className="text-gray-500 text-sm mb-1">Você foi convidado para o</p>
-                <p className="text-gray-800 font-bold text-base">Mundo de Kaboo</p>
+                <p className={`text-sm mb-1 ${bodyClassName}`}>Você foi convidado para</p>
+                <p className={`font-bold text-base ${titleClassName}`}>{resolvedBrandName}</p>
               </div>
 
               {/* E-mail pré-preenchido */}
               {userEmail && (
-                <div className="mb-4 bg-gray-50 rounded-2xl px-4 py-3 flex items-center gap-3">
-                  <Icons.Mail size={18} className="text-gray-400 shrink-0" />
-                  <span className="text-gray-700 text-sm font-medium truncate">{userEmail}</span>
+                <div className={`mb-4 rounded-2xl px-4 py-3 flex items-center gap-3 ${isCentralCoruja ? 'bg-[#fff9ef] border border-[#e2ddd1]' : 'bg-gray-50'}`}>
+                  <Icons.Mail size={18} className={`${isCentralCoruja ? 'text-[#5f766f]' : 'text-gray-400'} shrink-0`} />
+                  <span className={`text-sm font-medium truncate ${isCentralCoruja ? 'text-[#35524d]' : 'text-gray-700'}`}>{userEmail}</span>
                 </div>
               )}
 
               <div className="text-center mb-6">
-                <p className="text-gray-500 text-sm leading-relaxed">
+                <h1 className={`text-xl font-bold mb-3 ${titleClassName}`}>Criar sua senha</h1>
+                <p className={`text-sm leading-relaxed ${bodyClassName}`}>
                   Escolha uma senha para acessar a plataforma.
                   Ela precisa ter pelo menos <strong>8 caracteres</strong>.
                 </p>
@@ -147,13 +197,13 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Nova senha */}
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-600 ml-2">Nova senha</label>
+                  <label className={`text-sm font-bold ml-2 ${labelClassName}`}>Nova senha</label>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => { setPassword(e.target.value); setErrorMsg(null); }}
-                      className="w-full bg-gray-50 border-none rounded-2xl p-4 pr-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                      className={`${inputBaseClassName} p-4 pr-12`}
                       placeholder="Mínimo 8 caracteres"
                       autoComplete="new-password"
                       required
@@ -161,7 +211,7 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
                     <button
                       type="button"
                       onClick={() => setShowPassword(v => !v)}
-                      className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none"
+                      className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#617671] hover:text-[#35524d]' : 'text-gray-400 hover:text-gray-600'}`}
                       tabIndex={-1}
                     >
                       {showPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
@@ -171,13 +221,13 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
 
                 {/* Confirmar senha */}
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-600 ml-2">Confirmar senha</label>
+                  <label className={`text-sm font-bold ml-2 ${labelClassName}`}>Confirmar senha</label>
                   <div className="relative">
                     <input
                       type={showConfirm ? 'text' : 'password'}
                       value={confirm}
                       onChange={(e) => { setConfirm(e.target.value); setErrorMsg(null); }}
-                      className="w-full bg-gray-50 border-none rounded-2xl p-4 pr-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                      className={`${inputBaseClassName} p-4 pr-12`}
                       placeholder="Repita a senha"
                       autoComplete="new-password"
                       required
@@ -185,7 +235,7 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
                     <button
                       type="button"
                       onClick={() => setShowConfirm(v => !v)}
-                      className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none"
+                      className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#617671] hover:text-[#35524d]' : 'text-gray-400 hover:text-gray-600'}`}
                       tabIndex={-1}
                     >
                       {showConfirm ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
@@ -200,7 +250,7 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
                 )}
 
                 <div className="pt-2">
-                  <Button type="submit" fullWidth disabled={loading}>
+                  <Button type="submit" fullWidth disabled={loading} className={isCentralCoruja ? '!rounded-[20px]' : undefined}>
                     {loading ? 'Salvando...' : 'Definir senha e entrar'}
                   </Button>
                 </div>

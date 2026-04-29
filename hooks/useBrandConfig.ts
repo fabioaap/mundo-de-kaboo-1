@@ -12,9 +12,12 @@ import { useEffect, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockSession } from '../lib/api';
 import { applyTheme, themes, BrandTheme } from '../design-system/tokens/themes';
+import { getWhiteLabelPreviewSettings, subscribeToWhiteLabelPreviewSettings } from '../lib/whiteLabelPreview';
 import {
+    extractBrandDesignTokens,
     extractBrandVisualIdentity,
     getMockBrandSettingsOverride,
+    mergeBrandDesignTokens,
     mergeBrandVisualIdentity,
     MockBrandSettingsOverride,
 } from '../lib/whiteLabelBranding';
@@ -37,6 +40,10 @@ export interface BrandSettings {
     bg_color: string | null;
     accent_color: string | null;
     font_family: string | null;
+    green_color: string | null;
+    radius_xl: string | null;
+    radius_2xl: string | null;
+    radius_3xl: string | null;
     login_background_url: string | null;
     home_hero_image_url: string | null;
     menu_config: Record<string, unknown>;
@@ -99,12 +106,16 @@ const MOCK_BRAND_OVERRIDES: Record<string, Partial<BrandBootstrap>> = {
         brand: { id: 'mock-central-coruja', slug: 'central-coruja', name: 'Central Coruja' },
         settings: {
             display_name: 'Central Coruja',
-            logo_url: null,
+            logo_url: '/central-coruja-logo.svg',
             primary_color: '#1B5E20',
             light_color: '#388E3C',
             bg_color: '#F1F8E9',
             accent_color: '#F9A825',
             font_family: null,
+            green_color: null,
+            radius_xl: null,
+            radius_2xl: null,
+            radius_3xl: null,
             login_background_url: null,
             home_hero_image_url: null,
             menu_config: {},
@@ -124,6 +135,11 @@ const MOCK_BRAND_OVERRIDES: Record<string, Partial<BrandBootstrap>> = {
 
 /** Resolve o slug da marca a partir de env > hostname > fallback. */
 function resolveBrandSlug(): string {
+    const previewSettings = getWhiteLabelPreviewSettings();
+    if (previewSettings.previewEnabled) {
+        return previewSettings.activeBrandId;
+    }
+
     const fromEnv = import.meta.env.VITE_BRAND_SLUG as string | undefined;
     if (fromEnv) return fromEnv;
 
@@ -144,6 +160,7 @@ function normalizeNullableString(value: string | null | undefined): string | nul
 
 function normalizeBrandSettings(settings: BrandSettings): BrandSettings {
     const visualIdentity = extractBrandVisualIdentity(settings.menu_config);
+    const designTokens = extractBrandDesignTokens(settings.menu_config);
 
     return {
         ...settings,
@@ -154,6 +171,10 @@ function normalizeBrandSettings(settings: BrandSettings): BrandSettings {
         bg_color: normalizeNullableString(settings.bg_color),
         accent_color: normalizeNullableString(settings.accent_color),
         font_family: normalizeNullableString(settings.font_family),
+        green_color: normalizeNullableString(settings.green_color) ?? designTokens.green_color,
+        radius_xl: normalizeNullableString(settings.radius_xl) ?? designTokens.radius_xl,
+        radius_2xl: normalizeNullableString(settings.radius_2xl) ?? designTokens.radius_2xl,
+        radius_3xl: normalizeNullableString(settings.radius_3xl) ?? designTokens.radius_3xl,
         login_background_url: normalizeNullableString(settings.login_background_url) ?? visualIdentity.login_background_url,
         home_hero_image_url: normalizeNullableString(settings.home_hero_image_url) ?? visualIdentity.home_hero_image_url,
         menu_config: settings.menu_config ?? {},
@@ -166,6 +187,7 @@ function applyMockOverrideToSettings(settings: BrandSettings, override: MockBran
     }
 
     const nextVisualIdentity = extractBrandVisualIdentity(settings.menu_config);
+    const nextDesignTokens = extractBrandDesignTokens(settings.menu_config);
 
     if (Object.prototype.hasOwnProperty.call(override, 'login_background_url')) {
         nextVisualIdentity.login_background_url = override.login_background_url ?? null;
@@ -174,6 +196,27 @@ function applyMockOverrideToSettings(settings: BrandSettings, override: MockBran
     if (Object.prototype.hasOwnProperty.call(override, 'home_hero_image_url')) {
         nextVisualIdentity.home_hero_image_url = override.home_hero_image_url ?? null;
     }
+
+    if (Object.prototype.hasOwnProperty.call(override, 'green_color')) {
+        nextDesignTokens.green_color = override.green_color ?? null;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(override, 'radius_xl')) {
+        nextDesignTokens.radius_xl = override.radius_xl ?? null;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(override, 'radius_2xl')) {
+        nextDesignTokens.radius_2xl = override.radius_2xl ?? null;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(override, 'radius_3xl')) {
+        nextDesignTokens.radius_3xl = override.radius_3xl ?? null;
+    }
+
+    const nextMenuConfig = mergeBrandDesignTokens(
+        mergeBrandVisualIdentity(settings.menu_config, nextVisualIdentity),
+        nextDesignTokens,
+    );
 
     return normalizeBrandSettings({
         ...settings,
@@ -184,9 +227,13 @@ function applyMockOverrideToSettings(settings: BrandSettings, override: MockBran
         bg_color: Object.prototype.hasOwnProperty.call(override, 'bg_color') ? override.bg_color ?? null : settings.bg_color,
         accent_color: Object.prototype.hasOwnProperty.call(override, 'accent_color') ? override.accent_color ?? null : settings.accent_color,
         font_family: Object.prototype.hasOwnProperty.call(override, 'font_family') ? override.font_family ?? null : settings.font_family,
+        green_color: Object.prototype.hasOwnProperty.call(override, 'green_color') ? override.green_color ?? null : settings.green_color,
+        radius_xl: Object.prototype.hasOwnProperty.call(override, 'radius_xl') ? override.radius_xl ?? null : settings.radius_xl,
+        radius_2xl: Object.prototype.hasOwnProperty.call(override, 'radius_2xl') ? override.radius_2xl ?? null : settings.radius_2xl,
+        radius_3xl: Object.prototype.hasOwnProperty.call(override, 'radius_3xl') ? override.radius_3xl ?? null : settings.radius_3xl,
         login_background_url: nextVisualIdentity.login_background_url,
         home_hero_image_url: nextVisualIdentity.home_hero_image_url,
-        menu_config: mergeBrandVisualIdentity(settings.menu_config, nextVisualIdentity),
+        menu_config: nextMenuConfig,
     });
 }
 
@@ -208,6 +255,10 @@ function buildMockBootstrap(slug: string): BrandBootstrap {
             bg_color: '#F9F5F9',
             accent_color: '#4EA8DE',
             font_family: null,
+            green_color: null,
+            radius_xl: null,
+            radius_2xl: null,
+            radius_3xl: null,
             login_background_url: null,
             home_hero_image_url: null,
             menu_config: {},
@@ -248,9 +299,16 @@ function tryApplyTheme(settings: BrandSettings, slug: string): void {
             light: settings.light_color ?? preset?.colors.light ?? '#883E82',
             bg: settings.bg_color ?? preset?.colors.bg ?? '#F9F5F9',
             accent: settings.accent_color ?? preset?.colors.accent ?? '#4EA8DE',
-            green: preset?.colors.green ?? '#70E000',
+            green: settings.green_color ?? preset?.colors.green ?? '#70E000',
         },
         font: settings.font_family ?? preset?.font,
+        tokens: {
+            radius: {
+                xl: settings.radius_xl ?? undefined,
+                '2xl': settings.radius_2xl ?? undefined,
+                '3xl': settings.radius_3xl ?? undefined,
+            },
+        },
     };
 
     applyTheme(theme);
@@ -312,25 +370,45 @@ export function invalidateBrandBootstrapCache(targetSlug?: string): void {
 
 // ── Hook ──────────────────────────────────────────────────
 
-const DEFAULT_SLUG = resolveBrandSlug();
-
 export function useBrandConfig(): BrandConfig {
-    const slug = DEFAULT_SLUG;
+    const [slug, setSlug] = useState(() => resolveBrandSlug());
 
     const [bootstrap, setBootstrap] = useState<BrandBootstrap>(() => {
-        const cached = readCache(slug);
+        const initialSlug = resolveBrandSlug();
+        const cached = readCache(initialSlug);
         if (cached) {
             // Aplica tema imediatamente do cache para evitar flash.
-            tryApplyTheme(cached.settings, slug);
+            tryApplyTheme(cached.settings, initialSlug);
             return cached;
         }
-        return buildMockBootstrap(slug);
+        return buildMockBootstrap(initialSlug);
     });
 
-    const [loading, setLoading] = useState(!readCache(slug));
+    const [loading, setLoading] = useState(() => !readCache(resolveBrandSlug()));
+
+    useEffect(() => {
+        const syncResolvedSlug = () => {
+            const nextSlug = resolveBrandSlug();
+            setSlug((currentSlug) => currentSlug === nextSlug ? currentSlug : nextSlug);
+        };
+
+        return subscribeToWhiteLabelPreviewSettings(syncResolvedSlug);
+    }, []);
 
     useEffect(() => {
         let cancelled = false;
+
+        const cached = readCache(slug);
+        if (cached) {
+            tryApplyTheme(cached.settings, slug);
+            setBootstrap(cached);
+            setLoading(false);
+        } else {
+            const fallbackBootstrap = buildMockBootstrap(slug);
+            tryApplyTheme(fallbackBootstrap.settings, slug);
+            setBootstrap(fallbackBootstrap);
+            setLoading(true);
+        }
 
         async function load() {
             const data = await fetchBootstrap(slug);

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Collection } from '../types';
+import { Icons } from './Icons';
 import useIsMobile from '../hooks/useIsMobile';
 import { formatSegmentLabel } from '../constants';
 import { getCollectionDisplayCover, getCollectionTypeMeta } from '../lib/collectionPresentation';
@@ -8,6 +9,7 @@ interface Card3DProps {
   collection: Collection & { progress?: number };
   onCollectionClick: (collection: Collection) => void;
   locked?: boolean;
+  tone?: 'default' | 'central-coruja';
 }
 
 // Global state for device orientation (shared across all cards)
@@ -65,12 +67,19 @@ const requestIOSPermission = async (): Promise<boolean> => {
   }
 };
 
-export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, locked }) => {
+export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, locked, tone = 'default' }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
   const collectionTypeMeta = getCollectionTypeMeta(collection);
+  const isCentralCorujaTone = tone === 'central-coruja';
+  const progress = collection.progress ?? 0;
+  const coverBadgeLabel = collection.level
+    ? formatSegmentLabel(collection.level)
+    : collection.segments?.[0]
+      ? formatSegmentLabel(collection.segments[0])
+      : collectionTypeMeta.shortLabel;
 
   // Gyroscope effect for mobile
   useEffect(() => {
@@ -172,7 +181,9 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
     >
       <div
         ref={cardRef}
-        className="mb-3 rounded-lg overflow-hidden relative group shadow-md shadow-gray-100 w-full"
+        className={`overflow-hidden relative group w-full ${isCentralCorujaTone
+          ? 'mb-3 rounded-[28px] bg-transparent shadow-none'
+          : 'mb-3 rounded-lg shadow-md shadow-gray-100'}`}
         style={{
           WebkitMaskImage: '-webkit-radial-gradient(white, black)',
           transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale3d(1, 1, 1)`,
@@ -181,27 +192,60 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             ? 'transform 0.1s ease-out'
             : (tilt.x === 0 && tilt.y === 0 ? 'transform 0.5s ease-out' : 'transform 0.1s ease-out'),
           touchAction: 'manipulation',
-          aspectRatio: '1 / 1',
+          aspectRatio: isCentralCorujaTone ? '0.78 / 1' : '1 / 1',
           width: '100%',
           height: 'auto',
         }}
         onMouseMove={!isMobile ? handleMouseMove : undefined}
         onMouseLeave={!isMobile ? handleMouseLeave : undefined}
       >
-        <img
-          src={displayCoverImage}
-          alt={collection.title}
-          className="w-full h-full object-cover bg-gray-200"
-          style={{
-            transform: 'translateZ(20px)',
-          }}
-        />
+        {isCentralCorujaTone && (
+          <>
+            <div className="absolute inset-0 rounded-[28px] bg-[radial-gradient(60%_40%_at_14%_100%,rgba(110,52,143,0.24),transparent_70%),radial-gradient(46%_28%_at_100%_0%,rgba(253,186,116,0.26),transparent_72%)]" />
+            <div
+              className="absolute inset-[5px] overflow-hidden rounded-[24px] border-[2.5px] border-[#f0c861]/90 bg-[#17334a] shadow-[0_24px_44px_rgba(3,10,22,0.34)]"
+              style={{ transform: 'translateZ(16px)' }}
+            >
+              <img
+                src={displayCoverImage}
+                alt={collection.title}
+                className="h-full w-full object-cover bg-[#0f2435]"
+                style={{
+                  transform: 'translateZ(20px)',
+                }}
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,245,214,0.03)_0%,rgba(19,35,52,0.02)_45%,rgba(7,12,24,0.30)_100%)]" />
+            </div>
+          </>
+        )}
+        {!isCentralCorujaTone && (
+          <img
+            src={displayCoverImage}
+            alt={collection.title}
+            className="w-full h-full object-cover bg-gray-200"
+            style={{
+              transform: 'translateZ(20px)',
+            }}
+          />
+        )}
         <div
-          className={`absolute top-2 left-2 whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.14em] border backdrop-blur-sm ${collectionTypeMeta.coverClassName}`}
+          className={`absolute border backdrop-blur-sm ${isCentralCorujaTone
+            ? 'left-3 top-3 max-w-[calc(100%-4rem)] truncate rounded-full border-[#d0c08d]/60 bg-[#4d3567]/92 px-3 py-1.5 text-[10px] text-[#fff0bc] shadow-[0_12px_22px_rgba(19,8,35,0.34)]'
+            : `top-2 left-2 whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] ${collectionTypeMeta.coverClassName}`
+            } font-black uppercase tracking-[0.14em]`}
           style={{ transform: 'translateZ(30px)' }}
         >
-          {collectionTypeMeta.shortLabel}
+          {isCentralCorujaTone ? coverBadgeLabel : collectionTypeMeta.shortLabel}
         </div>
+
+        {isCentralCorujaTone && (locked || progress > 0 || collectionTypeMeta.type === 'kit') && (
+          <div
+            className={`absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border shadow-[0_12px_22px_rgba(14,9,34,0.28)] ${locked ? 'border-[#ecd495]/80 bg-[#1d2037]/92 text-[#ffeab8]' : 'border-[#f2d87b]/90 bg-[#ffcf4d] text-[#62331a]'}`}
+            style={{ transform: 'translateZ(34px)' }}
+          >
+            {locked ? <Icons.Lock size={16} /> : progress > 0 ? <Icons.Check size={18} className="stroke-[3px]" /> : <span className="text-xl leading-none">★</span>}
+          </div>
+        )}
         {/* Light reflection effect - moves based on tilt */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -230,21 +274,41 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             mixBlendMode: 'soft-light',
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className={`absolute inset-0 transition-opacity ${isCentralCorujaTone
+          ? 'bg-gradient-to-t from-[#0f2335]/0 via-transparent to-white/10 opacity-100'
+          : 'bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100'}`} />
 
-        {/* Lock overlay for content-gated collections */}
-        {locked && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center" style={{ transform: 'translateZ(35px)' }}>
-            <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-gray-600">
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
+        {isCentralCorujaTone && progress > 0 && (
+          <div
+            className="absolute inset-x-0 bottom-0 z-10 p-3"
+            style={{ transform: 'translateZ(32px)' }}
+          >
+            <div className="rounded-full border border-[#d2c18f]/55 bg-[#20162a]/80 px-3 py-2 shadow-[0_18px_30px_rgba(7,19,30,0.24)] backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/12">
+                  <div className="h-full rounded-full bg-[linear-gradient(90deg,#f2bf43_0%,#f6d96f_45%,#62b05c_100%)]" style={{ width: `${progress}%` }} />
+                </div>
+                <span className="text-[10px] font-black tracking-[0.08em] text-[#fff1bf]">{progress}%</span>
+              </div>
             </div>
           </div>
         )}
 
-        {(() => {
+        {/* Lock overlay for content-gated collections */}
+        {locked && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center" style={{ transform: 'translateZ(35px)' }}>
+            {!isCentralCorujaTone && (
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/90 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-gray-600">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isCentralCorujaTone && (() => {
           const segments = collection.segments;
           if (segments && segments.length > 1) {
             const visible = segments.slice(0, 2);
@@ -252,12 +316,16 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             return (
               <div className="absolute bottom-2 right-2 flex gap-1" style={{ transform: 'translateZ(30px)' }}>
                 {visible.map((seg) => (
-                  <span key={seg} className="px-2 py-1 bg-white/95 backdrop-blur-sm rounded-full text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50">
+                  <span key={seg} className={`px-2 py-1 backdrop-blur-sm rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
+                    ? 'bg-[#fff9eb]/95 text-[#204b48] border-[#fff3d1]'
+                    : 'bg-white/95 text-kaboo-primary border-white/50'}`}>
                     {formatSegmentLabel(seg)}
                   </span>
                 ))}
                 {extra > 0 && (
-                  <span className="px-2 py-1 bg-white/95 backdrop-blur-sm rounded-full text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50">
+                  <span className={`px-2 py-1 backdrop-blur-sm rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
+                    ? 'bg-[#fff9eb]/95 text-[#204b48] border-[#fff3d1]'
+                    : 'bg-white/95 text-kaboo-primary border-white/50'}`}>
                     +{extra}
                   </span>
                 )}
@@ -268,7 +336,9 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
           if (!label) return null;
           return (
             <div
-              className="absolute bottom-2 right-2 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-full text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50"
+              className={`absolute bottom-2 right-2 px-2 py-1 backdrop-blur-sm rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
+                ? 'bg-[#fff9eb]/95 text-[#204b48] border-[#fff3d1]'
+                : 'bg-white/95 text-kaboo-primary border-white/50'}`}
               style={{ transform: 'translateZ(30px)' }}
             >
               {formatSegmentLabel(label)}
@@ -277,21 +347,33 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         })()}
       </div>
 
-      {collection.title && (
+      {!isCentralCorujaTone && collection.title && (
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-2">
           {collection.title}
         </h3>
       )}
 
-      {collection.theme && collection.theme.trim() !== '' && (
+      {!isCentralCorujaTone && collection.theme && collection.theme.trim() !== '' && (
         <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">
           {collection.theme}
         </p>
       )}
 
-      {collection.progress !== undefined && collection.progress > 0 && (
-        <div className="text-xs font-bold text-kaboo-light flex items-center gap-1 mt-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-kaboo-light" />
+      {isCentralCorujaTone && collection.title && (
+        <h3 className="mb-1 text-[0.95rem] font-black leading-tight text-[#fff3bf] line-clamp-2">
+          {collection.title}
+        </h3>
+      )}
+
+      {isCentralCorujaTone && collection.theme && collection.theme.trim() !== '' && (
+        <p className="mb-1 text-xs font-medium leading-relaxed text-[#c7d5cf] line-clamp-2">
+          {collection.theme}
+        </p>
+      )}
+
+      {!isCentralCorujaTone && collection.progress !== undefined && collection.progress > 0 && (
+        <div className="mt-1 flex items-center gap-1 text-xs font-bold text-kaboo-light">
+          <div className="h-1.5 w-1.5 rounded-full bg-kaboo-light" />
           Em andamento
         </div>
       )}

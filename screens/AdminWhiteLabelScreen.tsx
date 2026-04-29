@@ -7,6 +7,7 @@ import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { LOGO_URL } from '../constants';
 import { invalidateBrandBootstrapCache } from '../hooks/useBrandConfig';
+import { getWhiteLabelPreviewSettings, setActiveWhiteLabelBrand } from '../lib/whiteLabelPreview';
 import {
     getWhiteLabelAlertingConfig,
     getWhiteLabelBrandIdentity,
@@ -82,6 +83,10 @@ const DEFAULT_BRAND_IDENTITY: WhiteLabelBrandIdentity = {
     bg_color: '#F9F5F9',
     accent_color: '#4EA8DE',
     font_family: '',
+    green_color: '#70E000',
+    radius_xl: '1rem',
+    radius_2xl: '1.5rem',
+    radius_3xl: '2rem',
     login_background_url: '',
     home_hero_image_url: '',
 };
@@ -290,10 +295,18 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
                 setBrands(loadedBrands);
                 const firstBrandId = loadedBrands[0]?.id ?? '';
-                setSelectedBrandId((current) => current || firstBrandId);
+                const previewSlug = getWhiteLabelPreviewSettings().previewEnabled
+                    ? getWhiteLabelPreviewSettings().activeBrandId
+                    : null;
+                const previewBrandId = previewSlug
+                    ? loadedBrands.find((brand) => brand.slug === previewSlug)?.id ?? ''
+                    : '';
+                const initialBrandId = previewBrandId || firstBrandId;
 
-                if (firstBrandId) {
-                    await hydrateBrandFeatures(firstBrandId);
+                setSelectedBrandId((current) => current || initialBrandId);
+
+                if (initialBrandId) {
+                    await hydrateBrandFeatures(initialBrandId);
                     setContextChangedAt(new Date().toISOString());
                 }
             } catch (err) {
@@ -370,6 +383,10 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         try {
             setError(null);
             await hydrateBrandFeatures(brandId);
+            if (nextBrand?.slug === 'central-coruja' || nextBrand?.slug === 'kaboo') {
+                setActiveWhiteLabelBrand(nextBrand.slug);
+                invalidateBrandBootstrapCache(nextBrand.slug);
+            }
             setContextChangedAt(new Date().toISOString());
             if (nextBrand) {
                 showToast(`Contexto alterado: agora você está editando ${nextBrand.display_name || nextBrand.name}.`, 'success');
@@ -902,25 +919,90 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                         </div>
                                         <div className="mt-4 grid gap-4 md:grid-cols-2">
                                             <ColorPicker
+                                                inputId="brand-primary-color"
                                                 label="Cor principal"
                                                 value={brandIdentity.primary_color}
                                                 onChange={(value) => updateBrandIdentityField('primary_color', value)}
                                             />
                                             <ColorPicker
+                                                inputId="brand-light-color"
                                                 label="Cor clara"
                                                 value={brandIdentity.light_color}
                                                 onChange={(value) => updateBrandIdentityField('light_color', value)}
                                             />
                                             <ColorPicker
+                                                inputId="brand-bg-color"
                                                 label="Cor de fundo"
                                                 value={brandIdentity.bg_color}
                                                 onChange={(value) => updateBrandIdentityField('bg_color', value)}
                                             />
                                             <ColorPicker
+                                                inputId="brand-accent-color"
                                                 label="Cor de destaque"
                                                 value={brandIdentity.accent_color}
                                                 onChange={(value) => updateBrandIdentityField('accent_color', value)}
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
+                                        <div className="flex items-center gap-2">
+                                            <Icons.Grid size={16} className="text-gray-400" />
+                                            <h3 className="text-lg font-bold text-gray-900">Tokens de design</h3>
+                                        </div>
+                                        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                                            <ColorPicker
+                                                inputId="brand-green-color"
+                                                label="Cor de sucesso"
+                                                value={brandIdentity.green_color}
+                                                onChange={(value) => updateBrandIdentityField('green_color', value)}
+                                            />
+                                            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 text-xs leading-relaxed text-gray-500">
+                                                Tokens de radius aceitam qualquer valor CSS válido.
+                                                Exemplos: 1rem, 24px, 1.75rem.
+                                            </div>
+                                            <div>
+                                                <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="brand-radius-xl">
+                                                    Radius XL
+                                                </label>
+                                                <input
+                                                    id="brand-radius-xl"
+                                                    type="text"
+                                                    value={brandIdentity.radius_xl}
+                                                    onChange={(event) => updateBrandIdentityField('radius_xl', event.target.value)}
+                                                    placeholder="1rem"
+                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                                    disabled={loading || saving}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="brand-radius-2xl">
+                                                    Radius 2XL
+                                                </label>
+                                                <input
+                                                    id="brand-radius-2xl"
+                                                    type="text"
+                                                    value={brandIdentity.radius_2xl}
+                                                    onChange={(event) => updateBrandIdentityField('radius_2xl', event.target.value)}
+                                                    placeholder="1.5rem"
+                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                                    disabled={loading || saving}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="brand-radius-3xl">
+                                                    Radius 3XL
+                                                </label>
+                                                <input
+                                                    id="brand-radius-3xl"
+                                                    type="text"
+                                                    value={brandIdentity.radius_3xl}
+                                                    onChange={(event) => updateBrandIdentityField('radius_3xl', event.target.value)}
+                                                    placeholder="2rem"
+                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                                    disabled={loading || saving}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
@@ -954,6 +1036,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     backgroundSize: 'cover',
                                                     backgroundPosition: 'center',
                                                     fontFamily: brandIdentity.font_family || undefined,
+                                                    borderRadius: brandIdentity.radius_3xl || undefined,
                                                 }}
                                             >
                                                 <div className="absolute inset-0 bg-black/10" />
@@ -961,12 +1044,12 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     {brandIdentity.logo_url ? (
                                                         <img src={brandIdentity.logo_url} alt={brandIdentity.display_name} className="h-10 w-auto max-w-[140px] object-contain" />
                                                     ) : (
-                                                        <div className="flex h-10 w-28 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm">
+                                                        <div className="flex h-10 w-28 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm" style={{ borderRadius: brandIdentity.radius_xl || undefined }}>
                                                             <span className="text-[11px] font-bold text-white/80">Sem logo</span>
                                                         </div>
                                                     )}
 
-                                                    <div className="max-w-[200px] rounded-2xl bg-white/92 p-3 shadow-lg backdrop-blur-sm">
+                                                    <div className="max-w-[200px] rounded-2xl bg-white/92 p-3 shadow-lg backdrop-blur-sm" style={{ borderRadius: brandIdentity.radius_2xl || undefined }}>
                                                         <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: brandIdentity.primary_color }}>
                                                             Login
                                                         </p>
@@ -977,30 +1060,34 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
                                             {/* Home preview */}
                                             <div className="space-y-3 p-3" style={{ backgroundColor: brandIdentity.bg_color, fontFamily: brandIdentity.font_family || undefined }}>
-                                                <div className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 shadow-sm">
+                                                <div className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 shadow-sm" style={{ borderRadius: brandIdentity.radius_xl || undefined }}>
                                                     <p className="text-xs font-bold text-gray-900">{brandIdentity.display_name}</p>
                                                     {brandIdentity.logo_url ? (
                                                         <img src={brandIdentity.logo_url} alt="" className="h-7 w-auto max-w-[80px] object-contain" />
                                                     ) : (
-                                                        <div className="h-7 w-14 rounded-lg bg-gray-200" />
+                                                        <div className="h-7 w-14 rounded-lg bg-gray-200" style={{ borderRadius: brandIdentity.radius_xl || undefined }} />
                                                     )}
                                                 </div>
 
                                                 {brandIdentity.home_hero_image_url && (
                                                     <div
                                                         className="h-20 rounded-xl border border-white/70 bg-cover bg-center shadow-sm"
-                                                        style={{ backgroundImage: `linear-gradient(135deg, ${brandIdentity.primary_color}33, ${brandIdentity.accent_color}22), url(${brandIdentity.home_hero_image_url})` }}
+                                                        style={{ backgroundImage: `linear-gradient(135deg, ${brandIdentity.primary_color}33, ${brandIdentity.accent_color}22), url(${brandIdentity.home_hero_image_url})`, borderRadius: brandIdentity.radius_xl || undefined }}
                                                     />
                                                 )}
 
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div className="rounded-xl bg-white p-3 shadow-sm">
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div className="rounded-xl bg-white p-3 shadow-sm" style={{ borderRadius: brandIdentity.radius_xl || undefined }}>
                                                         <p className="text-[10px] font-semibold text-gray-400">Principal</p>
-                                                        <div className="mt-2 h-7 rounded-lg" style={{ backgroundColor: brandIdentity.primary_color }} />
+                                                        <div className="mt-2 h-7 rounded-lg" style={{ backgroundColor: brandIdentity.primary_color, borderRadius: brandIdentity.radius_xl || undefined }} />
                                                     </div>
-                                                    <div className="rounded-xl bg-white p-3 shadow-sm">
+                                                    <div className="rounded-xl bg-white p-3 shadow-sm" style={{ borderRadius: brandIdentity.radius_xl || undefined }}>
                                                         <p className="text-[10px] font-semibold text-gray-400">Destaque</p>
-                                                        <div className="mt-2 h-7 rounded-lg" style={{ backgroundColor: brandIdentity.accent_color }} />
+                                                        <div className="mt-2 h-7 rounded-lg" style={{ backgroundColor: brandIdentity.accent_color, borderRadius: brandIdentity.radius_xl || undefined }} />
+                                                    </div>
+                                                    <div className="rounded-xl bg-white p-3 shadow-sm" style={{ borderRadius: brandIdentity.radius_xl || undefined }}>
+                                                        <p className="text-[10px] font-semibold text-gray-400">Sucesso</p>
+                                                        <div className="mt-2 h-7 rounded-lg" style={{ backgroundColor: brandIdentity.green_color, borderRadius: brandIdentity.radius_xl || undefined }} />
                                                     </div>
                                                 </div>
                                             </div>

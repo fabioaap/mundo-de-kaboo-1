@@ -18,6 +18,7 @@ export interface CollectionFilterOptions {
 }
 
 type FilterCategory = keyof CollectionFilterState;
+type CollectionFiltersTone = 'default' | 'central-coruja';
 
 interface CollectionFiltersModalProps {
     availableOptions: CollectionFilterOptions;
@@ -26,6 +27,7 @@ interface CollectionFiltersModalProps {
     onClear: () => void;
     onClose: () => void;
     resultsCount: number;
+    tone?: CollectionFiltersTone;
     onOpenBncc?: () => void;
     onPrepareCharacter?: (character: string) => void;
     sectionRefHandlers?: Partial<Record<FilterCategory, (node: HTMLDivElement | null) => void>>;
@@ -34,6 +36,7 @@ interface CollectionFiltersModalProps {
 interface CharacterFilterButtonProps {
     character: string;
     isActive: boolean;
+    tone?: CollectionFiltersTone;
     onClick: () => void;
     onPrepare?: () => void;
 }
@@ -54,9 +57,12 @@ const formatBnccSelectionLabel = (count: number) => {
 const CharacterFilterButton: React.FC<CharacterFilterButtonProps> = ({
     character,
     isActive,
+    tone = 'default',
     onClick,
     onPrepare,
 }) => {
+    const isCorujaTone = tone === 'central-coruja';
+
     return (
         <button
             type="button"
@@ -64,8 +70,12 @@ const CharacterFilterButton: React.FC<CharacterFilterButtonProps> = ({
             onMouseEnter={onPrepare}
             onFocus={onPrepare}
             className={`inline-flex min-h-12 items-center gap-2 rounded-full border px-2.5 py-2 pr-3 text-sm font-bold leading-none transition-all duration-200 ease-out active:scale-[0.98] ${isActive
-                ? 'border-kaboo-primary/30 bg-kaboo-primary/[0.08] text-kaboo-primary shadow-[0_10px_24px_rgba(111,37,108,0.12)]'
-                : 'border-gray-200 bg-white text-gray-600 hover:border-kaboo-primary/25 hover:bg-kaboo-primary/[0.03]'
+                ? (isCorujaTone
+                    ? 'border-[#c4b3dd] bg-[#f3ecfb] text-[#5c2f83] shadow-[0_10px_24px_rgba(92,47,131,0.14)]'
+                    : 'border-kaboo-primary/30 bg-kaboo-primary/[0.08] text-kaboo-primary shadow-[0_10px_24px_rgba(111,37,108,0.12)]')
+                : (isCorujaTone
+                    ? 'border-[#d6ddcf] bg-white text-[#355449] hover:border-[#6c2f92]/25 hover:bg-[#f7f2fb]'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-kaboo-primary/25 hover:bg-kaboo-primary/[0.03]')
                 }`}
         >
             <CharacterAvatar
@@ -137,29 +147,32 @@ export const CollectionFiltersModal: React.FC<CollectionFiltersModalProps> = ({
     onClear,
     onClose,
     resultsCount,
+    tone = 'default',
     onOpenBncc,
     onPrepareCharacter,
     sectionRefHandlers,
 }) => {
+    const isCorujaTone = tone === 'central-coruja';
+
     return (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="relative w-full md:w-[600px] h-[85vh] md:h-[80vh] bg-white rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-in-up">
-                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+            <div className={`relative w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-in-up ${isCorujaTone ? 'border border-[#dfe8d6] bg-[#fffdf7]' : 'bg-white'}`}>
+                <div className={`px-6 py-4 border-b flex items-center justify-between shrink-0 ${isCorujaTone ? 'border-[#e4eadc] bg-[linear-gradient(180deg,#fff9e9_0%,#fffdf7_100%)]' : 'border-gray-100 bg-white'}`}>
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-kaboo-primary/10 flex items-center justify-center text-kaboo-primary">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isCorujaTone ? 'bg-[#f5ebc7] text-[#1f5641]' : 'bg-kaboo-primary/10 text-kaboo-primary'}`}>
                             <Icons.Filter size={20} />
                         </div>
                         <div>
                             <h2 className="text-lg font-black text-gray-800">Filtros</h2>
-                            <p className="text-xs text-gray-400 font-medium">Refine sua busca</p>
+                            <p className={`text-xs font-medium ${isCorujaTone ? 'text-[#6c7c6f]' : 'text-gray-400'}`}>Refine sua busca</p>
                         </div>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"
+                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isCorujaTone ? 'bg-[#f2f0e8] text-[#5f7066] hover:bg-[#e7e4d8]' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                         aria-label="Fechar filtros"
                     >
                         <Icons.X size={16} />
@@ -186,6 +199,7 @@ export const CollectionFiltersModal: React.FC<CollectionFiltersModalProps> = ({
                                             key={character}
                                             character={character}
                                             isActive={isActive}
+                                            tone={tone}
                                             onClick={() => onToggleFilter('characters', character)}
                                             onPrepare={() => onPrepareCharacter?.(character)}
                                         />
@@ -266,11 +280,11 @@ export const CollectionFiltersModal: React.FC<CollectionFiltersModalProps> = ({
                     <div className="h-10" />
                 </div>
 
-                <div className="p-4 border-t border-gray-100 bg-white shrink-0 flex gap-4">
+                <div className={`p-4 border-t shrink-0 flex gap-4 ${isCorujaTone ? 'border-[#e4eadc] bg-[#fffaf0]' : 'border-gray-100 bg-white'}`}>
                     <button
                         type="button"
                         onClick={onClear}
-                        className="px-6 py-4 rounded-2xl font-bold text-gray-500 hover:bg-gray-100 transition-colors"
+                        className={`px-6 py-4 rounded-2xl font-bold transition-colors ${isCorujaTone ? 'text-[#6b338d] hover:bg-[#f4ecfb]' : 'text-gray-500 hover:bg-gray-100'}`}
                     >
                         Limpar
                     </button>

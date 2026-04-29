@@ -106,7 +106,7 @@ export const saveWhiteLabelPreviewSettings = (settings: WhiteLabelPreviewSetting
 export const setActiveWhiteLabelBrand = (brandId: WhiteLabelBrandId) => {
     const settings = getWhiteLabelPreviewSettings();
     if (brandId === 'central-coruja') {
-        saveWhiteLabelPreviewSettings({ ...settings, activeBrandId: brandId });
+        saveWhiteLabelPreviewSettings({ ...settings, activeBrandId: brandId, previewEnabled: true });
         return;
     }
 

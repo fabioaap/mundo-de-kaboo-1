@@ -4,15 +4,59 @@ import { ScreenName } from '../types';
 import { buildAppUrl } from '../lib/appPaths';
 import { supabase } from '../lib/supabase';
 import { Icons } from '../components/Icons';
+import { LOGO_URL } from '../constants';
 import backgroundImage from '../assets/images/background-login.jpg';
 
 interface ForgotPasswordScreenProps {
   onNavigate: (screen: ScreenName) => void;
+  brandSlug?: string;
+  brandLogoUrl?: string;
+  brandName?: string;
+  backgroundImageUrl?: string;
 }
 
 const BG_IMAGE = backgroundImage;
 
-export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNavigate }) => {
+export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNavigate, brandSlug, brandLogoUrl, brandName, backgroundImageUrl }) => {
+  const isCentralCoruja = brandSlug === 'central-coruja';
+  const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
+  const resolvedBrandName = brandName || 'Mundo de Kaboo';
+  const resolvedBackgroundImageUrl = backgroundImageUrl || BG_IMAGE;
+  const shellBackgroundStyle = isCentralCoruja
+    ? {
+      backgroundImage: resolvedBackgroundImageUrl
+        ? `linear-gradient(135deg, rgba(9, 26, 38, 0.72), rgba(9, 26, 38, 0.18)), url(${resolvedBackgroundImageUrl})`
+        : undefined,
+      backgroundColor: '#132842',
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+    }
+    : {
+      backgroundImage: `url(${resolvedBackgroundImageUrl})`,
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+    };
+  const titleClassName = isCentralCoruja ? 'text-[#17384c]' : 'text-gray-800';
+  const bodyClassName = isCentralCoruja ? 'text-[#5f766f]' : 'text-gray-600';
+  const labelClassName = isCentralCoruja ? 'text-[#35524d]' : 'text-gray-600';
+  const inputBaseClassName = isCentralCoruja
+    ? 'w-full bg-[#fff9ef]/96 border border-[#d6e1d8] rounded-[22px] text-[#1c3440] placeholder:text-[#91a099] outline-none transition-all focus:border-[#d49e29] focus:ring-4 focus:ring-[#d49e29]/15'
+    : 'w-full bg-gray-50 border-none rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all';
+
+  const renderBrandMark = () => {
+    if (resolvedBrandLogoUrl) {
+      return <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="h-12 w-auto object-contain" />;
+    }
+
+    return (
+      <div className={`inline-flex items-center justify-center text-center font-black leading-none ${isCentralCoruja
+        ? 'rounded-[24px] border border-[#e0d5ae]/55 bg-[#fff7e1]/85 px-5 py-3 text-xl text-[#17384c] shadow-[0_16px_34px_rgba(17,42,60,0.12)]'
+        : 'rounded-full border border-gray-200 bg-white px-4 py-2 text-base text-gray-800 shadow-sm'}`}>
+        {resolvedBrandName}
+      </div>
+    );
+  };
+
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -48,34 +92,39 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
 
   return (
     <div
-      className="flex min-h-screen bg-gray-50 items-center justify-center p-0 md:p-8 relative bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url(${BG_IMAGE})` }}
+      className={`flex min-h-screen items-center justify-center p-0 md:p-8 relative overflow-hidden ${isCentralCoruja ? 'bg-[#132842]' : 'bg-gray-50 bg-no-repeat'}`}
+      style={shellBackgroundStyle}
     >
-      {/* Overlay to ensure contrast and branding */}
-      <div className="absolute inset-0 bg-kaboo-primary/20 backdrop-blur-[2px]"></div>
+      <div className={`absolute inset-0 ${isCentralCoruja
+        ? 'bg-[radial-gradient(56%_42%_at_14%_8%,rgba(245,191,52,0.18),transparent_55%),radial-gradient(46%_34%_at_88%_12%,rgba(61,131,84,0.18),transparent_58%),linear-gradient(180deg,rgba(9,23,35,0.34),rgba(9,23,35,0.1))] backdrop-blur-[1px]'
+        : 'bg-kaboo-primary/20 backdrop-blur-[2px]'}`}></div>
 
-      {/* UPDATED CLASS: min-h-screen on mobile, w-full, md:max-w-md restricts width only on desktop */}
-      <div className="relative z-10 w-full bg-white min-h-screen md:min-h-0 md:h-auto md:max-w-md md:rounded-3xl md:shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+      <div className={`relative z-10 w-full min-h-screen md:min-h-0 md:h-auto md:max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300 ${isCentralCoruja
+        ? 'bg-[linear-gradient(180deg,rgba(249,245,235,0.98)_0%,rgba(243,239,227,0.97)_100%)] md:rounded-[36px] md:border md:border-white/35 md:shadow-[0_34px_84px_rgba(6,18,31,0.34)]'
+        : 'bg-white md:rounded-3xl md:shadow-2xl'}`}>
 
         {/* HEADER */}
-        <div className="px-6 pt-12 pb-4 flex items-center gap-4 border-b border-gray-100 shrink-0 md:pt-8">
+        <div className={`px-6 pt-12 pb-4 flex items-center gap-4 shrink-0 md:pt-8 ${isCentralCoruja ? 'border-b border-[#e4ddc8]' : 'border-b border-gray-100'}`}>
           <button
             type="button"
             onClick={() => onNavigate('login')}
-            className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-700"
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isCentralCoruja ? 'bg-[#fff7e1] text-[#35524d] hover:bg-[#ffefc5]' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
           >
             <Icons.ChevronLeft size={24} />
           </button>
-          <h1 className="text-xl font-bold text-gray-800 flex-1">Recuperar Senha</h1>
+          <div className="flex-1 flex justify-center pr-10">{renderBrandMark()}</div>
         </div>
 
         <div className="w-full mx-auto flex-1 flex flex-col justify-center px-6 py-6 md:pb-12">
 
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-kaboo-primary mx-auto mb-4">
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${isCentralCoruja
+              ? 'bg-[#fff0c7] text-[#bd7a16] shadow-[0_16px_30px_rgba(189,122,22,0.18)]'
+              : 'bg-blue-50 text-kaboo-primary'}`}>
               <Icons.Mail size={32} />
             </div>
-            <p className="text-gray-600 leading-relaxed">
+            <h1 className={`text-xl font-bold mb-3 ${titleClassName}`}>Recuperar senha</h1>
+            <p className={`${bodyClassName} leading-relaxed`}>
               Digite seu e-mail abaixo e enviaremos um link seguro para você criar uma nova senha.
             </p>
           </div>
@@ -84,17 +133,17 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
 
             {/* Email Field */}
             <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-600 ml-2">E-mail</label>
+              <label className={`text-sm font-bold ml-2 ${labelClassName}`}>E-mail</label>
               <div className="relative">
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                  className={`${inputBaseClassName} p-4 pl-12`}
                   placeholder="email@exemplo.com.br"
                   required
                 />
-                <Icons.Mail className="absolute left-4 top-4 text-gray-400" size={20} />
+                <Icons.Mail className={`absolute left-4 top-4 ${isCentralCoruja ? 'text-[#5f766f]' : 'text-gray-400'}`} size={20} />
               </div>
             </div>
 
@@ -124,7 +173,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
             <div className="mt-6 text-center">
               <button
                 onClick={() => onNavigate('login')}
-                className="text-kaboo-primary font-bold hover:underline"
+                className={`font-bold hover:underline ${isCentralCoruja ? 'text-[#d49e29]' : 'text-kaboo-primary'}`}
               >
                 Voltar para o Login
               </button>

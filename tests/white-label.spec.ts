@@ -6,11 +6,54 @@ import { test, expect, Page } from '@playwright/test';
 import { setupAdminSession } from './fixtures/auth';
 import { waitForAuthenticatedScreen, navigateToWhiteLabel } from './helpers/navigation';
 
+const WHITE_LABEL_PREVIEW_KEY = 'kaboo:white-label-preview-settings';
+const NAV_STATE_KEY = 'kaboo_nav_state';
+const DEV_MOCK_SESSION_KEY = 'kaboo_dev_mock_session';
+
 // ─── Setup compartilhado ───
 async function adminAtWhiteLabel(page: Page): Promise<void> {
     await setupAdminSession(page);
     await waitForAuthenticatedScreen(page);
     await navigateToWhiteLabel(page);
+}
+
+async function seedCentralCorujaPreview(
+    page: Page,
+    options?: {
+        navState?: Record<string, unknown>;
+        devMockSession?: boolean;
+    },
+): Promise<void> {
+    await page.addInitScript(
+        ({ previewKey, navStateKey, devMockSessionKey, navState, devMockSession }) => {
+            window.localStorage.setItem(
+                previewKey,
+                JSON.stringify({
+                    activeBrandId: 'central-coruja',
+                    previewEnabled: true,
+                }),
+            );
+
+            if (navState) {
+                window.localStorage.setItem(navStateKey, JSON.stringify(navState));
+            } else {
+                window.localStorage.removeItem(navStateKey);
+            }
+
+            if (devMockSession) {
+                window.sessionStorage.setItem(devMockSessionKey, '1');
+            } else {
+                window.sessionStorage.removeItem(devMockSessionKey);
+            }
+        },
+        {
+            previewKey: WHITE_LABEL_PREVIEW_KEY,
+            navStateKey: NAV_STATE_KEY,
+            devMockSessionKey: DEV_MOCK_SESSION_KEY,
+            navState: options?.navState ?? null,
+            devMockSession: options?.devMockSession ?? false,
+        },
+    );
 }
 
 // ===========================================================================
@@ -370,5 +413,116 @@ test.describe('JN-WL-010 — Health Check banner', () => {
         if (initialStatus === 'Crítico') {
             expect(newStatus).toBe('Saudável');
         }
+    });
+});
+
+// ===========================================================================
+// JORNADA 11 — Propagação do contexto para a Home
+// ===========================================================================
+test.describe('JN-WL-011 — Preview runtime da marca', () => {
+    test('contexto Central Coruja reflete na Home e no menu', async ({ page }) => {
+        await adminAtWhiteLabel(page);
+
+        await page.getByRole('button', { name: 'Central Coruja' }).click();
+        await expect(page.getByText('central-coruja')).toBeVisible({ timeout: 10_000 });
+
+        await page.getByRole('button', { name: 'Ir para o Início' }).click();
+
+        await expect(page.getByRole('heading', { name: 'Bem-vindo à Central Coruja!' })).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByText('Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Músicas' })).toHaveCount(0);
+        await expect(page.getByText('educacross').first()).toBeVisible();
+        await expect(page.getByText('Todos os direitos reservados.').first()).toBeVisible();
+        await expect(page.getByText('Mundo de Kaboo © 2025')).toHaveCount(0);
+    });
+});
+
+// ===========================================================================
+// JORNADA 12 — Auth runtime da marca
+// ===========================================================================
+test.describe('JN-WL-012 — Auth runtime da marca', () => {
+    test('forgot password herda identidade da Central Coruja', async ({ page }) => {
+        await seedCentralCorujaPreview(page);
+
+        await page.goto('/');
+        await page.locator('#field-email').waitFor({ state: 'visible', timeout: 15_000 });
+        await page.getByRole('button', { name: 'Esqueci minha senha' }).click();
+
+        await expect(page.getByText('Central Coruja').or(page.getByAltText('Central Coruja')).or(page.getByAltText('Central Coruja'))).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByRole('heading', { name: 'Recuperar senha' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Enviar Link' })).toBeVisible();
+    });
+
+    test('set password principal herda identidade da Central Coruja', async ({ page }) => {
+        await seedCentralCorujaPreview(page, {
+            navState: { currentScreen: 'set_password' },
+            devMockSession: true,
+        });
+
+        await page.goto('/#set_password');
+
+        await expect(page.getByText('Central Coruja').or(page.getByAltText('Central Coruja')).or(page.getByAltText('Central Coruja'))).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByRole('heading', { name: 'Criar sua senha' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Definir senha e entrar' })).toBeVisible();
+    });
+
+    test('link expirado mantém casca da Central Coruja', async ({ page }) => {
+        await seedCentralCorujaPreview(page, { devMockSession: true });
+
+        await page.goto('/');
+        await page.locator('#field-email').waitFor({ state: 'visible', timeout: 15_000 });
+        await page.evaluate((navStateKey) => {
+            const state = { screen: 'set_password', params: { linkExpired: true } };
+            window.localStorage.setItem(
+                navStateKey,
+                JSON.stringify({ currentScreen: 'set_password', params: { linkExpired: true } }),
+            );
+            window.history.pushState(state, '', '#set_password');
+            window.dispatchEvent(new PopStateEvent('popstate', { state }));
+        }, NAV_STATE_KEY);
+
+        await expect(page.getByText('Central Coruja').or(page.getByAltText('Central Coruja')).or(page.getByAltText('Central Coruja'))).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByRole('heading', { name: 'Link de convite expirado' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Voltar ao login' })).toBeVisible();
+    });
+});
+
+// ===========================================================================
+// JORNADA 13 — Tipografia e tokens de design
+// ===========================================================================
+test.describe('JN-WL-013 — Tipografia e tokens de design', () => {
+    test('white label salva tipografia e tokens no runtime', async ({ page }) => {
+        await adminAtWhiteLabel(page);
+
+        await page.getByRole('button', { name: 'Central Coruja' }).click();
+        await expect(page.getByText('central-coruja')).toBeVisible({ timeout: 10_000 });
+
+        await page.getByLabel('Família tipográfica').fill('Poppins, ui-sans-serif');
+        await page.getByLabel('Cor de sucesso').fill('#2F7D4D');
+        await page.getByLabel('Radius XL').fill('1.125rem');
+        await page.getByLabel('Radius 2XL').fill('1.75rem');
+        await page.getByLabel('Radius 3XL').fill('2.5rem');
+
+        await page.getByRole('button', { name: 'Salvar identidade visual' }).click();
+        await expect(page.getByText(/salva com sucesso/i)).toBeVisible({ timeout: 10_000 });
+
+        await expect.poll(async () => page.evaluate(() => getComputedStyle(document.body).fontFamily)).toContain('Poppins');
+        await expect.poll(async () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--color-brand-green').trim())).toBe('#2F7D4D');
+        await expect.poll(async () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--radius-2xl').trim())).toBe('1.75rem');
+        await expect.poll(async () => page.getByRole('button', { name: 'Salvar identidade visual' }).evaluate((element) => getComputedStyle(element).borderRadius)).toBe('28px');
+    });
+});
+
+// ===========================================================================
+// JORNADA 14 — Seleção inicial sincronizada com preview salvo
+// ===========================================================================
+test.describe('JN-WL-014 — Bootstrap do painel pela marca ativa', () => {
+    test('painel White Label abre na Central Coruja quando o preview salvo está ativo', async ({ page }) => {
+        await seedCentralCorujaPreview(page);
+        await adminAtWhiteLabel(page);
+
+        await expect(page.getByText('central-coruja')).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByRole('button', { name: 'Central Coruja' }).locator('svg, img')).toHaveCount(1);
+        await expect(page.getByRole('button', { name: 'Mundo de Kaboo' }).locator('svg, img')).toHaveCount(0);
     });
 });

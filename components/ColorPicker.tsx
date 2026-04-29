@@ -4,9 +4,10 @@ interface ColorPickerProps {
   value: string;
   onChange: (color: string) => void;
   label?: string;
+  inputId?: string;
 }
 
-export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label }) => {
+export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label, inputId }) => {
   const [hexValue, setHexValue] = useState(value);
   const [isValid, setIsValid] = useState(true);
 
@@ -82,7 +83,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label
   return (
     <div>
       {label && (
-        <label className="block text-sm font-bold text-gray-700 mb-2">{label}</label>
+        <label htmlFor={inputId} className="block text-sm font-bold text-gray-700 mb-2">{label}</label>
       )}
       <div className="flex items-center gap-3">
         {/* Circular color swatch button */}
@@ -116,6 +117,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label
         {/* HEX input */}
         <div className="flex-1">
           <input
+            id={inputId}
             type="text"
             value={hexValue}
             onChange={handleHexChange}

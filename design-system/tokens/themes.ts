@@ -12,7 +12,21 @@ export interface BrandTheme {
     green: string    // cor de sucesso / progresso
   }
   font?: string      // família tipográfica (opcional, padrão: Nunito)
+  tokens?: {
+    radius?: {
+      xl?: string
+      '2xl'?: string
+      '3xl'?: string
+    }
+  }
 }
+
+const DEFAULT_FONT_FAMILY = "'Nunito', ui-rounded, system-ui, sans-serif"
+const DEFAULT_RADIUS_TOKENS = {
+  xl: '1rem',
+  '2xl': '1.5rem',
+  '3xl': '2rem',
+} as const
 
 // ─── Temas de exemplo ──────────────────────────────────────
 export const themes: Record<string, BrandTheme> = {
@@ -67,7 +81,8 @@ export const themes: Record<string, BrandTheme> = {
 
 // ─── Aplicador de tema ─────────────────────────────────────
 export function applyTheme(theme: BrandTheme, root: HTMLElement = document.documentElement): void {
-  const { colors, font } = theme
+  const { colors, font, tokens } = theme
+  const radius = tokens?.radius
   root.style.setProperty('--color-kaboo-primary', colors.primary)
   root.style.setProperty('--color-kaboo-light', colors.light)
   root.style.setProperty('--color-kaboo-bg', colors.bg)
@@ -78,6 +93,9 @@ export function applyTheme(theme: BrandTheme, root: HTMLElement = document.docum
   root.style.setProperty('--color-brand-bg', colors.bg)
   root.style.setProperty('--color-brand-accent', colors.accent)
   root.style.setProperty('--color-brand-green', colors.green)
-  if (font) root.style.setProperty('--font-family-sans', font)
+  root.style.setProperty('--font-family-sans', font ?? DEFAULT_FONT_FAMILY)
+  root.style.setProperty('--radius-xl', radius?.xl ?? DEFAULT_RADIUS_TOKENS.xl)
+  root.style.setProperty('--radius-2xl', radius?.['2xl'] ?? DEFAULT_RADIUS_TOKENS['2xl'])
+  root.style.setProperty('--radius-3xl', radius?.['3xl'] ?? DEFAULT_RADIUS_TOKENS['3xl'])
   root.setAttribute('data-brand', theme.id)
 }
