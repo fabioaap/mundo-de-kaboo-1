@@ -138,6 +138,31 @@
 
 <body>
   <div id="root"></div>
+  <script>
+    (() => {
+      const captureScriptSrc = 'https://mcp.figma.com/mcp/html-to-design/capture.js';
+      const captureScriptAttr = 'data-figma-capture-script';
+
+      const ensureCaptureScript = () => {
+        if (!window.location.hash.includes('figmacapture=')) {
+          return;
+        }
+
+        if (document.querySelector(`script[${captureScriptAttr}]`)) {
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = captureScriptSrc;
+        script.async = true;
+        script.setAttribute(captureScriptAttr, 'true');
+        document.head.appendChild(script);
+      };
+
+      ensureCaptureScript();
+      window.addEventListener('hashchange', ensureCaptureScript);
+    })();
+  </script>
   <script type="module" src="./index.tsx"></script>
 </body>
 
