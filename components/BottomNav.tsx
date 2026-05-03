@@ -145,10 +145,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
   };
 
   const desktopShellClass = isCentralCoruja
-    ? 'bg-kaboo-primary border-r border-white/10 shadow-[8px_0_28px_rgba(12,26,52,0.28)]'
+    ? 'bg-kaboo-primary'
     : 'bg-kaboo-bg border-r border-kaboo-primary/10 shadow-sm';
   const desktopToggleClass = isCentralCoruja
-    ? 'bg-kaboo-primary border-white/15 hover:bg-kaboo-light'
+    ? 'bg-kaboo-primary border-white/15 hover:bg-white/[0.08]'
     : 'bg-kaboo-bg border-kaboo-primary/20 hover:bg-kaboo-primary/5';
   const desktopToggleIconClass = isCentralCoruja ? 'text-white/85' : 'text-gray-600';
   const desktopSectionTitleClass = isCentralCoruja ? 'text-white/45' : 'text-kaboo-primary/50';
@@ -366,6 +366,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                 profile={effectiveProfile}
                 collapsed={isCollapsed}
                 active={isProfileSection}
+                tone={isCentralCoruja ? 'central-coruja' : 'default'}
                 onClick={() => onNavigate('profile')}
               />
             </div>

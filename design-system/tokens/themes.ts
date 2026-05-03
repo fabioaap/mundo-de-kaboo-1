@@ -47,7 +47,7 @@ export const themes: Record<string, BrandTheme> = {
     name: 'Central Coruja',
     colors: {
       primary: '#0C1A34',   // navy escuro (Frame 3)
-      light: '#5C1E76',     // roxo profundo (Frame 4)
+      light: '#5D1E76',     // roxo profundo (Frame 4)
       bg: '#F5F7FA',        // fundo neutro branco-azulado (sem lavanda)
       accent: '#F5A623',    // laranja dourado vibrante (Frame 5)
       green: '#70E000',
