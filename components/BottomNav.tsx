@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { ScreenName, UserProfile } from '../types';
-import { LOGO_URL, getCharacterImageUrl } from '../constants';
+import { LOGO_URL } from '../constants';
 import { UserIdentityCard } from './UserIdentityCard';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockSession } from '../lib/api';
@@ -37,11 +37,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
   /** Retorna true se a chave de menu deve aparecer. Sem restrição = tudo habilitado. */
   const isMenuKeyEnabled = (key: string): boolean =>
     !enabledMenuKeys || enabledMenuKeys.has(key);
-  const isCentralCoruja = brandSlug === 'central-coruja';
   const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
   const resolvedBrandName = brandName || 'Mundo de Kaboo';
   const footerBrandLabel = `${resolvedBrandName} © 2025`;
-  const corujaMascotUrl = isCentralCoruja ? getCharacterImageUrl('gaio') : '';
+
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_SIDEBAR_COLLAPSED);
@@ -114,30 +113,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     ? { key: 'admin', screen: 'admin', icon: Icons.Settings, label: 'Gerenciar' }
     : null;
 
-  const corujaDesktopNavItems: NavItem[] = ([
-    { key: 'collections', screen: 'home', icon: Icons.Library, label: 'Coleções', params: { collectionGroup: 'kits' } },
-    { key: 'search', screen: 'search', icon: Icons.Search, label: 'Buscar' },
-    { key: 'formations', screen: 'formations', icon: Icons.BookOpen, label: 'Academia' },
-    { key: 'materials', screen: 'materials', icon: Icons.FileText, label: 'Materiais' },
-    { key: 'profile', screen: 'profile', icon: Icons.User, label: 'Perfil' },
-    { key: 'support', screen: 'support', icon: Icons.HelpCircle, label: 'Suporte' },
-  ] as NavItem[]).filter((item) => {
-    if (item.key === 'search' || item.key === 'profile' || item.key === 'support') {
-      return true;
-    }
 
-    return isMenuKeyEnabled(item.key);
-  });
+  const desktopNavSections = [
+    { title: 'Acervo', items: catalogNavItems },
+    { title: 'Bibliotecas', items: libraryNavItems },
+    ...(adminNavItem ? [{ title: 'Gestão', items: [adminNavItem] }] : []),
+  ];
 
-  const desktopNavSections = isCentralCoruja
-    ? [{ title: '', items: corujaDesktopNavItems }]
-    : [
-      { title: 'Acervo', items: catalogNavItems },
-      { title: 'Bibliotecas', items: libraryNavItems },
-      ...(adminNavItem ? [{ title: 'Gestão', items: [adminNavItem] }] : []),
-    ];
-
-  const footerNavItems: NavItem[] = isCentralCoruja && adminNavItem ? [adminNavItem] : [];
+  const footerNavItems: NavItem[] = [];
 
   const mobilePrimaryNavItems: NavItem[] = [
     catalogNavItems[0],
@@ -160,24 +143,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     onNavigate(screen, params);
   };
 
-  const desktopShellClass = isCentralCoruja
-    ? 'bg-[radial-gradient(58%_30%_at_50%_0%,rgba(250,204,21,0.18),transparent_80%),radial-gradient(40%_22%_at_0%_35%,rgba(168,85,247,0.16),transparent_80%),linear-gradient(180deg,#12233f_0%,#10213a_55%,#132a38_100%)] border-r border-emerald-950/50 shadow-[16px_0_48px_rgba(6,18,31,0.35)]'
-    : 'bg-white border-r border-gray-100 shadow-sm';
-  const desktopToggleClass = isCentralCoruja
-    ? 'bg-[#173052] border-[#2b4f6d] hover:bg-[#1c3a61]'
-    : 'bg-white border-gray-200 hover:bg-gray-50';
-  const desktopSectionTitleClass = isCentralCoruja
-    ? 'text-[#d9d7b0]/55'
-    : 'text-gray-300/90';
-  const desktopItemActiveClass = isCentralCoruja
-    ? 'bg-[linear-gradient(135deg,#612d8f_0%,#8642bf_100%)] text-[#fff3bb] shadow-[0_14px_32px_rgba(92,41,139,0.42)]'
-    : 'bg-kaboo-primary text-white shadow-md shadow-kaboo-primary/20';
-  const desktopItemInactiveClass = isCentralCoruja
-    ? 'bg-transparent text-[#efe2a8] hover:bg-white/6'
-    : 'bg-transparent text-gray-500 hover:bg-gray-50/90';
-  const desktopFooterTextClass = isCentralCoruja
-    ? 'text-[#cfd8c9]/45'
-    : 'text-gray-300';
+  const desktopShellClass = 'bg-white border-r border-gray-100 shadow-sm';
+  const desktopToggleClass = 'bg-white border-gray-200 hover:bg-gray-50';
+  const desktopSectionTitleClass = 'text-gray-300/90';
+  const desktopItemActiveClass = 'bg-kaboo-primary text-white shadow-md shadow-kaboo-primary/20';
+  const desktopItemInactiveClass = 'bg-transparent text-gray-500 hover:bg-gray-50/90';
+  const desktopFooterTextClass = 'text-gray-300';
 
   return (
     <>
@@ -253,13 +224,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
       {/* DESKTOP SIDEBAR */}
       <div className={`hidden md:flex flex-col h-screen shrink-0 z-50 transition-all duration-300 ease-in-out relative ${desktopShellClass} ${isCollapsed ? 'w-20' : 'w-[268px]'
         }`}>
-        {isCentralCoruja && (
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute -top-10 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-emerald-300/10 blur-3xl" />
-            <div className="absolute top-40 -left-10 h-32 w-32 rounded-full bg-fuchsia-400/10 blur-3xl" />
-            <div className="absolute bottom-24 -right-12 h-44 w-44 rounded-full bg-amber-300/10 blur-3xl" />
-          </div>
-        )}
 
         {/* Toggle Button - Top Border */}
         <button
@@ -269,9 +233,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
           title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           {isCollapsed ? (
-            <Icons.ChevronRight size={14} className={isCentralCoruja ? 'text-[#fff3bb]' : 'text-gray-600'} />
+            <Icons.ChevronRight size={14} className="text-gray-600" />
           ) : (
-            <Icons.ChevronLeft size={14} className={isCentralCoruja ? 'text-[#fff3bb]' : 'text-gray-600'} />
+            <Icons.ChevronLeft size={14} className="text-gray-600" />
           )}
         </button>
 
@@ -287,9 +251,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
             resolvedBrandLogoUrl ? (
               <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="w-32 h-auto" />
             ) : (
-              <div className={`px-4 py-3 text-center text-base font-black leading-tight shadow-sm ${isCentralCoruja
-                ? 'rounded-[26px] border border-white/15 bg-white/10 text-[#fff2b8] backdrop-blur-sm'
-                : 'rounded-[28px] border border-gray-200 bg-white text-gray-800'}`}>
+              <div className="px-4 py-3 text-center text-base font-black leading-tight shadow-sm rounded-[28px] border border-gray-200 bg-white text-gray-800">
                 {resolvedBrandName}
               </div>
             )
@@ -298,9 +260,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
             resolvedBrandLogoUrl ? (
               <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="w-10 h-auto" />
             ) : (
-              <div className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-black shadow-sm ${isCentralCoruja
-                ? 'border border-white/15 bg-white/10 text-[#fff2b8] backdrop-blur-sm'
-                : 'border border-gray-200 bg-white text-gray-800'}`}>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-black shadow-sm border border-gray-200 bg-white text-gray-800">
                 {resolvedBrandName.charAt(0)}
               </div>
             )
@@ -335,14 +295,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                       }`}
                   >
                     {!isCollapsed && isActive && (
-                      <span className={`absolute left-2 h-5 w-1 rounded-full ${isCentralCoruja ? 'bg-[#ffe994]' : 'bg-white/85'}`} aria-hidden="true" />
+                      <span className={`absolute left-2 h-5 w-1 rounded-full bg-white/85`} aria-hidden="true" />
                     )}
                     <Icon
                       size={22}
-                      className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${isCentralCoruja ? 'group-hover:text-white' : 'group-hover:text-kaboo-primary'}`}
+                      className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px] group-hover:text-kaboo-primary'}
                     />
                     {!isCollapsed && (
-                      <span className={`text-sm font-bold ${isActive ? '' : isCentralCoruja ? 'group-hover:text-white' : 'group-hover:text-gray-800'}`}>
+                      <span className={`text-sm font-bold ${isActive ? '' : 'group-hover:text-gray-800'}`}>
                         {item.label}
                       </span>
                     )}
@@ -354,7 +314,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
         </div>
 
         {/* Footer */}
-        <div className={`relative z-10 transition-all duration-300 ${isCentralCoruja ? 'border-t border-white/10' : 'border-t border-gray-100'} ${isCollapsed ? 'px-2 py-4' : 'px-4 pt-4 pb-6'}`}>
+        <div className={`relative z-10 transition-all duration-300 border-t border-gray-100 ${isCollapsed ? 'px-2 py-4' : 'px-4 pt-4 pb-6'}`}>
           <div className="space-y-2">
             {footerNavItems.map((item) => {
               const isActive = isItemActive(item);
@@ -375,10 +335,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                 >
                   <Icon
                     size={22}
-                    className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${isCentralCoruja ? 'group-hover:text-white' : 'group-hover:text-kaboo-primary'}`}
+                    className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px] group-hover:text-kaboo-primary'}
                   />
                   {!isCollapsed && (
-                    <span className={`text-sm font-bold ${isActive ? '' : isCentralCoruja ? 'group-hover:text-white' : 'group-hover:text-gray-800'}`}>
+                    <span className={`text-sm font-bold ${isActive ? '' : 'group-hover:text-gray-800'}`}>
                       {item.label}
                     </span>
                   )}
@@ -387,7 +347,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
             })}
           </div>
 
-          {effectiveProfile && !isCentralCoruja && (
+          {effectiveProfile && (
             <div className={`${isCollapsed ? 'flex justify-center' : ''} ${footerNavItems.length > 0 ? 'mt-4' : ''}`}>
               <UserIdentityCard
                 profile={effectiveProfile}
@@ -400,26 +360,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
 
           {!isCollapsed && (
             <div className={`pt-4 text-center text-xs ${desktopFooterTextClass}`}>
-              {isCentralCoruja && corujaMascotUrl && (
-                <div className="mb-4 flex flex-col items-start gap-3 rounded-[28px] border border-white/8 bg-white/5 px-4 py-4 text-left shadow-[0_18px_36px_rgba(5,12,24,0.24)] backdrop-blur-sm">
-                  <div className="flex items-end gap-3">
-                    <img src={corujaMascotUrl} alt="Mascote Central Coruja" className="h-20 w-20 object-contain drop-shadow-[0_10px_22px_rgba(0,0,0,0.28)]" />
-                    <div>
-                      <p className="text-lg font-black leading-none text-[#f8edb5]">educacross</p>
-                      <p className="mt-1 max-w-[9rem] text-[11px] font-medium leading-relaxed text-[#aab7c8]">Todos os direitos reservados.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {isCentralCoruja ? (
-                <p className="mt-1 text-[11px] font-medium tracking-[0.12em] text-[#93a8bc]">Versão 2.1</p>
-              ) : (
-                <>
-                  <p>{footerBrandLabel}</p>
-                  <p className="mt-1">Versão 2.1</p>
-                </>
-              )}
+              <p>{footerBrandLabel}</p>
+              <p className="mt-1">Versão 2.1</p>
             </div>
           )}
         </div>
