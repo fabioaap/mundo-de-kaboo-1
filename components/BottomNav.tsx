@@ -143,12 +143,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     onNavigate(screen, params);
   };
 
-  const desktopShellClass = 'bg-white border-r border-gray-100 shadow-sm';
-  const desktopToggleClass = 'bg-white border-gray-200 hover:bg-gray-50';
-  const desktopSectionTitleClass = 'text-gray-300/90';
+  const desktopShellClass = 'bg-kaboo-bg border-r border-kaboo-primary/10 shadow-sm';
+  const desktopToggleClass = 'bg-kaboo-bg border-kaboo-primary/20 hover:bg-kaboo-primary/5';
+  const desktopSectionTitleClass = 'text-kaboo-primary/50';
   const desktopItemActiveClass = 'bg-kaboo-primary text-white shadow-md shadow-kaboo-primary/20';
-  const desktopItemInactiveClass = 'bg-transparent text-gray-500 hover:bg-gray-50/90';
-  const desktopFooterTextClass = 'text-gray-300';
+  const desktopItemInactiveClass = 'bg-transparent text-gray-500 hover:bg-kaboo-primary/[0.06]';
+  const desktopFooterTextClass = 'text-kaboo-primary/40';
 
   return (
     <>
@@ -271,7 +271,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
         <div className={`relative z-10 flex-1 space-y-4 py-4 transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'
           }`}>
           {desktopNavSections.map((section, sectionIndex) => (
-            <div key={`${section.title}-${sectionIndex}`} className={`space-y-2 ${sectionIndex > 0 ? 'pt-4 border-t border-gray-100' : ''}`}>
+            <div key={`${section.title}-${sectionIndex}`} className={`space-y-2 ${sectionIndex > 0 ? 'pt-4 border-t border-kaboo-primary/10' : ''}`}>
               {!isCollapsed && section.title && (
                 <p className={`px-4 text-[11px] font-black uppercase tracking-[0.2em] ${desktopSectionTitleClass}`}>
                   {section.title}
@@ -302,7 +302,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                       className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px] group-hover:text-kaboo-primary'}
                     />
                     {!isCollapsed && (
-                      <span className={`text-sm font-bold ${isActive ? '' : 'group-hover:text-gray-800'}`}>
+                      <span className={`text-sm font-bold ${isActive ? '' : 'group-hover:text-kaboo-primary'}`}>
                         {item.label}
                       </span>
                     )}
@@ -314,7 +314,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
         </div>
 
         {/* Footer */}
-        <div className={`relative z-10 transition-all duration-300 border-t border-gray-100 ${isCollapsed ? 'px-2 py-4' : 'px-4 pt-4 pb-6'}`}>
+        <div className={`relative z-10 transition-all duration-300 border-t border-kaboo-primary/10 ${isCollapsed ? 'px-2 py-4' : 'px-4 pt-4 pb-6'}`}>
           <div className="space-y-2">
             {footerNavItems.map((item) => {
               const isActive = isItemActive(item);
