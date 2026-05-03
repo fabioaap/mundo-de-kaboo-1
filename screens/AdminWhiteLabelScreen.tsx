@@ -51,7 +51,7 @@ const MODE_OPTIONS: Array<{ value: HeroParallaxMode; label: string; description:
 
 const BRAND_ACCENTS: Record<string, string> = {
     kaboo: 'from-kaboo-primary/10 via-kaboo-primary/[0.04] to-transparent',
-    'central-coruja': 'from-emerald-700/15 via-amber-300/10 to-transparent',
+    'central-coruja': 'from-[#0C1A34]/16 via-[#5D1E76]/10 to-[#EA9A3B]/8',
 };
 
 const ROLLOUT_WAVES: Array<{ value: WhiteLabelRolloutWave; label: string; description: string }> = [

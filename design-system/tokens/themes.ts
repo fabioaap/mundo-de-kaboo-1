@@ -42,6 +42,18 @@ export const themes: Record<string, BrandTheme> = {
     },
   },
 
+  'central-coruja': {
+    id: 'central-coruja',
+    name: 'Central Coruja',
+    colors: {
+      primary: '#0C1A34',
+      light: '#5D1E76',
+      bg: '#F8F4FF',
+      accent: '#EA9A3B',
+      green: '#70E000',
+    },
+  },
+
   oceano: {
     id: 'oceano',
     name: 'Oceano Educação',

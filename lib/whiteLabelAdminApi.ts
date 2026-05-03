@@ -161,7 +161,7 @@ const MOCK_FEATURES_BY_BRAND: Record<string, Record<string, WhiteLabelFeatureSta
     },
     'mock-central-coruja': {
         'menu.music': { enabled: false, config: {} },
-        'hero.parallax': { enabled: true, config: { mode: 'subtle' } },
+        'hero.parallax': { enabled: false, config: { mode: 'off' } },
     },
 };
 
@@ -177,7 +177,7 @@ const MOCK_ROLLOUT_CONFIG: Record<string, WhiteLabelRolloutConfig> = {
 
 const MOCK_ROLLOUT_METRICS: Record<string, WhiteLabelRolloutMetrics> = {
     'mock-kaboo': { enabled_flags: 2, total_changes: 0, changes_24h: 0, last_publish_at: null },
-    'mock-central-coruja': { enabled_flags: 1, total_changes: 0, changes_24h: 0, last_publish_at: null },
+    'mock-central-coruja': { enabled_flags: 0, total_changes: 0, changes_24h: 0, last_publish_at: null },
 };
 
 const MOCK_ALERTING_CONFIG: Record<string, WhiteLabelAlertingConfig> = {
@@ -234,11 +234,11 @@ const DEFAULT_BRAND_IDENTITY_BY_BRAND: Record<string, WhiteLabelBrandIdentity> =
     },
     'mock-central-coruja': {
         display_name: 'Central Coruja',
-        logo_url: '/central-coruja-logo.svg',
-        primary_color: '#1B5E20',
-        light_color: '#388E3C',
-        bg_color: '#F1F8E9',
-        accent_color: '#F9A825',
+        logo_url: '/central-coruja-logo.png',
+        primary_color: '#0C1A34',
+        light_color: '#5D1E76',
+        bg_color: '#F8F4FF',
+        accent_color: '#EA9A3B',
         font_family: '',
         green_color: '#70E000',
         radius_xl: '1rem',

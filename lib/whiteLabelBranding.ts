@@ -27,6 +27,21 @@ export interface MockBrandSettingsOverride {
 }
 
 const MOCK_BRAND_SETTINGS_STORAGE_KEY = 'kaboo:mock-brand-settings-overrides';
+const LEGACY_CENTRAL_CORUJA_OVERRIDE = {
+    logo_url: '/central-coruja-logo.svg',
+    primary_color: '#1B5E20',
+    light_color: '#388E3C',
+    bg_color: '#F1F8E9',
+    accent_color: '#F9A825',
+} as const;
+const CURRENT_CENTRAL_CORUJA_OVERRIDE = {
+    logo_url: '/central-coruja-logo.png',
+    primary_color: '#0C1A34',
+    light_color: '#5D1E76',
+    bg_color: '#F8F4FF',
+    accent_color: '#EA9A3B',
+} as const;
+type CentralCorujaOverrideField = keyof typeof CURRENT_CENTRAL_CORUJA_OVERRIDE;
 
 function normalizeNullableString(value: unknown): string | null {
     if (typeof value !== 'string') {
@@ -128,6 +143,29 @@ function normalizeMockOverride(override: MockBrandSettingsOverride): MockBrandSe
     };
 }
 
+function migrateCentralCorujaOverride(override: MockBrandSettingsOverride): { override: MockBrandSettingsOverride; changed: boolean } {
+    const nextOverride: MockBrandSettingsOverride = { ...override };
+    let changed = false;
+
+    (Object.keys(CURRENT_CENTRAL_CORUJA_OVERRIDE) as CentralCorujaOverrideField[]).forEach((field) => {
+        const currentValue = override[field];
+        const legacyValue = LEGACY_CENTRAL_CORUJA_OVERRIDE[field];
+        const currentBaselineValue = CURRENT_CENTRAL_CORUJA_OVERRIDE[field];
+
+        if (currentValue == null || currentValue === legacyValue) {
+            if (currentValue !== currentBaselineValue) {
+                nextOverride[field] = currentBaselineValue;
+                changed = true;
+            }
+        }
+    });
+
+    return {
+        override: changed ? normalizeMockOverride(nextOverride) : override,
+        changed,
+    };
+}
+
 function readAllMockBrandSettingsOverrides(): Record<string, MockBrandSettingsOverride> {
     if (typeof window === 'undefined') {
         return {};
@@ -144,10 +182,26 @@ function readAllMockBrandSettingsOverrides(): Record<string, MockBrandSettingsOv
             return {};
         }
 
-        return Object.entries(parsed).reduce<Record<string, MockBrandSettingsOverride>>((accumulator, [brandId, override]) => {
-            accumulator[brandId] = normalizeMockOverride(isPlainRecord(override) ? override : {});
+        let changed = false;
+        const normalizedOverrides = Object.entries(parsed).reduce<Record<string, MockBrandSettingsOverride>>((accumulator, [brandId, override]) => {
+            const normalizedOverride = normalizeMockOverride(isPlainRecord(override) ? override : {});
+
+            if (brandId === 'mock-central-coruja') {
+                const migration = migrateCentralCorujaOverride(normalizedOverride);
+                accumulator[brandId] = migration.override;
+                changed = changed || migration.changed;
+                return accumulator;
+            }
+
+            accumulator[brandId] = normalizedOverride;
             return accumulator;
         }, {});
+
+        if (changed) {
+            window.localStorage.setItem(MOCK_BRAND_SETTINGS_STORAGE_KEY, JSON.stringify(normalizedOverrides));
+        }
+
+        return normalizedOverrides;
     } catch {
         return {};
     }

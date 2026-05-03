@@ -29,7 +29,7 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
       backgroundImage: resolvedBackgroundImageUrl
         ? `linear-gradient(135deg, rgba(9, 26, 38, 0.72), rgba(9, 26, 38, 0.18)), url(${resolvedBackgroundImageUrl})`
         : undefined,
-      backgroundColor: '#132842',
+      backgroundColor: '#0C1A34',
       backgroundPosition: 'center',
       backgroundSize: 'cover',
     }
@@ -38,11 +38,11 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
       backgroundPosition: 'center',
       backgroundSize: 'cover',
     };
-  const titleClassName = isCentralCoruja ? 'text-[#17384c]' : 'text-gray-800';
-  const bodyClassName = isCentralCoruja ? 'text-[#5f766f]' : 'text-gray-500';
-  const labelClassName = isCentralCoruja ? 'text-[#35524d]' : 'text-gray-600';
+  const titleClassName = isCentralCoruja ? 'text-[#0C1A34]' : 'text-gray-800';
+  const bodyClassName = isCentralCoruja ? 'text-[#4D5974]' : 'text-gray-500';
+  const labelClassName = isCentralCoruja ? 'text-[#243A60]' : 'text-gray-600';
   const inputBaseClassName = isCentralCoruja
-    ? 'w-full bg-[#fff9ef]/96 border border-[#d6e1d8] rounded-[22px] text-[#1c3440] placeholder:text-[#91a099] outline-none transition-all focus:border-[#d49e29] focus:ring-4 focus:ring-[#d49e29]/15'
+    ? 'w-full bg-[#fffdfd]/96 border border-[#dddff3] rounded-[22px] text-[#0C1A34] placeholder:text-[#8A93AD] outline-none transition-all focus:border-[#EA9A3B] focus:ring-4 focus:ring-[#EA9A3B]/15'
     : 'w-full bg-gray-50 border-none rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all';
 
   const renderBrandMark = () => {
@@ -52,7 +52,7 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
 
     return (
       <div className={`inline-flex items-center justify-center text-center font-black leading-none ${isCentralCoruja
-        ? 'rounded-[24px] border border-[#e0d5ae]/55 bg-[#fff7e1]/85 px-5 py-3 text-xl text-[#17384c] shadow-[0_16px_34px_rgba(17,42,60,0.12)]'
+        ? 'rounded-[24px] border border-[#f3d8b0]/55 bg-[#fff7eb]/85 px-5 py-3 text-xl text-[#0C1A34] shadow-[0_16px_34px_rgba(17,42,60,0.12)]'
         : 'rounded-full border border-gray-200 bg-white px-4 py-2 text-base text-gray-800 shadow-sm'}`}>
         {resolvedBrandName}
       </div>
@@ -125,19 +125,19 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
 
   return (
     <div
-      className={`flex min-h-screen items-center justify-center p-0 md:p-8 relative overflow-hidden ${isCentralCoruja ? 'bg-[#132842]' : 'bg-gray-50 bg-no-repeat'}`}
+      className={`flex min-h-screen items-center justify-center p-0 md:p-8 relative overflow-hidden ${isCentralCoruja ? 'bg-[#0C1A34]' : 'bg-gray-50 bg-no-repeat'}`}
       style={shellBackgroundStyle}
     >
       <div className={`absolute inset-0 ${isCentralCoruja
-        ? 'bg-[radial-gradient(56%_42%_at_14%_8%,rgba(245,191,52,0.18),transparent_55%),radial-gradient(46%_34%_at_88%_12%,rgba(61,131,84,0.18),transparent_58%),linear-gradient(180deg,rgba(9,23,35,0.34),rgba(9,23,35,0.1))] backdrop-blur-[1px]'
+        ? 'bg-[radial-gradient(56%_42%_at_14%_8%,rgba(234,154,59,0.18),transparent_55%),radial-gradient(46%_34%_at_88%_12%,rgba(93,30,118,0.18),transparent_58%),linear-gradient(180deg,rgba(9,23,35,0.34),rgba(9,23,35,0.1))] backdrop-blur-[1px]'
         : 'bg-kaboo-primary/20 backdrop-blur-[2px]'}`} />
 
       <div className={`relative z-10 w-full min-h-screen md:min-h-0 md:h-auto md:max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300 ${isCentralCoruja
-        ? 'bg-[linear-gradient(180deg,rgba(249,245,235,0.98)_0%,rgba(243,239,227,0.97)_100%)] md:rounded-[36px] md:border md:border-white/35 md:shadow-[0_34px_84px_rgba(6,18,31,0.34)]'
+        ? 'bg-[linear-gradient(180deg,rgba(251,248,255,0.98)_0%,rgba(246,242,252,0.97)_100%)] md:rounded-[36px] md:border md:border-white/35 md:shadow-[0_34px_84px_rgba(6,18,31,0.34)]'
         : 'bg-white md:rounded-3xl md:shadow-2xl'}`}>
 
         {/* Header */}
-        <div className={`px-6 pt-12 pb-4 flex items-center justify-center shrink-0 md:pt-8 ${isCentralCoruja ? 'border-b border-[#e4ddc8]' : 'border-b border-gray-100'}`}>
+        <div className={`px-6 pt-12 pb-4 flex items-center justify-center shrink-0 md:pt-8 ${isCentralCoruja ? 'border-b border-[#ece5fa]' : 'border-b border-gray-100'}`}>
           {renderBrandMark()}
         </div>
 
@@ -147,7 +147,7 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
           {linkExpired ? (
             <div className="flex flex-col items-center gap-5 text-center py-8">
               <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isCentralCoruja
-                ? 'bg-[#fff0c7] text-[#bd7a16] shadow-[0_16px_30px_rgba(189,122,22,0.18)]'
+                ? 'bg-[#fff6eb] text-[#EA9A3B] shadow-[0_16px_30px_rgba(234,154,59,0.18)]'
                 : 'bg-amber-50 text-amber-500'}`}>
                 <Icons.AlertCircle size={32} />
               </div>
@@ -165,11 +165,11 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
           ) : successMsg ? (
             <div className="flex flex-col items-center gap-4 text-center py-8">
               <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isCentralCoruja
-                ? 'bg-[#e2f2e5] text-[#2f7d4d] shadow-[0_16px_30px_rgba(47,125,77,0.16)]'
+                ? 'bg-[#f6efff] text-[#5D1E76] shadow-[0_16px_30px_rgba(93,30,118,0.16)]'
                 : 'bg-emerald-50 text-emerald-500'}`}>
                 <Icons.Check size={32} />
               </div>
-              <p className={`font-medium ${isCentralCoruja ? 'text-[#35524d]' : 'text-gray-700'}`}>{successMsg}</p>
+              <p className={`font-medium ${isCentralCoruja ? 'text-[#243A60]' : 'text-gray-700'}`}>{successMsg}</p>
             </div>
           ) : (
             <>
@@ -180,9 +180,9 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
 
               {/* E-mail pré-preenchido */}
               {userEmail && (
-                <div className={`mb-4 rounded-2xl px-4 py-3 flex items-center gap-3 ${isCentralCoruja ? 'bg-[#fff9ef] border border-[#e2ddd1]' : 'bg-gray-50'}`}>
-                  <Icons.Mail size={18} className={`${isCentralCoruja ? 'text-[#5f766f]' : 'text-gray-400'} shrink-0`} />
-                  <span className={`text-sm font-medium truncate ${isCentralCoruja ? 'text-[#35524d]' : 'text-gray-700'}`}>{userEmail}</span>
+                <div className={`mb-4 rounded-2xl px-4 py-3 flex items-center gap-3 ${isCentralCoruja ? 'bg-[#fffdfd] border border-[#ece5fa]' : 'bg-gray-50'}`}>
+                  <Icons.Mail size={18} className={`${isCentralCoruja ? 'text-[#67728A]' : 'text-gray-400'} shrink-0`} />
+                  <span className={`text-sm font-medium truncate ${isCentralCoruja ? 'text-[#243A60]' : 'text-gray-700'}`}>{userEmail}</span>
                 </div>
               )}
 
@@ -211,7 +211,7 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
                     <button
                       type="button"
                       onClick={() => setShowPassword(v => !v)}
-                      className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#617671] hover:text-[#35524d]' : 'text-gray-400 hover:text-gray-600'}`}
+                      className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#67728A] hover:text-[#243A60]' : 'text-gray-400 hover:text-gray-600'}`}
                       tabIndex={-1}
                     >
                       {showPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
@@ -235,7 +235,7 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
                     <button
                       type="button"
                       onClick={() => setShowConfirm(v => !v)}
-                      className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#617671] hover:text-[#35524d]' : 'text-gray-400 hover:text-gray-600'}`}
+                      className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#67728A] hover:text-[#243A60]' : 'text-gray-400 hover:text-gray-600'}`}
                       tabIndex={-1}
                     >
                       {showConfirm ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}

@@ -13,6 +13,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockSession } from '../lib/api';
 import { applyTheme, themes, BrandTheme } from '../design-system/tokens/themes';
 import { getWhiteLabelPreviewSettings, subscribeToWhiteLabelPreviewSettings } from '../lib/whiteLabelPreview';
+import { resolveBrandSlugFromPathname } from './brandSlug';
 import {
     extractBrandDesignTokens,
     extractBrandVisualIdentity,
@@ -106,11 +107,11 @@ const MOCK_BRAND_OVERRIDES: Record<string, Partial<BrandBootstrap>> = {
         brand: { id: 'mock-central-coruja', slug: 'central-coruja', name: 'Central Coruja' },
         settings: {
             display_name: 'Central Coruja',
-            logo_url: '/central-coruja-logo.svg',
-            primary_color: '#1B5E20',
-            light_color: '#388E3C',
-            bg_color: '#F1F8E9',
-            accent_color: '#F9A825',
+            logo_url: '/central-coruja-logo.png',
+            primary_color: '#0C1A34',
+            light_color: '#5D1E76',
+            bg_color: '#F8F4FF',
+            accent_color: '#EA9A3B',
             font_family: null,
             green_color: null,
             radius_xl: null,
@@ -123,7 +124,7 @@ const MOCK_BRAND_OVERRIDES: Record<string, Partial<BrandBootstrap>> = {
         features: {
             ...DEFAULT_FEATURES,
             'menu.music': { enabled: false, config: {} },
-            'hero.parallax': { enabled: true, config: { mode: 'subtle' } },
+            'hero.parallax': { enabled: false, config: { mode: 'off' } },
         },
         menu: DEFAULT_MENU.map(item =>
             item.key === 'music' ? { ...item, enabled: false } : item
@@ -144,6 +145,11 @@ function resolveBrandSlug(): string {
     if (fromEnv) return fromEnv;
 
     if (typeof window !== 'undefined') {
+        const fromPathname = resolveBrandSlugFromPathname(window.location.pathname);
+        if (fromPathname) {
+            return fromPathname;
+        }
+
         const host = window.location.hostname.toLowerCase();
         if (host.includes('central-coruja') || host.startsWith('coruja.')) {
             return 'central-coruja';

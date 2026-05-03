@@ -201,15 +201,15 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
       >
         {isCentralCorujaTone && (
           <>
-            <div className="absolute inset-0 rounded-[28px] bg-[radial-gradient(60%_40%_at_14%_100%,rgba(110,52,143,0.24),transparent_70%),radial-gradient(46%_28%_at_100%_0%,rgba(253,186,116,0.26),transparent_72%)]" />
+            <div className="absolute inset-0 rounded-[28px] bg-[radial-gradient(60%_40%_at_14%_100%,rgba(93,30,118,0.26),transparent_70%),radial-gradient(46%_28%_at_100%_0%,rgba(234,154,59,0.28),transparent_72%)]" />
             <div
-              className="absolute inset-[5px] overflow-hidden rounded-[24px] border-[2.5px] border-[#f0c861]/90 bg-[#17334a] shadow-[0_24px_44px_rgba(3,10,22,0.34)]"
+              className="absolute inset-[5px] overflow-hidden rounded-[24px] border-[2.5px] border-[#EA9A3B]/90 bg-[#0C1A34] shadow-[0_24px_44px_rgba(3,10,22,0.34)]"
               style={{ transform: 'translateZ(16px)' }}
             >
               <img
                 src={displayCoverImage}
                 alt={collection.title}
-                className="h-full w-full object-cover bg-[#0f2435]"
+                className="h-full w-full object-cover bg-[#091525]"
                 style={{
                   transform: 'translateZ(20px)',
                 }}
@@ -337,7 +337,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
           return (
             <div
               className={`absolute bottom-2 right-2 px-2 py-1 backdrop-blur-sm rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
-                ? 'bg-[#fff9eb]/95 text-[#204b48] border-[#fff3d1]'
+                ? 'bg-[#fff9eb]/95 text-[#243A60] border-[#fff3d1]'
                 : 'bg-white/95 text-kaboo-primary border-white/50'}`}
               style={{ transform: 'translateZ(30px)' }}
             >
@@ -360,13 +360,13 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
       )}
 
       {isCentralCorujaTone && collection.title && (
-        <h3 className="mb-1 text-[0.95rem] font-black leading-tight text-[#fff3bf] line-clamp-2">
+        <h3 className="mb-1 text-[0.95rem] font-black leading-tight text-[#FFF4E3] line-clamp-2">
           {collection.title}
         </h3>
       )}
 
       {isCentralCorujaTone && collection.theme && collection.theme.trim() !== '' && (
-        <p className="mb-1 text-xs font-medium leading-relaxed text-[#c7d5cf] line-clamp-2">
+        <p className="mb-1 text-xs font-medium leading-relaxed text-[#D4DCF0] line-clamp-2">
           {collection.theme}
         </p>
       )}

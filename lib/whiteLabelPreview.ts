@@ -33,9 +33,9 @@ const DEFAULT_SETTINGS: WhiteLabelPreviewSettings = {
         'central-coruja': {
             id: 'central-coruja',
             name: 'Central Coruja',
-            description: 'Preview visual do white label com hero parallax.',
-            heroParallaxEnabled: true,
-            heroParallaxMode: 'subtle',
+            description: 'Preview visual do white label da Central Coruja.',
+            heroParallaxEnabled: false,
+            heroParallaxMode: 'off',
         },
     },
 };

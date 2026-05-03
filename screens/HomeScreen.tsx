@@ -1569,16 +1569,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           {isCorujaExperience && (
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div className="absolute inset-x-0 top-0 h-[440px] bg-[radial-gradient(22%_22%_at_76%_4%,rgba(255,206,87,0.16),transparent_72%),radial-gradient(16%_18%_at_18%_9%,rgba(68,148,88,0.15),transparent_74%),linear-gradient(180deg,rgba(5,10,18,0.08)_0%,rgba(5,10,18,0.32)_60%,rgba(5,10,18,0)_100%)]" />
-              <div className="absolute left-[-3%] top-[-2%] h-44 w-52 rounded-br-[120px] bg-[radial-gradient(circle_at_20%_35%,rgba(20,44,30,0.82),transparent_70%)] blur-xl" />
-              <div className="absolute right-[-4%] top-[-4%] h-48 w-56 rounded-bl-[140px] bg-[radial-gradient(circle_at_80%_28%,rgba(23,41,28,0.78),transparent_72%)] blur-xl" />
-              <div className="absolute left-0 top-12 h-40 w-32 rounded-r-[48px] bg-[radial-gradient(circle_at_30%_50%,rgba(96,184,91,0.14),transparent_68%)] blur-2xl" />
-              <div className="absolute right-0 top-8 h-40 w-44 rounded-l-[56px] bg-[radial-gradient(circle_at_70%_50%,rgba(246,196,76,0.14),transparent_72%)] blur-2xl" />
-              <span className="absolute left-[12%] top-[88px] h-2.5 w-2.5 rounded-full bg-[#ffd76d] shadow-[0_0_22px_rgba(255,215,109,0.9)]" />
-              <span className="absolute left-[28%] top-[54px] h-1.5 w-1.5 rounded-full bg-[#ffe8a8] shadow-[0_0_18px_rgba(255,232,168,0.9)]" />
-              <span className="absolute right-[14%] top-[78px] h-2 w-2 rounded-full bg-[#ffd76d] shadow-[0_0_22px_rgba(255,215,109,0.85)]" />
-              <span className="absolute right-[22%] top-[118px] h-1.5 w-1.5 rounded-full bg-[#ffe8a8] shadow-[0_0_16px_rgba(255,232,168,0.95)]" />
-              <span className="absolute left-[48%] top-[145px] h-2 w-2 rounded-full bg-[#ffd76d] shadow-[0_0_18px_rgba(255,215,109,0.8)]" />
+              <div className="absolute inset-x-0 top-0 h-[440px] bg-[radial-gradient(22%_22%_at_76%_4%,rgba(234,154,59,0.16),transparent_72%),radial-gradient(16%_18%_at_18%_9%,rgba(93,30,118,0.15),transparent_74%),linear-gradient(180deg,rgba(5,10,18,0.08)_0%,rgba(5,10,18,0.32)_60%,rgba(5,10,18,0)_100%)]" />
+              <div className="absolute left-[-3%] top-[-2%] h-44 w-52 rounded-br-[120px] bg-[radial-gradient(circle_at_20%_35%,rgba(12,26,52,0.86),transparent_70%)] blur-xl" />
+              <div className="absolute right-[-4%] top-[-4%] h-48 w-56 rounded-bl-[140px] bg-[radial-gradient(circle_at_80%_28%,rgba(31,15,51,0.8),transparent_72%)] blur-xl" />
+              <div className="absolute left-0 top-12 h-40 w-32 rounded-r-[48px] bg-[radial-gradient(circle_at_30%_50%,rgba(93,30,118,0.18),transparent_68%)] blur-2xl" />
+              <div className="absolute right-0 top-8 h-40 w-44 rounded-l-[56px] bg-[radial-gradient(circle_at_70%_50%,rgba(234,154,59,0.16),transparent_72%)] blur-2xl" />
+              <span className="absolute left-[12%] top-[88px] h-2.5 w-2.5 rounded-full bg-[#EA9A3B] shadow-[0_0_22px_rgba(234,154,59,0.9)]" />
+              <span className="absolute left-[28%] top-[54px] h-1.5 w-1.5 rounded-full bg-[#F6D4AD] shadow-[0_0_18px_rgba(246,212,173,0.9)]" />
+              <span className="absolute right-[14%] top-[78px] h-2 w-2 rounded-full bg-[#EA9A3B] shadow-[0_0_22px_rgba(234,154,59,0.85)]" />
+              <span className="absolute right-[22%] top-[118px] h-1.5 w-1.5 rounded-full bg-[#E7D7FF] shadow-[0_0_16px_rgba(231,215,255,0.95)]" />
+              <span className="absolute left-[48%] top-[145px] h-2 w-2 rounded-full bg-[#C8A2FF] shadow-[0_0_18px_rgba(200,162,255,0.8)]" />
             </div>
           )}
 
@@ -1590,27 +1590,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             {shouldRenderBrandHero && (
               isCorujaExperience ? (
                 <section className="relative overflow-hidden rounded-[42px] px-5 py-5 pb-10 text-white md:px-8 md:pb-14 md:pt-7 lg:px-10 lg:pb-16">
-                  <div className="absolute inset-0 rounded-[42px] border border-[#1d4763]/70 bg-[radial-gradient(36%_48%_at_12%_18%,rgba(91,161,92,0.14),transparent_72%),radial-gradient(42%_52%_at_82%_16%,rgba(247,196,82,0.12),transparent_72%),linear-gradient(180deg,rgba(11,27,39,0.98)_0%,rgba(10,25,36,0.98)_72%,rgba(7,16,27,1)_100%)] shadow-[0_30px_80px_rgba(3,10,22,0.48)]" />
-                  <div className="absolute inset-x-0 bottom-0 h-28 bg-[radial-gradient(50%_90%_at_50%_100%,rgba(22,82,58,0.45),transparent_82%)]" />
-                  <div className="absolute bottom-[-2.5rem] left-[-1rem] h-44 w-72 rounded-[50%] bg-[radial-gradient(ellipse_at_40%_45%,rgba(16,56,40,0.88),transparent_70%)]" />
-                  <div className="absolute bottom-[-2rem] right-[-1.5rem] h-40 w-72 rounded-[50%] bg-[radial-gradient(ellipse_at_60%_40%,rgba(32,79,46,0.74),transparent_72%)]" />
+                  <div className="absolute inset-0 rounded-[42px] border border-[#213A63]/70 bg-[radial-gradient(36%_48%_at_12%_18%,rgba(93,30,118,0.18),transparent_72%),radial-gradient(42%_52%_at_82%_16%,rgba(234,154,59,0.14),transparent_72%),linear-gradient(180deg,rgba(12,26,52,0.98)_0%,rgba(10,22,44,0.98)_72%,rgba(7,16,27,1)_100%)] shadow-[0_30px_80px_rgba(3,10,22,0.48)]" />
+                  <div className="absolute inset-x-0 bottom-0 h-28 bg-[radial-gradient(50%_90%_at_50%_100%,rgba(93,30,118,0.34),transparent_82%)]" />
+                  <div className="absolute bottom-[-2.5rem] left-[-1rem] h-44 w-72 rounded-[50%] bg-[radial-gradient(ellipse_at_40%_45%,rgba(12,26,52,0.9),transparent_70%)]" />
+                  <div className="absolute bottom-[-2rem] right-[-1.5rem] h-40 w-72 rounded-[50%] bg-[radial-gradient(ellipse_at_60%_40%,rgba(49,24,86,0.72),transparent_72%)]" />
                   <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,rgba(8,17,26,0)_0%,rgba(7,16,23,0.12)_18%,rgba(7,16,23,0.72)_100%)]" />
-                  <div className="absolute left-0 top-0 h-24 w-36 bg-[radial-gradient(circle_at_0%_0%,rgba(20,50,31,0.7),transparent_70%)]" />
-                  <div className="absolute right-0 top-0 h-24 w-36 bg-[radial-gradient(circle_at_100%_0%,rgba(39,58,29,0.62),transparent_72%)]" />
-                  <div className="absolute left-0 top-14 h-52 w-44 bg-[radial-gradient(circle_at_0%_50%,rgba(64,120,53,0.26),transparent_70%)]" />
-                  <div className="absolute right-0 top-10 h-56 w-48 bg-[radial-gradient(circle_at_100%_40%,rgba(229,170,60,0.22),transparent_72%)]" />
+                  <div className="absolute left-0 top-0 h-24 w-36 bg-[radial-gradient(circle_at_0%_0%,rgba(12,26,52,0.74),transparent_70%)]" />
+                  <div className="absolute right-0 top-0 h-24 w-36 bg-[radial-gradient(circle_at_100%_0%,rgba(93,30,118,0.46),transparent_72%)]" />
+                  <div className="absolute left-0 top-14 h-52 w-44 bg-[radial-gradient(circle_at_0%_50%,rgba(93,30,118,0.22),transparent_70%)]" />
+                  <div className="absolute right-0 top-10 h-56 w-48 bg-[radial-gradient(circle_at_100%_40%,rgba(234,154,59,0.2),transparent_72%)]" />
 
                   <div className="absolute right-5 top-5 z-20 hidden md:block lg:right-6 lg:top-6">
                     <button
                       type="button"
                       onClick={() => onNavigate('profile')}
-                      className="group inline-flex items-center gap-3 rounded-full border border-[#f0d48b]/18 bg-[#091524]/78 px-2.5 py-2 text-left shadow-[0_18px_36px_rgba(3,10,22,0.32)] backdrop-blur-md transition-all hover:border-[#f0d48b]/34 hover:bg-[#0c1d30]/88"
+                      className="group inline-flex items-center gap-3 rounded-full border border-[#EA9A3B]/18 bg-[#091524]/78 px-2.5 py-2 text-left shadow-[0_18px_36px_rgba(3,10,22,0.32)] backdrop-blur-md transition-all hover:border-[#EA9A3B]/34 hover:bg-[#0c1d30]/88"
                     >
                       <div className="min-w-0 text-right">
-                        <p className="truncate text-[0.8rem] font-black leading-none text-[#fff5cc]">{profileCompactName}</p>
+                        <p className="truncate text-[0.8rem] font-black leading-none text-[#FFF4E3]">{profileCompactName}</p>
                         <p className="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#c6d3dd]">{profileRoleLabel}</p>
                       </div>
-                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[#f0d48b]/28 bg-[linear-gradient(135deg,#7a3ea6_0%,#9c56ce_100%)] text-sm font-black text-[#fff6cf] shadow-[0_10px_24px_rgba(73,28,114,0.38)]">
+                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-[#EA9A3B]/28 bg-[linear-gradient(135deg,#5D1E76_0%,#8C49B2_100%)] text-sm font-black text-white shadow-[0_10px_24px_rgba(73,28,114,0.38)]">
                         {profileAvatarUrl ? (
                           <img src={profileAvatarUrl} alt={profileCompactName} className="h-full w-full object-cover" />
                         ) : (
@@ -1622,25 +1622,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
                   <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
                     <div className="max-w-[34rem] pt-2 md:pt-5">
-                      <p className="text-[1.05rem] font-medium text-[#f4f2db]">Olá, {profileDisplayFirstName}!</p>
-                      <h2 className="mt-2 text-[2rem] font-black leading-[1] tracking-tight text-[#ffd15d] drop-shadow-[0_10px_24px_rgba(0,0,0,0.24)] md:text-[2.4rem] lg:text-[2.8rem]">
+                      <p className="text-[1.05rem] font-medium text-[#F3E9FF]">Olá, {profileDisplayFirstName}!</p>
+                      <h2 className="mt-2 text-[2rem] font-black leading-[1] tracking-tight text-[#EA9A3B] drop-shadow-[0_10px_24px_rgba(0,0,0,0.24)] md:text-[2.4rem] lg:text-[2.8rem]">
                         <span className="whitespace-nowrap">Bem-vindo</span> à {brandDisplayName}!
                       </h2>
-                      <p className="mt-4 max-w-[34rem] text-base leading-relaxed text-[#f0f6ee]/88 md:text-[1.08rem]">
+                      <p className="mt-4 max-w-[34rem] text-base leading-relaxed text-[#F4F0FF]/88 md:text-[1.08rem]">
                         Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.
                       </p>
                     </div>
 
                     <div className="relative hidden h-[248px] w-[360px] shrink-0 md:block lg:w-[400px]">
-                      <div className="absolute right-8 top-0 rotate-[7deg] rounded-[24px] border border-[#6f4719] bg-[linear-gradient(180deg,#76431b_0%,#51301f_100%)] px-5 py-3 shadow-[0_18px_34px_rgba(22,10,3,0.35)]">
-                        <p className="max-w-[11rem] text-right text-[1.15rem] font-black leading-tight text-[#ffd76d]">
-                          O que vamos explorar hoje?
-                        </p>
-                      </div>
+                        <div className="absolute right-8 top-0 rotate-[7deg] rounded-[24px] border border-[#C77D24] bg-[linear-gradient(180deg,#EA9A3B_0%,#C77D24_100%)] px-5 py-3 shadow-[0_18px_34px_rgba(22,10,3,0.35)]">
+                          <p className="max-w-[11rem] text-right text-[1.15rem] font-black leading-tight text-[#FFF8ED]">
+                            O que vamos explorar hoje?
+                          </p>
+                        </div>
 
-                      <div className="absolute bottom-0 left-6 right-0 h-24 rounded-[999px] bg-[radial-gradient(50%_120%_at_50%_90%,rgba(49,111,67,0.66),transparent_70%)] blur-md" />
-                      <div className="absolute bottom-[1.5rem] left-8 h-28 w-28 rounded-[45%] bg-[radial-gradient(circle_at_40%_50%,rgba(20,59,39,0.78),transparent_68%)]" />
-                      <div className="absolute bottom-[1.25rem] right-8 h-24 w-32 rounded-[48%] bg-[radial-gradient(circle_at_60%_50%,rgba(28,71,43,0.7),transparent_70%)]" />
+                      <div className="absolute bottom-0 left-6 right-0 h-24 rounded-[999px] bg-[radial-gradient(50%_120%_at_50%_90%,rgba(93,30,118,0.54),transparent_70%)] blur-md" />
+                      <div className="absolute bottom-[1.5rem] left-8 h-28 w-28 rounded-[45%] bg-[radial-gradient(circle_at_40%_50%,rgba(12,26,52,0.76),transparent_68%)]" />
+                      <div className="absolute bottom-[1.25rem] right-8 h-24 w-32 rounded-[48%] bg-[radial-gradient(circle_at_60%_50%,rgba(49,24,86,0.66),transparent_70%)]" />
 
                       {corujaHeroCharacters.map((item) => (
                         item.src ? (
@@ -1690,15 +1690,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             )}
 
             {isSearchExperience && (
-              <div className={`flex items-start justify-between gap-3 rounded-[24px] px-4 py-3 animate-fade-in-up md:hidden ${isCorujaDiscoveryTone ? 'border border-[#ecdca7]/70 bg-[#fff8e1]/92 shadow-[0_18px_36px_rgba(20,38,47,0.10)]' : 'border border-kaboo-primary/10 bg-kaboo-primary/[0.03]'}`}>
+              <div className={`flex items-start justify-between gap-3 rounded-[24px] px-4 py-3 animate-fade-in-up md:hidden ${isCorujaDiscoveryTone ? 'border border-[#eadcf7]/70 bg-[#fffdfd]/92 shadow-[0_18px_36px_rgba(20,38,47,0.10)]' : 'border border-kaboo-primary/10 bg-kaboo-primary/[0.03]'}`}>
                 <div className="min-w-0">
-                  <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaDiscoveryTone ? 'text-[#295546]' : 'text-kaboo-primary'}`}>{searchCollectionGroupTitle}</p>
+                  <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaDiscoveryTone ? 'text-[#5D1E76]' : 'text-kaboo-primary'}`}>{searchCollectionGroupTitle}</p>
                   <p className="mt-1 text-sm text-gray-500">Pesquise por texto e use os filtros para explorar personagem, CASEL, BNCC ou idade-série.</p>
                 </div>
                 <button
                   type="button"
                   onClick={closeInlineSearch}
-                  className={`shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full border bg-white transition-colors ${isCorujaDiscoveryTone ? 'border-[#d9cc9e] text-[#6a318d] hover:bg-[#f8f1fd]' : 'border-kaboo-primary/15 text-kaboo-primary hover:bg-kaboo-primary/5'}`}
+                  className={`shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full border bg-white transition-colors ${isCorujaDiscoveryTone ? 'border-[#eadcf7] text-[#5D1E76] hover:bg-[#f8f1fd]' : 'border-kaboo-primary/15 text-kaboo-primary hover:bg-kaboo-primary/5'}`}
                   aria-label="Fechar busca"
                 >
                   <Icons.X size={16} />
@@ -1713,7 +1713,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             )}
 
             <div className={`relative w-full ${isCorujaExperience ? 'z-20 md:-mt-12 md:px-6 lg:-mt-14 lg:px-8' : ''}`}>
-              <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 ${isCorujaExperience ? 'text-[#a8966e]' : 'text-gray-400'}`}>
+              <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 ${isCorujaExperience ? 'text-[#8A93AD]' : 'text-gray-400'}`}>
                 <Icons.Search size={18} />
               </div>
 
@@ -1725,7 +1725,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     placeholder="Título, BNCC, personagem, competência..."
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
-                    className={`h-14 rounded-[28px] pl-11 shadow-sm border-transparent ${isCorujaDiscoveryTone ? 'border-[#e7d8a6]/75 bg-[linear-gradient(180deg,rgba(252,247,232,0.98)_0%,rgba(244,236,214,0.98)_100%)] text-[#75684d] placeholder:text-[#9b8d71] shadow-[0_0_0_4px_rgba(244,220,146,0.12),0_18px_34px_rgba(8,21,31,0.16)] hover:border-[#ead79b] focus:border-[#d2b970] focus:ring-0' : 'bg-white/90 hover:border-transparent focus:border-kaboo-primary'} ${showInlineFilterTrigger ? 'pr-24 md:pr-72' : 'pr-24 md:pr-40'}`}
+                    className={`h-14 rounded-[28px] pl-11 shadow-sm border-transparent ${isCorujaDiscoveryTone ? 'border-[#eadcf7]/75 bg-[linear-gradient(180deg,rgba(255,253,253,0.98)_0%,rgba(247,241,252,0.98)_100%)] text-[#0C1A34] placeholder:text-[#8A93AD] shadow-[0_0_0_4px_rgba(93,30,118,0.08),0_18px_34px_rgba(8,21,31,0.16)] hover:border-[#d7c1f3] focus:border-[#EA9A3B] focus:ring-0' : 'bg-white/90 hover:border-transparent focus:border-kaboo-primary'} ${showInlineFilterTrigger ? 'pr-24 md:pr-72' : 'pr-24 md:pr-40'}`}
                   />
 
                   <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
@@ -1733,7 +1733,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       <button
                         type="button"
                         onClick={() => setSearchTerm('')}
-                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isCorujaDiscoveryTone ? 'border-[#e0d0a0] bg-[#f8f0dc] text-[#8b7d60] hover:border-[#c9b173] hover:text-[#6f6044]' : 'border-gray-200 bg-white text-gray-400 hover:text-gray-600'}`}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isCorujaDiscoveryTone ? 'border-[#eadcf7] bg-[#f8f1fd] text-[#8A93AD] hover:border-[#d7c1f3] hover:text-[#5D1E76]' : 'border-gray-200 bg-white text-gray-400 hover:text-gray-600'}`}
                         title="Limpar busca"
                       >
                         <Icons.X size={16} />
@@ -1744,7 +1744,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       <button
                         type="button"
                         onClick={() => openFilterDrawer()}
-                        className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 md:px-4 transition-all active:scale-95 shadow-sm ${isCorujaDiscoveryTone ? 'border-[#355851]/82 bg-[linear-gradient(180deg,#214d48_0%,#1a403c_100%)] text-[#f5dfa0] shadow-[0_14px_28px_rgba(8,21,31,0.18)] hover:border-[#e2cc8e]/35 hover:bg-[linear-gradient(180deg,#275852_0%,#1e4842_100%)]' : 'border-gray-200 bg-white text-gray-600 hover:border-kaboo-primary/20'}`}
+                        className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 md:px-4 transition-all active:scale-95 shadow-sm ${isCorujaDiscoveryTone ? 'border-[#5D1E76]/82 bg-[linear-gradient(180deg,#5D1E76_0%,#43205F_100%)] text-[#FFF4E3] shadow-[0_14px_28px_rgba(8,21,31,0.18)] hover:border-[#EA9A3B]/35 hover:bg-[linear-gradient(180deg,#6A2487_0%,#4E256C_100%)]' : 'border-gray-200 bg-white text-gray-600 hover:border-kaboo-primary/20'}`}
                         title="Refinar busca"
                       >
                         <Icons.Filter size={18} strokeWidth={2} />
@@ -1755,7 +1755,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     <button
                       type="button"
                       onClick={closeInlineSearch}
-                      className={`hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 transition-colors ${isCorujaDiscoveryTone ? 'border-[#ddcfaa] bg-[#f7efdc] text-[#7b705a] hover:border-[#bfa76c] hover:text-[#634f2f]' : 'border-gray-200 bg-white text-gray-500 hover:border-kaboo-primary/20 hover:text-kaboo-primary'}`}
+                      className={`hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 transition-colors ${isCorujaDiscoveryTone ? 'border-[#eadcf7] bg-[#f8f1fd] text-[#67728A] hover:border-[#d7c1f3] hover:text-[#5D1E76]' : 'border-gray-200 bg-white text-gray-500 hover:border-kaboo-primary/20 hover:text-kaboo-primary'}`}
                       title="Fechar busca"
                     >
                       <Icons.X size={16} />
@@ -1768,7 +1768,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   type="button"
                   onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
                   className={`w-full text-left font-medium ${isCorujaExperience
-                    ? 'h-16 rounded-[999px] border border-[#e5d39a]/72 bg-[linear-gradient(180deg,rgba(252,247,232,0.98)_0%,rgba(244,236,214,0.98)_100%)] pl-11 pr-16 md:pr-28 text-[#9a8f79] shadow-[0_0_0_4px_rgba(243,214,137,0.14),0_18px_34px_rgba(8,21,31,0.18)] hover:border-[#eacf7f]'
+                    ? 'h-16 rounded-[999px] border border-[#eadcf7]/72 bg-[linear-gradient(180deg,rgba(255,253,253,0.98)_0%,rgba(247,241,252,0.98)_100%)] pl-11 pr-16 md:pr-28 text-[#8A93AD] shadow-[0_0_0_4px_rgba(93,30,118,0.08),0_18px_34px_rgba(8,21,31,0.18)] hover:border-[#d7c1f3]'
                     : 'h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-16 md:pr-28 shadow-sm hover:border-kaboo-primary/20 text-gray-400'}`}
                   aria-label="Abrir pesquisa"
                 >
@@ -1781,8 +1781,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   type="button"
                   onClick={() => openFilterDrawer()}
                   className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 shadow-sm ${isCorujaExperience ? 'h-11 rounded-[999px] px-4' : 'h-10 px-3 md:px-4 rounded-[20px]'} ${activeFilterCount > 0
-                    ? (isCorujaExperience ? 'bg-[#6e348f] text-[#fff0b3] border-[#8348aa] shadow-[0_12px_28px_rgba(110,52,143,0.35)]' : 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20')
-                    : (isCorujaExperience ? 'bg-[linear-gradient(180deg,#214d48_0%,#1a403c_100%)] text-[#f5dfa0] border-[#315f59]/88 shadow-[0_14px_28px_rgba(8,21,31,0.18)] hover:bg-[linear-gradient(180deg,#285852_0%,#1e4842_100%)]' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-white hover:border-kaboo-primary/20')
+                    ? (isCorujaExperience ? 'bg-[#5D1E76] text-white border-[#7C36A4] shadow-[0_12px_28px_rgba(93,30,118,0.35)]' : 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20')
+                    : (isCorujaExperience ? 'bg-[linear-gradient(180deg,#5D1E76_0%,#43205F_100%)] text-[#FFF4E3] border-[#6D2A91]/88 shadow-[0_14px_28px_rgba(8,21,31,0.18)] hover:bg-[linear-gradient(180deg,#6A2487_0%,#4E256C_100%)]' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-white hover:border-kaboo-primary/20')
                     }`}
                   title="Refinar busca"
                 >
@@ -1807,8 +1807,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive
-                        ? (isCorujaExperience ? 'bg-[linear-gradient(135deg,#6b2f8f_0%,#7e38ac_100%)] text-[#fff3bf] border-[#8747b3] shadow-[0_14px_28px_rgba(88,36,128,0.36)]' : 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20')
-                        : (isCorujaExperience ? 'bg-[#173838]/82 text-[#e7edda] border-[#2f6157]/70 hover:bg-[#214641]' : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100')
+                        ? (isCorujaExperience ? 'bg-[linear-gradient(135deg,#5D1E76_0%,#7C36A4_100%)] text-white border-[#8747b3] shadow-[0_14px_28px_rgba(88,36,128,0.36)]' : 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20')
+                        : (isCorujaExperience ? 'bg-[#12243f]/88 text-[#E8ECF8] border-[#213A63]/70 hover:bg-[#182e50]' : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100')
                         }`}
                     >
                       {tab.id === 'all' && <Icons.Grid size={14} />}
@@ -1824,32 +1824,32 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         {(activeFilterCount > 0 || (!isSearchExperience && hasSearchQuery)) && (
           <div className="px-6 md:px-8 mb-4 flex gap-2 flex-wrap animate-fade-in-up shrink-0">
             {!isSearchExperience && hasSearchQuery && (
-              <span onClick={() => setSearchTerm('')} className={`cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group ${isCorujaDiscoveryTone ? 'border border-[#ccbde6] bg-[#f3ecfb] text-[#5e3188] hover:bg-red-50 hover:text-red-500' : 'bg-kaboo-primary/10 text-kaboo-primary hover:bg-red-50 hover:text-red-500'}`}>
+              <span onClick={() => setSearchTerm('')} className={`cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group ${isCorujaDiscoveryTone ? 'border border-[#d7c1f3] bg-[#f6efff] text-[#5D1E76] hover:bg-red-50 hover:text-red-500' : 'bg-kaboo-primary/10 text-kaboo-primary hover:bg-red-50 hover:text-red-500'}`}>
                 Busca: {searchTerm.trim()} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             )}
             {activeFilters.characters.map(f => (
-              <span key={f} onClick={() => toggleFilter('characters', f)} className={`cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group ${isCorujaDiscoveryTone ? 'border border-[#d6ddcf] bg-[#eff7ec] text-[#2f5b46] hover:bg-red-50 hover:text-red-500' : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500'}`}>
+              <span key={f} onClick={() => toggleFilter('characters', f)} className={`cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group ${isCorujaDiscoveryTone ? 'border border-[#dbe3f1] bg-[#f7faff] text-[#243A60] hover:bg-red-50 hover:text-red-500' : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500'}`}>
                 {f} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             ))}
             {activeFilters.bncc.map(f => (
-              <span key={f} onClick={() => toggleFilter('bncc', f)} className={`cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group ${isCorujaDiscoveryTone ? 'border border-[#bdd7bc] bg-[#edf8e8] text-[#2f6b47] hover:bg-red-50 hover:text-red-500' : 'bg-green-50 text-green-700 hover:bg-red-50 hover:text-red-500'}`}>
+              <span key={f} onClick={() => toggleFilter('bncc', f)} className={`cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group ${isCorujaDiscoveryTone ? 'border border-[#e7d7ff] bg-[#fbf7ff] text-[#5D1E76] hover:bg-red-50 hover:text-red-500' : 'bg-green-50 text-green-700 hover:bg-red-50 hover:text-red-500'}`}>
                 {f} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             ))}
             {activeFilters.casel.map(f => (
-              <span key={f} onClick={() => toggleFilter('casel', f)} className={`cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group ${isCorujaDiscoveryTone ? 'border border-[#edd39d] bg-[#fff5de] text-[#9b6d1a] hover:bg-red-50 hover:text-red-500' : 'bg-orange-50 text-orange-700 hover:bg-red-50 hover:text-red-500'}`}>
+              <span key={f} onClick={() => toggleFilter('casel', f)} className={`cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group ${isCorujaDiscoveryTone ? 'border border-[#f3d8b0] bg-[#fff8ef] text-[#C77D24] hover:bg-red-50 hover:text-red-500' : 'bg-orange-50 text-orange-700 hover:bg-red-50 hover:text-red-500'}`}>
                 {f} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             ))}
             {activeFilters.age.map(f => (
-              <span key={f} onClick={() => toggleFilter('age', f)} className={`cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group ${isCorujaDiscoveryTone ? 'border border-[#bfe0d9] bg-[#ecf9f5] text-[#235c64] hover:bg-red-50 hover:text-red-500' : 'bg-teal-50 text-teal-700 hover:bg-red-50 hover:text-red-500'}`}>
+              <span key={f} onClick={() => toggleFilter('age', f)} className={`cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group ${isCorujaDiscoveryTone ? 'border border-[#dbe3f1] bg-[#f7faff] text-[#0C1A34] hover:bg-red-50 hover:text-red-500' : 'bg-teal-50 text-teal-700 hover:bg-red-50 hover:text-red-500'}`}>
                 {f} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             ))}
             {!isSearchExperience && (
-              <button onClick={resetDiscovery} className={`ml-1 text-xs font-bold hover:underline ${isCorujaDiscoveryTone ? 'text-[#6b2f8f]' : 'text-kaboo-primary'}`}>
+              <button onClick={resetDiscovery} className={`ml-1 text-xs font-bold hover:underline ${isCorujaDiscoveryTone ? 'text-[#5D1E76]' : 'text-kaboo-primary'}`}>
                 Limpar tudo
               </button>
             )}
@@ -1858,7 +1858,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
         {!isSearchExperience && inProgressCollections.length > 0 && !hasRefinedDiscovery && (
           <div className="mb-4 shrink-0">
-            <h2 className={`px-6 md:px-8 text-xl font-bold mb-4 ${isCorujaDiscoveryTone ? 'text-[#d49e29]' : 'text-gray-800'}`}>Continue onde parou</h2>
+            <h2 className={`px-6 md:px-8 text-xl font-bold mb-4 ${isCorujaDiscoveryTone ? 'text-[#EA9A3B]' : 'text-gray-800'}`}>Continue onde parou</h2>
             <div className="flex gap-4 overflow-x-auto px-6 md:px-8 pb-6 no-scrollbar snap-x snap-mandatory">
               {inProgressCollections.map((c) => {
                 const progress = userProgress[c.id] || 0;
@@ -1868,7 +1868,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   <div
                     key={c.id}
                     onClick={() => handleCollectionClick(c)}
-                    className={`flex-shrink-0 w-64 rounded-2xl p-3 snap-center cursor-pointer active:scale-95 transition-transform ${isCorujaDiscoveryTone ? 'border border-[#ece2bf] bg-white/96 shadow-[0_18px_42px_rgba(12,27,38,0.10)] hover:border-[#6b2f8f]/30' : 'bg-white shadow-lg shadow-gray-100/50 border border-gray-50 hover:border-kaboo-primary/30'}`}
+                    className={`flex-shrink-0 w-64 rounded-2xl p-3 snap-center cursor-pointer active:scale-95 transition-transform ${isCorujaDiscoveryTone ? 'border border-[#ede4fa] bg-white/96 shadow-[0_18px_42px_rgba(12,27,38,0.10)] hover:border-[#5D1E76]/30' : 'bg-white shadow-lg shadow-gray-100/50 border border-gray-50 hover:border-kaboo-primary/30'}`}
                   >
                     <div className="flex gap-4">
                       <div className="relative flex-shrink-0">
@@ -1884,7 +1884,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     </div>
                     <div className="mt-3 px-1">
                       <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${isCorujaDiscoveryTone ? 'bg-[linear-gradient(90deg,#1f5d3e_0%,#d6a136_100%)]' : 'bg-kaboo-primary'}`} style={{ width: `${progress}%` }} />
+                         <div className={`h-full rounded-full ${isCorujaDiscoveryTone ? 'bg-[linear-gradient(90deg,#5D1E76_0%,#EA9A3B_100%)]' : 'bg-kaboo-primary'}`} style={{ width: `${progress}%` }} />
                       </div>
                     </div>
                   </div>
@@ -1894,20 +1894,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           </div>
         )}
 
-        <div className={`${isCorujaExperience ? 'relative mx-4 mt-2 rounded-t-[34px] border-t border-[#1d4763]/70 bg-[linear-gradient(180deg,#091525_0%,#10243a_100%)] px-4 pb-12 pt-8 md:mx-8 md:px-6 md:pb-14 md:pt-10 lg:mx-10 lg:px-8' : 'px-6 md:px-8 pt-2 md:pt-6 pb-6 relative'}`}>
+        <div className={`${isCorujaExperience ? 'relative mx-4 mt-2 rounded-t-[34px] border-t border-[#213A63]/70 bg-[linear-gradient(180deg,#091525_0%,#10243a_100%)] px-4 pb-12 pt-8 md:mx-8 md:px-6 md:pb-14 md:pt-10 lg:mx-10 lg:px-8' : 'px-6 md:px-8 pt-2 md:pt-6 pb-6 relative'}`}>
           {isSearchExperience ? (
             hasFilterOnlySelection ? (
               <>
                 <div className="flex justify-between items-end pb-4 border-b border-gray-100">
                   <div>
-                    <p className={`mb-1 text-xs font-bold uppercase tracking-[0.14em] ${isCorujaDiscoveryTone ? 'text-[#295546]' : 'text-kaboo-primary'}`}>Filtros aplicados</p>
+                      <p className={`mb-1 text-xs font-bold uppercase tracking-[0.14em] ${isCorujaDiscoveryTone ? 'text-[#5D1E76]' : 'text-kaboo-primary'}`}>Filtros aplicados</p>
                     <h2 className="text-xl font-bold text-gray-800">{filteredCollectionGroupTitle}</h2>
                     <p className="text-sm text-gray-500 mt-1">{filteredCollections.length} {filteredCollections.length === 1 ? availableLabelSingular : availableLabelPlural}</p>
                   </div>
                   <button
                     type="button"
                     onClick={resetDiscovery}
-                    className={`shrink-0 rounded-full border bg-white px-3 py-2 text-xs font-bold transition-colors ${isCorujaDiscoveryTone ? 'border-[#e4d9b5] text-[#5c6f66] hover:border-[#6b2f8f]/20 hover:text-[#6b2f8f]' : 'border-gray-200 text-gray-500 hover:border-kaboo-primary/20 hover:text-kaboo-primary'}`}
+                     className={`shrink-0 rounded-full border bg-white px-3 py-2 text-xs font-bold transition-colors ${isCorujaDiscoveryTone ? 'border-[#eadcf7] text-[#67728A] hover:border-[#5D1E76]/20 hover:text-[#5D1E76]' : 'border-gray-200 text-gray-500 hover:border-kaboo-primary/20 hover:text-kaboo-primary'}`}
                   >
                     Limpar
                   </button>
@@ -1934,7 +1934,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     </p>
                     <button
                       onClick={resetDiscovery}
-                      className="px-6 py-3 bg-kaboo-primary/10 text-kaboo-primary rounded-xl font-bold hover:bg-kaboo-primary/20 transition-colors"
+                      className={`px-6 py-3 rounded-xl font-bold transition-colors ${isCorujaDiscoveryTone ? 'bg-[#f6efff] text-[#5D1E76] hover:bg-[#eadff8]' : 'bg-kaboo-primary/10 text-kaboo-primary hover:bg-kaboo-primary/20'}`}
                     >
                       Limpar filtros
                     </button>
@@ -1977,7 +1977,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     <div className="mx-auto max-w-5xl pointer-events-auto rounded-[30px] border border-white/80 bg-white/95 p-4 md:p-5 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaDiscoveryTone ? 'text-[#295546]' : 'text-kaboo-primary/80'}`}>
+                          <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaDiscoveryTone ? 'text-[#5D1E76]' : 'text-kaboo-primary/80'}`}>
                             {hasSearchQuery ? 'Resultados rápidos' : 'Filtros aplicados'}
                           </p>
                           <p className="mt-1 text-sm text-gray-500">
@@ -1987,7 +1987,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                         <button
                           type="button"
                           onClick={resetDiscovery}
-                          className={`shrink-0 rounded-full border bg-white px-3 py-2 text-xs font-bold transition-colors ${isCorujaDiscoveryTone ? 'border-[#e4d9b5] text-[#5c6f66] hover:border-[#6b2f8f]/20 hover:text-[#6b2f8f]' : 'border-gray-200 text-gray-500 hover:border-kaboo-primary/20 hover:text-kaboo-primary'}`}
+                           className={`shrink-0 rounded-full border bg-white px-3 py-2 text-xs font-bold transition-colors ${isCorujaDiscoveryTone ? 'border-[#eadcf7] text-[#67728A] hover:border-[#5D1E76]/20 hover:text-[#5D1E76]' : 'border-gray-200 text-gray-500 hover:border-kaboo-primary/20 hover:text-kaboo-primary'}`}
                         >
                           Limpar
                         </button>
@@ -2018,9 +2018,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               <div className={`flex justify-between items-end pb-4 ${isCorujaExperience ? 'border-b border-[#d2b46a]/18' : 'border-b border-gray-100'}`}>
                 <div>
                   {hasSearchQuery && (
-                    <p className={`mb-1 text-xs font-bold uppercase tracking-[0.14em] ${isCorujaDiscoveryTone ? 'text-[#295546]' : 'text-kaboo-primary'}`}>Busca ativa</p>
+                    <p className={`mb-1 text-xs font-bold uppercase tracking-[0.14em] ${isCorujaDiscoveryTone ? 'text-[#5D1E76]' : 'text-kaboo-primary'}`}>Busca ativa</p>
                   )}
-                  <h2 className={`text-xl font-bold ${isCorujaExperience ? 'text-[#d49e29]' : 'text-gray-800'}`}>
+                  <h2 className={`text-xl font-bold ${isCorujaExperience ? 'text-[#EA9A3B]' : 'text-gray-800'}`}>
                     {hasSearchQuery ? 'Resultados da busca' :
                       activeTab === 'all' && activeFilterCount === 0 ? allCollectionGroupTitle :
                         activeFilterCount > 0 ? filteredCollectionGroupTitle :
@@ -2034,26 +2034,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   <button
                     onClick={() => setSortByAge(prev => !prev)}
                     className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${sortByAge
-                      ? (isCorujaExperience ? 'border border-[#8550ac] bg-[linear-gradient(135deg,#6b2f8f_0%,#7f3cad_100%)] text-[#fff0b3] shadow-[0_14px_28px_rgba(88,36,128,0.28)]' : 'bg-kaboo-primary text-white shadow-sm')
-                      : (isCorujaExperience ? 'border border-[#d9c78f]/65 bg-[linear-gradient(180deg,rgba(248,240,219,0.96)_0%,rgba(239,228,197,0.96)_100%)] text-[#695e48] hover:border-[#ccb36b] hover:bg-[linear-gradient(180deg,rgba(250,243,225,0.98)_0%,rgba(241,231,201,0.98)_100%)]' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')
+                      ? (isCorujaExperience ? 'border border-[#8550ac] bg-[linear-gradient(135deg,#5D1E76_0%,#7C36A4_100%)] text-white shadow-[0_14px_28px_rgba(88,36,128,0.28)]' : 'bg-kaboo-primary text-white shadow-sm')
+                      : (isCorujaExperience ? 'border border-[#eadcf7]/65 bg-[linear-gradient(180deg,rgba(255,253,253,0.96)_0%,rgba(247,241,252,0.96)_100%)] text-[#67728A] hover:border-[#d7c1f3] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,244,253,0.98)_100%)]' : 'bg-gray-50 text-gray-500 hover:bg-gray-100')
                       }`}
                     title="Ordenar por faixa etária"
                   >
                     <Icons.ArrowUpDown size={12} />
                     Idade
                   </button>
-                  <span className={`text-xs font-bold px-2 py-1 rounded-lg ${isCorujaExperience ? 'border border-[#d7c591]/55 bg-[linear-gradient(180deg,rgba(248,240,219,0.94)_0%,rgba(239,228,197,0.94)_100%)] text-[#685c46]' : 'text-gray-400 bg-gray-50'}`}>
+                  <span className={`text-xs font-bold px-2 py-1 rounded-lg ${isCorujaExperience ? 'border border-[#eadcf7]/55 bg-[linear-gradient(180deg,rgba(255,253,253,0.94)_0%,rgba(247,241,252,0.94)_100%)] text-[#67728A]' : 'text-gray-400 bg-gray-50'}`}>
                     {filteredCollections.length}
                   </span>
                   <button
                     onClick={handleRefresh}
                     disabled={isRefreshing || loading}
-                    className={`w-7 h-7 rounded-lg active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed ${isCorujaExperience ? 'border border-[#d7c591]/55 bg-[linear-gradient(180deg,rgba(248,240,219,0.94)_0%,rgba(239,228,197,0.94)_100%)] hover:border-[#ccb36b] hover:bg-[linear-gradient(180deg,rgba(250,243,225,0.98)_0%,rgba(241,231,201,0.98)_100%)]' : 'bg-gray-50 hover:bg-gray-100'}`}
+                    className={`w-7 h-7 rounded-lg active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed ${isCorujaExperience ? 'border border-[#eadcf7]/55 bg-[linear-gradient(180deg,rgba(255,253,253,0.94)_0%,rgba(247,241,252,0.94)_100%)] hover:border-[#d7c1f3] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(249,244,253,0.98)_100%)]' : 'bg-gray-50 hover:bg-gray-100'}`}
                     title="Atualizar coleções"
                   >
                     <Icons.RotateCw
                       size={14}
-                      className={`${isCorujaExperience ? 'text-[#695e48]' : 'text-gray-600'} ${isRefreshing ? 'animate-spin' : ''}`}
+                      className={`${isCorujaExperience ? 'text-[#67728A]' : 'text-gray-600'} ${isRefreshing ? 'animate-spin' : ''}`}
                     />
                   </button>
                 </div>
@@ -2080,7 +2080,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   </p>
                   <button
                     onClick={resetDiscovery}
-                    className={`px-6 py-3 rounded-xl font-bold transition-colors ${isCorujaDiscoveryTone ? 'bg-[#f3ecfb] text-[#5c2f83] hover:bg-[#eadff8]' : 'bg-kaboo-primary/10 text-kaboo-primary hover:bg-kaboo-primary/20'}`}
+                     className={`px-6 py-3 rounded-xl font-bold transition-colors ${isCorujaDiscoveryTone ? 'bg-[#f6efff] text-[#5D1E76] hover:bg-[#eadff8]' : 'bg-kaboo-primary/10 text-kaboo-primary hover:bg-kaboo-primary/20'}`}
                   >
                     Limpar busca e filtros
                   </button>
