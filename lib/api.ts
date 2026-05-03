@@ -747,8 +747,11 @@ export const api = {
       };
     }
 
-    // DEV-only: allow demo credentials even when Supabase is configured
-    if (import.meta.env.DEV && isSupabaseConfigured) {
+    // DEV-only: allow the explicit demo credential to bypass Supabase when needed
+    const normalizedEmail = email.trim().toLowerCase();
+    const canUseMockBypass = normalizedEmail === 'demo@mundodekaboo.local';
+
+    if (import.meta.env.DEV && isSupabaseConfigured && canUseMockBypass) {
       const mockResult = signInMockUser(email, password);
       if (mockResult.success && mockResult.profile) {
         logger.warn('DEV: using mock demo user bypass for', email);

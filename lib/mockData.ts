@@ -124,13 +124,17 @@ const buildProfile = (overrides: Partial<UserProfile>): UserProfile => ({
     access_status: overrides.access_status ?? 'pending_voucher'
 });
 
-const buildAdminDemoUser = (): MockUserAccount => {
-    const id = 'mock-admin';
+const buildAdminUser = (
+    id: string,
+    email: string,
+    password: string,
+    fullName: string
+): MockUserAccount => {
     const createdAt = new Date().toISOString();
     return {
         id,
-        email: 'demo@mundodekaboo.local',
-        password: '123456',
+        email,
+        password,
         role: 'admin',
         created_at: createdAt,
         invited_at: null,
@@ -138,19 +142,40 @@ const buildAdminDemoUser = (): MockUserAccount => {
         last_sign_in_at: createdAt,
         profile: buildProfile({
             id,
-            email: 'demo@mundodekaboo.local',
-            full_name: 'Demo Admin',
+            email,
+            full_name: fullName,
             avatar_id: 'Kaboo',
             role: 'admin',
             voucher_id: null,
             access_starts_at: new Date().toISOString(),
-                access_expires_at: null,
+            access_expires_at: null,
             access_status: 'active'
         })
     };
 };
 
-const DEFAULT_MOCK_USERS: MockUserAccount[] = [buildAdminDemoUser()];
+const buildAdminDemoUser = (): MockUserAccount => {
+    return buildAdminUser(
+        'mock-admin',
+        'demo@mundodekaboo.local',
+        '123456',
+        'Demo Admin'
+    );
+};
+
+const buildWhiteLabelAdminUser = (): MockUserAccount => {
+    return buildAdminUser(
+        'mock-admin-whitelabel',
+        'admin@mundodekaboo.dev',
+        'Kaboo@2026!',
+        'Admin Mundo de Kaboo'
+    );
+};
+
+const DEFAULT_MOCK_USERS: MockUserAccount[] = [
+    buildAdminDemoUser(),
+    buildWhiteLabelAdminUser()
+];
 
 const DEFAULT_MOCK_VOUCHERS: Voucher[] = [
     { id: 'voucher-1', code: 'KABOO-1MES-2026', duration_months: 1, status: 'active' },
@@ -204,8 +229,27 @@ const writeStoredUsers = (users: MockUserAccount[]): void => {
     localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(users));
 };
 
+const mergeDefaultUsers = (storedUsers: MockUserAccount[] | null): MockUserAccount[] => {
+    if (!storedUsers) {
+        return DEFAULT_MOCK_USERS;
+    }
+
+    const knownEmails = new Set(storedUsers.map((user) => normalizeEmail(user.email)));
+    const missingDefaults = DEFAULT_MOCK_USERS.filter(
+        (user) => !knownEmails.has(normalizeEmail(user.email))
+    );
+
+    if (missingDefaults.length === 0) {
+        return storedUsers;
+    }
+
+    const mergedUsers = [...storedUsers, ...missingDefaults];
+    writeStoredUsers(mergedUsers);
+    return mergedUsers;
+};
+
 const getLiveUsers = (): MockUserAccount[] => {
-    return readStoredUsers() ?? DEFAULT_MOCK_USERS;
+    return mergeDefaultUsers(readStoredUsers());
 };
 
 const readStoredVouchers = (): Voucher[] | null => {
