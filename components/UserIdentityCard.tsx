@@ -34,13 +34,13 @@ export const UserIdentityCard: React.FC<UserIdentityCardProps> = ({ profile, col
   const collapsedButtonClass = isCentralCoruja
     ? active
       ? 'inline-flex items-center justify-center rounded-[22px] border border-[#7B4F99]/70 bg-kaboo-light p-2 text-white shadow-[0_12px_24px_rgba(93,30,118,0.26)]'
-      : 'inline-flex items-center justify-center rounded-[22px] border border-white/12 bg-white/[0.08] p-2 text-white shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:bg-white/[0.12] hover:border-white/18'
+      : 'inline-flex items-center justify-center rounded-[22px] border border-transparent bg-transparent p-2 text-white hover:bg-white/[0.08] hover:border-white/12'
     : `inline-flex items-center justify-center rounded-[22px] p-2 ${active ? 'bg-kaboo-primary/10 text-kaboo-primary shadow-sm' : 'hover:bg-gray-50'}`;
 
   const expandedButtonClass = isCentralCoruja
     ? active
       ? 'w-full flex items-center gap-3 rounded-[24px] border border-[#7B4F99]/70 bg-kaboo-light px-4 py-3 text-left text-white shadow-[0_18px_32px_rgba(93,30,118,0.28)] hover:bg-[#6A2586]'
-      : 'w-full flex items-center gap-3 rounded-[24px] border border-white/12 bg-white/[0.08] px-4 py-3 text-left text-white shadow-[0_14px_28px_rgba(0,0,0,0.18)] hover:bg-white/[0.12] hover:border-white/18'
+      : 'w-full flex items-center gap-3 rounded-[24px] border border-transparent bg-transparent px-4 py-3 text-left text-white hover:bg-white/[0.08] hover:border-white/12'
     : `w-full flex items-center gap-3 rounded-[24px] border px-4 py-3 text-left ${active ? 'border-kaboo-primary/15 bg-kaboo-primary/5 shadow-sm hover:bg-kaboo-primary/10' : 'border-gray-100 bg-gray-50/80 hover:bg-white hover:border-kaboo-primary/15'}`;
 
   const avatarShellClass = isCentralCoruja
