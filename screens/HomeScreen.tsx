@@ -678,8 +678,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const shouldShowDesktopHeader = !isCentralCoruja || isSearchExperience;
   const shouldRenderBrandHero = !isSearchExperience && (Boolean(brandHomeHeroImageUrl) || isCentralCoruja);
   const searchLauncherPlaceholder = 'Buscar por título, tema, BNCC ou personagem';
-  const desktopShellPaddingClass = isCentralCoruja ? 'px-6 md:pl-0 md:pr-8' : 'px-6 md:px-8';
-  const desktopSkeletonHeaderPaddingClass = isCentralCoruja ? 'hidden md:block shrink-0 pl-0 pr-8 pt-6 pb-4' : 'hidden md:block shrink-0 px-8 pt-6 pb-4';
+  const desktopShellPaddingClass = 'px-6 md:px-8';
+  const desktopSkeletonHeaderPaddingClass = 'hidden md:block shrink-0 px-8 pt-6 pb-4';
 
   // Preload avatar image immediately if cached profile exists
   useEffect(() => {
