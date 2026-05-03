@@ -188,7 +188,7 @@ const App: React.FC = () => {
   const { bootstrap: brandBootstrap, enabledMenuItems } = useBrandConfig();
   const brandEnabledMenuKeys = new Set(enabledMenuItems.map(item => item.key));
   const brandSlug = brandBootstrap.brand.slug;
-  const isCentralCorujaBrand = brandSlug === 'central-coruja';
+
   const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
   const brandLogoUrl = brandBootstrap.settings.logo_url || (brandBootstrap.brand.slug === 'kaboo' ? LOGO_URL : undefined);
   const brandLoginBackgroundUrl = brandBootstrap.settings.login_background_url || undefined;
@@ -919,10 +919,10 @@ const App: React.FC = () => {
   const showNav = ['home', 'search', 'videos', 'music', 'formations', 'materials', 'support', 'profile', 'my_data', 'admin', 'characters'].includes(navState.currentScreen);
   // Modal opens immediately when collectionId is present, even if collection is still loading
   const isModalOpen = !!navState.params?.collectionId && ['home', 'search'].includes(navState.currentScreen);
-  const isCorujaDiscoveryScreen = isCentralCorujaBrand && ['home', 'search'].includes(navState.currentScreen);
+
 
   return (
-    <div className={`min-h-screen w-full flex flex-col md:flex-row overflow-x-hidden ${isCentralCorujaBrand ? 'bg-[#081524]' : 'bg-white'}`}>
+    <div className="min-h-screen w-full flex flex-col md:flex-row overflow-x-hidden bg-white">
 
       {showNav && (
         <BottomNav
@@ -937,11 +937,7 @@ const App: React.FC = () => {
         />
       )}
 
-      <main className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative h-screen w-full ${isCentralCorujaBrand
-        ? (isCorujaDiscoveryScreen
-          ? 'bg-[radial-gradient(14%_12%_at_84%_7%,rgba(230,184,71,0.10),transparent_72%),radial-gradient(14%_11%_at_10%_10%,rgba(53,112,69,0.10),transparent_76%),radial-gradient(32%_22%_at_50%_-2%,rgba(255,255,255,0.025),transparent_82%),linear-gradient(180deg,#050c14_0%,#07131d_22%,#081925_52%,#08131e_100%)]'
-          : 'bg-[radial-gradient(60%_36%_at_88%_0%,rgba(245,191,52,0.18),transparent_60%),radial-gradient(42%_26%_at_16%_8%,rgba(58,143,82,0.18),transparent_65%),linear-gradient(180deg,#12243f_0%,#16344e_32%,#10283d_100%)]')
-        : 'bg-white'}`}>
+      <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative h-screen w-full bg-white">
         {renderScreen()}
       </main>
 
