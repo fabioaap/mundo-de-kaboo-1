@@ -123,12 +123,8 @@ const MOCK_BRAND_OVERRIDES: Record<string, Partial<BrandBootstrap>> = {
         },
         features: {
             ...DEFAULT_FEATURES,
-            'menu.music': { enabled: false, config: {} },
             'hero.parallax': { enabled: false, config: { mode: 'off' } },
         },
-        menu: DEFAULT_MENU.map(item =>
-            item.key === 'music' ? { ...item, enabled: false } : item
-        ),
     },
 };
 
@@ -250,7 +246,7 @@ function normalizeBootstrap(bootstrap: BrandBootstrap): BrandBootstrap {
     };
 }
 
-function buildMockBootstrap(slug: string): BrandBootstrap {
+export function buildMockBootstrap(slug: string): BrandBootstrap {
     const kabooBase: BrandBootstrap = {
         brand: { id: 'mock-kaboo', slug: 'kaboo', name: 'Mundo de Kaboo' },
         settings: {

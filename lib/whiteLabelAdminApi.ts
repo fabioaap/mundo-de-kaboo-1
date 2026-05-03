@@ -160,7 +160,7 @@ const MOCK_FEATURES_BY_BRAND: Record<string, Record<string, WhiteLabelFeatureSta
         'hero.parallax': { enabled: false, config: { mode: 'off' } },
     },
     'mock-central-coruja': {
-        'menu.music': { enabled: false, config: {} },
+        'menu.music': { enabled: true, config: {} },
         'hero.parallax': { enabled: false, config: { mode: 'off' } },
     },
 };
