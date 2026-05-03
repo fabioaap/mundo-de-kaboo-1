@@ -678,6 +678,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const shouldShowDesktopHeader = !isCentralCoruja || isSearchExperience;
   const shouldRenderBrandHero = !isSearchExperience && (Boolean(brandHomeHeroImageUrl) || isCentralCoruja);
   const searchLauncherPlaceholder = 'Buscar por título, tema, BNCC ou personagem';
+  const desktopShellPaddingClass = isCentralCoruja ? 'px-6 md:pl-0 md:pr-8' : 'px-6 md:px-8';
+  const desktopSkeletonHeaderPaddingClass = isCentralCoruja ? 'hidden md:block shrink-0 pl-0 pr-8 pt-6 pb-4' : 'hidden md:block shrink-0 px-8 pt-6 pb-4';
 
   // Preload avatar image immediately if cached profile exists
   useEffect(() => {
@@ -1388,7 +1390,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     }
 
     return (
-      <div className="px-6 md:px-8 mb-4 shrink-0">
+      <div className={`${desktopShellPaddingClass} mb-4 shrink-0`}>
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3 md:px-5 md:py-4">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 shrink-0 text-amber-700">
@@ -1453,7 +1455,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
 
         {/* DESKTOP HEADER SKELETON */}
-        <div className="hidden md:block shrink-0 px-8 pt-6 pb-4">
+        <div className={desktopSkeletonHeaderPaddingClass}>
           <div className="flex justify-between items-center">
             <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
             <div className="flex items-center gap-4">
@@ -1464,7 +1466,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
 
         {/* TABS AND FILTERS SKELETON */}
-        <div className="px-6 md:px-8 mb-4 mt-2 flex items-center justify-between gap-4 shrink-0">
+        <div className={`${desktopShellPaddingClass} mb-4 mt-2 flex items-center justify-between gap-4 shrink-0`}>
           <div className="flex gap-3 flex-1">
             <div className="h-10 w-24 bg-gray-200 rounded-full animate-pulse"></div>
             <div className="h-10 w-32 bg-gray-200 rounded-full animate-pulse"></div>
@@ -1474,7 +1476,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
 
         {/* CONTENT AREA SKELETON */}
-        <div className="px-6 md:px-8 pt-2 md:pt-6 pb-6">
+        <div className={`${desktopShellPaddingClass} pt-2 md:pt-6 pb-6`}>
           {/* TITLE AND COUNT SKELETON */}
           <div className="flex justify-between items-end pb-4 border-b border-gray-100">
             <div className="h-7 w-48 bg-gray-200 rounded animate-pulse"></div>
@@ -1533,7 +1535,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
         <AccessStatusBanner />
 
-        <div className={`px-6 md:px-8 relative z-0 shrink-0 ${isSearchExperience ? 'pb-4 pt-3 space-y-3' : 'mb-4 mt-2 space-y-3'}`}>
+        <div className={`${desktopShellPaddingClass} relative z-0 shrink-0 ${isSearchExperience ? 'pb-4 pt-3 space-y-3' : 'mb-4 mt-2 space-y-3'}`}>
           {shouldRenderWhiteLabelParallax && (
             <HeroParallaxBackdrop
               enabled
@@ -1709,7 +1711,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
 
         {(activeFilterCount > 0 || (!isSearchExperience && hasSearchQuery)) && (
-          <div className="px-6 md:px-8 mb-4 flex gap-2 flex-wrap animate-fade-in-up shrink-0">
+          <div className={`${desktopShellPaddingClass} mb-4 flex gap-2 flex-wrap animate-fade-in-up shrink-0`}>
             {!isSearchExperience && hasSearchQuery && (
               <span onClick={() => setSearchTerm('')} className="cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group bg-kaboo-primary/10 text-kaboo-primary hover:bg-red-50 hover:text-red-500">
                 Busca: {searchTerm.trim()} <Icons.X size={12} className="group-hover:scale-110" />
@@ -1745,8 +1747,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
         {!isSearchExperience && inProgressCollections.length > 0 && !hasRefinedDiscovery && (
           <div className="mb-4 shrink-0">
-            <h2 className="px-6 md:px-8 text-xl font-bold mb-4 text-gray-800">Continue onde parou</h2>
-            <div className="flex gap-4 overflow-x-auto px-6 md:px-8 pb-6 no-scrollbar snap-x snap-mandatory">
+            <h2 className={`${desktopShellPaddingClass} text-xl font-bold mb-4 text-gray-800`}>Continue onde parou</h2>
+            <div className={`flex gap-4 overflow-x-auto ${desktopShellPaddingClass} pb-6 no-scrollbar snap-x snap-mandatory`}>
               {inProgressCollections.map((c) => {
                 const progress = userProgress[c.id] || 0;
                 const collectionTypeMeta = getCollectionTypeMeta(c);
@@ -1781,7 +1783,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           </div>
         )}
 
-        <div className="px-6 md:px-8 pt-2 md:pt-6 pb-6 relative">
+        <div className={`${desktopShellPaddingClass} pt-2 md:pt-6 pb-6 relative`}>
           {isSearchExperience ? (
             hasFilterOnlySelection ? (
               <>
