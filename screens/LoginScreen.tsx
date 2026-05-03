@@ -93,20 +93,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
   const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
   const resolvedBrandName = brandName || 'Mundo de Kaboo';
   const resolvedBackgroundImageUrl = backgroundImageUrl || BG_IMAGE;
-  const shellBackgroundStyle = isCentralCoruja
-    ? {
-      backgroundImage: resolvedBackgroundImageUrl
-        ? `linear-gradient(135deg, rgba(9, 26, 38, 0.72), rgba(9, 26, 38, 0.18)), url(${resolvedBackgroundImageUrl})`
-        : undefined,
-      backgroundColor: '#0C1A34',
-      backgroundPosition: 'center',
-      backgroundSize: 'cover',
-    }
-    : {
-      backgroundImage: `url(${resolvedBackgroundImageUrl})`,
-      backgroundPosition: 'center',
-      backgroundSize: 'cover',
-    };
+  const shellBackgroundStyle = {
+    backgroundImage: `url(${resolvedBackgroundImageUrl})`,
+    backgroundPosition: 'center',
+    backgroundSize: 'cover',
+  };
   const [step, setStep] = useState<LoginStep>('login');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -270,13 +261,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
   };
 
   const isFullScreenMax = step === 'register';
-  const titleClassName = isCentralCoruja ? 'text-[#0C1A34]' : 'text-gray-800';
-  const bodyClassName = isCentralCoruja ? 'text-[#4D5974]' : 'text-gray-500';
-  const labelClassName = isCentralCoruja ? 'text-[#243A60]' : 'text-gray-600';
-  const iconClassName = isCentralCoruja ? 'text-[#67728A]' : 'text-gray-400';
-  const inputBaseClassName = isCentralCoruja
-    ? 'w-full bg-[#fffdfd]/96 border border-[#dddff3] rounded-[22px] text-[#0C1A34] placeholder:text-[#8A93AD] outline-none transition-all focus:border-[#EA9A3B] focus:ring-4 focus:ring-[#EA9A3B]/15'
-    : 'w-full bg-gray-50 border-none rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all';
+  const titleClassName = 'text-gray-800';
+  const bodyClassName = 'text-gray-500';
+  const labelClassName = 'text-gray-600';
+  const iconClassName = 'text-gray-400';
+  const inputBaseClassName = 'w-full bg-gray-50 border-none rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all';
 
   // Shared error/success feedback
   const FeedbackArea = (
@@ -297,12 +286,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
   const PurchaseLink = (
     <div className="text-center">
-      <p className={`text-xs font-medium ${isCentralCoruja ? 'text-[#67728A]' : 'text-gray-500'}`}>Ainda não tem voucher?</p>
+      <p className="text-xs font-medium text-gray-500">Ainda não tem voucher?</p>
       <a
         href={LEAD_CAPTURE_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className={`mt-1 inline-flex items-center gap-1 text-sm font-bold transition-colors ${isCentralCoruja ? 'text-[#EA9A3B] hover:text-[#C77D24]' : 'text-kaboo-primary hover:text-kaboo-primary/80'}`}
+        className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-kaboo-primary transition-colors hover:text-kaboo-primary/80"
       >
         Entender como funciona e comprar meu acesso{' '}
         <span className="inline-block">→</span>
@@ -312,10 +301,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
   const SupportLink = (
     <div className="text-center">
-      <p className={`text-xs font-medium ${isCentralCoruja ? 'text-[#67728A]' : 'text-gray-500'}`}>Precisa de ajuda com o voucher?</p>
+      <p className="text-xs font-medium text-gray-500">Precisa de ajuda com o voucher?</p>
       <a
         href={SUPPORT_CONTACT_URL}
-        className={`mt-1 inline-flex items-center gap-1 text-sm font-semibold transition-colors ${isCentralCoruja ? 'text-[#243A60] hover:text-[#5D1E76]' : 'text-gray-600 hover:text-kaboo-primary'}`}
+        className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-gray-600 transition-colors hover:text-kaboo-primary"
       >
         Falar com o suporte{' '}
         <span className="inline-block">→</span>
@@ -336,9 +325,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
     return (
       <div
-        className={`inline-flex items-center justify-center text-center font-black leading-none ${isCentralCoruja
-          ? `border border-[#f3d8b0]/55 bg-[#fff7eb]/85 text-[#0C1A34] shadow-[0_16px_34px_rgba(17,42,60,0.12)] ${mode === 'hero' ? 'rounded-[28px] px-6 py-4 text-[2rem]' : 'rounded-[24px] px-5 py-3 text-xl'}`
-          : `border border-gray-200 bg-white text-gray-800 shadow-sm ${mode === 'hero' ? 'rounded-[28px] px-5 py-3 text-xl' : 'rounded-full px-4 py-2 text-base'}`}`}
+        className={`inline-flex items-center justify-center text-center font-black leading-none border border-gray-200 bg-white text-gray-800 shadow-sm ${mode === 'hero' ? 'rounded-[28px] px-5 py-3 text-xl' : 'rounded-full px-4 py-2 text-base'}`}
       >
         {resolvedBrandName}
       </div>
@@ -347,25 +334,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
 
   return (
     <div
-      className={`relative flex h-[100dvh] overflow-hidden p-0 md:items-center md:justify-center md:p-6 lg:p-8 ${isCentralCoruja ? 'bg-[#0C1A34]' : 'bg-gray-50 bg-no-repeat'}`}
+      className="relative flex h-[100dvh] overflow-hidden p-0 md:items-center md:justify-center md:p-6 lg:p-8 bg-gray-50 bg-no-repeat"
       style={shellBackgroundStyle}
     >
-      <div className={`absolute inset-0 ${isCentralCoruja
-        ? 'bg-[radial-gradient(56%_42%_at_14%_8%,rgba(234,154,59,0.18),transparent_55%),radial-gradient(46%_34%_at_88%_12%,rgba(93,30,118,0.18),transparent_58%),linear-gradient(180deg,rgba(9,23,35,0.34),rgba(9,23,35,0.1))] backdrop-blur-[1px]'
-        : 'bg-kaboo-primary/20 backdrop-blur-[2px]'}`} />
+      <div className="absolute inset-0 bg-kaboo-primary/20 backdrop-blur-[2px]" />
 
-      <div className={`relative z-10 flex h-[100dvh] w-full flex-col overflow-hidden transition-all duration-300 md:h-auto md:max-h-[calc(100dvh-3rem)] md:max-w-md lg:max-h-[calc(100dvh-4rem)] ${isCentralCoruja
-        ? 'bg-[linear-gradient(180deg,rgba(251,248,255,0.98)_0%,rgba(246,242,252,0.97)_100%)] md:rounded-[36px] md:border md:border-white/35 md:shadow-[0_34px_84px_rgba(6,18,31,0.34)]'
-        : 'bg-white md:rounded-3xl md:shadow-2xl'} ${isFullScreenMax ? 'md:max-w-lg' : ''}`}>
+      <div className={`relative z-10 flex h-[100dvh] w-full flex-col overflow-hidden transition-all duration-300 md:h-auto md:max-h-[calc(100dvh-3rem)] md:max-w-md lg:max-h-[calc(100dvh-4rem)] bg-white md:rounded-3xl md:shadow-2xl ${isFullScreenMax ? 'md:max-w-lg' : ''}`}>
 
         {/* ─── HEADER: back button + centered logo (voucher/register) ─── */}
         {step !== 'login' && (
-          <div className={`relative flex shrink-0 items-center justify-center px-5 py-3 ${isCentralCoruja ? 'border-b border-[#ece5fa]' : 'border-b border-gray-100'}`}>
+          <div className="relative flex shrink-0 items-center justify-center px-5 py-3 border-b border-gray-100">
             <button
               type="button"
               onClick={goBack}
               aria-label="Voltar"
-              className={`absolute left-4 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${isCentralCoruja ? 'bg-[#f6efff] text-[#5D1E76] hover:bg-[#efe5fb]' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
+              className="absolute left-4 w-9 h-9 rounded-full flex items-center justify-center transition-colors bg-gray-50 text-gray-600 hover:bg-gray-100"
             >
               <Icons.ChevronLeft size={22} />
             </button>
@@ -388,11 +371,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                   type="text"
                   value={voucherCode}
                   onChange={(e) => handleVoucherCodeChange(e.target.value)}
-                  className={`${isCentralCoruja
-                    ? 'w-full border-2 rounded-[22px] p-4 pl-12 text-[#0C1A34] placeholder:text-[#8A93AD] outline-none transition-all text-base tracking-widest font-mono uppercase'
-                    : 'w-full bg-gray-50 border-2 rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 outline-none transition-all text-base tracking-widest font-mono uppercase'} ${validatedVoucher
-                    ? (isCentralCoruja ? 'border-green-400 bg-[#edf8ef] focus:border-green-500' : 'border-green-300 bg-green-50/50 focus:border-green-400')
-                    : (isCentralCoruja ? 'border-[#dddff3] bg-[#fffdfd] focus:border-[#EA9A3B] focus:ring-4 focus:ring-[#EA9A3B]/15' : 'border-gray-100 focus:border-kaboo-primary')
+                  className={`w-full bg-gray-50 border-2 rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 outline-none transition-all text-base tracking-widest font-mono uppercase ${validatedVoucher
+                    ? 'border-green-300 bg-green-50/50 focus:border-green-400'
+                    : 'border-gray-100 focus:border-kaboo-primary'
                     }`}
                   placeholder="Ex.: KABOO-3MESES-2026"
                   autoComplete="one-time-code"
@@ -441,7 +422,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                   <button
                     type="button"
                     onClick={handleUseAnotherVoucher}
-                    className={`w-full text-sm py-2 transition-colors ${isCentralCoruja ? 'text-[#67728A] hover:text-[#243A60]' : 'text-gray-400 hover:text-gray-600'}`}
+                    className="w-full text-sm py-2 transition-colors text-gray-400 hover:text-gray-600"
                   >
                     Usar outro voucher
                   </button>
@@ -529,7 +510,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                     minLength={6}
                     autoComplete="new-password"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#67728A] hover:text-[#243A60]' : 'text-gray-400 hover:text-gray-600'}`}>
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-4 top-4 focus:outline-none text-gray-400 hover:text-gray-600">
                     {showPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
                   </button>
                 </div>
@@ -549,7 +530,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                     minLength={6}
                     autoComplete="new-password"
                   />
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? 'Ocultar confirmação' : 'Mostrar confirmação'} className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#67728A] hover:text-[#243A60]' : 'text-gray-400 hover:text-gray-600'}`}>
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? 'Ocultar confirmação' : 'Mostrar confirmação'} className="absolute right-4 top-4 focus:outline-none text-gray-400 hover:text-gray-600">
                     {showConfirmPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
                   </button>
                 </div>
@@ -562,15 +543,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                     id="terms"
                     checked={acceptedTerms}
                     onChange={(e) => { setAcceptedTerms(e.target.checked); clearError(); }}
-                    className={`peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 transition-all outline-none ${isCentralCoruja
-                      ? 'border-[#c9cfe1] checked:border-[#5D1E76] checked:bg-[#5D1E76] focus:ring-2 focus:ring-[#EA9A3B]/30'
-                      : 'border-gray-300 checked:border-kaboo-primary checked:bg-kaboo-primary focus:ring-2 focus:ring-kaboo-primary/30'}`}
+                    className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 transition-all outline-none border-gray-300 checked:border-kaboo-primary checked:bg-kaboo-primary focus:ring-2 focus:ring-kaboo-primary/30"
                   />
                   <Icons.Check size={14} strokeWidth={4} className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                 </div>
-                <label htmlFor="terms" className={`text-sm cursor-pointer select-none leading-tight ${isCentralCoruja ? 'text-[#4D5974]' : 'text-gray-600'}`}>
+                <label htmlFor="terms" className="text-sm cursor-pointer select-none leading-tight text-gray-600">
                   Li e concordo com a{' '}
-                  <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer" className={`font-bold hover:underline ${isCentralCoruja ? 'text-[#5D1E76]' : 'text-kaboo-primary'}`}>
+                  <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer" className="font-bold hover:underline text-kaboo-primary">
                     política de privacidade
                   </a>{' '}
                   do Mundo de Kaboo.
@@ -632,7 +611,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                     minLength={6}
                     autoComplete="current-password"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className={`absolute right-4 top-4 focus:outline-none ${isCentralCoruja ? 'text-[#67728A] hover:text-[#243A60]' : 'text-gray-400 hover:text-gray-600'}`}>
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-4 top-4 focus:outline-none text-gray-400 hover:text-gray-600">
                     {showPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
                   </button>
                 </div>
@@ -649,28 +628,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
               <button
                 type="button"
                 onClick={() => onNavigate('forgot_password')}
-                className={`text-sm font-semibold py-2 px-3 rounded-lg transition-all duration-200 ${isCentralCoruja
-                  ? 'text-[#67728A] hover:text-[#5D1E76] hover:bg-[#fff4e6]'
-                  : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'}`}
+                className="text-sm font-semibold py-2 px-3 rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-800 hover:bg-gray-100"
               >
                 Esqueci minha senha
               </button>
             </div>
 
             <div className="mt-auto space-y-4 pt-8">
-              <div className={`rounded-3xl border p-4 text-left shadow-sm ${isCentralCoruja
-                ? 'border-[#f0dbc0]/55 bg-[linear-gradient(135deg,rgba(255,247,233,0.92)_0%,rgba(251,241,222,0.78)_100%)] shadow-[0_18px_38px_rgba(17,42,60,0.08)]'
-                : 'border-kaboo-primary/15 bg-gradient-to-br from-kaboo-primary/[0.08] via-white to-white'}`}>
+              <div className="rounded-3xl border p-4 text-left shadow-sm border-kaboo-primary/15 bg-gradient-to-br from-kaboo-primary/[0.08] via-white to-white">
                 <div className="flex items-start gap-3">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm ${isCentralCoruja
-                    ? 'bg-[#fff9f1] text-[#EA9A3B] ring-1 ring-[#f2dfbf]/80'
-                    : 'bg-white text-kaboo-primary ring-1 ring-kaboo-primary/10'}`}>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm bg-white text-kaboo-primary ring-1 ring-kaboo-primary/10">
                     <Icons.Ticket size={18} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCentralCoruja ? 'text-[#C77D24]' : 'text-kaboo-primary/70'}`}>Primeiro acesso</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/70">Primeiro acesso</p>
                     <p className={`mt-1 text-base font-bold ${titleClassName}`}>Ainda não tem cadastro?</p>
-                    <p className={`mt-1 text-sm leading-5 ${isCentralCoruja ? 'text-[#4D5974]' : 'text-gray-600'}`}>Insira seu voucher de acesso para criar sua conta e liberar a plataforma.</p>
+                    <p className="mt-1 text-sm leading-5 text-gray-600">Insira seu voucher de acesso para criar sua conta e liberar a plataforma.</p>
                   </div>
                 </div>
 
@@ -683,7 +656,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                     setSuccessMsg(null);
                     setStep('register');
                   }}
-                  className={`mt-4 ${isCentralCoruja ? '!rounded-[20px]' : ''}`}
+                  className="mt-4"
                 >
                   Inserir voucher de acesso
                 </Button>
