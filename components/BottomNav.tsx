@@ -37,6 +37,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
   /** Retorna true se a chave de menu deve aparecer. Sem restrição = tudo habilitado. */
   const isMenuKeyEnabled = (key: string): boolean =>
     !enabledMenuKeys || enabledMenuKeys.has(key);
+  const isCentralCoruja = brandSlug === 'central-coruja';
   const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
   const resolvedBrandName = brandName || 'Mundo de Kaboo';
   const footerBrandLabel = `${resolvedBrandName} © 2025`;
@@ -143,12 +144,24 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     onNavigate(screen, params);
   };
 
-  const desktopShellClass = 'bg-kaboo-bg border-r border-kaboo-primary/10 shadow-sm';
-  const desktopToggleClass = 'bg-kaboo-bg border-kaboo-primary/20 hover:bg-kaboo-primary/5';
-  const desktopSectionTitleClass = 'text-kaboo-primary/50';
-  const desktopItemActiveClass = 'bg-kaboo-primary text-white shadow-md shadow-kaboo-primary/20';
-  const desktopItemInactiveClass = 'bg-transparent text-gray-500 hover:bg-kaboo-primary/[0.06]';
-  const desktopFooterTextClass = 'text-kaboo-primary/40';
+  const desktopShellClass = isCentralCoruja
+    ? 'bg-kaboo-primary border-r border-white/10 shadow-[8px_0_28px_rgba(12,26,52,0.28)]'
+    : 'bg-kaboo-bg border-r border-kaboo-primary/10 shadow-sm';
+  const desktopToggleClass = isCentralCoruja
+    ? 'bg-kaboo-primary border-white/15 hover:bg-kaboo-light'
+    : 'bg-kaboo-bg border-kaboo-primary/20 hover:bg-kaboo-primary/5';
+  const desktopToggleIconClass = isCentralCoruja ? 'text-white/85' : 'text-gray-600';
+  const desktopSectionTitleClass = isCentralCoruja ? 'text-white/45' : 'text-kaboo-primary/50';
+  const desktopSectionDividerClass = isCentralCoruja ? 'border-white/10' : 'border-kaboo-primary/10';
+  const desktopItemActiveClass = isCentralCoruja
+    ? 'bg-kaboo-light text-white shadow-md shadow-black/20'
+    : 'bg-kaboo-primary text-white shadow-md shadow-kaboo-primary/20';
+  const desktopItemInactiveClass = isCentralCoruja
+    ? 'bg-transparent text-white/78 hover:bg-white/[0.07] hover:text-white'
+    : 'bg-transparent text-gray-500 hover:bg-kaboo-primary/[0.06]';
+  const desktopItemInactiveHoverIconClass = isCentralCoruja ? 'group-hover:text-white' : 'group-hover:text-kaboo-primary';
+  const desktopItemInactiveHoverLabelClass = isCentralCoruja ? 'group-hover:text-white' : 'group-hover:text-kaboo-primary';
+  const desktopFooterTextClass = isCentralCoruja ? 'text-white/45' : 'text-kaboo-primary/40';
 
   return (
     <>
@@ -233,9 +246,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
           title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           {isCollapsed ? (
-            <Icons.ChevronRight size={14} className="text-gray-600" />
+            <Icons.ChevronRight size={14} className={desktopToggleIconClass} />
           ) : (
-            <Icons.ChevronLeft size={14} className="text-gray-600" />
+            <Icons.ChevronLeft size={14} className={desktopToggleIconClass} />
           )}
         </button>
 
@@ -271,7 +284,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
         <div className={`relative z-10 flex-1 space-y-4 py-4 transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'
           }`}>
           {desktopNavSections.map((section, sectionIndex) => (
-            <div key={`${section.title}-${sectionIndex}`} className={`space-y-2 ${sectionIndex > 0 ? 'pt-4 border-t border-kaboo-primary/10' : ''}`}>
+            <div key={`${section.title}-${sectionIndex}`} className={`space-y-2 ${sectionIndex > 0 ? `pt-4 border-t ${desktopSectionDividerClass}` : ''}`}>
               {!isCollapsed && section.title && (
                 <p className={`px-4 text-[11px] font-black uppercase tracking-[0.2em] ${desktopSectionTitleClass}`}>
                   {section.title}
@@ -294,18 +307,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                         : desktopItemInactiveClass
                       }`}
                   >
-                    {!isCollapsed && isActive && (
-                      <span className={`absolute left-2 h-5 w-1 rounded-full bg-white/85`} aria-hidden="true" />
-                    )}
-                    <Icon
-                      size={22}
-                      className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px] group-hover:text-kaboo-primary'}
-                    />
-                    {!isCollapsed && (
-                      <span className={`text-sm font-bold ${isActive ? '' : 'group-hover:text-kaboo-primary'}`}>
-                        {item.label}
-                      </span>
-                    )}
+                     {!isCollapsed && isActive && (
+                       <span className={`absolute left-2 h-5 w-1 rounded-full bg-white/85`} aria-hidden="true" />
+                     )}
+                     <Icon
+                       size={22}
+                       className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${desktopItemInactiveHoverIconClass}`}
+                     />
+                     {!isCollapsed && (
+                       <span className={`text-sm font-bold ${isActive ? '' : desktopItemInactiveHoverLabelClass}`}>
+                         {item.label}
+                       </span>
+                     )}
                   </button>
                 );
               })}
@@ -314,7 +327,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
         </div>
 
         {/* Footer */}
-        <div className={`relative z-10 transition-all duration-300 border-t border-kaboo-primary/10 ${isCollapsed ? 'px-2 py-4' : 'px-4 pt-4 pb-6'}`}>
+        <div className={`relative z-10 transition-all duration-300 border-t ${desktopSectionDividerClass} ${isCollapsed ? 'px-2 py-4' : 'px-4 pt-4 pb-6'}`}>
           <div className="space-y-2">
             {footerNavItems.map((item) => {
               const isActive = isItemActive(item);
@@ -335,10 +348,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                 >
                   <Icon
                     size={22}
-                    className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px] group-hover:text-kaboo-primary'}
+                    className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${desktopItemInactiveHoverIconClass}`}
                   />
                   {!isCollapsed && (
-                    <span className={`text-sm font-bold ${isActive ? '' : 'group-hover:text-gray-800'}`}>
+                    <span className={`text-sm font-bold ${isActive ? '' : desktopItemInactiveHoverLabelClass}`}>
                       {item.label}
                     </span>
                   )}
