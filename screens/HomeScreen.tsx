@@ -1526,9 +1526,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         <div
           className="absolute inset-x-0 top-0 h-[300px] md:h-[430px] z-0 pointer-events-none overflow-hidden"
           style={{
-            backgroundImage: `url(${brandHomeHeroImageUrl})`,
+            backgroundImage: `url(${isMobile ? '/coruja-hero-mobile.webp' : brandHomeHeroImageUrl})`,
             backgroundSize: 'cover',
-            backgroundPosition: isMobile ? '75% 10%' : 'right 20%',
+            backgroundPosition: isMobile ? 'center top' : 'right 20%',
             backgroundAttachment: 'scroll',
             backgroundRepeat: 'no-repeat',
             filter: 'saturate(1.08) brightness(1.02)',
