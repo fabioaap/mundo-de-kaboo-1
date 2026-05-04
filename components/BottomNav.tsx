@@ -319,7 +319,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                       }`}
                   >
                      {!isCollapsed && isActive && (
-                       <span className={`absolute left-2 h-5 w-1 rounded-full bg-white/85`} aria-hidden="true" />
+                       <span className={`absolute left-2 ${isCentralCoruja ? 'h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]' : 'h-5 w-1 rounded-full bg-white/85'}`} aria-hidden="true" />
                      )}
                      <Icon
                        size={22}

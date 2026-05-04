@@ -1547,20 +1547,35 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           <div className="relative z-10 space-y-3">
             {shouldRenderBrandHero && (
               <section
-                className="relative overflow-hidden rounded-[30px] border border-white/70 p-5 text-white shadow-[0_24px_50px_rgba(15,23,42,0.16)]"
+                className={`relative overflow-hidden rounded-[30px] p-5 text-white shadow-[0_24px_50px_rgba(15,23,42,0.16)] ${
+                  isCentralCoruja && !brandHomeHeroImageUrl
+                    ? 'border border-white/20 min-h-[180px] md:min-h-[200px]'
+                    : 'border border-white/70'
+                }`}
                 style={{
                   backgroundImage: brandHomeHeroImageUrl
                     ? `linear-gradient(135deg, ${brandBootstrap.settings.primary_color ?? '#5D1F58'}CC, ${brandBootstrap.settings.accent_color ?? '#4EA8DE'}88), url(${brandHomeHeroImageUrl})`
                     : undefined,
                   background: brandHomeHeroImageUrl
                     ? undefined
-                    : `radial-gradient(circle at 18% 18%, ${brandBootstrap.settings.accent_color ?? '#F9A825'}55 0%, transparent 28%), linear-gradient(135deg, ${brandBootstrap.settings.primary_color ?? '#1B5E20'} 0%, ${brandBootstrap.settings.light_color ?? '#388E3C'} 55%, ${brandBootstrap.settings.accent_color ?? '#F9A825'} 100%)`,
+                    : isCentralCoruja
+                      ? `radial-gradient(ellipse 60% 80% at 85% 30%, rgba(93,30,118,0.55) 0%, transparent 50%), radial-gradient(circle at 15% 80%, rgba(234,154,59,0.25) 0%, transparent 40%), linear-gradient(145deg, #0C1A34 0%, #162544 40%, #1E3155 70%, #5D1E76 100%)`
+                      : `radial-gradient(circle at 18% 18%, ${brandBootstrap.settings.accent_color ?? '#F9A825'}55 0%, transparent 28%), linear-gradient(135deg, ${brandBootstrap.settings.primary_color ?? '#1B5E20'} 0%, ${brandBootstrap.settings.light_color ?? '#388E3C'} 55%, ${brandBootstrap.settings.accent_color ?? '#F9A825'} 100%)`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   fontFamily: brandBootstrap.settings.font_family || undefined,
                 }}
               >
-                <div className={`absolute inset-0 ${brandHomeHeroImageUrl ? 'bg-black/10' : 'bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.24),transparent_30%),linear-gradient(180deg,rgba(8,15,16,0.04),rgba(8,15,16,0.18))]'}`} />
+                <div className={`absolute inset-0 ${
+                  brandHomeHeroImageUrl
+                    ? 'bg-black/10'
+                    : isCentralCoruja
+                      ? 'bg-[radial-gradient(circle_at_75%_25%,rgba(234,154,59,0.12),transparent_45%),linear-gradient(180deg,rgba(12,26,52,0.1),rgba(12,26,52,0.35))]'
+                      : 'bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.24),transparent_30%),linear-gradient(180deg,rgba(8,15,16,0.04),rgba(8,15,16,0.18))]'
+                }`} />
+                {isCentralCoruja && !brandHomeHeroImageUrl && (
+                  <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} aria-hidden="true" />
+                )}
                 <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                   <div className="max-w-2xl">
                     <p className="text-sm font-semibold text-white/85">Olá, {profileDisplayFirstName}!</p>
@@ -1571,7 +1586,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   </div>
 
                   {brandLogoUrl ? (
-                    <img src={brandLogoUrl} alt={brandDisplayName} className="h-12 w-auto max-w-[180px] object-contain drop-shadow-[0_12px_24px_rgba(15,23,42,0.22)]" />
+                    <img src={brandLogoUrl} alt={brandDisplayName} className={`h-12 w-auto max-w-[180px] object-contain ${isCentralCoruja ? 'drop-shadow-[0_8px_20px_rgba(0,0,0,0.4)]' : 'drop-shadow-[0_12px_24px_rgba(15,23,42,0.22)]'}`} />
                   ) : (
                     <div className="inline-flex max-w-[220px] items-center rounded-[24px] border border-white/25 bg-white/12 px-5 py-4 text-right text-lg font-black leading-tight text-white shadow-[0_12px_24px_rgba(15,23,42,0.18)] backdrop-blur-sm">
                       {brandDisplayName}
