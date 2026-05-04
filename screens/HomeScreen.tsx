@@ -1580,9 +1580,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           {/* Central Coruja with hero image: content floats over parallax background */}
           {isCentralCoruja && brandHomeHeroImageUrl ? (
-            <div className="relative space-y-4 pt-4 pb-2">
+            <div className="relative space-y-5 pt-8 pb-4 md:pt-10 md:pb-6">
               {shouldRenderBrandHero && (
-                <div className="max-w-2xl">
+                <div className="max-w-xl">
                   <p className="text-sm font-semibold text-white/85">Olá, {profileDisplayFirstName}!</p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight md:text-4xl text-[#FFB347]">Bem-vindo à {brandDisplayName}!</h2>
                   <p className="mt-3 text-sm leading-relaxed text-white/85">
@@ -1591,7 +1591,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 </div>
               )}
 
-              <div className="relative w-full">
+              <div className="relative w-full md:max-w-[56%]">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
                   <Icons.Search size={18} />
                 </div>
@@ -1650,7 +1650,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               </div>
 
               {!isSearchExperience && (
-                <div className="relative z-20 flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                <div className="relative z-20 flex gap-3 overflow-x-auto no-scrollbar pb-1 md:max-w-[56%]">
                   {TABS.map((tab) => {
                     const isActive = activeTab === tab.id;
                     return (
