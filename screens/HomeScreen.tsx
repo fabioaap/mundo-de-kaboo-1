@@ -12,6 +12,7 @@ import { CharacterAvatar } from '../components/CharacterAvatar';
 import { CollectionFiltersModal } from '../components/CollectionFiltersModal';
 import { HeroParallaxBackdrop } from '../components/HeroParallaxBackdrop';
 import { useBrandConfig } from '../hooks/useBrandConfig';
+import useIsMobile from '../hooks/useIsMobile';
 import { getCollectionDisplayCover, getCollectionTypeMeta } from '../lib/collectionPresentation';
 import { lookupBncc } from '../lib/bnccLookup';
 // @ts-ignore
@@ -664,6 +665,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   };
 
   const isCentralCoruja = brandSlug === 'central-coruja';
+  const isMobile = useIsMobile();
   const heroParallaxFeature = brandBootstrap.features['hero.parallax'];
   const heroParallaxModeRaw = heroParallaxFeature?.config?.mode;
   const heroParallaxMode =
@@ -1522,11 +1524,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       {/* Coruja hero: fixed parallax background image behind entire page */}
       {isCentralCoruja && brandHomeHeroImageUrl && (
         <div
-          className="absolute inset-x-0 top-0 h-[380px] md:h-[430px] z-0 pointer-events-none overflow-hidden"
+          className="absolute inset-x-0 top-0 h-[300px] md:h-[430px] z-0 pointer-events-none overflow-hidden"
           style={{
             backgroundImage: `url(${brandHomeHeroImageUrl})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'right 20%',
+            backgroundPosition: isMobile ? '75% 10%' : 'right 20%',
             backgroundAttachment: 'scroll',
             backgroundRepeat: 'no-repeat',
             filter: 'saturate(1.08) brightness(1.02)',
@@ -1536,8 +1538,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage:
-                'radial-gradient(circle at 72% 30%, rgba(255,214,120,0.16) 0%, rgba(255,214,120,0.06) 18%, transparent 36%), linear-gradient(90deg, rgba(4,27,36,0.84) 0%, rgba(4,27,36,0.50) 24%, rgba(4,27,36,0.08) 44%, transparent 60%), linear-gradient(to bottom, rgba(4,27,36,0.00) 0%, rgba(4,27,36,0.03) 34%, rgba(4,27,36,0.38) 58%, rgba(4,27,36,0.82) 76%, #041b24 92%)',
+              backgroundImage: isMobile
+                ? 'linear-gradient(180deg, rgba(4,27,36,0.10) 0%, rgba(4,27,36,0.30) 40%, rgba(4,27,36,0.72) 65%, #041b24 88%)'
+                : 'radial-gradient(circle at 72% 30%, rgba(255,214,120,0.16) 0%, rgba(255,214,120,0.06) 18%, transparent 36%), linear-gradient(90deg, rgba(4,27,36,0.84) 0%, rgba(4,27,36,0.50) 24%, rgba(4,27,36,0.08) 44%, transparent 60%), linear-gradient(to bottom, rgba(4,27,36,0.00) 0%, rgba(4,27,36,0.03) 34%, rgba(4,27,36,0.38) 58%, rgba(4,27,36,0.82) 76%, #041b24 92%)',
             }}
           />
         </div>
@@ -1580,12 +1583,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           {/* Central Coruja with hero image: content floats over parallax background */}
           {isCentralCoruja && brandHomeHeroImageUrl ? (
-            <div className="relative space-y-5 pt-8 pb-4 md:pt-10 md:pb-6">
+            <div className="relative space-y-4 pt-[160px] pb-4 md:pt-10 md:pb-6 md:space-y-5">
               {shouldRenderBrandHero && (
-                <div className="max-w-xl">
+                <div className="max-w-xl md:max-w-[52%]">
                   <p className="text-sm font-semibold text-white/85">Olá, {profileDisplayFirstName}!</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight md:text-4xl text-[#FFB347]">Bem-vindo à {brandDisplayName}!</h2>
-                  <p className="mt-3 text-sm leading-relaxed text-white/85">
+                  <h2 className="mt-1 text-2xl font-black tracking-tight md:text-4xl text-[#FFB347]">Bem-vindo à {brandDisplayName}!</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-white/85">
                     Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.
                   </p>
                 </div>
