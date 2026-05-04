@@ -118,7 +118,7 @@ const MOCK_BRAND_OVERRIDES: Record<string, Partial<BrandBootstrap>> = {
             radius_2xl: null,
             radius_3xl: null,
             login_background_url: null,
-            home_hero_image_url: '/coruja-hero-banner.webp',
+            home_hero_image_url: '/coruja-hero-banner-v2.webp',
             menu_config: {},
         },
         features: {

@@ -1526,7 +1526,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           style={{
             backgroundImage: `url(${brandHomeHeroImageUrl})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'right 50%',
+            backgroundPosition: 'right 20%',
             backgroundAttachment: 'scroll',
             backgroundRepeat: 'no-repeat',
             filter: 'saturate(1.08) brightness(1.02)',
@@ -1591,7 +1591,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 </div>
               )}
 
-              <div className="relative w-full md:max-w-[56%]">
+              <div className="relative w-full md:max-w-[48%]">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
                   <Icons.Search size={18} />
                 </div>
@@ -1650,7 +1650,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               </div>
 
               {!isSearchExperience && (
-                <div className="relative z-20 flex gap-3 overflow-x-auto no-scrollbar pb-1 md:max-w-[56%]">
+                <div className="relative z-20 flex gap-3 overflow-x-auto no-scrollbar pb-1 md:max-w-[48%]">
                   {TABS.map((tab) => {
                     const isActive = activeTab === tab.id;
                     return (
