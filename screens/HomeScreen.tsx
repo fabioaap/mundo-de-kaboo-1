@@ -674,7 +674,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const shouldRenderWhiteLabelParallax =
     isCentralCoruja &&
     isFeatureEnabled('hero.parallax') &&
-    !isSearchExperience;
+    !isSearchExperience &&
+    !brandHomeHeroImageUrl;
   const shouldShowDesktopHeader = !isCentralCoruja || isSearchExperience;
   const shouldRenderBrandHero = !isSearchExperience && (Boolean(brandHomeHeroImageUrl) || isCentralCoruja);
   const isCorujaHomeLayout = isCentralCoruja && !isSearchExperience;
@@ -1521,17 +1522,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       {/* Coruja hero: fixed parallax background image behind entire page */}
       {isCentralCoruja && brandHomeHeroImageUrl && (
         <div
-          className="absolute inset-x-0 top-0 h-[420px] md:h-[480px] z-0 pointer-events-none"
+          className="absolute inset-x-0 top-0 h-[440px] md:h-[520px] z-0 pointer-events-none"
           style={{
             backgroundImage: `url(${brandHomeHeroImageUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center top',
+            backgroundSize: '112% auto',
+            backgroundPosition: '66% 72%',
             backgroundAttachment: 'fixed',
             backgroundRepeat: 'no-repeat',
           }}
           aria-hidden="true"
         >
-          <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(to bottom, transparent 0%, transparent 30%, rgba(4,27,36,0.4) 55%, rgba(4,27,36,0.85) 80%, #041b24 100%)' }} />
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                'linear-gradient(90deg, rgba(4,27,36,0.82) 0%, rgba(4,27,36,0.58) 24%, rgba(4,27,36,0.16) 45%, transparent 60%), linear-gradient(to bottom, rgba(4,27,36,0.02) 0%, rgba(4,27,36,0.08) 42%, rgba(4,27,36,0.48) 70%, rgba(4,27,36,0.86) 86%, #041b24 100%)',
+            }}
+          />
         </div>
       )}
 
