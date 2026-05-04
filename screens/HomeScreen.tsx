@@ -1518,7 +1518,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         }
         : undefined}
     >
-      <div className="flex flex-col">
+      {/* Coruja hero: fixed parallax background image behind entire page */}
+      {isCentralCoruja && brandHomeHeroImageUrl && (
+        <div
+          className="absolute inset-x-0 top-0 h-[420px] md:h-[480px] z-0 pointer-events-none"
+          style={{
+            backgroundImage: `url(${brandHomeHeroImageUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center top',
+            backgroundAttachment: 'fixed',
+            backgroundRepeat: 'no-repeat',
+          }}
+          aria-hidden="true"
+        >
+          <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(to bottom, transparent 0%, transparent 30%, rgba(4,27,36,0.4) 55%, rgba(4,27,36,0.85) 80%, #041b24 100%)' }} />
+        </div>
+      )}
+
+      <div className={`flex flex-col ${isCentralCoruja && brandHomeHeroImageUrl ? 'relative z-10' : ''}`}>
 
         <>
           {/* MOBILE HEADER: Fixed background color, reduced padding, no top margin */}
@@ -1553,16 +1570,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             />
           )}
 
-          {/* Central Coruja with hero image: full-bleed background wrapping title + search + tabs */}
+          {/* Central Coruja with hero image: content floats over parallax background */}
           {isCentralCoruja && brandHomeHeroImageUrl ? (
-            <div
-              className="relative overflow-hidden -mx-6 md:-mx-8 px-6 md:px-8 pt-8 pb-6 space-y-4"
-              style={{
-                backgroundImage: `linear-gradient(to bottom, rgba(4,27,36,0.08) 0%, rgba(4,27,36,0.28) 52%, rgba(4,27,36,0.82) 78%, #041b24 100%), url(${brandHomeHeroImageUrl})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'right center',
-              }}
-            >
+            <div className="relative space-y-4 pt-4 pb-2">
               {shouldRenderBrandHero && (
                 <div className="max-w-2xl">
                   <p className="text-sm font-semibold text-white/85">Olá, {profileDisplayFirstName}!</p>
