@@ -75,11 +75,13 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
   const collectionTypeMeta = getCollectionTypeMeta(collection);
   const isCentralCorujaTone = tone === 'central-coruja';
   const progress = collection.progress ?? 0;
-  const coverBadgeLabel = collection.level
-    ? formatSegmentLabel(collection.level)
-    : collection.segments?.[0]
-      ? formatSegmentLabel(collection.segments[0])
-      : collectionTypeMeta.shortLabel;
+  const coverBadgeLabel = isCentralCorujaTone
+    ? collectionTypeMeta.shortLabel
+    : collection.level
+      ? formatSegmentLabel(collection.level)
+      : collection.segments?.[0]
+        ? formatSegmentLabel(collection.segments[0])
+        : collectionTypeMeta.shortLabel;
 
   // Gyroscope effect for mobile
   useEffect(() => {
@@ -230,7 +232,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         )}
         <div
           className={`absolute border backdrop-blur-sm ${isCentralCorujaTone
-            ? 'left-3 top-3 max-w-[calc(100%-4rem)] truncate rounded-full border-[#d0c08d]/60 bg-[#4d3567]/92 px-3 py-1.5 text-[10px] text-[#fff0bc] shadow-[0_12px_22px_rgba(19,8,35,0.34)]'
+            ? 'left-3 top-3 max-w-[calc(100%-4rem)] truncate rounded-full border-[#ffd28a]/70 bg-[#EA9A3B] px-3 py-1.5 text-[10px] text-white shadow-[0_12px_22px_rgba(62,28,4,0.28)]'
             : `top-2 left-2 whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] ${collectionTypeMeta.coverClassName}`
             } font-black uppercase tracking-[0.14em]`}
           style={{ transform: 'translateZ(30px)' }}
@@ -238,12 +240,12 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
           {isCentralCorujaTone ? coverBadgeLabel : collectionTypeMeta.shortLabel}
         </div>
 
-        {isCentralCorujaTone && (locked || progress > 0 || collectionTypeMeta.type === 'kit') && (
+        {isCentralCorujaTone && (locked || progress > 0) && (
           <div
             className={`absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border shadow-[0_12px_22px_rgba(14,9,34,0.28)] ${locked ? 'border-[#ecd495]/80 bg-[#1d2037]/92 text-[#ffeab8]' : 'border-[#f2d87b]/90 bg-[#ffcf4d] text-[#62331a]'}`}
             style={{ transform: 'translateZ(34px)' }}
           >
-            {locked ? <Icons.Lock size={16} /> : progress > 0 ? <Icons.Check size={18} className="stroke-[3px]" /> : <span className="text-xl leading-none">★</span>}
+            {locked ? <Icons.Lock size={16} /> : <Icons.Check size={18} className="stroke-[3px]" />}
           </div>
         )}
         {/* Light reflection effect - moves based on tilt */}

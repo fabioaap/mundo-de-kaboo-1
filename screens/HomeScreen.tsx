@@ -677,6 +677,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     !isSearchExperience;
   const shouldShowDesktopHeader = !isCentralCoruja || isSearchExperience;
   const shouldRenderBrandHero = !isSearchExperience && (Boolean(brandHomeHeroImageUrl) || isCentralCoruja);
+  const isCorujaHomeLayout = isCentralCoruja && !isSearchExperience;
   const searchLauncherPlaceholder = 'Buscar por título, tema, BNCC ou personagem';
   const desktopShellPaddingClass = 'px-6 md:px-8';
   const desktopSkeletonHeaderPaddingClass = 'hidden md:block shrink-0 px-8 pt-6 pb-4';
@@ -1508,12 +1509,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   }
 
   return (
-    <div className="flex flex-col min-h-full pb-24 md:pb-0 relative bg-white">
+    <div
+      className={`flex flex-col min-h-full pb-24 md:pb-0 relative ${isCorujaHomeLayout ? 'bg-[#041b24]' : 'bg-white'}`}
+      style={isCorujaHomeLayout
+        ? {
+          backgroundImage:
+            'radial-gradient(circle at 18% 12%, rgba(49,104,116,0.28) 0%, transparent 28%), radial-gradient(circle at 82% 0%, rgba(93,30,118,0.26) 0%, transparent 24%), linear-gradient(180deg, #082B37 0%, #062733 38%, #041B24 100%)',
+        }
+        : undefined}
+    >
       <div className="flex flex-col">
 
         <>
           {/* MOBILE HEADER: Fixed background color, reduced padding, no top margin */}
-          <div className="md:hidden px-6 py-4 flex justify-center items-center shrink-0 bg-white z-30 transition-all border-b border-gray-50">
+          <div className={`md:hidden px-6 py-4 flex justify-center items-center shrink-0 z-30 transition-all border-b ${isCentralCoruja ? 'bg-[#082B37] border-white/10' : 'bg-white border-gray-50'}`}>
             <button onClick={() => onNavigate('home', baseHomeParams)} aria-label="Ir para a home" className="flex items-center justify-center">
               {brandLogoUrl ? (
                 <img src={brandLogoUrl} alt={brandDisplayName} className="h-10 w-auto object-contain" />
@@ -1535,7 +1544,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
         <AccessStatusBanner />
 
-        <div className={`${desktopShellPaddingClass} relative z-0 shrink-0 ${isSearchExperience ? 'pb-4 pt-3 space-y-3' : 'mb-4 mt-2 space-y-3'}`}>
+        <div className={`${desktopShellPaddingClass} relative z-0 shrink-0 ${isSearchExperience ? 'pb-4 pt-3 space-y-3' : isCorujaHomeLayout ? 'pb-5 pt-4 md:pb-6 md:pt-6 space-y-4' : 'mb-4 mt-2 space-y-3'}`}>
           {shouldRenderWhiteLabelParallax && (
             <HeroParallaxBackdrop
               enabled
@@ -1547,11 +1556,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           <div className="relative z-10 space-y-3">
             {shouldRenderBrandHero && (
               <section
-                className={`relative overflow-hidden rounded-[30px] p-5 text-white shadow-[0_24px_50px_rgba(15,23,42,0.16)] ${
-                  isCentralCoruja && !brandHomeHeroImageUrl
-                    ? 'border border-white/20 min-h-[180px] md:min-h-[200px]'
-                    : 'border border-white/70'
-                }`}
+                  className={`relative overflow-hidden rounded-[30px] p-5 text-white shadow-[0_24px_50px_rgba(15,23,42,0.16)] ${
+                    isCentralCoruja && !brandHomeHeroImageUrl
+                      ? 'border border-white/18 min-h-[180px] md:min-h-[210px] shadow-[0_28px_60px_rgba(0,0,0,0.28)]'
+                      : 'border border-white/70'
+                  }`}
                 style={{
                   backgroundImage: brandHomeHeroImageUrl
                     ? `linear-gradient(135deg, ${brandBootstrap.settings.primary_color ?? '#5D1F58'}CC, ${brandBootstrap.settings.accent_color ?? '#4EA8DE'}88), url(${brandHomeHeroImageUrl})`
@@ -1559,7 +1568,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   background: brandHomeHeroImageUrl
                     ? undefined
                     : isCentralCoruja
-                      ? `radial-gradient(ellipse 60% 80% at 85% 30%, rgba(93,30,118,0.55) 0%, transparent 50%), radial-gradient(circle at 15% 80%, rgba(234,154,59,0.25) 0%, transparent 40%), linear-gradient(145deg, #0C1A34 0%, #162544 40%, #1E3155 70%, #5D1E76 100%)`
+                      ? `radial-gradient(ellipse 44% 58% at 88% 18%, rgba(242,211,102,0.22) 0%, transparent 42%), radial-gradient(circle at 78% 22%, rgba(93,30,118,0.52) 0%, transparent 38%), radial-gradient(circle at 18% 85%, rgba(234,154,59,0.18) 0%, transparent 30%), linear-gradient(135deg, #102A3D 0%, #12384A 30%, #0B3343 56%, #0C1A34 100%)`
                       : `radial-gradient(circle at 18% 18%, ${brandBootstrap.settings.accent_color ?? '#F9A825'}55 0%, transparent 28%), linear-gradient(135deg, ${brandBootstrap.settings.primary_color ?? '#1B5E20'} 0%, ${brandBootstrap.settings.light_color ?? '#388E3C'} 55%, ${brandBootstrap.settings.accent_color ?? '#F9A825'} 100%)`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
@@ -1570,7 +1579,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   brandHomeHeroImageUrl
                     ? 'bg-black/10'
                     : isCentralCoruja
-                      ? 'bg-[radial-gradient(circle_at_75%_25%,rgba(234,154,59,0.12),transparent_45%),linear-gradient(180deg,rgba(12,26,52,0.1),rgba(12,26,52,0.35))]'
+                      ? 'bg-[radial-gradient(circle_at_76%_24%,rgba(255,229,150,0.14),transparent_18%),radial-gradient(circle_at_84%_18%,rgba(234,154,59,0.16),transparent_24%),linear-gradient(180deg,rgba(5,11,20,0.04),rgba(5,11,20,0.28))]'
                       : 'bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.24),transparent_30%),linear-gradient(180deg,rgba(8,15,16,0.04),rgba(8,15,16,0.18))]'
                 }`} />
                 {isCentralCoruja && !brandHomeHeroImageUrl && (
@@ -1579,14 +1588,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                   <div className="max-w-2xl">
                     <p className="text-sm font-semibold text-white/85">Olá, {profileDisplayFirstName}!</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight md:text-4xl">Bem-vindo à {brandDisplayName}!</h2>
+                    <h2 className={`mt-2 text-2xl font-black tracking-tight md:text-4xl ${isCentralCoruja ? 'text-[#FFB347]' : ''}`}>Bem-vindo à {brandDisplayName}!</h2>
                     <p className="mt-3 text-sm leading-relaxed text-white/85">
                       Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.
                     </p>
                   </div>
 
                   {brandLogoUrl ? (
-                    <img src={brandLogoUrl} alt={brandDisplayName} className={`h-12 w-auto max-w-[180px] object-contain ${isCentralCoruja ? 'drop-shadow-[0_8px_20px_rgba(0,0,0,0.4)]' : 'drop-shadow-[0_12px_24px_rgba(15,23,42,0.22)]'}`} />
+                    isCentralCoruja && !brandHomeHeroImageUrl ? (
+                      <div className="hidden md:flex flex-col items-end gap-3 self-start">
+                        <div className="rounded-[18px] border border-[#8E5D22]/70 bg-[linear-gradient(135deg,#7E4B20_0%,#5C3417_100%)] px-4 py-3 text-right text-[13px] font-black leading-tight text-[#FFD27B] shadow-[0_14px_28px_rgba(34,18,4,0.3)] rotate-[-5deg]">
+                          O que vamos
+                          <br />
+                          explorar hoje?
+                        </div>
+                        <img src={brandLogoUrl} alt={brandDisplayName} className="h-10 w-auto max-w-[150px] object-contain opacity-90 drop-shadow-[0_8px_20px_rgba(0,0,0,0.35)]" />
+                      </div>
+                    ) : (
+                      <img src={brandLogoUrl} alt={brandDisplayName} className={`h-12 w-auto max-w-[180px] object-contain ${isCentralCoruja ? 'drop-shadow-[0_8px_20px_rgba(0,0,0,0.4)]' : 'drop-shadow-[0_12px_24px_rgba(15,23,42,0.22)]'}`} />
+                    )
                   ) : (
                     <div className="inline-flex max-w-[220px] items-center rounded-[24px] border border-white/25 bg-white/12 px-5 py-4 text-right text-lg font-black leading-tight text-white shadow-[0_12px_24px_rgba(15,23,42,0.18)] backdrop-blur-sm">
                       {brandDisplayName}
@@ -1619,7 +1639,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               </div>
             )}
 
-            <div className="relative w-full">
+            <div className={`relative w-full ${isCorujaHomeLayout ? '-mt-5 md:-mt-6' : ''}`}>
               <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
                 <Icons.Search size={18} />
               </div>
@@ -1674,7 +1694,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 <button
                   type="button"
                   onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
-                  className="w-full text-left font-medium h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-16 md:pr-28 shadow-sm hover:border-kaboo-primary/20 text-gray-400"
+                  className={`w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 ${isCorujaHomeLayout
+                    ? 'border border-white/70 bg-white text-gray-400 shadow-[0_14px_30px_rgba(0,0,0,0.22)] hover:border-[#EA9A3B]/45'
+                    : 'border border-gray-200 bg-white shadow-sm hover:border-kaboo-primary/20 text-gray-400'
+                    }`}
                   aria-label="Abrir pesquisa"
                 >
                   {searchLauncherPlaceholder}
@@ -1685,9 +1708,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 <button
                   type="button"
                   onClick={() => openFilterDrawer()}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 shadow-sm h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0
-                    ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
-                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-white hover:border-kaboo-primary/20'
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0
+                    ? isCorujaHomeLayout
+                      ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)]'
+                      : 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
+                    : isCorujaHomeLayout
+                      ? 'bg-white text-[#0C1A34] border-white/70 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/45'
+                      : 'bg-gray-50 text-gray-600 border-gray-200 shadow-sm hover:bg-white hover:border-kaboo-primary/20'
                     }`}
                   title="Refinar busca"
                 >
@@ -1711,8 +1738,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive
-                        ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20'
-                        : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100'
+                        ? isCorujaHomeLayout
+                          ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]'
+                          : 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20'
+                        : isCorujaHomeLayout
+                          ? 'bg-white text-[#0C1A34] border-white/70 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white/95'
+                          : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100'
                         }`}
                     >
                       {tab.id === 'all' && <Icons.Grid size={14} />}
@@ -1798,7 +1829,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           </div>
         )}
 
-        <div className={`${desktopShellPaddingClass} pt-2 md:pt-6 pb-6 relative`}>
+        <div className={`${desktopShellPaddingClass} pt-2 md:pt-6 pb-8 relative`}>
           {isSearchExperience ? (
             hasFilterOnlySelection ? (
               <>
@@ -1919,45 +1950,49 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             )
           ) : (
             <>
-              <div className="flex justify-between items-end pb-4 border-b border-gray-100">
+              <div className={`flex justify-between items-end pb-4 ${isCorujaHomeLayout ? 'border-b border-white/14' : 'border-b border-gray-100'}`}>
                 <div>
                   {hasSearchQuery && (
-                    <p className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-kaboo-primary">Busca ativa</p>
+                    <p className={`mb-1 text-xs font-bold uppercase tracking-[0.14em] ${isCorujaHomeLayout ? 'text-[#FFB347]' : 'text-kaboo-primary'}`}>Busca ativa</p>
                   )}
-                  <h2 className="text-xl font-bold text-gray-800">
+                  <h2 className={`text-xl font-bold ${isCorujaHomeLayout ? 'text-[#FFB347]' : 'text-gray-800'}`}>
                     {hasSearchQuery ? 'Resultados da busca' :
                       activeTab === 'all' && activeFilterCount === 0 ? allCollectionGroupTitle :
                         activeFilterCount > 0 ? filteredCollectionGroupTitle :
                           activeTab === 'fund1' ? 'Ed. Infantil' : 'E.F. Anos Iniciais'}
                   </h2>
                   {hasSearchQuery && (
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-1">Pesquisando por “{searchTerm.trim()}”</p>
+                    <p className={`text-sm mt-1 line-clamp-1 ${isCorujaHomeLayout ? 'text-white/70' : 'text-gray-500'}`}>Pesquisando por “{searchTerm.trim()}”</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setSortByAge(prev => !prev)}
                     className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${sortByAge
-                      ? 'bg-kaboo-primary text-white shadow-sm'
-                      : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                      ? isCorujaHomeLayout
+                        ? 'bg-[#5D1E76] text-white shadow-[0_10px_22px_rgba(93,30,118,0.3)]'
+                        : 'bg-kaboo-primary text-white shadow-sm'
+                      : isCorujaHomeLayout
+                        ? 'bg-white/10 text-white/80 hover:bg-white/14'
+                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
                       }`}
                     title="Ordenar por faixa etária"
                   >
                     <Icons.ArrowUpDown size={12} />
                     Idade
                   </button>
-                  <span className="text-xs font-bold px-2 py-1 rounded-lg text-gray-400 bg-gray-50">
+                  <span className={`text-xs font-bold px-2 py-1 rounded-lg ${isCorujaHomeLayout ? 'text-white/70 bg-white/10' : 'text-gray-400 bg-gray-50'}`}>
                     {filteredCollections.length}
                   </span>
                   <button
                     onClick={handleRefresh}
                     disabled={isRefreshing || loading}
-                    className="w-7 h-7 rounded-lg active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed bg-gray-50 hover:bg-gray-100"
+                    className={`w-7 h-7 rounded-lg active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed ${isCorujaHomeLayout ? 'bg-white/10 hover:bg-white/14' : 'bg-gray-50 hover:bg-gray-100'}`}
                     title="Atualizar coleções"
                   >
                     <Icons.RotateCw
                       size={14}
-                      className={`text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`}
+                      className={`${isCorujaHomeLayout ? 'text-white/80' : 'text-gray-600'} ${isRefreshing ? 'animate-spin' : ''}`}
                     />
                   </button>
                 </div>
@@ -1970,21 +2005,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     collections={filteredCollections}
                     onCollectionClick={handleCollectionClick}
                     grants={contentGrants}
-                    tone="default"
+                    tone={isCentralCoruja ? 'central-coruja' : 'default'}
                   />
                 </div>
               ) : (
                 <div className="py-20 text-center flex flex-col items-center">
-                  <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4">
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${isCorujaHomeLayout ? 'bg-white/10 text-white/55' : 'bg-gray-50 text-gray-300'}`}>
                     <Icons.Search size={32} />
                   </div>
-                  <h3 className="text-gray-800 font-bold mb-2">Nenhum item encontrado</h3>
-                  <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">
+                  <h3 className={`font-bold mb-2 ${isCorujaHomeLayout ? 'text-white' : 'text-gray-800'}`}>Nenhum item encontrado</h3>
+                  <p className={`text-sm mb-6 max-w-xs mx-auto ${isCorujaHomeLayout ? 'text-white/65' : 'text-gray-400'}`}>
                     Não encontramos resultados para a combinação atual de busca e filtros.
                   </p>
                   <button
                     onClick={resetDiscovery}
-                     className="px-6 py-3 rounded-xl font-bold transition-colors bg-kaboo-primary/10 text-kaboo-primary hover:bg-kaboo-primary/20"
+                    className={`px-6 py-3 rounded-xl font-bold transition-colors ${isCorujaHomeLayout ? 'bg-white/10 text-[#FFB347] hover:bg-white/14' : 'bg-kaboo-primary/10 text-kaboo-primary hover:bg-kaboo-primary/20'}`}
                   >
                     Limpar busca e filtros
                   </button>
