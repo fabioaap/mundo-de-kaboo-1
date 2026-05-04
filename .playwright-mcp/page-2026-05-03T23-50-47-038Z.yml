@@ -1,0 +1,280 @@
+- generic [ref=e5]:
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e10]:
+        - application "Figma Design e 1 item selecionado" [active] [ref=e18]
+        - status [ref=e19]: O suporte para leitor de tela no quadro está desativado no momento. Para ativá-lo nas configurações de acessibilidade, pressione Ctrl+K, digite configurações de acessibilidade e pressione Enter. Para ver os shortcuts de teclado disponíveis, digite Ctrl+Shift+Ponto de interrogação .
+        - generic:
+          - generic:
+            - generic:
+              - region "Comentários na tela de trabalho":
+                - button "Criar novo comentário"
+        - region "Barra lateral à esquerda" [ref=e135]:
+          - toolbar "Barra de navegação" [ref=e136]:
+            - generic [ref=e137]:
+              - button "Menu principal" [ref=e138]:
+                - img [ref=e139]
+              - separator [ref=e141]
+              - button "Arquivo" [expanded] [ref=e142]:
+                - generic:
+                  - img
+                - generic: Arquivo
+              - button "Localizar" [ref=e143]:
+                - generic:
+                  - img
+                - generic: Localizar
+            - generic [ref=e144]:
+              - status
+          - generic [ref=e145]:
+            - generic [ref=e146]:
+              - generic [ref=e148]:
+                - generic [ref=e150]:
+                  - generic [ref=e152]:
+                    - button "White Label Central Coruja, nome do arquivo" [ref=e153]: White Label Central Coruja
+                    - generic [ref=e154]: Nome do arquivo
+                  - button "Editar menu de arquivo" [ref=e158]:
+                    - generic:
+                      - img
+                - button "Minimizar a UI" [ref=e159]:
+                  - generic:
+                    - img
+              - generic [ref=e160]:
+                - generic [ref=e162]:
+                  - heading "Páginas" [level=2] [ref=e163]:
+                    - button "Páginas" [expanded] [ref=e165]:
+                      - generic: Páginas
+                  - generic [ref=e168]:
+                    - grid [ref=e175]:
+                      - row "Referencias" [ref=e177]:
+                        - gridcell "Referencias" [ref=e178]:
+                          - button "Referencias" [ref=e181]:
+                            - generic [ref=e183]: Referencias
+                      - row "UI Central Coruja" [ref=e185]:
+                        - gridcell "UI Central Coruja" [ref=e186]:
+                          - button "UI Central Coruja" [ref=e189]:
+                            - generic [ref=e191]: UI Central Coruja
+                      - row "Kaboo" [ref=e193]:
+                        - gridcell "Kaboo" [ref=e194]:
+                          - button "Kaboo" [ref=e197]:
+                            - generic [ref=e199]: Kaboo
+                      - row "Capa" [ref=e201]:
+                        - gridcell "Capa" [ref=e202]:
+                          - button "Capa" [ref=e205]:
+                            - generic [ref=e207]: Capa
+                    - slider "Alça de redimensionamento" [ref=e208]
+                - generic [ref=e210]:
+                  - heading "Camadas" [level=2] [ref=e211]:
+                    - button "Camadas" [expanded] [ref=e213]:
+                      - generic: Camadas
+                  - generic [ref=e221]:
+                    - generic [ref=e223]:
+                      - img "Imagem" [ref=e226]:
+                        - img [ref=e228]
+                      - generic [ref=e231]: image 11
+                    - generic [ref=e233]:
+                      - img "Imagem" [ref=e236]:
+                        - img [ref=e238]
+                      - generic [ref=e241]: Paralax central coruja 1
+                    - generic [ref=e243]:
+                      - img "Quadro" [ref=e246]:
+                        - img [ref=e248]
+                      - generic [ref=e251]: Frame 5
+                    - generic [ref=e253]:
+                      - img "Quadro" [ref=e256]:
+                        - img [ref=e258]
+                      - generic [ref=e261]: Frame 4
+                    - generic [ref=e263]:
+                      - img "Quadro" [ref=e266]:
+                        - img [ref=e268]
+                      - generic [ref=e271]: Frame 3
+                    - generic [ref=e273]:
+                      - img "Layout automático" [ref=e276]:
+                        - img [ref=e278]
+                      - generic [ref=e281]: MK / Screen / Browse / Home / Auto Layout
+                    - generic [ref=e283]:
+                      - img "Imagem" [ref=e286]:
+                        - img [ref=e288]
+                      - generic [ref=e291]: image 8
+                    - generic [ref=e293]:
+                      - img "Quadro" [ref=e296]:
+                        - img [ref=e298]
+                      - generic [ref=e301]: image 8 [Vectorized]
+                    - generic [ref=e303]:
+                      - img "Imagem" [ref=e306]:
+                        - img [ref=e308]
+                      - generic [ref=e311]: image 10
+                    - generic [ref=e313]:
+                      - img "Imagem" [ref=e316]:
+                        - img [ref=e318]
+                      - generic [ref=e321]: image 9
+                    - generic [ref=e323]:
+                      - img "Layout automático" [ref=e326]:
+                        - img [ref=e328]
+                      - generic [ref=e331]: PageHeader
+                    - generic [ref=e333]:
+                      - img "Layout automático" [ref=e336]:
+                        - img [ref=e338]
+                      - generic [ref=e341]: Sidebar
+                    - generic [ref=e343]:
+                      - img "Layout automático" [ref=e346]:
+                        - img [ref=e348]
+                      - generic [ref=e351]: MK / Screen / Browse / Home / Auto Layout
+                    - generic [ref=e353]:
+                      - img "Layout automático" [ref=e356]:
+                        - img [ref=e358]
+                      - generic [ref=e361]: MK / Screen / Browse / Home / Auto Layout
+                    - generic [ref=e363]:
+                      - img "Texto" [ref=e366]:
+                        - img [ref=e368]
+                      - generic [ref=e371]: CORUJA
+                    - generic [ref=e373]:
+                      - img "Texto" [ref=e376]:
+                        - img [ref=e378]
+                      - generic [ref=e381]: CENTRAL
+                    - generic [ref=e383]:
+                      - img "Imagem" [ref=e386]:
+                        - img [ref=e388]
+                      - generic [ref=e391]: image 7
+                    - generic [ref=e393]:
+                      - img "Quadro" [ref=e396]:
+                        - img [ref=e398]
+                      - generic [ref=e401]: Hero1
+                    - generic [ref=e403]:
+                      - img "Quadro" [ref=e406]:
+                        - img [ref=e408]
+                      - generic [ref=e411]: hero2
+                    - generic [ref=e413]:
+                      - img "Quadro" [ref=e416]:
+                        - img [ref=e418]
+                      - generic [ref=e421]: Frame 2
+                    - generic [ref=e423]:
+                      - img "Imagem" [ref=e426]:
+                        - img [ref=e428]
+                      - generic [ref=e431]: WhatsApp Image 2026-04-15 at 23.05.27 (1) 3
+                    - generic [ref=e433]:
+                      - img "Imagem" [ref=e436]:
+                        - img [ref=e438]
+                      - generic [ref=e441]: WhatsApp Image 2026-04-15 at 23.05.27 (1) 2
+                    - generic [ref=e443]:
+                      - img "Imagem" [ref=e446]:
+                        - img [ref=e448]
+                      - generic [ref=e451]: WhatsApp Image 2026-04-15 at 23.05.27 (1) 1
+                    - generic [ref=e453]:
+                      - img "Quadro" [ref=e456]:
+                        - img [ref=e458]
+                      - generic [ref=e461]: WhatsApp Image 2026-04-15 at 23.05.27 (1) 1 [Vectorized]
+                    - generic [ref=e463]:
+                      - img "Quadro" [ref=e466]:
+                        - img [ref=e468]
+                      - generic [ref=e471]: Frame 1
+            - slider "Alça de redimensionamento" [ref=e473]
+        - generic [ref=e27]:
+          - generic [ref=e29]:
+            - button "Ferramentas colaborativas" [ref=e31]:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                      - generic:
+                        - generic:
+                          - img
+              - img [ref=e34]
+            - generic [ref=e125]:
+              - button "Siga fabio.alves" [ref=e126]
+              - img [ref=e129]
+          - button "63%, opções de zoom e visualização" [ref=e38]:
+            - generic [ref=e39]:
+              - generic [ref=e40]: 63%
+              - img [ref=e42]
+          - generic [ref=e45]:
+            - generic [ref=e46]:
+              - button "Apresentar" [ref=e47]:
+                - generic:
+                  - img
+              - button "Visualização de protótipo" [ref=e48]:
+                - generic:
+                  - img
+            - button "Compartilhar" [ref=e50]:
+              - generic:
+                - generic:
+                  - generic: Compartilhar
+      - generic:
+        - generic:
+          - generic:
+            - region "Barra de ferramentas do aplicativo":
+              - generic [ref=e51]:
+                - toolbar "Editor" [ref=e53]:
+                  - generic [ref=e55]:
+                    - generic:
+                      - generic [ref=e58]:
+                        - generic [ref=e59]:
+                          - button "Mover" [ref=e60]:
+                            - img
+                          - button "Ferramenta manual" [pressed] [ref=e61]:
+                            - img
+                          - button "Comentário" [ref=e62]:
+                            - img
+                        - group "Quadro" [ref=e64]:
+                          - button "Quadro" [ref=e65]:
+                            - img
+                          - button "Ferramentas de região" [ref=e66]:
+                            - generic:
+                              - img
+                        - group "Retângulo" [ref=e67]:
+                          - button "Retângulo" [ref=e68]:
+                            - img
+                          - button "Ferramentas de formas" [ref=e69]:
+                            - generic:
+                              - img
+                        - group "Caneta" [ref=e70]:
+                          - button "Caneta" [ref=e71]:
+                            - img
+                          - button "Ferramentas de criação" [ref=e72]:
+                            - generic:
+                              - img
+                        - button "Texto" [ref=e73]:
+                          - img
+                        - button "Ações" [ref=e74]:
+                          - img
+                      - text: Solicitação enviada
+                  - generic [ref=e79]:
+                    - checkbox "Dev Mode" [ref=e81]
+                    - img [ref=e83]
+                - generic [ref=e85]:
+                  - generic [ref=e86]: Cadastre-se para comentar, editar, inspecionar e outras ações.
+                  - generic [ref=e87]:
+                    - button "Crie sua conta" [ref=e88]:
+                      - generic:
+                        - generic:
+                          - generic: Crie sua conta
+                    - button "Continuar com o Google" [ref=e91]:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic: Continuar
+    - region "Barra de ferramentas de ajuda/zoom" [ref=e94]:
+      - toolbar "Barra de ferramentas de ajuda/zoom" [ref=e96]:
+        - button "Ajuda" [ref=e98]:
+          - img
+  - generic:
+    - status
+    - group [ref=e107]:
+      - alert [ref=e109]
+      - alert [ref=e111]
+    - region "Gerenciador de consentimento" [ref=e113]:
+      - generic [ref=e114]:
+        - text: Este site usa cookies, tags de pixel e armazenamento local para fins de desempenho, personalização e marketing. Usamos nossos próprios cookies e alguns de terceiros. Somente cookies essenciais são ativados por padrão.
+        - link "Configurações de cookies" [ref=e115]:
+          - /url: /pt-br/consent-preferences/
+      - generic [ref=e116]:
+        - button "Recusar cookies" [ref=e117]:
+          - generic:
+            - generic:
+              - generic: Recusar cookies
+        - button "Aceitar todos os cookies" [ref=e118]:
+          - generic:
+            - generic:
+              - generic: Aceitar todos os cookies
+      - button [ref=e120]:
+        - img [ref=e122]
