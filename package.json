@@ -46,6 +46,7 @@
     "autoprefixer": "^10.5.0",
     "playwright": "^1.59.1",
     "postcss": "^8.5.10",
+    "sharp": "^0.34.5",
     "storybook": "^10.3.5",
     "tailwindcss": "^4.2.2",
     "typescript": "~5.8.2",
