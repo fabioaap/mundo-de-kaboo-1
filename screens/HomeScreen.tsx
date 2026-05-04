@@ -1522,14 +1522,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       {/* Coruja hero: fixed parallax background image behind entire page */}
       {isCentralCoruja && brandHomeHeroImageUrl && (
         <div
-          className="absolute inset-x-0 top-0 h-[380px] md:h-[430px] z-0 pointer-events-none"
+          className="absolute inset-x-0 top-0 h-[380px] md:h-[430px] z-0 pointer-events-none overflow-hidden"
           style={{
             backgroundImage: `url(${brandHomeHeroImageUrl})`,
-            backgroundSize: '116% auto',
-            backgroundPosition: '72% 48%',
-            backgroundAttachment: 'fixed',
+            backgroundSize: 'cover',
+            backgroundPosition: 'right 50%',
+            backgroundAttachment: 'scroll',
             backgroundRepeat: 'no-repeat',
-            filter: 'saturate(1.05) brightness(1.04)',
+            filter: 'saturate(1.08) brightness(1.02)',
           }}
           aria-hidden="true"
         >
