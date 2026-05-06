@@ -1621,8 +1621,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               {shouldRenderBrandHero && (
                 <div className="max-w-xl md:max-w-[52%]">
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/55">Olá, {profileDisplayFirstName}!</p>
-                  <h2 className="mt-1.5 text-[1.9rem] font-black leading-[1.04] tracking-[-0.025em] md:text-[3.25rem] text-[#FFB347]">Bem-vindo à {brandDisplayName}!</h2>
-                  <p className="mt-2.5 text-[13px] leading-relaxed text-white/65 md:text-[14px]">
+                  <h2 className="mt-1.5 text-[1.7rem] font-black leading-[1.08] tracking-[-0.02em] md:text-[2rem] text-[#FFB347]">Bem-vindo à {brandDisplayName}!</h2>
+                  <p className="mt-2 text-[13px] leading-relaxed text-white/65 md:text-[14px]">
                     Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.
                   </p>
                 </div>
@@ -1644,7 +1644,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     />
                     <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
                       {searchTerm && (
-                        <button type="button" onClick={() => setSearchTerm('')} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition-colors hover:text-gray-600" title="Limpar busca">
+                        <button type="button" onClick={() => setSearchTerm('')} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/90 backdrop-blur-sm text-gray-500 transition-colors hover:text-gray-700" title="Limpar busca">
                           <Icons.X size={16} />
                         </button>
                       )}
@@ -1654,7 +1654,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                           <span className="hidden md:inline text-sm font-bold">Filtros</span>
                         </button>
                       )}
-                      <button type="button" onClick={closeInlineSearch} className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-gray-200 bg-white px-3 text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary" title="Fechar busca">
+                      <button type="button" onClick={closeInlineSearch} className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 backdrop-blur-sm px-3 text-gray-500 transition-colors hover:text-gray-700" title="Fechar busca">
                         <Icons.X size={16} />
                         <span className="text-sm font-bold">Fechar</span>
                       </button>
@@ -1664,17 +1664,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   <button
                     type="button"
                     onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
-                    className="w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 border border-white/70 bg-white text-gray-400 shadow-[0_14px_30px_rgba(0,0,0,0.22)] hover:border-[#EA9A3B]/45"
+                    className="w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 border border-white/40 bg-white/90 backdrop-blur-md text-gray-500 shadow-[0_14px_30px_rgba(0,0,0,0.22)] hover:border-[#EA9A3B]/60 hover:bg-white/95 truncate"
                     aria-label="Abrir pesquisa"
                   >
-                    {searchLauncherPlaceholder}
+                    <span className="truncate">{searchLauncherPlaceholder}</span>
                   </button>
                 )}
                 {!isSearchExperience && (
                   <button
                     type="button"
                     onClick={() => openFilterDrawer()}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : 'bg-white text-[#0C1A34] border-white/70 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/45'}`}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : 'bg-white/90 backdrop-blur-md text-[#0C1A34] border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60'}`}
                     title="Refinar busca"
                   >
                     <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
@@ -1694,7 +1694,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]' : 'bg-white text-[#0C1A34] border-white/70 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white/95'}`}
+                        className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]' : 'bg-white/90 backdrop-blur-sm text-[#0C1A34] border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white/95'}`}
                       >
                         {tab.id === 'all' && <Icons.Grid size={14} />}
                         {tab.label}
@@ -1729,8 +1729,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div className="max-w-2xl">
                       <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/55">Olá, {profileDisplayFirstName}!</p>
-                      <h2 className={`mt-1.5 text-[1.9rem] font-black leading-[1.04] tracking-[-0.025em] md:text-[3.25rem] ${isCentralCoruja ? 'text-[#FFB347]' : ''}`}>Bem-vindo à {brandDisplayName}!</h2>
-                      <p className="mt-2.5 text-[13px] leading-relaxed text-white/65 md:text-[14px]">
+                      <h2 className={`mt-1.5 text-[1.7rem] font-black leading-[1.08] tracking-[-0.02em] md:text-[2rem] ${isCentralCoruja ? 'text-[#FFB347]' : ''}`}>Bem-vindo à {brandDisplayName}!</h2>
+                      <p className="mt-2 text-[13px] leading-relaxed text-white/65 md:text-[14px]">
                         Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.
                       </p>
                     </div>
@@ -1799,17 +1799,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   <button
                     type="button"
                     onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
-                    className={`w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 ${isCorujaHomeLayout ? 'border border-white/70 bg-white text-gray-400 shadow-[0_14px_30px_rgba(0,0,0,0.22)] hover:border-[#EA9A3B]/45' : 'border border-gray-200 bg-white shadow-sm hover:border-kaboo-primary/20 text-gray-400'}`}
+                    className={`w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 truncate ${isCorujaHomeLayout ? 'border border-white/40 bg-white/90 backdrop-blur-md text-gray-500 shadow-[0_14px_30px_rgba(0,0,0,0.22)] hover:border-[#EA9A3B]/60 hover:bg-white/95' : 'border border-gray-200 bg-white shadow-sm hover:border-kaboo-primary/20 text-gray-400'}`}
                     aria-label="Abrir pesquisa"
                   >
-                    {searchLauncherPlaceholder}
+                    <span className="truncate">{searchLauncherPlaceholder}</span>
                   </button>
                 )}
                 {!isSearchExperience && (
                   <button
                     type="button"
                     onClick={() => openFilterDrawer()}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? isCorujaHomeLayout ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20' : isCorujaHomeLayout ? 'bg-white text-[#0C1A34] border-white/70 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/45' : 'bg-gray-50 text-gray-600 border-gray-200 shadow-sm hover:bg-white hover:border-kaboo-primary/20'}`}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? isCorujaHomeLayout ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20' : isCorujaHomeLayout ? 'bg-white/90 backdrop-blur-md text-[#0C1A34] border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60' : 'bg-gray-50 text-gray-600 border-gray-200 shadow-sm hover:bg-white hover:border-kaboo-primary/20'}`}
                     title="Refinar busca"
                   >
                     <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
@@ -1829,7 +1829,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? isCorujaHomeLayout ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]' : 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20' : isCorujaHomeLayout ? 'bg-white text-[#0C1A34] border-white/70 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white/95' : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100'}`}
+                        className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? isCorujaHomeLayout ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]' : 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20' : isCorujaHomeLayout ? 'bg-white/90 backdrop-blur-sm text-[#0C1A34] border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white/95' : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100'}`}
                       >
                         {tab.id === 'all' && <Icons.Grid size={14} />}
                         {tab.label}
