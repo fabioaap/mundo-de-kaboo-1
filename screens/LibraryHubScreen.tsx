@@ -6,6 +6,8 @@ import { PageHeader } from '../components/PageHeader';
 import catalogSeed from '../data/catalog.seed.json';
 import { LIBRARY_HUB_MOCKS, LibraryHubKind, LibraryMockItem, LibraryMockItemVariant } from '../data/library-hubs';
 import { api } from '../lib/api';
+import { useBrandConfig } from '../hooks/useBrandConfig';
+import useIsMobile from '../hooks/useIsMobile';
 import { Collection, MediaHub, MediaHubResponse, MediaItemCard, ScreenName } from '../types';
 
 interface LibraryHubScreenProps {
@@ -380,7 +382,7 @@ const getLibrarySupportingText = (item: LibraryMockItem) => {
   return item.relatedCollection || item.description || item.eyebrow;
 };
 
-const renderMinimalLibraryCardBody = (item: LibraryMockItem) => {
+const renderMinimalLibraryCardBody = (item: LibraryMockItem, corujaTone: boolean = false) => {
   const BadgeIcon = getLibraryBadgeIcon(item);
   const ActionIcon = item.variant === 'material' ? Icons.ExternalLink : Icons.ChevronRight;
   const badgeLabel = getLibraryBadgeLabel(item);
@@ -389,25 +391,25 @@ const renderMinimalLibraryCardBody = (item: LibraryMockItem) => {
   return (
     <>
       <div className="min-w-0 flex-1">
-        <h3 className="text-[0.94rem] font-black leading-[1.1] tracking-[-0.03em] text-kaboo-primary line-clamp-2">
+        <h3 className={`text-[0.94rem] font-black leading-[1.1] tracking-[-0.03em] line-clamp-2 ${corujaTone ? 'text-[#FFF4E3]' : 'text-kaboo-primary'}`}>
           {item.title}
         </h3>
 
         {supportingText && (
-          <p className="mt-1.5 text-[12px] leading-5 text-gray-500 line-clamp-2">
+          <p className={`mt-1.5 text-[12px] leading-5 line-clamp-2 ${corujaTone ? 'text-[#D4DCF0]' : 'text-gray-500'}`}>
             {supportingText}
           </p>
         )}
 
         <div className="mt-2.5 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-kaboo-primary/10 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-kaboo-primary/72 shadow-sm">
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${corujaTone ? 'border-[#f2d87b]/25 bg-white/10 text-[#FFF0C6] shadow-[0_10px_24px_rgba(4,27,36,0.16)] backdrop-blur-sm' : 'border-kaboo-primary/10 bg-white text-kaboo-primary/72 shadow-sm'}`}>
             <BadgeIcon size={12} className={item.variant === 'video' ? 'fill-current stroke-none' : 'stroke-[2.1px]'} />
             {badgeLabel}
           </span>
         </div>
       </div>
 
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/[0.03] text-kaboo-primary/35 transition-colors duration-200 group-hover:bg-kaboo-primary/[0.08] group-hover:text-kaboo-primary">
+      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${corujaTone ? 'bg-white/10 text-[#FFF0C6]/72 group-hover:bg-white/14 group-hover:text-[#FFB347]' : 'bg-black/[0.03] text-kaboo-primary/35 group-hover:bg-kaboo-primary/[0.08] group-hover:text-kaboo-primary'}`}>
         <ActionIcon
           size={16}
           className={item.variant === 'material' ? '' : 'transition-transform duration-200 group-hover:translate-x-0.5'}
@@ -506,6 +508,15 @@ const DEFAULT_LIBRARY_SURFACE = {
   card: 'bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(252,246,252,0.96))]',
 } as const;
 
+const CORUJA_LIBRARY_SURFACE = {
+  page: 'bg-[#041b24]',
+  stage: 'border border-white/12 bg-[linear-gradient(180deg,rgba(7,32,42,0.76),rgba(4,27,36,0.68))] shadow-[0_20px_48px_rgba(4,27,36,0.24)] backdrop-blur-xl',
+  hero: 'border border-white/12 bg-[linear-gradient(135deg,rgba(7,32,42,0.88),rgba(7,32,42,0.66))] shadow-[0_28px_72px_rgba(4,27,36,0.32)] backdrop-blur-xl',
+  rail: 'border border-white/12 bg-white/10 text-white/80 hover:bg-white/14',
+  stat: 'border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.08))] shadow-[0_16px_36px_rgba(4,27,36,0.22)] backdrop-blur-xl',
+  card: 'bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,245,252,0.95))]',
+} as const;
+
 const SCREEN_SURFACE_CLASSES: Record<LibraryHubKind, {
   page: string;
   stage: string;
@@ -554,10 +565,51 @@ const CardContainer: React.FC<{
   );
 };
 
-const renderItemPreview = (item: LibraryMockItem, featured: boolean = false) => {
+const renderItemPreview = (item: LibraryMockItem, featured: boolean = false, corujaTone: boolean = false) => {
   const PreviewIcon = getLibraryBadgeIcon(item);
   const aspectClassName = featured ? FEATURED_PREVIEW_ASPECT[item.variant] : CARD_PREVIEW_ASPECT[item.variant];
   const hasCover = Boolean(item.coverImage);
+  const itemTypeLabel = ITEM_LABELS[item.variant].toUpperCase();
+  const isPlayable = item.variant === 'video' || item.variant === 'track';
+  const videoProgressPercent = item.variant === 'video'
+    ? Math.max(0, Math.min(100, Math.round(item.progress ?? 0)))
+    : 0;
+  const hasVideoProgress = item.variant === 'video' && videoProgressPercent > 0;
+
+  if (corujaTone) {
+    return (
+      <div className={`relative overflow-hidden rounded-[28px] ${aspectClassName}`}>
+        <div className="absolute inset-0 rounded-[28px] bg-[radial-gradient(60%_40%_at_14%_100%,rgba(93,30,118,0.26),transparent_70%),radial-gradient(46%_28%_at_100%_0%,rgba(234,154,59,0.28),transparent_72%)]" />
+        <div className="absolute inset-[5px] overflow-hidden rounded-[24px] border-[2.5px] border-[#EA9A3B]/90 bg-[#0C1A34] shadow-[0_24px_44px_rgba(3,10,22,0.34)]">
+          {hasCover ? (
+            <img src={item.coverImage} alt={item.title} className="h-full w-full object-cover bg-[#091525] transition-transform duration-300 group-hover:scale-[1.03]" />
+          ) : (
+            <div className="h-full w-full bg-[radial-gradient(circle_at_top_left,rgba(234,154,59,0.22),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(93,30,118,0.28),transparent_55%),linear-gradient(180deg,#143043,#0C1A34)]" />
+          )}
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,245,214,0.03)_0%,rgba(19,35,52,0.02)_45%,rgba(7,12,24,0.30)_100%)]" />
+          {isPlayable && (
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-[#0f2335]/70 text-[#FFF4E3] opacity-0 scale-95 shadow-[0_16px_30px_rgba(3,10,22,0.26)] backdrop-blur-sm transition-all duration-200 group-hover:opacity-100 group-hover:scale-100">
+                <PreviewIcon size={18} className={item.variant === 'video' ? 'fill-current stroke-none' : 'stroke-[2.2px]'} />
+              </span>
+            </span>
+          )}
+          {hasVideoProgress && (
+            <span className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] block h-1 bg-black/25">
+              <span
+                className="block h-full bg-[linear-gradient(90deg,#f2bf43_0%,#f6d96f_45%,#62b05c_100%)]"
+                style={{ width: `${videoProgressPercent}%` }}
+                aria-label={`Assistido ${videoProgressPercent}%`}
+              />
+            </span>
+          )}
+        </div>
+        <span className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] truncate rounded-full border border-[#ffd28a]/70 bg-[#EA9A3B] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-[0_12px_22px_rgba(62,28,4,0.28)]">
+          {itemTypeLabel}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -574,7 +626,13 @@ const renderItemPreview = (item: LibraryMockItem, featured: boolean = false) => 
 
 export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNavigate }) => {
   const config = LIBRARY_HUB_MOCKS[screen];
-  const screenSurface = SCREEN_SURFACE_CLASSES[screen];
+  const { bootstrap: brandBootstrap, slug: brandSlug } = useBrandConfig();
+  const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
+  const brandHomeHeroImageUrl = brandBootstrap.settings.home_hero_image_url || '';
+  const isMobile = useIsMobile();
+  const isCentralCoruja = brandSlug === 'central-coruja';
+  const isCorujaLibraryHub = isCentralCoruja && Boolean(brandHomeHeroImageUrl);
+  const screenSurface = isCorujaLibraryHub ? CORUJA_LIBRARY_SURFACE : SCREEN_SURFACE_CLASSES[screen];
   const isVideoHub = screen === 'videos';
   const isMusicHub = screen === 'music';
   const shouldUseMediaApi = isVideoHub || isMusicHub;
@@ -779,6 +837,16 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
       ? 'Escolha o roteiro pelo momento da conversa.'
       : `${sortedCompactItems.length} entradas disponíveis para explorar.`;
   const compactGridClassName = 'md:grid-cols-2';
+  const libraryFilterTabs = isVideoHub ? videoFilterTabs : compactFilterTabs;
+  const librarySectionTitle = isVideoHub ? `${sortedVideoItems.length} entradas disponíveis para explorar.` : compactSectionTitle;
+  const corujaSortActiveClass = 'border-[#7A2A98] bg-[#5D1E76] text-white shadow-[0_14px_28px_rgba(93,30,118,0.35)]';
+  const corujaSortIdleClass = 'border-white/12 bg-white/10 text-white/82 hover:bg-white/14';
+  const corujaStageShellClass = 'border border-white/12 bg-[linear-gradient(180deg,rgba(7,32,42,0.78),rgba(4,27,36,0.72))] shadow-[0_20px_48px_rgba(4,27,36,0.24)] backdrop-blur-xl';
+  const corujaSearchFieldClass = 'flex flex-1 items-center gap-3 rounded-[0.95rem] border border-white/12 bg-white/10 px-3 py-2.5 text-sm text-white/72 shadow-[0_12px_28px_rgba(4,27,36,0.18)] backdrop-blur-xl transition-colors focus-within:border-[#EA9A3B]/45';
+  const corujaSearchResultBadgeClass = 'ml-auto inline-flex items-center rounded-full bg-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/78';
+  const corujaSectionTitleClass = 'text-[1.12rem] font-black leading-[1] tracking-[-0.03em] text-[#FFB347] md:text-[1.2rem]';
+  const corujaMediaCardClass = 'group rounded-[1.2rem] border border-white/[0.08] bg-[rgba(12,26,52,0.45)] p-2.5 pb-3 shadow-[0_8px_32px_rgba(3,10,22,0.28)] backdrop-blur-xl transition-all duration-200 md:hover:-translate-y-1 hover:border-white/[0.14] hover:bg-[rgba(12,26,52,0.55)] hover:shadow-[0_22px_42px_rgba(4,27,36,0.32)] active:scale-[0.995]';
+  const corujaCompactCardClass = 'group flex items-start gap-3 rounded-[1.2rem] border border-white/[0.08] bg-[rgba(12,26,52,0.45)] p-3 shadow-[0_8px_32px_rgba(3,10,22,0.28)] backdrop-blur-xl transition-all duration-200 md:hover:-translate-y-0.5 hover:border-white/[0.14] hover:bg-[rgba(12,26,52,0.55)] hover:shadow-[0_22px_42px_rgba(4,27,36,0.28)] active:scale-[0.995]';
   const toggleLibraryCollectionFilter = (category: keyof LibraryCollectionFilterState, value: string) => {
     setLibraryCollectionFilters((prev) => {
       const currentValues = prev[category];
@@ -942,7 +1010,6 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
 
   const renderLibraryGridCard = (item: LibraryMockItem, itemIndex: number, cardClassName: string) => {
     if (isVideoHub || isMusicHub) {
-      const HoverIcon = isVideoHub ? Icons.Play : Icons.Headphones;
       const mediaMetaLabel = getMediaCardMetaLabel(item);
       const videoProgressPercent = isVideoHub
         ? Math.max(0, Math.min(100, Math.round(item.progress ?? 0)))
@@ -956,39 +1023,45 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
           onOpen={openItem}
           className={cardClassName}
         >
-          <div className="relative aspect-square overflow-hidden rounded-[1rem] border border-kaboo-primary/10 bg-slate-100">
-            {item.coverImage ? (
-              <img src={item.coverImage} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
-            ) : (
-              <div className="h-full w-full bg-[radial-gradient(circle_at_top_left,rgba(93,31,88,0.14),transparent_55%),linear-gradient(180deg,#f8f4fa,#f2ebf5)]" />
-            )}
+          {isCorujaLibraryHub ? renderItemPreview(item, false, true) : (
+            <div className="relative aspect-square overflow-hidden rounded-[1rem] border border-kaboo-primary/10 bg-slate-100">
+              {item.coverImage ? (
+                <img src={item.coverImage} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+              ) : (
+                <div className="h-full w-full bg-[radial-gradient(circle_at_top_left,rgba(93,31,88,0.14),transparent_55%),linear-gradient(180deg,#f8f4fa,#f2ebf5)]" />
+              )}
 
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(15,23,42,0.34))]" />
-            <div className="absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/24" />
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/60 text-white opacity-0 scale-95 shadow-lg backdrop-blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:scale-100">
-                <HoverIcon size={18} className={isVideoHub ? 'fill-current stroke-none' : 'stroke-[2.2px]'} />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(15,23,42,0.34))]" />
+              <div className="absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/24" />
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/60 text-white opacity-0 scale-95 shadow-lg backdrop-blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:scale-100">
+                  {isVideoHub ? (
+                    <Icons.Play size={18} className="fill-current stroke-none" />
+                  ) : (
+                    <Icons.Headphones size={18} className="stroke-[2.2px]" />
+                  )}
+                </span>
               </span>
-            </span>
 
-            {hasVideoProgress && (
-              <span className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] block h-1 bg-black/25">
-                <span
-                  className="block h-full bg-red-500"
-                  style={{ width: `${videoProgressPercent}%` }}
-                  aria-label={`Assistido ${videoProgressPercent}%`}
-                />
-              </span>
-            )}
-          </div>
+              {hasVideoProgress && (
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] block h-1 bg-black/25">
+                  <span
+                    className="block h-full bg-red-500"
+                    style={{ width: `${videoProgressPercent}%` }}
+                    aria-label={`Assistido ${videoProgressPercent}%`}
+                  />
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="mt-2.5 min-w-0">
-            <h3 className="line-clamp-2 text-[0.95rem] font-black leading-[1.2] tracking-[-0.02em] text-kaboo-primary">
+            <h3 className={`line-clamp-2 text-[0.95rem] font-black leading-[1.2] tracking-[-0.02em] ${isCorujaLibraryHub ? 'text-[#FFF4E3]' : 'text-kaboo-primary'}`}>
               {item.title}
             </h3>
-            <p className="mt-1 line-clamp-1 text-[12px] text-gray-500">{item.relatedCollection || item.eyebrow}</p>
+            <p className={`mt-1 line-clamp-2 text-[12px] ${isCorujaLibraryHub ? 'text-[#D4DCF0]' : 'text-gray-500'}`}>{item.relatedCollection || item.eyebrow}</p>
             {mediaMetaLabel && (
-              <p className="mt-1 line-clamp-1 text-[11px] font-semibold uppercase tracking-[0.13em] text-kaboo-primary/65">{mediaMetaLabel}</p>
+              <p className={`mt-1 line-clamp-1 text-[11px] font-semibold uppercase tracking-[0.13em] ${isCorujaLibraryHub ? 'text-[#FFB347]' : 'text-kaboo-primary/65'}`}>{mediaMetaLabel}</p>
             )}
           </div>
         </CardContainer>
@@ -1003,10 +1076,10 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
         className={cardClassName}
       >
         <div className="w-20 shrink-0">
-          {renderItemPreview(item)}
+          {renderItemPreview(item, false, isCorujaLibraryHub)}
         </div>
 
-        {renderMinimalLibraryCardBody(item)}
+        {renderMinimalLibraryCardBody(item, isCorujaLibraryHub)}
       </CardContainer>
     );
   };
@@ -1028,10 +1101,10 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
           <section className="mt-3">
             <div className="mb-3 flex items-start justify-between gap-3 px-1">
               <div>
-                <h3 className="text-[0.98rem] font-black tracking-[-0.03em] text-kaboo-primary">
+                <h3 className={`text-[0.98rem] font-black tracking-[-0.03em] ${isCorujaLibraryHub ? 'text-[#FFB347]' : 'text-kaboo-primary'}`}>
                   Todos os conteúdos ({flatItems.length})
                 </h3>
-                <p className="mt-1 text-[12px] leading-5 text-gray-500">
+                <p className={`mt-1 text-[12px] leading-5 ${isCorujaLibraryHub ? 'text-white/68' : 'text-gray-500'}`}>
                   Ordenado por relevância pedagógica, use filtros para refinar.
                 </p>
               </div>
@@ -1045,9 +1118,9 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
       }
 
       return (
-        <div className="mt-4 rounded-[1.35rem] border border-dashed border-kaboo-primary/18 bg-white/90 px-5 py-8 text-center shadow-sm">
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/55">Nenhum resultado</p>
-          <p className="mt-2 text-sm leading-6 text-gray-500">
+        <div className={`mt-4 rounded-[1.35rem] px-5 py-8 text-center ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 shadow-[0_16px_34px_rgba(4,27,36,0.18)] backdrop-blur-xl' : 'border border-dashed border-kaboo-primary/18 bg-white/90 shadow-sm'}`}>
+          <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaLibraryHub ? 'text-white/55' : 'text-kaboo-primary/55'}`}>Nenhum resultado</p>
+          <p className={`mt-2 text-sm leading-6 ${isCorujaLibraryHub ? 'text-white/72' : 'text-gray-500'}`}>
             {emptyTitle}
           </p>
         </div>
@@ -1060,11 +1133,11 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
           <section className="mt-3">
             <div className="mb-4 flex items-center justify-between gap-3 px-1">
               <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/60">Em destaque</p>
-                <h3 className="mt-1 text-[1rem] font-black tracking-[-0.03em] text-kaboo-primary">Destaque da semana</h3>
+                <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaLibraryHub ? 'text-white/58' : 'text-kaboo-primary/60'}`}>Em destaque</p>
+                <h3 className={`mt-1 text-[1rem] font-black tracking-[-0.03em] ${isCorujaLibraryHub ? 'text-[#FFB347]' : 'text-kaboo-primary'}`}>Destaque da semana</h3>
               </div>
-              <span className="inline-flex items-center rounded-full border border-kaboo-primary/12 bg-white/80 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-kaboo-primary/75 shadow-sm">
-                Curadoria Kaboo
+              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 text-white/82 shadow-[0_8px_16px_rgba(4,27,36,0.16)]' : 'border border-kaboo-primary/12 bg-white/80 text-kaboo-primary/75 shadow-sm'}`}>
+                {isCorujaLibraryHub ? `Curadoria ${brandDisplayName}` : 'Curadoria Kaboo'}
               </span>
             </div>
 
@@ -1077,13 +1150,13 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
             <section key={shelf.id} className="mt-6">
               <div className="mb-3 flex items-start justify-between gap-3 px-1">
                 <div>
-                  <h3 className="text-[0.98rem] font-black tracking-[-0.03em] text-kaboo-primary">{shelf.title}</h3>
+                  <h3 className={`text-[0.98rem] font-black tracking-[-0.03em] ${isCorujaLibraryHub ? 'text-[#FFB347]' : 'text-kaboo-primary'}`}>{shelf.title}</h3>
                   {shelf.description && (
-                    <p className="mt-1 text-[12px] leading-5 text-gray-500">{shelf.description}</p>
+                    <p className={`mt-1 text-[12px] leading-5 ${isCorujaLibraryHub ? 'text-white/68' : 'text-gray-500'}`}>{shelf.description}</p>
                   )}
                 </div>
                 {shelf.type === 'continue_watching' && (
-                  <span className="inline-flex items-center rounded-full border border-kaboo-primary/10 bg-kaboo-primary/[0.08] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-kaboo-primary shadow-sm">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 text-white/82 shadow-[0_8px_16px_rgba(4,27,36,0.16)]' : 'border border-kaboo-primary/10 bg-kaboo-primary/[0.08] text-kaboo-primary shadow-sm'}`}>
                     {isMusicHub ? 'Continue ouvindo' : 'Continue assistindo'}
                   </span>
                 )}
@@ -1105,13 +1178,13 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
             <section key={shelf.id} className="mt-6">
               <div className="mb-3 flex items-start justify-between gap-3 px-1">
                 <div>
-                  <h3 className="text-[0.98rem] font-black tracking-[-0.03em] text-kaboo-primary">{shelf.title}</h3>
+                  <h3 className={`text-[0.98rem] font-black tracking-[-0.03em] ${isCorujaLibraryHub ? 'text-[#FFB347]' : 'text-kaboo-primary'}`}>{shelf.title}</h3>
                   {shelf.description && (
-                    <p className="mt-1 text-[12px] leading-5 text-gray-500">{shelf.description}</p>
+                    <p className={`mt-1 text-[12px] leading-5 ${isCorujaLibraryHub ? 'text-white/68' : 'text-gray-500'}`}>{shelf.description}</p>
                   )}
                 </div>
                 {shelf.type === 'continue_watching' && (
-                  <span className="inline-flex items-center rounded-full border border-kaboo-primary/10 bg-kaboo-primary/[0.08] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-kaboo-primary shadow-sm">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 text-white/82 shadow-[0_8px_16px_rgba(4,27,36,0.16)]' : 'border border-kaboo-primary/10 bg-kaboo-primary/[0.08] text-kaboo-primary shadow-sm'}`}>
                     {isMusicHub ? 'Continue ouvindo' : 'Continue assistindo'}
                   </span>
                 )}
@@ -1127,9 +1200,9 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
     }
 
     return (
-      <div className="mt-4 rounded-[1.35rem] border border-dashed border-kaboo-primary/18 bg-white/90 px-5 py-8 text-center shadow-sm">
-        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/55">Nenhum resultado</p>
-        <p className="mt-2 text-sm leading-6 text-gray-500">
+      <div className={`mt-4 rounded-[1.35rem] px-5 py-8 text-center ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 shadow-[0_16px_34px_rgba(4,27,36,0.18)] backdrop-blur-xl' : 'border border-dashed border-kaboo-primary/18 bg-white/90 shadow-sm'}`}>
+        <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaLibraryHub ? 'text-white/55' : 'text-kaboo-primary/55'}`}>Nenhum resultado</p>
+        <p className={`mt-2 text-sm leading-6 ${isCorujaLibraryHub ? 'text-white/72' : 'text-gray-500'}`}>
           {emptyTitle}
         </p>
       </div>
@@ -1137,36 +1210,72 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
   };
 
   return (
-    <div className={`flex h-full flex-col ${screenSurface.page} pb-24 md:pb-0`}>
+    <div className={`relative flex h-full flex-col ${screenSurface.page} pb-24 md:pb-0`}>
+      {isCorujaLibraryHub && (
+        <div
+          className="fixed inset-x-0 top-0 z-0 h-[520px] overflow-hidden pointer-events-none md:h-[860px]"
+          aria-hidden="true"
+        >
+          <div
+            className="absolute inset-[-4%]"
+            style={{
+              transform: 'scale(1.06)',
+              transformOrigin: isMobile ? 'center top' : '72% top',
+            }}
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url(${isMobile ? '/coruja-hero-mobile.webp' : brandHomeHeroImageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: isMobile ? 'center top' : 'right 20%',
+                backgroundRepeat: 'no-repeat',
+                filter: 'saturate(1.08) brightness(1.02)',
+              }}
+            />
+          </div>
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: isMobile
+                ? 'radial-gradient(circle at 82% 14%, rgba(255,214,120,0.16) 0%, transparent 26%), linear-gradient(180deg, rgba(4,27,36,0.06) 0%, rgba(4,27,36,0.18) 18%, rgba(4,27,36,0.34) 38%, rgba(4,27,36,0.50) 58%, rgba(4,27,36,0.68) 78%, rgba(4,27,36,0.82) 92%, #041b24 100%)'
+                : 'radial-gradient(circle at 72% 24%, rgba(255,214,120,0.18) 0%, rgba(255,214,120,0.08) 14%, transparent 30%), linear-gradient(90deg, rgba(4,27,36,0.78) 0%, rgba(4,27,36,0.42) 24%, rgba(4,27,36,0.12) 46%, rgba(4,27,36,0.18) 100%), linear-gradient(180deg, rgba(4,27,36,0.08) 0%, rgba(4,27,36,0.16) 18%, rgba(4,27,36,0.28) 38%, rgba(4,27,36,0.44) 56%, rgba(4,27,36,0.62) 74%, rgba(4,27,36,0.80) 88%, rgba(4,27,36,0.92) 100%)',
+            }}
+          />
+          <div className="absolute inset-x-0 bottom-[-1px] h-40 bg-[linear-gradient(180deg,rgba(4,27,36,0)_0%,rgba(4,27,36,0.10)_20%,rgba(4,27,36,0.22)_42%,rgba(4,27,36,0.42)_66%,rgba(4,27,36,0.68)_84%,rgba(4,27,36,0.88)_100%)] md:h-60" />
+        </div>
+      )}
+
       <PageHeader
         title={config.title}
         onBack={() => onNavigate('home')}
+        className={isCorujaLibraryHub ? '!bg-transparent [&_h1]:!text-white [&_button]:!bg-white/10 [&_button]:!text-white [&_button]:!shadow-none' : ''}
       />
 
-      <div className="flex-1 overflow-y-auto px-4 pb-8 md:px-8 md:pb-12">
+      <div className={`flex-1 overflow-y-auto px-4 pb-8 md:px-8 md:pb-12 ${isCorujaLibraryHub ? 'relative z-10 pt-[88px] md:pt-8' : ''}`}>
         <div className="mx-auto max-w-6xl">
           {isVideoHub ? (
             <>
-              <div className="mb-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/55 animate-fade-in-up">
+              <div className={`mb-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] animate-fade-in-up ${isCorujaLibraryHub ? 'text-white/58' : 'text-kaboo-primary/55'}`}>
                 <span>Bibliotecas</span>
-                <span className="text-kaboo-primary/25">/</span>
-                <span className="text-kaboo-primary/72">Vídeos</span>
+                <span className={isCorujaLibraryHub ? 'text-white/28' : 'text-kaboo-primary/25'}>/</span>
+                <span className={isCorujaLibraryHub ? 'text-white/78' : 'text-kaboo-primary/72'}>Vídeos</span>
               </div>
 
-              <section className="animate-fade-in-up rounded-[1.35rem] border border-kaboo-primary/10 bg-white/92 px-4 py-3.5 shadow-[0_16px_34px_rgba(93,31,88,0.04)] md:px-5">
+              <section className={`animate-fade-in-up rounded-[1.35rem] px-4 py-3.5 md:px-5 ${isCorujaLibraryHub ? corujaStageShellClass : 'border border-kaboo-primary/10 bg-white/92 shadow-[0_16px_34px_rgba(93,31,88,0.04)]'}`}>
                 <div className="flex w-full flex-col gap-3">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                    <label className="flex flex-1 items-center gap-3 rounded-[0.95rem] border border-kaboo-primary/10 bg-white px-3 py-2.5 text-sm text-gray-500 shadow-sm transition-colors focus-within:border-kaboo-primary/30 focus-within:ring-2 focus-within:ring-kaboo-primary/10">
-                      <Icons.Search size={16} className="text-kaboo-primary/55" />
+                    <label className={isCorujaLibraryHub ? corujaSearchFieldClass : 'flex flex-1 items-center gap-3 rounded-[0.95rem] border border-kaboo-primary/10 bg-white px-3 py-2.5 text-sm text-gray-500 shadow-sm transition-colors focus-within:border-kaboo-primary/30 focus-within:ring-2 focus-within:ring-kaboo-primary/10'}>
+                      <Icons.Search size={16} className={isCorujaLibraryHub ? 'text-white/60' : 'text-kaboo-primary/55'} />
                       <input
                         type="search"
                         value={videoQuery}
                         onChange={(event) => setVideoQuery(event.target.value)}
                         placeholder="Pesquisar por título, coleção ou contexto de uso"
                         aria-label="Pesquisar vídeos"
-                        className="min-w-0 flex-1 bg-transparent text-[14px] text-kaboo-primary outline-none placeholder:text-gray-400"
+                        className={`min-w-0 flex-1 bg-transparent text-[14px] outline-none ${isCorujaLibraryHub ? 'text-white placeholder:text-white/42' : 'text-kaboo-primary placeholder:text-gray-400'}`}
                       />
-                      <span className="ml-auto inline-flex items-center rounded-full bg-kaboo-primary/[0.06] px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-kaboo-primary/72">
+                      <span className={isCorujaLibraryHub ? corujaSearchResultBadgeClass : 'ml-auto inline-flex items-center rounded-full bg-kaboo-primary/[0.06] px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-kaboo-primary/72'}>
                         {sortedVideoItems.length} resultados
                       </span>
                     </label>
@@ -1174,9 +1283,11 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                     <button
                       type="button"
                       onClick={() => setShowLibraryFilters(true)}
-                      className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 md:px-4 shadow-sm transition-all active:scale-95 ${activeLibraryFilterCount > 0 || showLibraryFilters
+                      className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 md:px-4 transition-all active:scale-95 ${isCorujaLibraryHub
+                        ? (activeLibraryFilterCount > 0 || showLibraryFilters ? corujaSortActiveClass : corujaSortIdleClass)
+                        : activeLibraryFilterCount > 0 || showLibraryFilters
                         ? 'border-kaboo-primary bg-kaboo-primary text-white shadow-kaboo-primary/20'
-                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-kaboo-primary/20 hover:bg-white'}`}
+                        : 'border-gray-200 bg-gray-50 text-gray-600 shadow-sm hover:border-kaboo-primary/20 hover:bg-white'}`}
                       title="Refinar busca"
                     >
                       <Icons.Filter size={18} strokeWidth={activeLibraryFilterCount > 0 || showLibraryFilters ? 2.5 : 2} />
@@ -1187,7 +1298,6 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                         </span>
                       )}
                     </button>
-
                   </div>
 
                   {hasLibraryFiltersApplied && (
@@ -1247,11 +1357,11 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                           type="button"
                           onClick={() => setVideoActiveFilter(filter.label)}
                           className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all duration-200 ${filter.active
-                            ? ACTIVE_LIBRARY_TAB_CLASS
-                            : NEUTRAL_LIBRARY_TAB_CLASS}`}
+                            ? (isCorujaLibraryHub ? corujaSortActiveClass : ACTIVE_LIBRARY_TAB_CLASS)
+                            : (isCorujaLibraryHub ? corujaSortIdleClass : NEUTRAL_LIBRARY_TAB_CLASS)}`}
                         >
                           <span>{filter.label}</span>
-                          <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[9px] leading-none text-kaboo-primary/70">
+                          <span className={`rounded-full px-1.5 py-0.5 text-[9px] leading-none ${isCorujaLibraryHub ? (filter.active ? 'bg-white/18 text-white' : 'bg-white/10 text-white/72') : 'bg-black/[0.04] text-kaboo-primary/70'}`}>
                             {filter.count}
                           </span>
                         </button>
@@ -1261,19 +1371,19 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                 </div>
               </section>
 
-              <section className="mt-4 animate-fade-in-up" style={{ animationDelay: '100ms', opacity: 0 }}>
+              <section className={isCorujaLibraryHub ? 'pt-2 md:pt-3' : 'mt-4 animate-fade-in-up'} style={isCorujaLibraryHub ? undefined : { animationDelay: '100ms', opacity: 0 }}>
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h2 className="text-[1.08rem] font-black leading-[1] tracking-[-0.03em] text-kaboo-primary md:text-[1.2rem]">
-                      {sortedVideoItems.length} entradas disponíveis para explorar.
+                    <h2 className={isCorujaLibraryHub ? corujaSectionTitleClass : 'text-[1.08rem] font-black leading-[1] tracking-[-0.03em] text-kaboo-primary md:text-[1.2rem]'}>
+                      {librarySectionTitle}
                     </h2>
                     {mediaSourceStatus === 'loading' && (
-                      <p className="mt-1 text-xs font-semibold text-kaboo-primary/55">
+                      <p className={`mt-1 text-xs font-semibold ${isCorujaLibraryHub ? 'text-white/68' : 'text-kaboo-primary/55'}`}>
                         Atualizando catálogo de vídeos.
                       </p>
                     )}
                     {mediaSourceStatus === 'fallback' && (
-                      <p className="mt-1 text-xs font-semibold text-amber-700">
+                      <p className={`mt-1 text-xs font-semibold ${isCorujaLibraryHub ? 'text-white/68' : 'text-amber-700'}`}>
                         Exibindo catálogo de apoio enquanto os dados remotos não respondem.
                       </p>
                     )}
@@ -1282,7 +1392,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                     <button
                       type="button"
                       onClick={() => setVideoSortMode('recentes')}
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all duration-200 ${videoSortMode === 'recentes' ? ACTIVE_LIBRARY_TAB_CLASS : NEUTRAL_LIBRARY_TAB_CLASS}`}
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all duration-200 ${isCorujaLibraryHub ? (videoSortMode === 'recentes' ? corujaSortActiveClass : corujaSortIdleClass) : (videoSortMode === 'recentes' ? ACTIVE_LIBRARY_TAB_CLASS : NEUTRAL_LIBRARY_TAB_CLASS)}`}
                     >
                       <Icons.ArrowUpDown size={14} />
                       Mais recentes
@@ -1290,7 +1400,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                     <button
                       type="button"
                       onClick={() => setVideoSortMode('titulo')}
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all duration-200 ${videoSortMode === 'titulo' ? ACTIVE_LIBRARY_TAB_CLASS : NEUTRAL_LIBRARY_TAB_CLASS}`}
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all duration-200 ${isCorujaLibraryHub ? (videoSortMode === 'titulo' ? corujaSortActiveClass : corujaSortIdleClass) : (videoSortMode === 'titulo' ? ACTIVE_LIBRARY_TAB_CLASS : NEUTRAL_LIBRARY_TAB_CLASS)}`}
                     >
                       <Icons.Type size={14} />
                       A-Z
@@ -1300,7 +1410,9 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
 
                 {shouldUseMediaApi && mediaSourceStatus !== 'fallback'
                   ? renderMediaRailBlocks(
-                    'group rounded-[1.2rem] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
+                    isCorujaLibraryHub
+                      ? corujaMediaCardClass
+                      : 'group rounded-[1.2rem] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
                     'sm:grid-cols-2 xl:grid-cols-3',
                     'Ajuste a busca ou limpe os filtros para voltar ao acervo completo.',
                     {
@@ -1314,14 +1426,16 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                         {sortedVideoItems.map((item, itemIndex) => renderLibraryGridCard(
                           item,
                           itemIndex,
-                          'group rounded-[1.2rem] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
+                          isCorujaLibraryHub
+                            ? corujaMediaCardClass
+                            : 'group rounded-[1.2rem] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
                         ))}
                       </div>
 
                       {sortedVideoItems.length === 0 && (
-                        <div className="mt-4 rounded-[1.35rem] border border-dashed border-kaboo-primary/18 bg-white/90 px-5 py-8 text-center shadow-sm">
-                          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/55">Nenhum resultado</p>
-                          <p className="mt-2 text-sm leading-6 text-gray-500">
+                        <div className={`mt-4 rounded-[1.35rem] px-5 py-8 text-center ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 shadow-[0_16px_34px_rgba(4,27,36,0.18)] backdrop-blur-xl' : 'border border-dashed border-kaboo-primary/18 bg-white/90 shadow-sm'}`}>
+                          <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaLibraryHub ? 'text-white/55' : 'text-kaboo-primary/55'}`}>Nenhum resultado</p>
+                          <p className={`mt-2 text-sm leading-6 ${isCorujaLibraryHub ? 'text-white/72' : 'text-gray-500'}`}>
                             Ajuste a busca ou limpe os filtros para voltar ao acervo completo.
                           </p>
                         </div>
@@ -1332,26 +1446,26 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
             </>
           ) : (
             <>
-              <div className="mb-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/55 animate-fade-in-up">
+              <div className={`mb-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] animate-fade-in-up ${isCorujaLibraryHub ? 'text-white/58' : 'text-kaboo-primary/55'}`}>
                 <span>Bibliotecas</span>
-                <span className="text-kaboo-primary/25">/</span>
-                <span className="text-kaboo-primary/72">{config.title}</span>
+                <span className={isCorujaLibraryHub ? 'text-white/28' : 'text-kaboo-primary/25'}>/</span>
+                <span className={isCorujaLibraryHub ? 'text-white/78' : 'text-kaboo-primary/72'}>{config.title}</span>
               </div>
 
-              <section className="animate-fade-in-up rounded-[1.35rem] border border-kaboo-primary/10 bg-white/92 px-4 py-3.5 shadow-[0_16px_34px_rgba(27,31,35,0.04)] md:px-5">
+              <section className={`animate-fade-in-up rounded-[1.35rem] px-4 py-3.5 md:px-5 ${isCorujaLibraryHub ? corujaStageShellClass : 'border border-kaboo-primary/10 bg-white/92 shadow-[0_16px_34px_rgba(27,31,35,0.04)]'}`}>
                 <div className="flex w-full flex-col gap-3">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                    <label className="flex flex-1 items-center gap-3 rounded-[0.95rem] border border-kaboo-primary/10 bg-white px-3 py-2.5 text-sm text-gray-500 shadow-sm transition-colors focus-within:border-kaboo-primary/30 focus-within:ring-2 focus-within:ring-kaboo-primary/10">
-                      <Icons.Search size={16} className="text-kaboo-primary/55" />
+                    <label className={isCorujaLibraryHub ? corujaSearchFieldClass : 'flex flex-1 items-center gap-3 rounded-[0.95rem] border border-kaboo-primary/10 bg-white px-3 py-2.5 text-sm text-gray-500 shadow-sm transition-colors focus-within:border-kaboo-primary/30 focus-within:ring-2 focus-within:ring-kaboo-primary/10'}>
+                      <Icons.Search size={16} className={isCorujaLibraryHub ? 'text-white/60' : 'text-kaboo-primary/55'} />
                       <input
                         type="search"
                         value={compactQuery}
                         onChange={(event) => setCompactQuery(event.target.value)}
                         placeholder="Pesquisar por título, coleção ou contexto de uso"
                         aria-label={`Pesquisar em ${config.title}`}
-                        className="min-w-0 flex-1 bg-transparent text-[14px] text-kaboo-primary outline-none placeholder:text-gray-400"
+                        className={`min-w-0 flex-1 bg-transparent text-[14px] outline-none ${isCorujaLibraryHub ? 'text-white placeholder:text-white/42' : 'text-kaboo-primary placeholder:text-gray-400'}`}
                       />
-                      <span className="ml-auto inline-flex items-center rounded-full bg-kaboo-primary/[0.06] px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-kaboo-primary/72">
+                      <span className={isCorujaLibraryHub ? corujaSearchResultBadgeClass : 'ml-auto inline-flex items-center rounded-full bg-kaboo-primary/[0.06] px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-kaboo-primary/72'}>
                         {sortedCompactItems.length} resultados
                       </span>
                     </label>
@@ -1359,9 +1473,11 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                     <button
                       type="button"
                       onClick={() => setShowLibraryFilters(true)}
-                      className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 md:px-4 shadow-sm transition-all active:scale-95 ${activeLibraryFilterCount > 0 || showLibraryFilters
+                      className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 md:px-4 transition-all active:scale-95 ${isCorujaLibraryHub
+                        ? (activeLibraryFilterCount > 0 || showLibraryFilters ? corujaSortActiveClass : corujaSortIdleClass)
+                        : activeLibraryFilterCount > 0 || showLibraryFilters
                         ? 'border-kaboo-primary bg-kaboo-primary text-white shadow-kaboo-primary/20'
-                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-kaboo-primary/20 hover:bg-white'}`}
+                        : 'border-gray-200 bg-gray-50 text-gray-600 shadow-sm hover:border-kaboo-primary/20 hover:bg-white'}`}
                       title="Refinar busca"
                     >
                       <Icons.Filter size={18} strokeWidth={activeLibraryFilterCount > 0 || showLibraryFilters ? 2.5 : 2} />
@@ -1372,7 +1488,6 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                         </span>
                       )}
                     </button>
-
                   </div>
 
                   {hasLibraryFiltersApplied && (
@@ -1432,11 +1547,11 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                           type="button"
                           onClick={() => setCompactActiveFilter(filter.label)}
                           className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all duration-200 ${filter.active
-                            ? ACTIVE_LIBRARY_TAB_CLASS
-                            : NEUTRAL_LIBRARY_TAB_CLASS}`}
+                            ? (isCorujaLibraryHub ? corujaSortActiveClass : ACTIVE_LIBRARY_TAB_CLASS)
+                            : (isCorujaLibraryHub ? corujaSortIdleClass : NEUTRAL_LIBRARY_TAB_CLASS)}`}
                         >
                           <span>{filter.label}</span>
-                          <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[9px] leading-none text-kaboo-primary/70">
+                          <span className={`rounded-full px-1.5 py-0.5 text-[9px] leading-none ${isCorujaLibraryHub ? (filter.active ? 'bg-white/18 text-white' : 'bg-white/10 text-white/72') : 'bg-black/[0.04] text-kaboo-primary/70'}`}>
                             {filter.count}
                           </span>
                         </button>
@@ -1446,19 +1561,19 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                 </div>
               </section>
 
-              <section className="mt-4 animate-fade-in-up" style={{ animationDelay: '100ms', opacity: 0 }}>
+              <section className={isCorujaLibraryHub ? 'pt-2 md:pt-3' : 'mt-4 animate-fade-in-up'} style={isCorujaLibraryHub ? undefined : { animationDelay: '100ms', opacity: 0 }}>
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h2 className="text-[1.08rem] font-black leading-[1] tracking-[-0.03em] text-kaboo-primary md:text-[1.2rem]">
+                    <h2 className={isCorujaLibraryHub ? corujaSectionTitleClass : 'text-[1.08rem] font-black leading-[1] tracking-[-0.03em] text-kaboo-primary md:text-[1.2rem]'}>
                       {compactSectionTitle}
                     </h2>
                     {isMusicHub && mediaSourceStatus === 'loading' && (
-                      <p className="mt-1 text-xs font-semibold text-kaboo-primary/55">
+                      <p className={`mt-1 text-xs font-semibold ${isCorujaLibraryHub ? 'text-white/68' : 'text-kaboo-primary/55'}`}>
                         Atualizando catálogo de músicas.
                       </p>
                     )}
                     {isMusicHub && mediaSourceStatus === 'fallback' && (
-                      <p className="mt-1 text-xs font-semibold text-amber-700">
+                      <p className={`mt-1 text-xs font-semibold ${isCorujaLibraryHub ? 'text-white/68' : 'text-amber-700'}`}>
                         Exibindo catálogo de apoio enquanto os dados remotos não respondem.
                       </p>
                     )}
@@ -1467,7 +1582,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                     <button
                       type="button"
                       onClick={() => setCompactSortMode('recentes')}
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all duration-200 ${compactSortMode === 'recentes' ? ACTIVE_LIBRARY_TAB_CLASS : NEUTRAL_LIBRARY_TAB_CLASS}`}
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all duration-200 ${isCorujaLibraryHub ? (compactSortMode === 'recentes' ? corujaSortActiveClass : corujaSortIdleClass) : (compactSortMode === 'recentes' ? ACTIVE_LIBRARY_TAB_CLASS : NEUTRAL_LIBRARY_TAB_CLASS)}`}
                     >
                       <Icons.ArrowUpDown size={14} />
                       Recomendados
@@ -1475,7 +1590,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                     <button
                       type="button"
                       onClick={() => setCompactSortMode('titulo')}
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all duration-200 ${compactSortMode === 'titulo' ? ACTIVE_LIBRARY_TAB_CLASS : NEUTRAL_LIBRARY_TAB_CLASS}`}
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all duration-200 ${isCorujaLibraryHub ? (compactSortMode === 'titulo' ? corujaSortActiveClass : corujaSortIdleClass) : (compactSortMode === 'titulo' ? ACTIVE_LIBRARY_TAB_CLASS : NEUTRAL_LIBRARY_TAB_CLASS)}`}
                     >
                       <Icons.Type size={14} />
                       A-Z
@@ -1485,7 +1600,9 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
 
                 {isMusicHub && shouldUseMediaApi && mediaSourceStatus !== 'fallback'
                   ? renderMediaRailBlocks(
-                    `group rounded-[1.2rem] border border-kaboo-primary/10 p-2.5 shadow-[0_10px_24px_rgba(27,31,35,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(27,31,35,0.08)] active:scale-[0.995] ${screenSurface.card}`,
+                    isCorujaLibraryHub
+                      ? corujaMediaCardClass
+                      : `group rounded-[1.2rem] border border-kaboo-primary/10 p-2.5 shadow-[0_10px_24px_rgba(27,31,35,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(27,31,35,0.08)] active:scale-[0.995] ${screenSurface.card}`,
                     'sm:grid-cols-2 xl:grid-cols-3',
                     'Ajuste a busca ou limpe os filtros para voltar ao acervo completo.',
                     {
@@ -1499,14 +1616,16 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                         {sortedCompactItems.map((item, itemIndex) => renderLibraryGridCard(
                           item,
                           itemIndex,
-                          `group ${isMusicHub ? 'rounded-[1.2rem] p-2.5' : 'flex items-center gap-3 rounded-[1.2rem] p-3'} border border-kaboo-primary/10 shadow-[0_10px_24px_rgba(27,31,35,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(27,31,35,0.08)] active:scale-[0.995] ${screenSurface.card}`,
+                          isCorujaLibraryHub
+                            ? (isMusicHub ? corujaMediaCardClass : corujaCompactCardClass)
+                            : `group ${isMusicHub ? 'rounded-[1.2rem] p-2.5' : 'flex items-center gap-3 rounded-[1.2rem] p-3'} border border-kaboo-primary/10 shadow-[0_10px_24px_rgba(27,31,35,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(27,31,35,0.08)] active:scale-[0.995] ${screenSurface.card}`,
                         ))}
                       </div>
 
                       {sortedCompactItems.length === 0 && (
-                        <div className="mt-4 rounded-[1.35rem] border border-dashed border-kaboo-primary/18 bg-white/90 px-5 py-8 text-center shadow-sm">
-                          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/55">Nenhum resultado</p>
-                          <p className="mt-2 text-sm leading-6 text-gray-500">
+                        <div className={`mt-4 rounded-[1.35rem] px-5 py-8 text-center ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 shadow-[0_16px_34px_rgba(4,27,36,0.18)] backdrop-blur-xl' : 'border border-dashed border-kaboo-primary/18 bg-white/90 shadow-sm'}`}>
+                          <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaLibraryHub ? 'text-white/55' : 'text-kaboo-primary/55'}`}>Nenhum resultado</p>
+                          <p className={`mt-2 text-sm leading-6 ${isCorujaLibraryHub ? 'text-white/72' : 'text-gray-500'}`}>
                             Ajuste a busca ou limpe os filtros para voltar ao acervo completo.
                           </p>
                         </div>
