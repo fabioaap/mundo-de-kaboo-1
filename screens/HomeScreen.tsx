@@ -1354,7 +1354,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const hasRefinedDiscovery = hasSearchQuery || activeFilterCount > 0 || activeTab !== 'all';
   const hasFilterOnlySelection = activeFilterCount > 0 && !hasSearchQuery;
   const showSearchOverlayPanel = hasSearchQuery;
-  const showInlineFilterTrigger = activeFilterCount === 0;
 
   const animationKey = `${activeTab}-${JSON.stringify(activeFilters)}`;
 
@@ -1469,6 +1468,247 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     />
   );
 
+  const renderSegmentTabs = (tone: 'hero' | 'default' = 'default') => (
+    <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
+      {TABS.map((tab) => {
+        const isActive = activeTab === tab.id;
+        const activeClass = tone === 'hero'
+          ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]'
+          : 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20';
+        const inactiveClass = tone === 'hero'
+          ? 'bg-white/8 text-white/82 border-white/12 hover:bg-white/14'
+          : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100';
+
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2.5 text-sm font-bold transition-all active:scale-95 ${isActive ? activeClass : inactiveClass}`}
+          >
+            {tab.id === 'all' && <Icons.Grid size={14} />}
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderDiscoveryControlPanel = (tone: 'hero' | 'default' = 'default') => {
+    const isHeroTone = tone === 'hero';
+    const panelClass = isHeroTone
+      ? 'rounded-[30px] border border-white/12 bg-[linear-gradient(180deg,rgba(4,27,36,0.84)_0%,rgba(4,27,36,0.72)_100%)] p-4 text-white shadow-[0_28px_60px_rgba(0,0,0,0.26)] backdrop-blur-xl md:p-5'
+      : 'rounded-[28px] border border-gray-200 bg-white p-4 shadow-[0_20px_45px_rgba(15,23,42,0.08)] md:p-5';
+    const eyebrowClass = isHeroTone ? 'text-[#FFD58A]' : 'text-kaboo-primary';
+    const bodyClass = isHeroTone ? 'text-white/78' : 'text-gray-500';
+    const dividerClass = isHeroTone ? 'border-white/12' : 'border-gray-100';
+    const searchSurfaceClass = isHeroTone
+      ? 'border-white/60 bg-white text-gray-700 shadow-[0_18px_36px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60'
+      : 'border-gray-200 bg-white text-gray-500 shadow-sm hover:border-kaboo-primary/20';
+    const closeButtonClass = isHeroTone
+      ? 'border-white/15 bg-white/10 text-white/82 hover:bg-white/14 hover:text-white'
+      : 'border-gray-200 bg-white text-gray-500 hover:border-kaboo-primary/20 hover:text-kaboo-primary';
+    const filterButtonClass = activeFilterCount > 0
+      ? isHeroTone
+        ? 'border-[#7A2A98] bg-[#5D1E76] text-white shadow-[0_14px_30px_rgba(93,30,118,0.32)]'
+        : 'border-kaboo-primary bg-kaboo-primary text-white shadow-sm'
+      : isHeroTone
+        ? 'border-white/12 bg-white/10 text-white/88 hover:bg-white/14'
+        : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-kaboo-primary/20 hover:bg-white';
+
+    return (
+      <div className={panelClass}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+              <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${eyebrowClass}`}>
+                {isSearchExperience ? searchCollectionGroupTitle : 'Comece pela busca'}
+              </p>
+              <p className={`mt-1 text-sm leading-relaxed ${bodyClass}`}>
+                {isSearchExperience
+                  ? 'Busque por texto e refine o acervo com filtros e segmentos.'
+                  : 'Busque por título, tema, BNCC ou personagem. Refine com filtros e segmentos.'}
+              </p>
+            </div>
+
+          {isSearchExperience && (
+            <button
+              type="button"
+              onClick={closeInlineSearch}
+              className={`inline-flex h-10 shrink-0 items-center justify-center rounded-full border px-3 transition-colors ${closeButtonClass}`}
+              aria-label="Fechar busca"
+              title="Fechar busca"
+            >
+              <Icons.X size={16} />
+              <span className="ml-2 hidden text-sm font-bold md:inline">Fechar</span>
+            </button>
+          )}
+        </div>
+
+        <div className={`mt-4 flex flex-col gap-3 ${isHeroTone ? '' : 'sm:flex-row sm:items-center'}`}>
+          <div className="relative min-w-0 flex-1">
+            <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+              <Icons.Search size={18} />
+            </div>
+
+            {isSearchExperience ? (
+              <>
+                <Input
+                  ref={searchInputRef}
+                  aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
+                  placeholder="Título, BNCC, personagem, competência..."
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  className={`h-14 rounded-[26px] pl-11 pr-12 ${searchSurfaceClass}`}
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition-colors hover:text-gray-700"
+                    title="Limpar busca"
+                  >
+                    <Icons.X size={16} />
+                  </button>
+                )}
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
+                className={`h-14 w-full truncate rounded-[26px] border pl-11 pr-6 text-left text-[15px] font-medium transition-colors ${searchSurfaceClass}`}
+                aria-label="Abrir pesquisa"
+              >
+                <span className="truncate">{searchLauncherPlaceholder}</span>
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => openFilterDrawer()}
+            className={`inline-flex h-12 shrink-0 items-center justify-center gap-2 self-start rounded-[22px] border px-4 text-sm font-bold transition-all active:scale-95 sm:h-14 sm:min-w-[148px] ${filterButtonClass}`}
+            title="Refinar busca"
+          >
+            <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
+            <span>Filtros</span>
+            {activeFilterCount > 0 && (
+              <span className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-black ${isHeroTone ? 'bg-white/18 text-white' : 'bg-white/20 text-white'}`}>
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        <div className={`mt-4 border-t pt-4 ${dividerClass}`}>
+          <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isHeroTone ? 'text-white/52' : 'text-gray-400'}`}>
+            Explorar por segmento
+          </p>
+          <div className="mt-3">
+            {renderSegmentTabs(isHeroTone ? 'hero' : 'default')}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCorujaHeroControls = () => (
+    <div className="space-y-3 md:space-y-4">
+      <div className="relative z-10 w-full md:max-w-[48%]">
+        <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+          <Icons.Search size={18} />
+        </div>
+        {isSearchExperience ? (
+          <>
+            <Input
+              ref={searchInputRef}
+              aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
+              placeholder="Título, BNCC, personagem, competência..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className={`h-14 rounded-[28px] pl-11 shadow-sm bg-white/92 border-transparent hover:border-transparent focus:border-kaboo-primary ${showInlineFilterTrigger ? 'pr-24 md:pr-72' : 'pr-24 md:pr-40'}`}
+            />
+            <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/90 backdrop-blur-sm text-gray-500 transition-colors hover:text-gray-700"
+                  title="Limpar busca"
+                >
+                  <Icons.X size={16} />
+                </button>
+              )}
+              {showInlineFilterTrigger && (
+                <button
+                  type="button"
+                  onClick={() => openFilterDrawer()}
+                  className="inline-flex h-10 items-center gap-2 rounded-[20px] border border-kaboo-primary/82 bg-kaboo-primary px-3 md:px-4 text-white transition-all active:scale-95 shadow-sm hover:opacity-90"
+                  title="Refinar busca"
+                >
+                  <Icons.Filter size={18} strokeWidth={2} />
+                  <span className="hidden md:inline text-sm font-bold">Filtros</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={closeInlineSearch}
+                className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 backdrop-blur-sm px-3 text-gray-500 transition-colors hover:text-gray-700"
+                title="Fechar busca"
+              >
+                <Icons.X size={16} />
+                <span className="text-sm font-bold">Fechar</span>
+              </button>
+            </div>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
+            className="w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 border border-white/40 bg-white/92 backdrop-blur-md text-gray-500 shadow-[0_14px_30px_rgba(0,0,0,0.22)] hover:border-[#EA9A3B]/60 hover:bg-white truncate"
+            aria-label="Abrir pesquisa"
+          >
+            <span className="truncate">{searchLauncherPlaceholder}</span>
+          </button>
+        )}
+        {!isSearchExperience && (
+          <button
+            type="button"
+            onClick={() => openFilterDrawer()}
+            className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : 'bg-white/90 backdrop-blur-md text-[#0C1A34] border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60'}`}
+            title="Refinar busca"
+          >
+            <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
+            <span className="hidden md:inline text-sm font-bold">Filtros</span>
+            {activeFilterCount > 0 && (
+              <span className="min-w-5 h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center bg-white/20 text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        )}
+      </div>
+
+      {!isSearchExperience && (
+        <div className="relative z-20 flex gap-3 overflow-x-auto no-scrollbar pb-1 md:max-w-[48%]">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]' : 'bg-white/90 backdrop-blur-sm text-[#0C1A34] border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white/95'}`}
+              >
+                {tab.id === 'all' && <Icons.Grid size={14} />}
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
   // Skeleton loader component
   const HomeScreenSkeleton = () => (
     <div className="flex flex-col min-h-full bg-white pb-24 md:pb-0 relative">
@@ -1566,6 +1806,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 filter: 'saturate(1.08) brightness(1.02)',
               }}
             />
+            {/* 10% dark overlay for improved element readability */}
+            <div className="absolute inset-0 bg-[rgba(4,27,36,0.10)]" />
           </div>
           <div
             ref={setCorujaHeroLayerRef(1)}
@@ -1596,12 +1838,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             </button>
           </div>
 
-          <div className={`hidden md:block shrink-0 ${shouldShowDesktopHeader ? '' : 'sr-only'}`}>
-            <PageHeader
-              title={collectionGroupTitle}
-              className="!pb-4"
-            />
-          </div>
+          {shouldShowDesktopHeader && (
+            <div className="hidden shrink-0 md:block">
+              <PageHeader
+                title={collectionGroupTitle}
+                className="!pb-4"
+              />
+            </div>
+          )}
         </>
 
         <AccessStatusBanner />
@@ -1617,226 +1861,105 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           {/* Central Coruja with hero image: content floats over parallax background */}
           {isCentralCoruja && brandHomeHeroImageUrl ? (
-            <div className="relative space-y-3 pt-[140px] pb-4 md:pt-8 md:pb-6 md:space-y-4">
+            <div className="relative space-y-3 pt-[108px] pb-4 md:pt-8 md:pb-6 md:space-y-4">
               {shouldRenderBrandHero && (
-                <div className="max-w-xl md:max-w-[52%]">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/55">Olá, {profileDisplayFirstName}!</p>
-                  <h2 className="mt-1.5 text-[1.7rem] font-black leading-[1.08] tracking-[-0.02em] md:text-[2rem] text-[#FFB347]">Bem-vindo à {brandDisplayName}!</h2>
-                  <p className="mt-2 text-[13px] leading-relaxed text-white/65 md:text-[14px]">
-                    Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.
+                <div className="max-w-xl md:max-w-[54%]">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#FFD58A]">Central Coruja</p>
+                  <p className="mt-2.5 text-sm font-bold text-white/78">Olá, {profileDisplayFirstName}.</p>
+                  <h2 className="mt-2 text-[1.95rem] font-black leading-[1.04] tracking-[-0.03em] text-[#FFB347] drop-shadow-[0_12px_28px_rgba(0,0,0,0.28)] md:text-[2.3rem]">
+                    Bem-vindo à {brandDisplayName}!
+                  </h2>
+                  <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/76 md:text-[15px]">
+                    Histórias, vídeos e experiências de aprendizagem organizados para você começar pela busca e explorar com mais clareza.
                   </p>
                 </div>
               )}
 
-              <div className="relative z-10 w-full md:max-w-[46%]">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
-                  <Icons.Search size={18} />
-                </div>
-                {isSearchExperience ? (
-                  <>
-                    <Input
-                      ref={searchInputRef}
-                      aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
-                      placeholder="Título, BNCC, personagem, competência..."
-                      value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
-                      className={`h-14 rounded-[28px] pl-11 shadow-sm bg-white/90 border-transparent hover:border-transparent focus:border-kaboo-primary ${showInlineFilterTrigger ? 'pr-24 md:pr-72' : 'pr-24 md:pr-40'}`}
-                    />
-                    <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
-                      {searchTerm && (
-                        <button type="button" onClick={() => setSearchTerm('')} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/90 backdrop-blur-sm text-gray-500 transition-colors hover:text-gray-700" title="Limpar busca">
-                          <Icons.X size={16} />
-                        </button>
-                      )}
-                      {showInlineFilterTrigger && (
-                        <button type="button" onClick={() => openFilterDrawer()} className="inline-flex h-10 items-center gap-2 rounded-[20px] border border-kaboo-primary/82 bg-kaboo-primary px-3 md:px-4 text-white transition-all active:scale-95 shadow-sm hover:opacity-90" title="Refinar busca">
-                          <Icons.Filter size={18} strokeWidth={2} />
-                          <span className="hidden md:inline text-sm font-bold">Filtros</span>
-                        </button>
-                      )}
-                      <button type="button" onClick={closeInlineSearch} className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 backdrop-blur-sm px-3 text-gray-500 transition-colors hover:text-gray-700" title="Fechar busca">
-                        <Icons.X size={16} />
-                        <span className="text-sm font-bold">Fechar</span>
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
-                    className="w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 border border-white/40 bg-white/90 backdrop-blur-md text-gray-500 shadow-[0_14px_30px_rgba(0,0,0,0.22)] hover:border-[#EA9A3B]/60 hover:bg-white/95 truncate"
-                    aria-label="Abrir pesquisa"
-                  >
-                    <span className="truncate">{searchLauncherPlaceholder}</span>
-                  </button>
-                )}
-                {!isSearchExperience && (
-                  <button
-                    type="button"
-                    onClick={() => openFilterDrawer()}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : 'bg-white/90 backdrop-blur-md text-[#0C1A34] border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60'}`}
-                    title="Refinar busca"
-                  >
-                    <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
-                    <span className="hidden md:inline text-sm font-bold">Filtros</span>
-                    {activeFilterCount > 0 && (
-                      <span className="min-w-5 h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center bg-white/20 text-white">{activeFilterCount}</span>
-                    )}
-                  </button>
-                )}
-              </div>
-
-              {!isSearchExperience && (
-                <div className="relative z-20 flex gap-3 overflow-x-auto no-scrollbar pb-1 md:max-w-[46%]">
-                  {TABS.map((tab) => {
-                    const isActive = activeTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]' : 'bg-white/90 backdrop-blur-sm text-[#0C1A34] border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white/95'}`}
-                      >
-                        {tab.id === 'all' && <Icons.Grid size={14} />}
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              {renderCorujaHeroControls()}
             </div>
           ) : (
             <div className="relative z-10 space-y-3">
-              {shouldRenderBrandHero && (
-                <section
-                  className={`relative overflow-hidden rounded-[30px] p-5 text-white shadow-[0_24px_50px_rgba(15,23,42,0.16)] ${
-                    isCentralCoruja
-                      ? 'border border-white/18 min-h-[180px] md:min-h-[210px] shadow-[0_28px_60px_rgba(0,0,0,0.28)]'
-                      : 'border border-white/70'
-                  }`}
-                  style={{
-                    backgroundImage: isCentralCoruja
-                      ? `radial-gradient(ellipse 44% 58% at 88% 18%, rgba(242,211,102,0.22) 0%, transparent 42%), radial-gradient(circle at 78% 22%, rgba(93,30,118,0.52) 0%, transparent 38%), radial-gradient(circle at 18% 85%, rgba(234,154,59,0.18) 0%, transparent 30%), linear-gradient(135deg, #102A3D 0%, #12384A 30%, #0B3343 56%, #0C1A34 100%)`
-                      : `radial-gradient(circle at 18% 18%, ${brandBootstrap.settings.accent_color ?? '#F9A825'}55 0%, transparent 28%), linear-gradient(135deg, ${brandBootstrap.settings.primary_color ?? '#1B5E20'} 0%, ${brandBootstrap.settings.light_color ?? '#388E3C'} 55%, ${brandBootstrap.settings.accent_color ?? '#F9A825'} 100%)`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    fontFamily: brandBootstrap.settings.font_family || undefined,
-                  }}
-                >
-                  <div className={`absolute inset-0 ${isCentralCoruja ? 'bg-[radial-gradient(circle_at_76%_24%,rgba(255,229,150,0.14),transparent_18%),radial-gradient(circle_at_84%_18%,rgba(234,154,59,0.16),transparent_24%),linear-gradient(180deg,rgba(5,11,20,0.04),rgba(5,11,20,0.28))]' : 'bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.24),transparent_30%),linear-gradient(180deg,rgba(8,15,16,0.04),rgba(8,15,16,0.18))]'}`} />
-                  {isCentralCoruja && (
-                    <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} aria-hidden="true" />
-                  )}
-                  <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                    <div className="max-w-2xl">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/55">Olá, {profileDisplayFirstName}!</p>
-                      <h2 className={`mt-1.5 text-[1.7rem] font-black leading-[1.08] tracking-[-0.02em] md:text-[2rem] ${isCentralCoruja ? 'text-[#FFB347]' : ''}`}>Bem-vindo à {brandDisplayName}!</h2>
-                      <p className="mt-2 text-[13px] leading-relaxed text-white/65 md:text-[14px]">
-                        Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.
-                      </p>
-                    </div>
-                    {!isCentralCoruja && brandLogoUrl ? (
-                      <img src={brandLogoUrl} alt={brandDisplayName} className="h-12 w-auto max-w-[180px] object-contain drop-shadow-[0_12px_24px_rgba(15,23,42,0.22)]" />
-                    ) : !isCentralCoruja && !brandLogoUrl ? (
-                      <div className="inline-flex max-w-[220px] items-center rounded-[24px] border border-white/25 bg-white/12 px-5 py-4 text-right text-lg font-black leading-tight text-white shadow-[0_12px_24px_rgba(15,23,42,0.18)] backdrop-blur-sm">
-                        {brandDisplayName}
+              {isCentralCoruja ? (
+                <>
+                  {shouldRenderBrandHero && (
+                    <section
+                      className="relative overflow-hidden rounded-[30px] border border-white/18 p-5 text-white shadow-[0_28px_60px_rgba(0,0,0,0.28)] md:p-6"
+                      style={{
+                        backgroundImage: 'radial-gradient(ellipse 44% 58% at 88% 18%, rgba(242,211,102,0.22) 0%, transparent 42%), radial-gradient(circle at 78% 22%, rgba(93,30,118,0.52) 0%, transparent 38%), radial-gradient(circle at 18% 85%, rgba(234,154,59,0.18) 0%, transparent 30%), linear-gradient(135deg, #102A3D 0%, #12384A 30%, #0B3343 56%, #0C1A34 100%)',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        fontFamily: brandBootstrap.settings.font_family || undefined,
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_24%,rgba(255,229,150,0.14),transparent_18%),radial-gradient(circle_at_84%_18%,rgba(234,154,59,0.16),transparent_24%),linear-gradient(180deg,rgba(5,11,20,0.04),rgba(5,11,20,0.28))]" />
+                      <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} aria-hidden="true" />
+                      <div className="relative z-10 max-w-2xl">
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#FFD58A]">Central Coruja</p>
+                        <p className="mt-2.5 text-sm font-bold text-white/78">Olá, {profileDisplayFirstName}.</p>
+                        <h2 className="mt-2 text-[1.95rem] font-black leading-[1.04] tracking-[-0.03em] text-[#FFB347] md:text-[2.2rem]">
+                          Bem-vindo à {brandDisplayName}!
+                        </h2>
+                        <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/76 md:text-[15px]">
+                          Histórias, vídeos e experiências de aprendizagem organizados para você começar pela busca e explorar com mais clareza.
+                        </p>
                       </div>
-                    ) : null}
-                  </div>
-                </section>
-              )}
+                    </section>
+                  )}
 
-              {isSearchExperience && (
-                <div className="flex items-start justify-between gap-3 rounded-[24px] px-4 py-3 animate-fade-in-up md:hidden border border-kaboo-primary/10 bg-kaboo-primary/[0.03]">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary">{searchCollectionGroupTitle}</p>
-                    <p className="mt-1 text-sm text-gray-500">Pesquise por texto e use os filtros para explorar personagem, CASEL, BNCC ou idade-série.</p>
-                  </div>
-                  <button type="button" onClick={closeInlineSearch} className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full border border-kaboo-primary/15 bg-white text-kaboo-primary transition-colors hover:bg-kaboo-primary/5" aria-label="Fechar busca">
-                    <Icons.X size={16} />
-                  </button>
-                </div>
-              )}
+                  {renderCorujaHeroControls()}
+                </>
+              ) : (
+                <>
+                  {shouldRenderBrandHero && (
+                    <section
+                      className="relative overflow-hidden rounded-[30px] border border-white/70 p-5 text-white shadow-[0_24px_50px_rgba(15,23,42,0.16)]"
+                      style={{
+                        backgroundImage: `radial-gradient(circle at 18% 18%, ${brandBootstrap.settings.accent_color ?? '#F9A825'}55 0%, transparent 28%), linear-gradient(135deg, ${brandBootstrap.settings.primary_color ?? '#1B5E20'} 0%, ${brandBootstrap.settings.light_color ?? '#388E3C'} 55%, ${brandBootstrap.settings.accent_color ?? '#F9A825'} 100%)`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        fontFamily: brandBootstrap.settings.font_family || undefined,
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.24),transparent_30%),linear-gradient(180deg,rgba(8,15,16,0.04),rgba(8,15,16,0.18))]" />
+                      <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                        <div className="max-w-2xl">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/55">Olá, {profileDisplayFirstName}!</p>
+                          <h2 className="mt-1.5 text-[1.7rem] font-black leading-[1.08] tracking-[-0.02em] md:text-[2rem]">Bem-vindo à {brandDisplayName}!</h2>
+                          <p className="mt-2 text-[13px] leading-relaxed text-white/65 md:text-[14px]">
+                            Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.
+                          </p>
+                        </div>
+                        {brandLogoUrl ? (
+                          <img src={brandLogoUrl} alt={brandDisplayName} className="h-12 w-auto max-w-[180px] object-contain drop-shadow-[0_12px_24px_rgba(15,23,42,0.22)]" />
+                        ) : (
+                          <div className="inline-flex max-w-[220px] items-center rounded-[24px] border border-white/25 bg-white/12 px-5 py-4 text-right text-lg font-black leading-tight text-white shadow-[0_12px_24px_rgba(15,23,42,0.18)] backdrop-blur-sm">
+                            {brandDisplayName}
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  )}
 
-              {isSearchExperience && (
-                <div className="hidden md:flex items-center justify-between gap-4 text-sm text-gray-500 animate-fade-in-up">
-                  <p>Pesquise por texto e abra os filtros para refinar por personagem, CASEL, BNCC ou idade-série.</p>
-                </div>
-              )}
-
-              <div className="relative w-full">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
-                  <Icons.Search size={18} />
-                </div>
-                {isSearchExperience ? (
-                  <>
-                    <Input
-                      ref={searchInputRef}
-                      aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
-                      placeholder="Título, BNCC, personagem, competência..."
-                      value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
-                      className={`h-14 rounded-[28px] pl-11 shadow-sm bg-white/90 border-transparent hover:border-transparent focus:border-kaboo-primary ${showInlineFilterTrigger ? 'pr-24 md:pr-72' : 'pr-24 md:pr-40'}`}
-                    />
-                    <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
-                      {searchTerm && (
-                        <button type="button" onClick={() => setSearchTerm('')} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition-colors hover:text-gray-600" title="Limpar busca">
-                          <Icons.X size={16} />
-                        </button>
-                      )}
-                      {showInlineFilterTrigger && (
-                        <button type="button" onClick={() => openFilterDrawer()} className="inline-flex h-10 items-center gap-2 rounded-[20px] border border-kaboo-primary/82 bg-kaboo-primary px-3 md:px-4 text-white transition-all active:scale-95 shadow-sm hover:opacity-90" title="Refinar busca">
-                          <Icons.Filter size={18} strokeWidth={2} />
-                          <span className="hidden md:inline text-sm font-bold">Filtros</span>
-                        </button>
-                      )}
-                      <button type="button" onClick={closeInlineSearch} className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-gray-200 bg-white px-3 text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary" title="Fechar busca">
+                  {isSearchExperience && (
+                    <div className="flex items-start justify-between gap-3 rounded-[24px] border border-kaboo-primary/10 bg-kaboo-primary/[0.03] px-4 py-3 animate-fade-in-up md:hidden">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary">{searchCollectionGroupTitle}</p>
+                        <p className="mt-1 text-sm text-gray-500">Pesquise por texto e use os filtros para explorar personagem, CASEL, BNCC ou idade-série.</p>
+                      </div>
+                      <button type="button" onClick={closeInlineSearch} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-kaboo-primary/15 bg-white text-kaboo-primary transition-colors hover:bg-kaboo-primary/5" aria-label="Fechar busca">
                         <Icons.X size={16} />
-                        <span className="text-sm font-bold">Fechar</span>
                       </button>
                     </div>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
-                    className={`w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 truncate ${isCorujaHomeLayout ? 'border border-white/40 bg-white/90 backdrop-blur-md text-gray-500 shadow-[0_14px_30px_rgba(0,0,0,0.22)] hover:border-[#EA9A3B]/60 hover:bg-white/95' : 'border border-gray-200 bg-white shadow-sm hover:border-kaboo-primary/20 text-gray-400'}`}
-                    aria-label="Abrir pesquisa"
-                  >
-                    <span className="truncate">{searchLauncherPlaceholder}</span>
-                  </button>
-                )}
-                {!isSearchExperience && (
-                  <button
-                    type="button"
-                    onClick={() => openFilterDrawer()}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? isCorujaHomeLayout ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20' : isCorujaHomeLayout ? 'bg-white/90 backdrop-blur-md text-[#0C1A34] border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60' : 'bg-gray-50 text-gray-600 border-gray-200 shadow-sm hover:bg-white hover:border-kaboo-primary/20'}`}
-                    title="Refinar busca"
-                  >
-                    <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
-                    <span className="hidden md:inline text-sm font-bold">Filtros</span>
-                    {activeFilterCount > 0 && (
-                      <span className="min-w-5 h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center bg-white/20 text-white">{activeFilterCount}</span>
-                    )}
-                  </button>
-                )}
-              </div>
+                  )}
 
-              {!isSearchExperience && (
-                <div className="relative z-20 flex gap-3 overflow-x-auto no-scrollbar pb-1">
-                  {TABS.map((tab) => {
-                    const isActive = activeTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? isCorujaHomeLayout ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]' : 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20' : isCorujaHomeLayout ? 'bg-white/90 backdrop-blur-sm text-[#0C1A34] border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white/95' : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100'}`}
-                      >
-                        {tab.id === 'all' && <Icons.Grid size={14} />}
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                  {isSearchExperience && (
+                    <div className="hidden animate-fade-in-up items-center justify-between gap-4 text-sm text-gray-500 md:flex">
+                      <p>Pesquise por texto e abra os filtros para refinar por personagem, CASEL, BNCC ou idade-série.</p>
+                    </div>
+                  )}
+
+                  {renderDiscoveryControlPanel('default')}
+                </>
               )}
             </div>
           )}
