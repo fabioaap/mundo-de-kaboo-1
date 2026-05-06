@@ -565,7 +565,7 @@ const CardContainer: React.FC<{
   );
 };
 
-const renderItemPreview = (item: LibraryMockItem, featured: boolean = false, corujaTone: boolean = false) => {
+const renderItemPreview = (item: LibraryMockItem, featured: boolean = false, corujaTone: boolean = false, compact: boolean = false) => {
   const PreviewIcon = getLibraryBadgeIcon(item);
   const aspectClassName = featured ? FEATURED_PREVIEW_ASPECT[item.variant] : CARD_PREVIEW_ASPECT[item.variant];
   const hasCover = Boolean(item.coverImage);
@@ -604,9 +604,11 @@ const renderItemPreview = (item: LibraryMockItem, featured: boolean = false, cor
             </span>
           )}
         </div>
-        <span className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] truncate rounded-full border border-[#ffd28a]/70 bg-[#EA9A3B] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-[0_12px_22px_rgba(62,28,4,0.28)]">
-          {itemTypeLabel}
-        </span>
+        {!compact && (
+          <span className="absolute left-3 top-3 max-w-[calc(100%-1.5rem)] truncate rounded-full border border-[#ffd28a]/70 bg-[#EA9A3B] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-[0_12px_22px_rgba(62,28,4,0.28)]">
+            {itemTypeLabel}
+          </span>
+        )}
       </div>
     );
   }
@@ -1076,7 +1078,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
         className={cardClassName}
       >
         <div className="w-20 shrink-0">
-          {renderItemPreview(item, false, isCorujaLibraryHub)}
+          {renderItemPreview(item, false, isCorujaLibraryHub, true)}
         </div>
 
         {renderMinimalLibraryCardBody(item, isCorujaLibraryHub)}
