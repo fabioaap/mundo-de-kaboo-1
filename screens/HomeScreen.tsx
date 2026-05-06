@@ -7,12 +7,15 @@ import { TABS, LOGO_URL, formatSegmentLabel, getCharacterBgColor, getCharacterCo
 import { canAccessCollection, formatAccessDate, getAccessStatusLabel, getDaysUntilAccessExpiry, getProfileAccessStatus } from '../lib/access';
 import { PageHeader } from '../components/PageHeader';
 import { Button, Input } from '../design-system';
+import { layoutSpacing } from '../design-system/layout/spacing';
 import { Card3D } from '../components/Card3D';
 import { CharacterAvatar } from '../components/CharacterAvatar';
 import { CollectionFiltersModal } from '../components/CollectionFiltersModal';
 import { HeroParallaxBackdrop } from '../components/HeroParallaxBackdrop';
+import { useParallaxMotion } from '../hooks/useParallaxMotion';
 import { useBrandConfig } from '../hooks/useBrandConfig';
 import useIsMobile from '../hooks/useIsMobile';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { getCollectionDisplayCover, getCollectionTypeMeta } from '../lib/collectionPresentation';
 import { lookupBncc } from '../lib/bnccLookup';
 // @ts-ignore
@@ -137,7 +140,7 @@ const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, gra
   const isCorujaTone = tone === 'central-coruja';
 
   return (
-    <div className={`grid auto-rows-fr ${isCorujaTone ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6'}`}>
+    <div className={`grid auto-rows-fr ${isCorujaTone ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} ${layoutSpacing.cardGridGap}`}>
       {collections.map((collection) => (
         <div key={collection.id} className="h-full w-full">
           <Card3D
@@ -666,6 +669,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
   const isCentralCoruja = brandSlug === 'central-coruja';
   const isMobile = useIsMobile();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const heroParallaxFeature = brandBootstrap.features['hero.parallax'];
   const heroParallaxModeRaw = heroParallaxFeature?.config?.mode;
   const heroParallaxMode =
@@ -678,12 +682,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     isFeatureEnabled('hero.parallax') &&
     !isSearchExperience &&
     !brandHomeHeroImageUrl;
+  const isCorujaHeroImageLayout = isCentralCoruja && Boolean(brandHomeHeroImageUrl) && !isSearchExperience;
   const shouldShowDesktopHeader = !isCentralCoruja || isSearchExperience;
   const shouldRenderBrandHero = !isSearchExperience && (Boolean(brandHomeHeroImageUrl) || isCentralCoruja);
   const isCorujaHomeLayout = isCentralCoruja && !isSearchExperience;
+  const isCorujaPinnedShelfLayout = isCorujaHomeLayout && Boolean(brandHomeHeroImageUrl);
   const searchLauncherPlaceholder = 'Buscar por título, tema, BNCC ou personagem';
-  const desktopShellPaddingClass = 'px-6 md:px-8';
-  const desktopSkeletonHeaderPaddingClass = 'hidden md:block shrink-0 px-8 pt-6 pb-4';
+  const desktopShellPaddingClass = isCorujaPinnedShelfLayout
+    ? 'px-[var(--space-page-x)] md:mx-auto md:w-full md:max-w-6xl md:px-0'
+    : isCentralCoruja
+      ? 'px-[var(--space-page-x)] md:px-[var(--space-page-x)]'
+      : layoutSpacing.pageSectionX;
+  const desktopSkeletonHeaderPaddingClass = isCorujaPinnedShelfLayout
+    ? 'hidden md:block shrink-0 md:mx-auto md:w-full md:max-w-6xl md:pt-[var(--space-page-header-top-desktop)] md:pb-[var(--space-page-inset-y)]'
+    : 'hidden md:block shrink-0 px-[var(--space-page-x-desktop)] pt-[var(--space-page-header-top-desktop)] pb-[var(--space-page-inset-y)]';
+  const corujaHeroLayerDepths = useMemo(() => (isMobile ? [0.8, 0.36] : [1.4, 0.6]), [isMobile]);
+  const { containerRef: corujaHeroMotionContainerRef, setLayerRef: setCorujaHeroLayerRef } = useParallaxMotion({
+    disabled: !isCorujaHeroImageLayout || prefersReducedMotion,
+    layerDepths: corujaHeroLayerDepths,
+    smoothness: 0.14,
+    scrollInfluence: 0,
+    enablePointerTracking: false,
+    enableScrollTracking: false,
+  });
 
   // Preload avatar image immediately if cached profile exists
   useEffect(() => {
@@ -1454,7 +1475,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       <div className="flex flex-col">
 
         {/* MOBILE HEADER SKELETON */}
-        <div className="md:hidden px-6 py-4 flex justify-center items-center shrink-0 bg-white z-30 border-b border-gray-50">
+        <div className={`md:hidden flex justify-center items-center shrink-0 bg-white z-30 border-b border-gray-50 ${layoutSpacing.pageInset}`}>
           <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
         </div>
 
@@ -1480,7 +1501,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
 
         {/* CONTENT AREA SKELETON */}
-        <div className={`${desktopShellPaddingClass} pt-2 md:pt-6 pb-6`}>
+          <div className={`${desktopShellPaddingClass} pt-2 md:pt-[var(--space-page-header-top-desktop)] pb-[var(--space-page-section-y)] md:pb-[var(--space-page-section-y-desktop)]`}>
           {/* TITLE AND COUNT SKELETON */}
           <div className="flex justify-between items-end pb-4 border-b border-gray-100">
             <div className="h-7 w-48 bg-gray-200 rounded animate-pulse"></div>
@@ -1492,7 +1513,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           {/* GRID SKELETON */}
           <div className="mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 ${layoutSpacing.cardGridGap}`}>
               {[...Array(12)].map((_, i) => (
                 <div key={i} className="w-full animate-pulse">
                   <div className="mb-3 rounded-lg overflow-hidden relative bg-gray-200 aspect-square"></div>
@@ -1521,28 +1542,41 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         }
         : undefined}
     >
-      {/* Coruja hero: fixed parallax background image behind entire page */}
+      {/* Coruja hero: fixed background image behind the upper fold */}
       {isCentralCoruja && brandHomeHeroImageUrl && (
         <div
-          className="absolute inset-x-0 top-0 h-[300px] md:h-[430px] z-0 pointer-events-none overflow-hidden"
-          style={{
-            backgroundImage: `url(${isMobile ? '/coruja-hero-mobile.webp' : brandHomeHeroImageUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: isMobile ? 'center top' : 'right 20%',
-            backgroundAttachment: 'scroll',
-            backgroundRepeat: 'no-repeat',
-            filter: 'saturate(1.08) brightness(1.02)',
-          }}
+          className="fixed inset-x-0 top-0 h-[520px] md:h-[860px] z-0 pointer-events-none overflow-hidden"
           aria-hidden="true"
         >
           <div
+            className="absolute inset-[-4%]"
+            style={{
+              transform: 'scale(1.06)',
+              transformOrigin: isMobile ? 'center top' : '72% top',
+            }}
+          >
+            <div
+              ref={setCorujaHeroLayerRef(0)}
+              className="absolute inset-0 will-change-transform"
+              style={{
+                backgroundImage: `url(${isMobile ? '/coruja-hero-mobile.webp' : brandHomeHeroImageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: isMobile ? 'center top' : 'right 20%',
+                backgroundRepeat: 'no-repeat',
+                filter: 'saturate(1.08) brightness(1.02)',
+              }}
+            />
+          </div>
+          <div
+            ref={setCorujaHeroLayerRef(1)}
             className="absolute inset-0"
             style={{
               backgroundImage: isMobile
-                ? 'linear-gradient(180deg, rgba(4,27,36,0.10) 0%, rgba(4,27,36,0.30) 40%, rgba(4,27,36,0.72) 65%, #041b24 88%)'
-                : 'radial-gradient(circle at 72% 30%, rgba(255,214,120,0.16) 0%, rgba(255,214,120,0.06) 18%, transparent 36%), linear-gradient(90deg, rgba(4,27,36,0.84) 0%, rgba(4,27,36,0.50) 24%, rgba(4,27,36,0.08) 44%, transparent 60%), linear-gradient(to bottom, rgba(4,27,36,0.00) 0%, rgba(4,27,36,0.03) 34%, rgba(4,27,36,0.38) 58%, rgba(4,27,36,0.82) 76%, #041b24 92%)',
+                ? 'radial-gradient(circle at 82% 14%, rgba(255,214,120,0.16) 0%, transparent 26%), linear-gradient(180deg, rgba(4,27,36,0.06) 0%, rgba(4,27,36,0.18) 18%, rgba(4,27,36,0.34) 38%, rgba(4,27,36,0.50) 58%, rgba(4,27,36,0.68) 78%, rgba(4,27,36,0.82) 92%, #041b24 100%)'
+                : 'radial-gradient(circle at 72% 24%, rgba(255,214,120,0.18) 0%, rgba(255,214,120,0.08) 14%, transparent 30%), linear-gradient(90deg, rgba(4,27,36,0.78) 0%, rgba(4,27,36,0.42) 24%, rgba(4,27,36,0.12) 46%, rgba(4,27,36,0.18) 100%), linear-gradient(180deg, rgba(4,27,36,0.08) 0%, rgba(4,27,36,0.16) 18%, rgba(4,27,36,0.28) 38%, rgba(4,27,36,0.44) 56%, rgba(4,27,36,0.62) 74%, rgba(4,27,36,0.80) 88%, rgba(4,27,36,0.92) 100%)',
             }}
           />
+          <div className="absolute inset-x-0 bottom-[-1px] h-40 md:h-60 bg-[linear-gradient(180deg,rgba(4,27,36,0)_0%,rgba(4,27,36,0.10)_20%,rgba(4,27,36,0.22)_42%,rgba(4,27,36,0.42)_66%,rgba(4,27,36,0.68)_84%,rgba(4,27,36,0.88)_100%)]" />
         </div>
       )}
 
@@ -1550,7 +1584,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
         <>
           {/* MOBILE HEADER: Fixed background color, reduced padding, no top margin */}
-          <div className={`md:hidden px-6 py-4 flex justify-center items-center shrink-0 z-30 transition-all border-b ${isCentralCoruja ? 'bg-[#082B37] border-white/10' : 'bg-white border-gray-50'}`}>
+          <div className={`md:hidden flex justify-center items-center shrink-0 z-30 transition-all border-b ${layoutSpacing.pageInset} ${isCentralCoruja ? 'bg-[#082B37] border-white/10' : 'bg-white border-gray-50'}`}>
             <button onClick={() => onNavigate('home', baseHomeParams)} aria-label="Ir para a home" className="flex items-center justify-center">
               {brandLogoUrl ? (
                 <img src={brandLogoUrl} alt={brandDisplayName} className="h-10 w-auto object-contain" />
@@ -1572,7 +1606,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
         <AccessStatusBanner />
 
-        <div className={`${desktopShellPaddingClass} relative z-0 shrink-0 ${isSearchExperience ? 'pb-4 pt-3 space-y-3' : isCorujaHomeLayout ? 'pb-5 pt-4 md:pb-6 md:pt-6 space-y-4' : 'mb-4 mt-2 space-y-3'}`}>
+        <div ref={corujaHeroMotionContainerRef} className={`${desktopShellPaddingClass} relative z-0 shrink-0 ${isSearchExperience ? 'pb-4 pt-3 space-y-3' : isCorujaHomeLayout ? 'pb-5 pt-4 md:pb-6 md:pt-6 space-y-4' : 'mb-4 mt-2 space-y-3'}`}>
           {shouldRenderWhiteLabelParallax && (
             <HeroParallaxBackdrop
               enabled
@@ -1583,18 +1617,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           {/* Central Coruja with hero image: content floats over parallax background */}
           {isCentralCoruja && brandHomeHeroImageUrl ? (
-            <div className="relative space-y-4 pt-[160px] pb-4 md:pt-10 md:pb-6 md:space-y-5">
+            <div className="relative space-y-3 pt-[140px] pb-4 md:pt-8 md:pb-6 md:space-y-4">
               {shouldRenderBrandHero && (
                 <div className="max-w-xl md:max-w-[52%]">
-                  <p className="text-sm font-semibold text-white/85">Olá, {profileDisplayFirstName}!</p>
-                  <h2 className="mt-1 text-2xl font-black tracking-tight md:text-4xl text-[#FFB347]">Bem-vindo à {brandDisplayName}!</h2>
-                  <p className="mt-2 text-sm leading-relaxed text-white/85">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/55">Olá, {profileDisplayFirstName}!</p>
+                  <h2 className="mt-1.5 text-[1.9rem] font-black leading-[1.04] tracking-[-0.025em] md:text-[3.25rem] text-[#FFB347]">Bem-vindo à {brandDisplayName}!</h2>
+                  <p className="mt-2.5 text-[13px] leading-relaxed text-white/65 md:text-[14px]">
                     Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.
                   </p>
                 </div>
               )}
 
-              <div className="relative w-full md:max-w-[48%]">
+              <div className="relative z-10 w-full md:max-w-[46%]">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
                   <Icons.Search size={18} />
                 </div>
@@ -1653,7 +1687,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               </div>
 
               {!isSearchExperience && (
-                <div className="relative z-20 flex gap-3 overflow-x-auto no-scrollbar pb-1 md:max-w-[48%]">
+                <div className="relative z-20 flex gap-3 overflow-x-auto no-scrollbar pb-1 md:max-w-[46%]">
                   {TABS.map((tab) => {
                     const isActive = activeTab === tab.id;
                     return (
@@ -1694,9 +1728,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   )}
                   <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div className="max-w-2xl">
-                      <p className="text-sm font-semibold text-white/85">Olá, {profileDisplayFirstName}!</p>
-                      <h2 className={`mt-2 text-2xl font-black tracking-tight md:text-4xl ${isCentralCoruja ? 'text-[#FFB347]' : ''}`}>Bem-vindo à {brandDisplayName}!</h2>
-                      <p className="mt-3 text-sm leading-relaxed text-white/85">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/55">Olá, {profileDisplayFirstName}!</p>
+                      <h2 className={`mt-1.5 text-[1.9rem] font-black leading-[1.04] tracking-[-0.025em] md:text-[3.25rem] ${isCentralCoruja ? 'text-[#FFB347]' : ''}`}>Bem-vindo à {brandDisplayName}!</h2>
+                      <p className="mt-2.5 text-[13px] leading-relaxed text-white/65 md:text-[14px]">
                         Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.
                       </p>
                     </div>
@@ -1881,8 +1915,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           </div>
         )}
 
-        <div className={`${desktopShellPaddingClass} pt-2 md:pt-6 pb-8 relative`}>
-          {isSearchExperience ? (
+        <div className={`${desktopShellPaddingClass} relative ${isCorujaHeroImageLayout ? '-mt-3 md:-mt-6 pb-10' : 'pt-2 md:pt-6 pb-8'}`}>
+          <div
+            className={`relative ${isCorujaHeroImageLayout ? 'z-10 pt-2 md:pt-3' : ''}`}
+          >
+            {isSearchExperience ? (
             hasFilterOnlySelection ? (
               <>
                 <div className="flex justify-between items-end pb-4 border-b border-gray-100">
@@ -2051,7 +2088,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               </div>
 
               {filteredCollections.length > 0 ? (
-                <div className="mt-6">
+                <div className="relative z-10 mt-6">
                   <GridView
                     key={animationKey}
                     collections={filteredCollections}
@@ -2078,7 +2115,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 </div>
               )}
             </>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
