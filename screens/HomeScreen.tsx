@@ -1664,7 +1664,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           <button
             type="button"
             onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
-            className="w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 border border-white/40 bg-white/92 backdrop-blur-md text-gray-500 shadow-[0_14px_30px_rgba(0,0,0,0.22)] hover:border-[#EA9A3B]/60 hover:bg-white truncate"
+            className="w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 border border-white/40 bg-white/95 text-gray-500 shadow-[0_14px_30px_rgba(0,0,0,0.22)] hover:border-[#EA9A3B]/60 hover:bg-white truncate"
             aria-label="Abrir pesquisa"
           >
             <span className="truncate">{searchLauncherPlaceholder}</span>
@@ -1674,7 +1674,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           <button
             type="button"
             onClick={() => openFilterDrawer()}
-            className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : 'bg-white/90 backdrop-blur-md text-[#0C1A34] border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60'}`}
+            className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : 'bg-white/95 text-[#0C1A34] border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60'}`}
             title="Refinar busca"
           >
             <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
@@ -1697,7 +1697,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]' : 'bg-white/90 backdrop-blur-sm text-[#0C1A34] border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white/95'}`}
+                className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]' : 'bg-white/95 text-[#0C1A34] border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white'}`}
               >
                 {tab.id === 'all' && <Icons.Grid size={14} />}
                 {tab.label}
@@ -1818,7 +1818,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 : 'radial-gradient(circle at 72% 24%, rgba(255,214,120,0.18) 0%, rgba(255,214,120,0.08) 14%, transparent 30%), linear-gradient(90deg, rgba(4,27,36,0.78) 0%, rgba(4,27,36,0.42) 24%, rgba(4,27,36,0.12) 46%, rgba(4,27,36,0.18) 100%), linear-gradient(180deg, rgba(4,27,36,0.08) 0%, rgba(4,27,36,0.16) 18%, rgba(4,27,36,0.28) 38%, rgba(4,27,36,0.44) 56%, rgba(4,27,36,0.62) 74%, rgba(4,27,36,0.80) 88%, rgba(4,27,36,0.92) 100%)',
             }}
           />
-          <div className="absolute inset-x-0 bottom-[-1px] h-40 md:h-60 bg-[linear-gradient(180deg,rgba(4,27,36,0)_0%,rgba(4,27,36,0.10)_20%,rgba(4,27,36,0.22)_42%,rgba(4,27,36,0.42)_66%,rgba(4,27,36,0.68)_84%,rgba(4,27,36,0.88)_100%)]" />
         </div>
       )}
 
@@ -1864,8 +1863,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             <div className="relative space-y-3 pt-[108px] pb-4 md:pt-8 md:pb-6 md:space-y-4">
               {shouldRenderBrandHero && (
                 <div className="max-w-xl md:max-w-[54%]">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#FFD58A]">Central Coruja</p>
-                  <p className="mt-2.5 text-sm font-bold text-white/78">Olá, {profileDisplayFirstName}.</p>
+                  <p className="text-sm font-bold text-white/78">Olá, {profileDisplayFirstName}.</p>
                   <h2 className="mt-2 text-[1.95rem] font-black leading-[1.04] tracking-[-0.03em] text-[#FFB347] drop-shadow-[0_12px_28px_rgba(0,0,0,0.28)] md:text-[2.3rem]">
                     Bem-vindo à {brandDisplayName}!
                   </h2>
@@ -1894,8 +1892,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_24%,rgba(255,229,150,0.14),transparent_18%),radial-gradient(circle_at_84%_18%,rgba(234,154,59,0.16),transparent_24%),linear-gradient(180deg,rgba(5,11,20,0.04),rgba(5,11,20,0.28))]" />
                       <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} aria-hidden="true" />
                       <div className="relative z-10 max-w-2xl">
-                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#FFD58A]">Central Coruja</p>
-                        <p className="mt-2.5 text-sm font-bold text-white/78">Olá, {profileDisplayFirstName}.</p>
+                        <p className="text-sm font-bold text-white/78">Olá, {profileDisplayFirstName}.</p>
                         <h2 className="mt-2 text-[1.95rem] font-black leading-[1.04] tracking-[-0.03em] text-[#FFB347] md:text-[2.2rem]">
                           Bem-vindo à {brandDisplayName}!
                         </h2>
@@ -2177,37 +2174,39 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     <p className={`text-sm mt-1 line-clamp-1 ${isCorujaHomeLayout ? 'text-white/70' : 'text-gray-500'}`}>Pesquisando por “{searchTerm.trim()}”</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setSortByAge(prev => !prev)}
-                    className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${sortByAge
-                      ? isCorujaHomeLayout
-                        ? 'bg-[#5D1E76] text-white shadow-[0_10px_22px_rgba(93,30,118,0.3)]'
-                        : 'bg-kaboo-primary text-white shadow-sm'
-                      : isCorujaHomeLayout
-                        ? 'bg-white/10 text-white/80 hover:bg-white/14'
-                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                      }`}
-                    title="Ordenar por faixa etária"
-                  >
-                    <Icons.ArrowUpDown size={12} />
-                    Idade
-                  </button>
-                  <span className={`text-xs font-bold px-2 py-1 rounded-lg ${isCorujaHomeLayout ? 'text-white/70 bg-white/10' : 'text-gray-400 bg-gray-50'}`}>
-                    {filteredCollections.length}
-                  </span>
-                  <button
-                    onClick={handleRefresh}
-                    disabled={isRefreshing || loading}
-                    className={`w-7 h-7 rounded-lg active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed ${isCorujaHomeLayout ? 'bg-white/10 hover:bg-white/14' : 'bg-gray-50 hover:bg-gray-100'}`}
-                    title="Atualizar coleções"
-                  >
-                    <Icons.RotateCw
-                      size={14}
-                      className={`${isCorujaHomeLayout ? 'text-white/80' : 'text-gray-600'} ${isRefreshing ? 'animate-spin' : ''}`}
-                    />
-                  </button>
-                </div>
+                {!isCorujaHomeLayout && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSortByAge(prev => !prev)}
+                      className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${sortByAge
+                        ? isCorujaHomeLayout
+                          ? 'bg-[#5D1E76] text-white shadow-[0_10px_22px_rgba(93,30,118,0.3)]'
+                          : 'bg-kaboo-primary text-white shadow-sm'
+                        : isCorujaHomeLayout
+                          ? 'bg-white/10 text-white/80 hover:bg-white/14'
+                          : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                        }`}
+                      title="Ordenar por faixa etária"
+                    >
+                      <Icons.ArrowUpDown size={12} />
+                      Idade
+                    </button>
+                    <span className={`text-xs font-bold px-2 py-1 rounded-lg ${isCorujaHomeLayout ? 'text-white/70 bg-white/10' : 'text-gray-400 bg-gray-50'}`}>
+                      {filteredCollections.length}
+                    </span>
+                    <button
+                      onClick={handleRefresh}
+                      disabled={isRefreshing || loading}
+                      className={`w-7 h-7 rounded-lg active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed ${isCorujaHomeLayout ? 'bg-white/10 hover:bg-white/14' : 'bg-gray-50 hover:bg-gray-100'}`}
+                      title="Atualizar coleções"
+                    >
+                      <Icons.RotateCw
+                        size={14}
+                        className={`${isCorujaHomeLayout ? 'text-white/80' : 'text-gray-600'} ${isRefreshing ? 'animate-spin' : ''}`}
+                      />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {filteredCollections.length > 0 ? (

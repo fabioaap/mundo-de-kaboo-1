@@ -231,7 +231,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
           />
         )}
         <div
-          className={`absolute border backdrop-blur-sm ${isCentralCorujaTone
+          className={`absolute border ${isCentralCorujaTone
             ? 'left-3 top-3 max-w-[calc(100%-4rem)] truncate rounded-full border-[#ffd28a]/70 bg-[#EA9A3B] px-3 py-1.5 text-[10px] text-white shadow-[0_12px_22px_rgba(62,28,4,0.28)]'
             : `top-2 left-2 whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] ${collectionTypeMeta.coverClassName}`
             } font-black uppercase tracking-[0.14em]`}
@@ -285,7 +285,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             className="absolute inset-x-0 bottom-0 z-10 p-3"
             style={{ transform: 'translateZ(32px)' }}
           >
-            <div className="rounded-full border border-[#d2c18f]/55 bg-[#20162a]/80 px-3 py-2 shadow-[0_18px_30px_rgba(7,19,30,0.24)] backdrop-blur-sm">
+            <div className="rounded-full border border-[#d2c18f]/55 bg-[#20162a]/92 px-3 py-2 shadow-[0_18px_30px_rgba(7,19,30,0.24)]">
               <div className="flex items-center gap-2">
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/12">
                   <div className="h-full rounded-full bg-[linear-gradient(90deg,#f2bf43_0%,#f6d96f_45%,#62b05c_100%)]" style={{ width: `${progress}%` }} />
@@ -318,16 +318,16 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             return (
               <div className="absolute bottom-2 right-2 flex gap-1" style={{ transform: 'translateZ(30px)' }}>
                 {visible.map((seg) => (
-                  <span key={seg} className={`px-2 py-1 backdrop-blur-sm rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
-                    ? 'bg-[#fff9eb]/95 text-[#204b48] border-[#fff3d1]'
-                    : 'bg-white/95 text-kaboo-primary border-white/50'}`}>
+                  <span key={seg} className={`px-2 py-1 rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
+                    ? 'bg-[#fff9eb] text-[#204b48] border-[#fff3d1]'
+                    : 'bg-white text-kaboo-primary border-white/50'}`}>
                     {formatSegmentLabel(seg)}
                   </span>
                 ))}
                 {extra > 0 && (
-                  <span className={`px-2 py-1 backdrop-blur-sm rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
-                    ? 'bg-[#fff9eb]/95 text-[#204b48] border-[#fff3d1]'
-                    : 'bg-white/95 text-kaboo-primary border-white/50'}`}>
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
+                    ? 'bg-[#fff9eb] text-[#204b48] border-[#fff3d1]'
+                    : 'bg-white text-kaboo-primary border-white/50'}`}>
                     +{extra}
                   </span>
                 )}
@@ -338,9 +338,9 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
           if (!label) return null;
           return (
             <div
-              className={`absolute bottom-2 right-2 px-2 py-1 backdrop-blur-sm rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
-                ? 'bg-[#fff9eb]/95 text-[#243A60] border-[#fff3d1]'
-                : 'bg-white/95 text-kaboo-primary border-white/50'}`}
+              className={`absolute bottom-2 right-2 px-2 py-1 rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
+                ? 'bg-[#fff9eb] text-[#243A60] border-[#fff3d1]'
+                : 'bg-white text-kaboo-primary border-white/50'}`}
               style={{ transform: 'translateZ(30px)' }}
             >
               {formatSegmentLabel(label)}
