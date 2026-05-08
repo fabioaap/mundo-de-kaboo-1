@@ -11,9 +11,9 @@ interface HeroParallaxBackdropProps {
 }
 
 const MODE_CONFIG: Record<HeroParallaxMode, { layerDepths: number[]; smoothness: number; scrollInfluence: number }> = {
-    off: { layerDepths: [0, 0, 0], smoothness: 0.11, scrollInfluence: 0 },
-    subtle: { layerDepths: [0.2, -0.28, 0.42], smoothness: 0.11, scrollInfluence: 14 },
-    standard: { layerDepths: [0.35, -0.5, 0.75], smoothness: 0.11, scrollInfluence: 20 },
+    off: { layerDepths: [0, 0, 0], smoothness: 0.28, scrollInfluence: 0 },
+    subtle: { layerDepths: [0.2, -0.28, 0.42], smoothness: 0.28, scrollInfluence: 9 },
+    standard: { layerDepths: [0.35, -0.5, 0.75], smoothness: 0.22, scrollInfluence: 13 },
 };
 
 const BRAND_SKINS: Record<WhiteLabelBrandId, { background: string; far: string; mid: string; near: string }> = {

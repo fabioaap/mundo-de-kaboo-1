@@ -5,6 +5,8 @@ interface UseParallaxMotionOptions {
     layerDepths: number[];
     smoothness?: number;
     scrollInfluence?: number;
+    enablePointerTracking?: boolean;
+    enableScrollTracking?: boolean;
 }
 
 interface InternalPosition {
@@ -22,6 +24,8 @@ export const useParallaxMotion = ({
     layerDepths,
     smoothness = 0.12,
     scrollInfluence = 26,
+    enablePointerTracking = true,
+    enableScrollTracking = true,
 }: UseParallaxMotionOptions) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const layerRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -41,6 +45,9 @@ export const useParallaxMotion = ({
         if (!container) {
             return;
         }
+
+        const scrollContainer = container.closest('main');
+        const scrollTarget: HTMLElement | Window = scrollContainer instanceof HTMLElement ? scrollContainer : window;
 
         const applyTransforms = () => {
             const current = currentRef.current;
@@ -80,9 +87,9 @@ export const useParallaxMotion = ({
             applyTransforms();
 
             const isSettled =
-                Math.abs(target.x - current.x) < 0.02 &&
-                Math.abs(target.y - current.y) < 0.02 &&
-                Math.abs(target.scroll - current.scroll) < 0.02;
+                Math.abs(target.x - current.x) < 0.5 &&
+                Math.abs(target.y - current.y) < 0.5 &&
+                Math.abs(target.scroll - current.scroll) < 0.5;
 
             if (isSettled) {
                 rafRef.current = null;
@@ -123,25 +130,44 @@ export const useParallaxMotion = ({
 
         const onScroll = () => {
             const rect = container.getBoundingClientRect();
-            const viewportCenter = window.innerHeight * 0.5;
+            const viewportHeight = scrollContainer instanceof HTMLElement ? scrollContainer.clientHeight : window.innerHeight;
+            const viewportTop = scrollContainer instanceof HTMLElement ? scrollContainer.getBoundingClientRect().top : 0;
+            const viewportCenter = viewportTop + viewportHeight * 0.5;
             const elementCenter = rect.top + rect.height * 0.5;
-            const distance = (viewportCenter - elementCenter) / window.innerHeight;
+            const distance = (viewportCenter - elementCenter) / viewportHeight;
 
             targetRef.current.scroll = clamp(distance, -1, 1) * scrollInfluence;
             queueAnimation();
         };
 
-        container.addEventListener('pointermove', onPointerMove, { passive: true });
-        container.addEventListener('pointerleave', onPointerLeave, { passive: true });
-        window.addEventListener('scroll', onScroll, { passive: true });
-
-        onScroll();
+        if (!enablePointerTracking) {
+            targetRef.current.x = 0;
+            targetRef.current.y = 0;
+            currentRef.current.x = 0;
+            currentRef.current.y = 0;
+        } else {
+            container.addEventListener('pointermove', onPointerMove, { passive: true });
+            container.addEventListener('pointerleave', onPointerLeave, { passive: true });
+        }
+        if (!enableScrollTracking) {
+            targetRef.current.scroll = 0;
+            currentRef.current.scroll = 0;
+        } else {
+            scrollTarget.addEventListener('scroll', onScroll, { passive: true });
+            window.addEventListener('resize', onScroll, { passive: true });
+            onScroll();
+        }
         applyTransforms();
 
         return () => {
-            container.removeEventListener('pointermove', onPointerMove);
-            container.removeEventListener('pointerleave', onPointerLeave);
-            window.removeEventListener('scroll', onScroll);
+            if (enablePointerTracking) {
+                container.removeEventListener('pointermove', onPointerMove);
+                container.removeEventListener('pointerleave', onPointerLeave);
+            }
+            if (enableScrollTracking) {
+                scrollTarget.removeEventListener('scroll', onScroll);
+                window.removeEventListener('resize', onScroll);
+            }
 
             if (rafRef.current !== null) {
                 window.cancelAnimationFrame(rafRef.current);
@@ -150,7 +176,7 @@ export const useParallaxMotion = ({
 
             resetTransforms();
         };
-    }, [disabled, safeDepths, scrollInfluence, smoothness]);
+    }, [disabled, enablePointerTracking, enableScrollTracking, safeDepths, scrollInfluence, smoothness]);
 
     return {
         containerRef,
