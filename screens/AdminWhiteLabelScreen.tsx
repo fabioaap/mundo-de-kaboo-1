@@ -8,6 +8,7 @@ import { useToast } from '../hooks/useToast';
 import { LOGO_URL } from '../constants';
 import { invalidateBrandBootstrapCache } from '../hooks/useBrandConfig';
 import { getWhiteLabelPreviewSettings, setActiveWhiteLabelBrand } from '../lib/whiteLabelPreview';
+import { isAdmin } from '../lib/auth';
 import {
     getWhiteLabelAlertingConfig,
     getWhiteLabelBrandIdentity,
@@ -112,6 +113,11 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isAdminUser, setIsAdminUser] = useState(false);
+
+    useEffect(() => {
+        isAdmin().then(setIsAdminUser);
+    }, []);
 
     const { toast, showToast, hideToast } = useToast();
     const remoteEnabled = canUseRemoteWhiteLabel();
@@ -1010,8 +1016,9 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                     <Button
                                         variant="secondary"
                                         onClick={saveBrandIdentity}
-                                        disabled={loading || saving || !selectedBrand}
+                                        disabled={loading || saving || !selectedBrand || !isAdminUser}
                                         fullWidth
+                                        title={!isAdminUser ? 'Apenas administradores podem salvar' : undefined}
                                     >
                                         Salvar identidade visual
                                     </Button>
@@ -1236,7 +1243,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                             <Button
                                                 variant="secondary"
                                                 onClick={publishCurrentVersion}
-                                                disabled={loading || saving || !selectedBrand}
+                                                disabled={loading || saving || !selectedBrand || !isAdminUser}
+                                                title={!isAdminUser ? 'Apenas administradores podem publicar' : undefined}
                                             >
                                                 Publicar
                                             </Button>
@@ -1411,7 +1419,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                             <Button
                                                 variant="secondary"
                                                 onClick={saveAlertingConfig}
-                                                disabled={loading || saving || !selectedBrand}
+                                                disabled={loading || saving || !selectedBrand || !isAdminUser}
+                                                title={!isAdminUser ? 'Apenas administradores podem salvar' : undefined}
                                             >
                                                 Salvar alertas
                                             </Button>
