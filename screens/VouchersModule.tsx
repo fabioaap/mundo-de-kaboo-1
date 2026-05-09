@@ -5,6 +5,7 @@ import { Toast } from '../components/Toast';
 import { CriticalConfirmationModal } from '../components/CriticalConfirmationModal';
 import { VouchersOnboardingBanner } from '../components/VouchersOnboardingBanner';
 import { useToast } from '../hooks/useToast';
+import { isAdmin } from '../lib/auth';
 import {
     VoucherModel,
     VoucherBatch,
@@ -147,6 +148,7 @@ const ModelsListView: React.FC<{
     const [models, setModels] = useState<VoucherModel[]>([]);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<VoucherModelStatus | 'all'>('all');
+    const [isAdminUser, setIsAdminUser] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(() => {
         try {
             return localStorage.getItem(VOUCHERS_ONBOARDING_STORAGE_KEY) === null;
@@ -156,6 +158,7 @@ const ModelsListView: React.FC<{
     });
 
     useEffect(() => { setModels(getVoucherModels()); }, []);
+    useEffect(() => { isAdmin().then(setIsAdminUser); }, []);
 
     const dismissOnboarding = () => {
         try {
@@ -188,9 +191,11 @@ const ModelsListView: React.FC<{
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-xl font-bold text-gray-800">Modelos de Voucher</h1>
-                <Button onClick={handleCreateNew}>
-                    <Icons.Plus className="w-4 h-4 mr-1" /> Novo modelo
-                </Button>
+                {isAdminUser && (
+                    <Button onClick={handleCreateNew}>
+                        <Icons.Plus className="w-4 h-4 mr-1" /> Novo modelo
+                    </Button>
+                )}
             </div>
 
             {showOnboarding && (
