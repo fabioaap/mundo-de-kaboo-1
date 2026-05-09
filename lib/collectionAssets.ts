@@ -212,6 +212,7 @@ const normalizeAsset = (
         url,
         description: normalizeText(asset.description) || null,
         scope: asset.scope ?? meta.scope,
+        lyrics_url: normalizeText(asset.lyrics_url) || null,
     };
 };
 
@@ -229,6 +230,7 @@ const mergeAssetCandidate = (
             url: candidate.url ?? current?.url,
             description: normalizeText(current?.description) || candidate.description,
             scope: current?.scope ?? candidate.scope,
+            lyrics_url: current?.lyrics_url ?? candidate.lyrics_url,
         },
         fallbackCategory ?? current?.category ?? candidate.category
     );
