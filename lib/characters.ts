@@ -2,9 +2,20 @@ import { CHARACTERS as CHARACTER_SEED } from '../data/characters';
 import { Character, Collection } from '../types';
 
 const MOCK_CHARACTERS_STORAGE_KEY = 'kaboo_mock_characters';
+let activeBrandSlugForCharacters = 'kaboo';
 let runtimeCharactersSnapshot: Character[] | null = null;
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+
+const getCharactersStorageKey = (): string =>
+  activeBrandSlugForCharacters === 'kaboo'
+    ? MOCK_CHARACTERS_STORAGE_KEY
+    : `${MOCK_CHARACTERS_STORAGE_KEY}_${activeBrandSlugForCharacters}`;
+
+export const setActiveBrandForCharacters = (slug: string): void => {
+  activeBrandSlugForCharacters = slug || 'kaboo';
+  runtimeCharactersSnapshot = null;
+};
 
 const isCharacterActive = (character?: Pick<Character, 'status'> | null): boolean => {
   return (character?.status || 'active') === 'active';
@@ -79,7 +90,7 @@ const readStoredCharacters = (): Character[] | null => {
   }
 
   try {
-    const stored = localStorage.getItem(MOCK_CHARACTERS_STORAGE_KEY);
+    const stored = localStorage.getItem(getCharactersStorageKey());
     if (!stored) {
       return null;
     }
@@ -139,7 +150,7 @@ const writeStoredCharacters = (characters: Character[]): void => {
     return;
   }
 
-  localStorage.setItem(MOCK_CHARACTERS_STORAGE_KEY, JSON.stringify(sortCharacters(characters)));
+  localStorage.setItem(getCharactersStorageKey(), JSON.stringify(sortCharacters(characters)));
 };
 
 export const setCharacterRegistrySnapshot = (characters: Character[] | null): void => {
