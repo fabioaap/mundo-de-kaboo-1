@@ -850,3 +850,138 @@ US-034 (Academia) ──► US-035 (Trilha formação)
 3. **Fluxos operacionais/jurídicos** — CPF opcional, assinatura digital pós-voucher e validações de produção.
 4. **Distribuição** — conta Empatia nas lojas, build nativo e publicação mobile.
 5. **Expansão** — academia, gamificação, perfil infantil e OAuth Educa Cross.
+
+---
+
+## 18. QA PROGRAM E SEPARAÇÃO DE CATÁLOGO POR MARCA (09/05/2026)
+
+> Adicionado após execução do programa de validação de jornadas de gerenciamento de conteúdo e da separação completa de dados por marca.
+
+### US-QA-001 — Controle de acesso por papel no CMS ✅ CONCLUÍDO
+
+**Como** administrador, **quero** que editores e viewers só vejam e executem as ações que seu papel permite, **para** evitar alterações acidentais ou acesso indevido a módulos sensíveis.
+
+**Critérios de aceite:**
+- ✅ Editor não vê módulo Usuários
+- ✅ Editor não vê botão `+ Novo modelo` em Vouchers
+- ✅ Viewer não consegue salvar alterações em White Label
+- ✅ Admin tem acesso completo a todos os módulos
+
+**Arquivos modificados:** `AdminScreen.tsx`, `VouchersModule.tsx`, `AdminWhiteLabelScreen.tsx`, `lib/mockData.ts`
+
+**Classificação:** MVP | **Tipo:** FE | **Status:** ✅ Concluído (Sprint QA-1, 09/05/2026)
+
+---
+
+### US-QA-002 — Ciclo de vida de coleções sem bug de cache ✅ CONCLUÍDO
+
+**Como** editor, **quero** que o conteúdo que eu crio, edito ou deleto apareça imediatamente atualizado nas telas públicas, **para** não publicar dados desatualizados.
+
+**Critérios de aceite:**
+- ✅ Criar/editar/deletar coleção limpa o cache de sessionStorage automaticamente
+- ✅ Home pública reflete as alterações sem precisar de recarga manual
+
+**Bug corrigido:** BUG-005 — `kaboo_collections_cache` não limpava após CRUD mock
+**Arquivo:** `lib/api.ts` — `clearCollectionsCache()` chamado em create/update/delete
+**Teste de regressão:** `lib/api.regression-1.test.ts`
+
+**Classificação:** MVP | **Tipo:** FE | **Status:** ✅ Concluído (Sprint QA-2, 09/05/2026)
+
+---
+
+### US-QA-003 — Personagens inativos não aparecem no catálogo público ✅ CONCLUÍDO
+
+**Como** usuário, **quero** ver apenas personagens ativos nas coleções, **para** não encontrar conteúdo descontinuado.
+
+**Critérios de aceite:**
+- ✅ Personagens com status `inactive` não aparecem na lista pública da coleção
+- ✅ Personagens reativados voltam a aparecer
+
+**Bug corrigido:** BUG-006 — personagens inativos vinculados apareciam na view pública
+**Arquivo:** `lib/characters.ts` — opção `{ excludeInactive }` em `resolveCharacterNamesFromIds`
+**Teste de regressão:** `lib/characters.regression-1.test.ts`
+
+**Classificação:** MVP | **Tipo:** FE | **Status:** ✅ Concluído (Sprint QA-2, 09/05/2026)
+
+---
+
+### US-QA-004 — Ativos de mídia criados no admin aparecem na Biblioteca Hub pública ✅ CONCLUÍDO
+
+**Como** usuário, **quero** que os vídeos, músicas, formações e materiais que o editor adiciona às coleções apareçam nos hubs públicos correspondentes, **para** ter acesso ao conteúdo publicado.
+
+**Critérios de aceite:**
+- ✅ Vídeos adicionados a uma coleção aparecem em `#videos`
+- ✅ Músicas adicionadas aparecem em `#music`
+- ✅ Guias de professor/vídeo-aula aparecem em `#formations`
+- ✅ Materiais extras aparecem em `#materials`
+
+**Bug corrigido:** BUG-007 — atalhos de mídia do admin escreviam em `collection_assets` mas a Biblioteca Hub lia o mock estático `LIBRARY_HUB_MOCKS`
+**Arquivos:** `lib/api.ts` (bridge `collection_assets` → hubs), `screens/LibraryHubScreen.tsx` (contrato live)
+**Testes de regressão:** `lib/api.regression-2.test.ts`, `lib/api.regression-3.test.ts`
+
+**Classificação:** MVP | **Tipo:** FE | **Status:** ✅ Concluído (Sprint QA-2, 09/05/2026)
+
+---
+
+### US-QA-005 — Central Coruja começa com catálogo vazio, isolado do Kaboo ✅ CONCLUÍDO
+
+**Como** operador da Central Coruja, **quero** que a plataforma inicie sem nenhum conteúdo do Kaboo (coleções, personagens, hubs de mídia), **para** poder inserir o catálogo próprio da Central Coruja sem interferência.
+
+**Critérios de aceite:**
+- ✅ `http://localhost:4100/central-coruja/#admin` → Coleções: vazio; Personagens: vazio
+- ✅ `http://localhost:4100/central-coruja/#formations` → 0 resultados, empty state
+- ✅ `http://localhost:4100/#` → Kaboo: 16 coleções seed intactas, 8+ personagens
+- ✅ Conteúdo criado na Central Coruja não aparece no Kaboo e vice-versa
+- ✅ Troca de marca em runtime reseta cache in-memory (snapshot de personagens)
+
+**Solução:** chaves de armazenamento por marca (`kaboo_mock_collections`, `kaboo_mock_characters`, `kaboo_collections_cache` com sufixo `_${slug}` para outras marcas); seed só carregado quando slug = `kaboo`.
+
+**Arquivos:** `lib/mockData.ts`, `lib/api.ts`, `lib/characters.ts`, `App.tsx`
+**Testes de regressão:** `lib/api.regression-3.test.ts`, `lib/characters.regression-2.test.ts`
+
+**Classificação:** MVP | **Tipo:** FE | **Status:** ✅ Concluído (09/05/2026)
+
+---
+
+### US-QA-006 — Validação visual dos hubs de mídia da Central Coruja ⬜ PENDENTE
+
+**Como** QA, **quero** verificar visualmente que os hubs `#videos` e `#formations` da Central Coruja exibem conteúdo correto depois de inserir ativos reais, **para** fechar a caveat do Sprint 3.
+
+**Critérios de aceite:**
+- Inserir pelo menos 1 ativo de vídeo e 1 formação via admin da Central Coruja
+- Verificar que aparecem nos hubs públicos correspondentes em browser real
+- Screenshot de evidência salvo em `.gstack/qa-reports/`
+
+**Dependência:** US-CAT-001 (inserção do catálogo real da Central Coruja)
+
+**Classificação:** MVP | **Tipo:** QA | **Status:** ⬜ Pendente
+
+---
+
+### US-CAT-001 — Inserir catálogo real da Central Coruja ⬜ PENDENTE
+
+**Como** administrador da Central Coruja, **quero** criar as primeiras coleções, personagens e ativos de mídia reais da Central Coruja via interface de admin, **para** poder validar o produto com conteúdo verdadeiro.
+
+**Critérios de aceite:**
+- Pelo menos 3 coleções da Central Coruja criadas via admin mock
+- Pelo menos 2 personagens da Central Coruja criados
+- Pelo menos 1 ativo por tipo (vídeo, música, formação, material) adicionado a uma coleção
+- Todos visíveis nas telas públicas da Central Coruja
+- Nada aparece no Kaboo
+
+**Classificação:** PÓS-MVP | **Tipo:** DADOS | **Status:** ⬜ Pendente
+
+---
+
+### Placar executivo consolidado — 09/05/2026
+
+| Frente | Status | % | O que ainda falta |
+|--------|--------|---|-------------------|
+| v1.2 local demonstrável | ✅ | 100% | Encerrado e QA validado |
+| QA — controle de acesso por papel | ✅ | 100% | Nenhum item pendente |
+| QA — ciclo de vida de conteúdo | ✅ | 100% | 3 bugs corrigidos, 4 testes de regressão |
+| Separação de catálogo por marca | ✅ | 100% | Central Coruja limpa; Kaboo preservado |
+| QA — regressão pública | 🟡 | 90% | Hubs `#videos` e `#formations` sem validação visual (caveat) |
+| Inserção de catálogo real da CC | ⬜ | 0% | US-CAT-001 |
+| v1.3 produção real | ⬜ | 20% | Supabase real, conta Empatia, build nativo |
+| v2.0 expansão | ⬜ | 0% | Não iniciado |

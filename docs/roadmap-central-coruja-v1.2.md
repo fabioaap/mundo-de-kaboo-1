@@ -298,4 +298,110 @@ Semana 11+ (28/06 →)         Fase 4: Expansão
 
 ---
 
+---
+
+## Revisão — 09/05/2026
+
+### Contexto da sessão
+
+Sprint de QA e preparação de catálogo da Central Coruja. Foco em dois eixos: (1) garantia de qualidade de ponta a ponta com ciclo de teste → correção → regressão; (2) isolamento de dados por marca para que a Central Coruja possa começar seu próprio catálogo limpo, sem herdar seeds do Kaboo.
+
+---
+
+### UX — Melhorias de sidebar e navegação
+
+| Item | Status |
+|------|--------|
+| Tooltip hover nos ícones quando sidebar recolhida | ✅ Entregue |
+| Auto-colapso da sidebar principal ao entrar em Gerenciar | ✅ Entregue |
+| Botão de expandir sidebar reposicionado (não cobre logo) | ✅ Entregue |
+| Crash `showInlineFilterTrigger is not defined` no HomeScreen | ✅ Corrigido |
+
+---
+
+### Sprint QA — 3 sprints executados e fechados
+
+**Sprint 1 — Auth e controle de acesso (09/05)**
+
+| Arquivo | Mudança |
+|---------|---------|
+| `screens/AdminScreen.tsx` | Filtragem de módulos por papel (editor só vê módulos editáveis) |
+| `screens/VouchersModule.tsx` | Botão `+ Novo modelo` ocultado para não-admins |
+| `screens/AdminWhiteLabelScreen.tsx` | Ações de escrita desabilitadas para viewers e editors |
+| `lib/mockData.ts` | Fixtures de mock para usuários editor e viewer adicionados |
+
+Commits: `aed5548`, `41b4bd8`, `38829e1`, `53ce665`
+
+**Sprint 2 — Ciclo de vida de conteúdo (09/05)**
+
+| Bug | Arquivo | Correção |
+|-----|---------|----------|
+| BUG-005: Cache não limpava após CRUD mock | `lib/api.ts` | `clearCollectionsCache()` chamado em create/update/delete |
+| BUG-006: Personagens inativos apareciam no catálogo público | `lib/characters.ts` | Opção `{ excludeInactive }` em `resolveCharacterNamesFromIds` |
+| BUG-007: Ativos de mídia gravados no admin não apareciam na Biblioteca Hub pública | `lib/api.ts`, `screens/LibraryHubScreen.tsx` | Bridge `collection_assets` → todos os 4 hubs; contrato live ativo |
+
+Testes de regressão adicionados: `lib/api.regression-1.test.ts`, `lib/api.regression-2.test.ts`, `lib/characters.regression-1.test.ts`
+
+Commits: `7126b20`, `bfa1f33`, `105d4e5`, `929e6b2`
+
+**Sprint 3 — Regressão pública (09/05)**
+
+- Jornada completa validada: Home → Detalhes → BookReader → AudioPlayer → VideoPlayer
+- Hub `#materials` validado visualmente após BUG-007
+- **Sign-off:** aprovado com ressalvas (hubs `#videos` e `#formations` verificados apenas via teste unitário, não visualmente)
+
+---
+
+### Separação de catálogo por marca — ✅ Entregue (09/05)
+
+Problema: Central Coruja herdava todo o conteúdo seed do Kaboo (coleções, personagens, hubs de mídia).
+
+Solução implementada em 3 camadas:
+
+| Camada | Arquivo | Mudança |
+|--------|---------|---------|
+| Coleções | `lib/mockData.ts` | `getCollectionsStorageKey()` por slug de marca; seed do Kaboo não carregado para outras marcas |
+| Cache de sessão | `lib/api.ts` | `getCollectionsCacheKey()` por slug; `setActiveBrandForApi(slug)` exportado |
+| Personagens | `lib/characters.ts` | `getCharactersStorageKey()` por slug; seed vazio para marcas não-Kaboo; `setActiveBrandForCharacters(slug)` exportado |
+| Raiz | `App.tsx` | `useEffect` sincroniza brand slug para os 3 módulos em cada mudança de marca |
+| Hubs de mídia | `lib/api.ts` | Fallback estático de Formações/Vídeos/Músicas/Materiais não carregado para marcas sem coleções |
+
+Testes de regressão: `lib/api.regression-3.test.ts`, `lib/characters.regression-2.test.ts`
+
+**Resultado verificado em browser:**
+- `http://localhost:4100/central-coruja/#formations` → 0 resultados, empty state correto
+- `http://localhost:4100/central-coruja/#admin` → Gerenciar Coleções: vazio, Gerenciar Personagens: vazio
+- `http://localhost:4100/#formations` → Kaboo: conteúdo seed intacto (16 coleções, 8+ personagens)
+
+---
+
+### Placar executivo — 09/05/2026
+
+| Frente | % | Leitura |
+|--------|---|---------|
+| v1.2 local demonstrável | 100% | Concluído e QA validado com 3 sprints |
+| Separação de catálogo por marca | 100% | Central Coruja começa limpa; Kaboo preservado |
+| QA — controle de acesso por papel | 100% | Sprint 1 concluída e testada |
+| QA — ciclo de vida de conteúdo | 100% | Sprint 2 concluída, 3 bugs corrigidos, 4 testes de regressão |
+| QA — regressão pública | 90% | Hubs `#videos` e `#formations` sem validação visual (caveat) |
+| v1.3 produção real | 20% | Arquitetura pronta, dados mock isolados, Supabase real ainda pendente |
+| v2.0 expansão | 0% | Não iniciado |
+
+**Leitura executiva**: a plataforma em modo mock está pronta para onboarding editorial da Central Coruja — o administrador pode criar coleções, personagens e ativos de mídia sem ver nenhum conteúdo do Kaboo. O próximo passo natural é inserir o catálogo real da Central Coruja e validar o fluxo de publicação antes de conectar ao Supabase de produção.
+
+---
+
+### Próximos passos recomendados
+
+| Prioridade | Item | Tamanho |
+|------------|------|---------|
+| 🔴 Alta | **Inserir catálogo real da Central Coruja** — criar coleções, personagens e ativos via admin mock | M |
+| 🔴 Alta | **Validar hubs `#videos` e `#formations` visualmente** com ativos reais inseridos | P |
+| 🟡 Média | **Conectar Supabase de produção** — validar que a separação de storage por marca funciona com backend real | G |
+| 🟡 Média | **Pipeline de BNCC** — migrar JSON estático para persistência real | M |
+| 🟢 Baixa | **Validação visual dos hubs de mídia da Central Coruja** após inserção de conteúdo real | P |
+| 🟢 Baixa | **Testes visuais para sidebar colapsada** (tooltips, toggle) | P |
+
+---
+
 *Documento vivo. Atualizar a cada sprint review com itens concluídos, re-estimativas e mudanças de prioridade.*
