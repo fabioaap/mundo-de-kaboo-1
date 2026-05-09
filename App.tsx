@@ -5,6 +5,7 @@ import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { useThemeBackground } from './hooks/useThemeBackground';
 import { useBrandConfig } from './hooks/useBrandConfig';
 import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
+import { setActiveBrandForCharacters } from './lib/characters';
 import { logger } from './lib/logger';
 import { clearPendingPasswordSetup, hasPendingPasswordSetup, isInvitedAuthUser, markPendingPasswordSetup } from './lib/passwordSetupFlow';
 import { setMockActiveBrand } from './lib/mockData';
@@ -194,6 +195,7 @@ const App: React.FC = () => {
   useEffect(() => {
     setMockActiveBrand(brandSlug);
     setActiveBrandForApi(brandSlug);
+    setActiveBrandForCharacters(brandSlug);
   }, [brandSlug]);
 
   const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
@@ -800,6 +802,7 @@ const App: React.FC = () => {
             mediaItemId={navState.params?.mediaItemId}
             assetUrl={navState.params?.assetUrl}
             assetTitle={navState.params?.assetTitle}
+            lyricsUrl={navState.params?.lyricsUrl}
             onNavigate={navigate}
             onBack={goBack}
           />

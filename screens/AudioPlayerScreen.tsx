@@ -11,6 +11,7 @@ interface AudioPlayerScreenProps {
   mediaItemId?: string;
   assetUrl?: string;
   assetTitle?: string;
+  lyricsUrl?: string;
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
 }
@@ -20,6 +21,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   mediaItemId,
   assetUrl,
   assetTitle,
+  lyricsUrl,
   onNavigate,
   onBack,
 }) => {
@@ -39,6 +41,9 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const [trackDescription, setTrackDescription] = useState<string>('');
   const [trackEnded, setTrackEnded] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [lyricsText, setLyricsText] = useState<string | null>(null);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rotationIntervalRef = useRef<number | null>(null);
@@ -68,6 +73,36 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
 
   const rgb = hexToRgb(themeColor);
   const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+
+  // Fetch lyrics text when lyricsUrl changes
+  useEffect(() => {
+    if (!lyricsUrl) {
+      setLyricsText(null);
+      setShowLyrics(false);
+      return;
+    }
+
+    let active = true;
+    setLyricsLoading(true);
+    setLyricsText(null);
+
+    fetch(lyricsUrl)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.text();
+      })
+      .then((text) => {
+        if (active) setLyricsText(text);
+      })
+      .catch(() => {
+        if (active) setLyricsText('Não foi possível carregar a letra.');
+      })
+      .finally(() => {
+        if (active) setLyricsLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [lyricsUrl]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -423,17 +458,32 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={() => setShowSidebar(s => !s)}
-          aria-label={showSidebar ? 'Ocultar sugestões' : 'Ver sugestões'}
-          className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md ${showSidebar
-              ? 'border-white/40 bg-white/20'
-              : 'border-white/25 bg-black/30 hover:bg-black/45'
-            }`}
-        >
-          {showSidebar ? 'Ocultar' : 'Sugestões'}
-          <Icons.ChevronRight size={13} className={`transition-transform ${showSidebar ? 'rotate-180' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSidebar(s => !s)}
+            aria-label={showSidebar ? 'Ocultar sugestões' : 'Ver sugestões'}
+            className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md ${showSidebar
+                ? 'border-white/40 bg-white/20'
+                : 'border-white/25 bg-black/30 hover:bg-black/45'
+              }`}
+          >
+            {showSidebar ? 'Ocultar' : 'Sugestões'}
+            <Icons.ChevronRight size={13} className={`transition-transform ${showSidebar ? 'rotate-180' : ''}`} />
+          </button>
+
+          {lyricsUrl && (
+            <button
+              onClick={() => setShowLyrics(s => !s)}
+              aria-label={showLyrics ? 'Ocultar letra' : 'Ver letra'}
+              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md ${showLyrics
+                  ? 'border-white/40 bg-white/20'
+                  : 'border-white/25 bg-black/30 hover:bg-black/45'
+                }`}
+            >
+              {showLyrics ? 'Ocultar' : '♪ Letra'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Track Ended Overlay */}
@@ -617,6 +667,31 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
             )}
           </div>
         </div>
+
+        {/* Lyrics Panel */}
+        {lyricsUrl && showLyrics && (
+          <div className="absolute inset-0 z-25 flex flex-col bg-black/80 backdrop-blur-md" style={{ zIndex: 25 }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Letra da música</p>
+              <button
+                onClick={() => setShowLyrics(false)}
+                aria-label="Fechar letra"
+                className="rounded-full border border-white/25 bg-black/30 px-3 py-1 text-[11px] font-bold text-white/90 hover:bg-black/45 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-5" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.2) transparent' } as React.CSSProperties}>
+              {lyricsLoading ? (
+                <p className="text-white/60 text-sm text-center mt-8">Carregando letra...</p>
+              ) : (
+                <pre className="text-white/90 text-sm leading-7 whitespace-pre-wrap font-sans">
+                  {lyricsText}
+                </pre>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Sidebar — catálogo relacionado */}
         <div
