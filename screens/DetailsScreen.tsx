@@ -19,6 +19,7 @@ import { formatSegmentLabel, getCharacterBgColor, getCharacterColor, getCharacte
 import { lookupBncc } from '../lib/bnccLookup';
 import { lookupCasel } from '../lib/caselLookup';
 import { COLLECTION_ASSET_META, inferCollectionAssets } from '../lib/collectionAssets';
+import { layoutSpacing } from '../design-system/layout/spacing';
 import {
   getCollectionDisplayCover,
   getCollectionPresentationCopy,
@@ -115,6 +116,10 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
 
   // States for Offline Logic
   const [isOffline, setIsOffline] = useState(false);
+  const offlineKey = `offline_downloaded_${collection.id}`;
+  const [isDownloadedOffline, setIsDownloadedOffline] = useState(() => {
+    try { return localStorage.getItem(offlineKey) === '1'; } catch { return false; }
+  });
   const [showExtraTools, setShowExtraTools] = useState(false);
   const [resources, setResources] = useState<CollectionResource[]>([]);
   const [loadingResources, setLoadingResources] = useState(false);
@@ -413,6 +418,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
         collectionId: collection.id,
         assetUrl: asset.url,
         assetTitle: asset.title,
+        lyricsUrl: asset.lyrics_url ?? undefined,
       });
       return;
     }
@@ -570,7 +576,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
 
       {/* DESKTOP: RIGHT SIDE (Content) / MOBILE: BOTTOM CARD */}
       <div ref={contentScrollRef} className="flex-1 overflow-y-auto z-10 no-scrollbar bg-white rounded-t-[2.5rem] md:rounded-none mt-0 relative shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none md:h-full">
-        <div className="pt-9 px-6 pb-24 md:p-12 md:max-w-4xl md:mx-auto">
+        <div className={layoutSpacing.detailBody}>
 
           {/* Back Button - Show when in Extra Tools view */}
           {showExtraTools && (
@@ -704,12 +710,38 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                 <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
                   <button
                     onClick={handleStandaloneReadAction}
-                    className="inline-flex min-h-12 items-center gap-3 rounded-full bg-kaboo-primary px-5 py-3 text-sm font-black uppercase tracking-[0.14em] text-white shadow-lg transition-all duration-200 hover:bg-kaboo-primary/90 active:scale-[0.98]"
+                    className="inline-flex min-h-12 items-center gap-3 rounded-2xl bg-kaboo-primary px-5 py-3 text-sm font-black uppercase tracking-[0.14em] text-white shadow-lg transition-all duration-200 hover:bg-kaboo-primary/90 active:scale-[0.98]"
                   >
                     <Icons.BookOpen size={18} />
                     <span>Ler livro</span>
                   </button>
                   <p className="text-sm text-gray-500">Abra a leitura deste livro direto por aqui.</p>
+                </div>
+              )}
+
+              {collection.offline_available && (
+                <div className="mb-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        if (isDownloadedOffline) {
+                          localStorage.removeItem(offlineKey);
+                          setIsDownloadedOffline(false);
+                        } else {
+                          localStorage.setItem(offlineKey, '1');
+                          setIsDownloadedOffline(true);
+                        }
+                      } catch { /* localStorage indisponível */ }
+                    }}
+                    className={`inline-flex min-h-12 items-center gap-3 rounded-2xl px-5 py-3 text-sm font-black uppercase tracking-[0.14em] shadow-lg transition-all duration-200 active:scale-[0.98] ${isDownloadedOffline
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                    }`}
+                  >
+                    <Icons.Download size={18} />
+                    <span>{isDownloadedOffline ? 'Conteúdo offline disponível' : 'Baixar para offline'}</span>
+                  </button>
                 </div>
               )}
 
@@ -844,6 +876,29 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                     >
                       <Icons.Paperclip size={24} />
                       <span className="text-xs font-bold leading-tight text-center">{presentationCopy.materialsTitle}</span>
+                    </button>
+                  )}
+
+                  {collection.offline_available && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          if (isDownloadedOffline) {
+                            localStorage.removeItem(offlineKey);
+                            setIsDownloadedOffline(false);
+                          } else {
+                            localStorage.setItem(offlineKey, '1');
+                            setIsDownloadedOffline(true);
+                          }
+                        } catch { /* localStorage indisponível */ }
+                      }}
+                      className={`flex h-20 min-w-[calc(50%-0.5rem)] flex-1 flex-col items-center justify-center gap-2 rounded-2xl transition-all duration-200 active:scale-95 ${isDownloadedOffline ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}`}
+                    >
+                      <Icons.Download size={24} />
+                      <span className="text-[10px] font-bold leading-tight text-center">
+                        {isDownloadedOffline ? 'Offline OK' : 'Baixar offline'}
+                      </span>
                     </button>
                   )}
                 </div>
