@@ -6,6 +6,10 @@ let runtimeCharactersSnapshot: Character[] | null = null;
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
+const isCharacterActive = (character?: Pick<Character, 'status'> | null): boolean => {
+  return (character?.status || 'active') === 'active';
+};
+
 export const normalizeCharacterLookupKey = (value: string): string => {
   return value
     .normalize('NFD')
@@ -88,8 +92,8 @@ const readStoredCharacters = (): Character[] | null => {
 
 const sortCharacters = (characters: Character[]): Character[] => {
   return [...characters].sort((left, right) => {
-    if ((left.status || 'active') !== (right.status || 'active')) {
-      return (left.status || 'active') === 'active' ? -1 : 1;
+    if (isCharacterActive(left) !== isCharacterActive(right)) {
+      return isCharacterActive(left) ? -1 : 1;
     }
 
     return left.name.localeCompare(right.name, 'pt-BR');
@@ -168,7 +172,7 @@ export const getMockCharactersLive = (): Character[] => clone(getLiveCharacters(
 
 export const getAvatarCharacters = (characters: Character[] = getLiveCharacters()): string[] => {
   return sortCharacters(characters)
-    .filter((character) => (character.status || 'active') === 'active')
+    .filter((character) => isCharacterActive(character))
     .map((character) => character.name);
 };
 
@@ -225,9 +229,22 @@ export const resolveCharacterIdsFromNames = (names: string[], characters: Charac
   };
 };
 
-export const resolveCharacterNamesFromIds = (ids: string[], characters: Character[] = getLiveCharacters()): string[] => {
+type ResolveCharacterNamesFromIdsOptions = {
+  includeInactive?: boolean;
+};
+
+export const resolveCharacterNamesFromIds = (
+  ids: string[],
+  characters: Character[] = getLiveCharacters(),
+  options: ResolveCharacterNamesFromIdsOptions = {}
+): string[] => {
+  const includeInactive = options.includeInactive ?? true;
+
   return uniqueStrings(
-    ids.map((id) => getCharacterById(id, characters)?.name).filter(Boolean) as string[]
+    ids
+      .map((id) => getCharacterById(id, characters))
+      .filter((character): character is Character => Boolean(character) && (includeInactive || isCharacterActive(character)))
+      .map((character) => character.name)
   );
 };
 
@@ -240,7 +257,7 @@ export const syncCollectionCharacters = <T extends Partial<Collection>>(
   const resolvedFromNames = resolveCharacterIdsFromNames(currentNames, characters);
   const mergedCharacterIds = uniqueStrings([...currentCharacterIds, ...resolvedFromNames.resolvedIds]);
   const mergedCharacterNames = uniqueStrings([
-    ...resolveCharacterNamesFromIds(mergedCharacterIds, characters),
+    ...resolveCharacterNamesFromIds(mergedCharacterIds, characters, { includeInactive: false }),
     ...resolvedFromNames.unresolvedNames,
   ]);
 
