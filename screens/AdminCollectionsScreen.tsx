@@ -73,6 +73,7 @@ const EMPTY_COLLECTION_FORM_DATA: CollectionFormData = {
   age_grade: [],
   extra_materials: [],
   collection_assets: [],
+  offline_available: false,
 };
 
 const createAssetId = (category: CollectionAssetCategory) => {
@@ -128,6 +129,7 @@ const buildCollectionFormData = (collection?: Partial<Collection>): CollectionFo
     age_grade: [...(normalizedCollection.age_grade || [])],
     extra_materials: [...(normalizedCollection.extra_materials || [])],
     collection_assets: [...(normalizedCollection.collection_assets || [])],
+    offline_available: normalizedCollection.offline_available ?? false,
   };
 };
 
@@ -532,10 +534,24 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         url: trimmedUrl,
         description: currentAsset?.description?.trim() || null,
         scope: meta.scope,
+        lyrics_url: currentAsset?.lyrics_url ?? null,
       });
     }
 
     updateFormWithAssets(nextAssets);
+  };
+
+  const setAssetLyricsUrl = (category: FixedMediaSlotCategory, lyricsUrl: string) => {
+    const currentAsset = getAssetByCategory(category);
+    if (!currentAsset) {
+      return;
+    }
+
+    updateFormWithAssets(
+      formData.collection_assets.map((asset) =>
+        asset.category === category ? { ...asset, lyrics_url: lyricsUrl.trim() || null } : asset
+      )
+    );
   };
 
   const setAssetTitle = (category: FixedMediaSlotCategory, title: string) => {
@@ -1246,6 +1262,28 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         </div>
                       </div>
 
+                      {/* Disponibilidade Offline */}
+                      <div className="rounded-2xl border border-gray-200 p-4 bg-white flex items-start gap-4">
+                        <div className="flex-1">
+                          <h4 className="text-sm font-bold text-gray-800">Disponível offline</h4>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Permite que usuários baixem esta coleção para acesso sem internet.
+                            Funciona apenas com conteúdo hospedado internamente (não YouTube).
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={!!formData.offline_available}
+                          onClick={() => setFormData({ ...formData, offline_available: !formData.offline_available })}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-kaboo-primary focus:ring-offset-2 ${formData.offline_available ? 'bg-kaboo-primary' : 'bg-gray-200'}`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.offline_available ? 'translate-x-5' : 'translate-x-0'}`}
+                          />
+                        </button>
+                      </div>
+
                       {formData.collection_type === 'kit' && (
                         <>
                           <div>
@@ -1658,6 +1696,23 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                       className="w-full min-h-[96px] resize-y bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none disabled:opacity-60"
                                     />
                                   </div>
+
+                                  {slot.category === 'storytelling' && (
+                                    <div className="md:col-span-2">
+                                      <label className="block text-sm font-bold text-gray-700 mb-1">
+                                        Letra da música (opcional)
+                                      </label>
+                                      <p className="text-xs text-gray-500 mb-2">Cole o link de um arquivo de texto com a letra (.txt, .md ou URL pública)</p>
+                                      <input
+                                        type="url"
+                                        value={asset?.lyrics_url || ''}
+                                        onChange={(event) => setAssetLyricsUrl(slot.category, event.target.value)}
+                                        disabled={!asset?.url}
+                                        placeholder="https://..."
+                                        className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none disabled:opacity-60"
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
