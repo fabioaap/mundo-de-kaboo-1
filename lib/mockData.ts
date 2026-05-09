@@ -124,18 +124,19 @@ const buildProfile = (overrides: Partial<UserProfile>): UserProfile => ({
     access_status: overrides.access_status ?? 'pending_voucher'
 });
 
-const buildAdminUser = (
+const buildUser = (
     id: string,
     email: string,
     password: string,
-    fullName: string
+    fullName: string,
+    role: UserRole
 ): MockUserAccount => {
     const createdAt = new Date().toISOString();
     return {
         id,
         email,
         password,
-        role: 'admin',
+        role,
         created_at: createdAt,
         invited_at: null,
         confirmed_at: createdAt,
@@ -145,7 +146,7 @@ const buildAdminUser = (
             email,
             full_name: fullName,
             avatar_id: 'Kaboo',
-            role: 'admin',
+            role,
             voucher_id: null,
             access_starts_at: new Date().toISOString(),
             access_expires_at: null,
@@ -153,6 +154,13 @@ const buildAdminUser = (
         })
     };
 };
+
+const buildAdminUser = (
+    id: string,
+    email: string,
+    password: string,
+    fullName: string
+): MockUserAccount => buildUser(id, email, password, fullName, 'admin');
 
 const buildAdminDemoUser = (): MockUserAccount => {
     return buildAdminUser(
@@ -174,7 +182,9 @@ const buildWhiteLabelAdminUser = (): MockUserAccount => {
 
 const DEFAULT_MOCK_USERS: MockUserAccount[] = [
     buildAdminDemoUser(),
-    buildWhiteLabelAdminUser()
+    buildWhiteLabelAdminUser(),
+    buildUser('mock-editor', 'editor@mundodekaboo.local', 'editor123', 'Editor Teste', 'editor'),
+    buildUser('mock-viewer', 'viewer@mundodekaboo.local', 'viewer123', 'Viewer Teste', 'viewer'),
 ];
 
 const DEFAULT_MOCK_VOUCHERS: Voucher[] = [
