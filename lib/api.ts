@@ -1661,8 +1661,12 @@ export const api = {
    * Create a new collection (Admin/Editor only)
    */
   async createCollection(collection: Partial<Collection>): Promise<Collection | null> {
-    if (!isSupabaseConfigured) {
-      return mockCreateCollection(collection);
+    if (!isSupabaseConfigured || devMockSession) {
+      const created = mockCreateCollection(collection);
+      if (created) {
+        clearCollectionsCache();
+      }
+      return created;
     }
     const payload = sanitizeCollectionPayload(collection, (await loadRemoteCharacters()) ?? undefined);
     let { data, error } = await supabase
@@ -1695,8 +1699,12 @@ export const api = {
    * Update an existing collection (Admin/Editor only)
    */
   async updateCollection(id: string, updates: Partial<Collection>): Promise<Collection | null> {
-    if (!isSupabaseConfigured) {
-      return mockUpdateCollection(id, updates);
+    if (!isSupabaseConfigured || devMockSession) {
+      const updated = mockUpdateCollection(id, updates);
+      if (updated) {
+        clearCollectionsCache();
+      }
+      return updated;
     }
     const payload = sanitizeCollectionPayload(updates, (await loadRemoteCharacters()) ?? undefined);
     // First, verify the collection exists and we can access it
@@ -1756,8 +1764,12 @@ export const api = {
    * Delete a collection (Admin only) — cascata: resources + storage + collection
    */
   async deleteCollection(id: string): Promise<boolean> {
-    if (!isSupabaseConfigured) {
-      return mockDeleteCollection(id);
+    if (!isSupabaseConfigured || devMockSession) {
+      const deleted = mockDeleteCollection(id);
+      if (deleted) {
+        clearCollectionsCache();
+      }
+      return deleted;
     }
 
     // 1. Buscar todos os recursos associados antes de deletar
