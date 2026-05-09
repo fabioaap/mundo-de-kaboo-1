@@ -69,6 +69,21 @@ const MOCK_BATCH_VOUCHERS_STORAGE_KEY = 'kaboo_mock_batch_vouchers';
 const MOCK_SESSION_STORAGE_KEY = 'kaboo_mock_session_user_id';
 const MOCK_COLLECTIONS_STORAGE_KEY = 'kaboo_mock_collections';
 
+// Active brand slug — set by App.tsx when useBrandConfig resolves.
+// Defaults to 'kaboo' so all non-brand-aware call sites work unchanged.
+let _activeMockBrandSlug = 'kaboo';
+
+/** Called by App.tsx once per brand slug change to isolate data per brand. */
+export const setMockActiveBrand = (slug: string): void => {
+    _activeMockBrandSlug = slug;
+};
+
+/** Returns the brand-specific localStorage key for collections. */
+const getCollectionsStorageKey = (): string =>
+    _activeMockBrandSlug === 'kaboo'
+        ? MOCK_COLLECTIONS_STORAGE_KEY
+        : `${MOCK_COLLECTIONS_STORAGE_KEY}_${_activeMockBrandSlug}`;
+
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const seed = catalogSeed as CatalogSeed;
@@ -858,7 +873,7 @@ export const redeemMockVoucher = (rawCode: string): VoucherRedemptionResult => {
 const readStoredCollections = (): Collection[] | null => {
     if (typeof window === 'undefined') return null;
     try {
-        const stored = localStorage.getItem(MOCK_COLLECTIONS_STORAGE_KEY);
+        const stored = localStorage.getItem(getCollectionsStorageKey());
         return stored ? normalizeCollections(JSON.parse(stored) as Collection[]) : null;
     } catch {
         return null;
@@ -867,7 +882,7 @@ const readStoredCollections = (): Collection[] | null => {
 
 const writeStoredCollections = (collections: Collection[]): void => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(MOCK_COLLECTIONS_STORAGE_KEY, JSON.stringify(normalizeCollections(collections)));
+    localStorage.setItem(getCollectionsStorageKey(), JSON.stringify(normalizeCollections(collections)));
 };
 
 const mergeSeedCollections = (storedCollections: Collection[]): { collections: Collection[]; changed: boolean } => {
@@ -921,7 +936,13 @@ const getLiveCollections = (): Collection[] => {
     const storedCollections = readStoredCollections();
 
     if (!storedCollections) {
-        return MOCK_COLLECTIONS;
+        // Non-kaboo brands start with an empty collection store.
+        return _activeMockBrandSlug === 'kaboo' ? MOCK_COLLECTIONS : [];
+    }
+
+    // Non-kaboo brands don't get Kaboo seed data merged in.
+    if (_activeMockBrandSlug !== 'kaboo') {
+        return storedCollections;
     }
 
     const mergedCollections = mergeSeedCollections(storedCollections);

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { NavState, ScreenName, Collection, UserProfile } from './types';
-import { api, clearAllUserCache, getCachedProfileSync, isDevMockSession } from './lib/api';
+import { api, clearAllUserCache, getCachedProfileSync, isDevMockSession, setActiveBrandForApi } from './lib/api';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { useThemeBackground } from './hooks/useThemeBackground';
 import { useBrandConfig } from './hooks/useBrandConfig';
 import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
 import { logger } from './lib/logger';
 import { clearPendingPasswordSetup, hasPendingPasswordSetup, isInvitedAuthUser, markPendingPasswordSetup } from './lib/passwordSetupFlow';
+import { setMockActiveBrand } from './lib/mockData';
 
 // Screens
 import { LoginScreen } from './screens/LoginScreen';
@@ -188,6 +189,12 @@ const App: React.FC = () => {
   const { bootstrap: brandBootstrap, enabledMenuItems } = useBrandConfig();
   const brandEnabledMenuKeys = new Set(enabledMenuItems.map(item => item.key));
   const brandSlug = brandBootstrap.brand.slug;
+
+  // Sync brand slug into mock data and API modules so collection storage is isolated per brand.
+  useEffect(() => {
+    setMockActiveBrand(brandSlug);
+    setActiveBrandForApi(brandSlug);
+  }, [brandSlug]);
 
   const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
   const brandLogoUrl = brandBootstrap.settings.logo_url || (brandBootstrap.brand.slug === 'kaboo' ? LOGO_URL : undefined);
@@ -919,7 +926,7 @@ const App: React.FC = () => {
   const showNav = ['home', 'search', 'videos', 'music', 'formations', 'materials', 'support', 'profile', 'my_data', 'admin', 'characters'].includes(navState.currentScreen);
   // Modal opens immediately when collectionId is present, even if collection is still loading
   const isModalOpen = !!navState.params?.collectionId && ['home', 'search'].includes(navState.currentScreen);
-  const mainShellClassName = `flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative h-screen w-full bg-white`;
+  const mainShellClassName = `flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative h-screen w-full bg-white overscroll-none`;
 
 
   const appShellBg = showNav && brandSlug === 'central-coruja' ? 'bg-[#0C1A34]' : 'bg-white';
