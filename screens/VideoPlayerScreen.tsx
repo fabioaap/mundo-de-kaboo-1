@@ -781,7 +781,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {canDownloadOffline && (
+            {canDownloadOffline && !isYouTubeSource && (
               <button
                 type="button"
                 onClick={(event) => {
