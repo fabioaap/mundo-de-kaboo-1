@@ -5,6 +5,7 @@ import { Collection, MediaItemCard, ScreenName } from '../types';
 import { useThemeBackground } from '../hooks/useThemeBackground';
 import { GalaxyBackground } from '../components/GalaxyBackground';
 import { api } from '../lib/api';
+import { useOfflineDownload } from '../hooks/useOfflineDownload';
 
 interface AudioPlayerScreenProps {
   collection: Collection;
@@ -55,6 +56,13 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const resolvedAudioUrl = resolvedPlaybackUrl ?? assetUrl ?? collection.audio_url;
   const resolvedTitle = resolvedPlaybackTitle ?? assetTitle ?? collection.title;
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
+  const {
+    isAvailable: canDownloadOffline,
+    isDownloaded: isOfflineDownloaded,
+    isDownloading: isOfflineDownloading,
+    downloadError: offlineDownloadError,
+    handleDownload: handleOfflineDownload,
+  } = useOfflineDownload(collection, [resolvedAudioUrl, lyricsUrl]);
 
   // Set browser background to match theme color
   useThemeBackground(themeColor);
@@ -459,6 +467,31 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {canDownloadOffline && (
+            <button
+              type="button"
+              onClick={handleOfflineDownload}
+              disabled={isOfflineDownloading || isOfflineDownloaded}
+              aria-label={isOfflineDownloaded ? 'Conteúdo disponível offline' : 'Baixar áudio para offline'}
+              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md disabled:cursor-default ${
+                isOfflineDownloaded
+                  ? 'border-emerald-200/60 bg-emerald-400/20'
+                  : isOfflineDownloading
+                    ? 'border-white/30 bg-white/15'
+                    : 'border-white/25 bg-black/30 hover:bg-black/45'
+              }`}
+            >
+              {isOfflineDownloading ? (
+                <Icons.RotateCw size={13} className="animate-spin" />
+              ) : (
+                <Icons.Download size={13} />
+              )}
+              <span className="hidden sm:inline">
+                {isOfflineDownloaded ? 'Offline OK' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
+              </span>
+            </button>
+          )}
+
           <button
             onClick={() => setShowSidebar(s => !s)}
             aria-label={showSidebar ? 'Ocultar sugestões' : 'Ver sugestões'}
@@ -656,6 +689,12 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
             {playError && (
               <div className="mt-4 bg-red-500/80 backdrop-blur-sm text-white text-xs px-4 py-2 rounded-full text-center max-w-xs">
                 {playError}
+              </div>
+            )}
+
+            {offlineDownloadError && (
+              <div className="mt-4 rounded-2xl border border-red-300/35 bg-red-500/80 px-4 py-2 text-center text-xs text-white backdrop-blur-sm">
+                {offlineDownloadError}
               </div>
             )}
 

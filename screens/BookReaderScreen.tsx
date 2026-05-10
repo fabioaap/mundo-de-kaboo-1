@@ -6,6 +6,7 @@ import useOrientation from '../hooks/useOrientation';
 import useIsMobile from '../hooks/useIsMobile';
 import { useThemeBackground } from '../hooks/useThemeBackground';
 import { GalaxyBackground } from '../components/GalaxyBackground';
+import { useOfflineDownload } from '../hooks/useOfflineDownload';
 
 interface BookReaderScreenProps {
   collection: Collection;
@@ -24,6 +25,13 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const isLandscape = useOrientation();
   const isMobile = useIsMobile();
   const isMobileLandscape = isMobile && isLandscape;
+  const {
+    isAvailable: canDownloadOffline,
+    isDownloaded: isOfflineDownloaded,
+    isDownloading: isOfflineDownloading,
+    downloadError: offlineDownloadError,
+    handleDownload: handleOfflineDownload,
+  } = useOfflineDownload(collection, [collection.pdf_url]);
   
   // Set browser background to match theme color
   useThemeBackground(themeColor);
@@ -230,7 +238,29 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             </div>
           </div>
 
-          <div className="w-12">
+          <div className="flex min-w-[104px] items-center justify-end gap-2">
+            {canDownloadOffline && (
+              <button
+                type="button"
+                onClick={handleOfflineDownload}
+                disabled={isOfflineDownloading || isOfflineDownloaded}
+                aria-label={isOfflineDownloaded ? 'Conteúdo disponível offline' : 'Baixar livro para offline'}
+                title={isOfflineDownloaded ? 'Conteúdo offline disponível' : 'Baixar para offline'}
+                className={`w-12 h-12 rounded-full backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-95 border border-white/30 text-white disabled:cursor-default ${isOfflineDownloaded
+                  ? 'bg-emerald-400/30'
+                  : isOfflineDownloading
+                    ? 'bg-white/25'
+                    : 'bg-black/20 hover:bg-black/30'
+                }`}
+              >
+                {isOfflineDownloading ? (
+                  <Icons.RotateCw size={20} className="animate-spin" strokeWidth={2.5} />
+                ) : (
+                  <Icons.Download size={20} strokeWidth={2.5} />
+                )}
+              </button>
+            )}
+
             {collection.text_content && (
               <button
                 onClick={() => setTextMode(prev => !prev)}
@@ -257,15 +287,49 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       )}
 
       {/* Text mode toggle for mobile landscape */}
-      {isMobileLandscape && collection.text_content && (
-        <button
-          onClick={() => setTextMode(prev => !prev)}
-          className={`fixed top-4 right-4 z-30 w-12 h-12 rounded-full backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-95 border border-white/30 ${textMode ? 'bg-white/40 text-white' : 'bg-black/20 text-white hover:bg-black/30'}`}
-          aria-label={textMode ? 'Modo flipbook' : 'Modo texto'}
-          title={textMode ? 'Voltar ao flipbook' : 'Ler em modo texto'}
-        >
-          <Icons.Type size={20} strokeWidth={2.5} />
-        </button>
+      {isMobileLandscape && (
+        <div className="fixed top-4 right-4 z-30 flex items-center gap-2">
+          {canDownloadOffline && (
+            <button
+              type="button"
+              onClick={handleOfflineDownload}
+              disabled={isOfflineDownloading || isOfflineDownloaded}
+              aria-label={isOfflineDownloaded ? 'Conteúdo disponível offline' : 'Baixar livro para offline'}
+              title={isOfflineDownloaded ? 'Conteúdo offline disponível' : 'Baixar para offline'}
+              className={`w-12 h-12 rounded-full backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-95 border border-white/30 text-white disabled:cursor-default ${isOfflineDownloaded
+                ? 'bg-emerald-400/30'
+                : isOfflineDownloading
+                  ? 'bg-white/25'
+                  : 'bg-black/20 hover:bg-black/30'
+              }`}
+            >
+              {isOfflineDownloading ? (
+                <Icons.RotateCw size={20} className="animate-spin" strokeWidth={2.5} />
+              ) : (
+                <Icons.Download size={20} strokeWidth={2.5} />
+              )}
+            </button>
+          )}
+
+          {collection.text_content && (
+            <button
+              onClick={() => setTextMode(prev => !prev)}
+              className={`w-12 h-12 rounded-full backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-95 border border-white/30 ${textMode ? 'bg-white/40 text-white' : 'bg-black/20 text-white hover:bg-black/30'}`}
+              aria-label={textMode ? 'Modo flipbook' : 'Modo texto'}
+              title={textMode ? 'Voltar ao flipbook' : 'Ler em modo texto'}
+            >
+              <Icons.Type size={20} strokeWidth={2.5} />
+            </button>
+          )}
+        </div>
+      )}
+
+      {offlineDownloadError && (
+        <div className="relative z-20 px-4 pb-2">
+          <div className="mx-auto max-w-md rounded-2xl border border-red-300/35 bg-red-500/80 px-4 py-2 text-center text-xs text-white backdrop-blur-md shadow-lg">
+            {offlineDownloadError}
+          </div>
+        </div>
       )}
 
       {/* Text Mode View */}

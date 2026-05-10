@@ -3,6 +3,7 @@ import { Icons } from '../components/Icons';
 import { Collection, MediaItemCard, ScreenName } from '../types';
 import { useThemeBackground } from '../hooks/useThemeBackground';
 import { api } from '../lib/api';
+import { useOfflineDownload } from '../hooks/useOfflineDownload';
 
 interface VideoPlayerScreenProps {
   collection: Collection;
@@ -85,6 +86,13 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const youtubeEmbedUrl = youtubeVideoId
     ? `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&playsinline=1&rel=0`
     : null;
+  const {
+    isAvailable: canDownloadOffline,
+    isDownloaded: isOfflineDownloaded,
+    isDownloading: isOfflineDownloading,
+    downloadError: offlineDownloadError,
+    handleDownload: handleOfflineDownload,
+  } = useOfflineDownload(collection, [resolvedVideoUrl]);
 
   // Set browser background to black for video player
   useThemeBackground('#000000');
@@ -773,6 +781,34 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {canDownloadOffline && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleOfflineDownload();
+                }}
+                disabled={isOfflineDownloading || isOfflineDownloaded}
+                aria-label={isOfflineDownloaded ? 'Conteúdo disponível offline' : 'Baixar vídeo para offline'}
+                className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors disabled:cursor-default ${
+                  isOfflineDownloaded
+                    ? 'border-emerald-200/60 bg-emerald-400/20'
+                    : isOfflineDownloading
+                      ? 'border-white/30 bg-white/15'
+                      : 'border-white/25 bg-black/30 hover:bg-black/45'
+                }`}
+              >
+                {isOfflineDownloading ? (
+                  <Icons.RotateCw size={13} className="animate-spin" />
+                ) : (
+                  <Icons.Download size={13} />
+                )}
+                <span className="hidden md:inline">
+                  {isOfflineDownloaded ? 'Offline OK' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
+                </span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={(event) => {
@@ -849,6 +885,14 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                         Tentar novamente
                       </button>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {offlineDownloadError && (
+                <div className="mx-auto w-full max-w-[min(100%,980px)] lg:max-w-none lg:ml-0 lg:mr-[var(--player-dock-right)]">
+                  <div role="alert" className="rounded-2xl border border-red-300/35 bg-red-500/82 px-4 py-3 text-sm text-white backdrop-blur-md shadow-[0_14px_26px_rgba(0,0,0,0.28)]">
+                    <p>{offlineDownloadError}</p>
                   </div>
                 </div>
               )}
