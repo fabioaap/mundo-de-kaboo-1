@@ -244,19 +244,22 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
                 onClick={handleOfflineDownload}
                 disabled={isOfflineDownloading || isOfflineDownloaded}
                 aria-label={isOfflineDownloaded ? 'Conteúdo disponível offline' : 'Baixar livro para offline'}
-                title={isOfflineDownloaded ? 'Conteúdo offline disponível' : 'Baixar para offline'}
-                className={`w-12 h-12 rounded-full backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-95 border border-white/30 text-white disabled:cursor-default ${isOfflineDownloaded
-                  ? 'bg-emerald-400/30'
-                  : isOfflineDownloading
-                    ? 'bg-white/25'
-                    : 'bg-black/20 hover:bg-black/30'
+                className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md disabled:cursor-default ${
+                  isOfflineDownloaded
+                    ? 'border-emerald-200/60 bg-emerald-400/20'
+                    : isOfflineDownloading
+                      ? 'border-white/30 bg-white/15'
+                      : 'border-white/25 bg-black/30 hover:bg-black/45'
                 }`}
               >
                 {isOfflineDownloading ? (
-                  <Icons.RotateCw size={20} className="animate-spin" strokeWidth={2.5} />
+                  <Icons.RotateCw size={13} className="animate-spin" />
                 ) : (
-                  <Icons.Download size={20} strokeWidth={2.5} />
+                  <Icons.Download size={13} />
                 )}
+                <span className="hidden sm:inline">
+                  {isOfflineDownloaded ? 'Offline OK' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
+                </span>
               </button>
             )}
           </div>
@@ -283,19 +286,22 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
               onClick={handleOfflineDownload}
               disabled={isOfflineDownloading || isOfflineDownloaded}
               aria-label={isOfflineDownloaded ? 'Conteúdo disponível offline' : 'Baixar livro para offline'}
-              title={isOfflineDownloaded ? 'Conteúdo offline disponível' : 'Baixar para offline'}
-              className={`w-12 h-12 rounded-full backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-95 border border-white/30 text-white disabled:cursor-default ${isOfflineDownloaded
-                ? 'bg-emerald-400/30'
-                : isOfflineDownloading
-                  ? 'bg-white/25'
-                  : 'bg-black/20 hover:bg-black/30'
+              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md disabled:cursor-default ${
+                isOfflineDownloaded
+                  ? 'border-emerald-200/60 bg-emerald-400/20'
+                  : isOfflineDownloading
+                    ? 'border-white/30 bg-white/15'
+                    : 'border-white/25 bg-black/30 hover:bg-black/45'
               }`}
             >
               {isOfflineDownloading ? (
-                <Icons.RotateCw size={20} className="animate-spin" strokeWidth={2.5} />
+                <Icons.RotateCw size={13} className="animate-spin" />
               ) : (
-                <Icons.Download size={20} strokeWidth={2.5} />
+                <Icons.Download size={13} />
               )}
+              <span className="hidden sm:inline">
+                {isOfflineDownloaded ? 'Offline OK' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
+              </span>
             </button>
           )}
         </div>
