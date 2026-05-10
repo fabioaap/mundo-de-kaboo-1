@@ -314,17 +314,7 @@ export const CollectionCoverSection: React.FC<CollectionCoverSectionProps> = ({
               mixBlendMode: 'soft-light',
             }}
           />
-          {/* Offline Badge on Cover */}
-          {isOffline && (
-            <div
-              className="absolute top-3 right-3 bg-kaboo-green text-white p-1.5 rounded-full shadow-md z-10 animate-in zoom-in duration-300"
-              style={{
-                transform: 'translateZ(30px)',
-              }}
-            >
-              <Icons.Download size={14} strokeWidth={3} />
-            </div>
-          )}
+
         </div>
       </div>
     </div>
