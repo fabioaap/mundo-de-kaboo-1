@@ -10,6 +10,7 @@ import { Button } from '../design-system';
 import { api, clearAllUserCache, getCachedProfileSync } from '../lib/api';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { layoutSpacing } from '../design-system/layout/spacing';
 
 interface ProfileScreenProps {
   onNavigate: (screen: ScreenName) => void;
@@ -142,7 +143,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
       <PageHeader title="Meu Perfil" onBack={() => onNavigate('home')} />
 
       {/* HERO SECTION - Standard White Background */}
-      <div className="px-6 py-8 flex flex-col items-center gap-4 max-w-2xl mx-auto w-full h-[324px]">
+      <div className={`${layoutSpacing.pageSection} flex flex-col items-center gap-4 max-w-2xl mx-auto w-full h-[324px]`}>
         <div
           className="relative group cursor-pointer"
           onClick={() => {
@@ -211,7 +212,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      <div className="px-6 space-y-1 max-w-2xl mx-auto w-full mt-4">
+      <div className={`${layoutSpacing.pageSectionX} space-y-1 max-w-2xl mx-auto w-full mt-4`}>
         {[
           { icon: Icons.User, label: 'Meus Dados', action: () => onNavigate('my_data') },
           { icon: Icons.Mail, label: 'Fale Conosco', action: () => onNavigate('support') },
@@ -251,7 +252,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
           <div className="relative w-full md:w-[600px] h-[70vh] md:h-auto md:max-h-[80vh] bg-white rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
 
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className={`${layoutSpacing.modalHeader} border-b border-gray-100 flex items-center justify-between`}>
               <h2 className="text-lg font-bold text-gray-800">Escolha um Personagem</h2>
               <button onClick={() => setIsAvatarModalOpen(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
                 <Icons.X size={16} />
@@ -259,7 +260,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
             </div>
 
             {/* Grid */}
-            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-3 md:grid-cols-4 gap-4">
+            <div className={`flex-1 overflow-y-auto ${layoutSpacing.modalBody} grid grid-cols-3 md:grid-cols-4 ${layoutSpacing.cardGridGap}`}>
 
               {/* Default Option (Initials) */}
               <button
@@ -311,7 +312,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
+            <div className={`${layoutSpacing.modalFooter} border-t border-gray-100 flex gap-3`}>
               <Button
                 variant="ghost"
                 fullWidth

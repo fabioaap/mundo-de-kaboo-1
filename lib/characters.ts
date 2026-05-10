@@ -2,21 +2,20 @@ import { CHARACTERS as CHARACTER_SEED } from '../data/characters';
 import { Character, Collection } from '../types';
 
 const MOCK_CHARACTERS_STORAGE_KEY = 'kaboo_mock_characters';
-let activeBrandSlugForCharacters = 'kaboo';
+let _activeCharacterBrandSlug = 'kaboo';
 let runtimeCharactersSnapshot: Character[] | null = null;
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
-const getCharactersStorageKey = (): string =>
-  activeBrandSlugForCharacters === 'kaboo'
-    ? MOCK_CHARACTERS_STORAGE_KEY
-    : `${MOCK_CHARACTERS_STORAGE_KEY}_${activeBrandSlugForCharacters}`;
-
 export const setActiveBrandForCharacters = (slug: string): void => {
-  activeBrandSlugForCharacters = slug || 'kaboo';
+  _activeCharacterBrandSlug = slug || 'kaboo';
   runtimeCharactersSnapshot = null;
 };
 
+const getCharactersStorageKey = (): string =>
+  _activeCharacterBrandSlug === 'kaboo'
+    ? MOCK_CHARACTERS_STORAGE_KEY
+    : `${MOCK_CHARACTERS_STORAGE_KEY}_${_activeCharacterBrandSlug}`;
 const isCharacterActive = (character?: Pick<Character, 'status'> | null): boolean => {
   return (character?.status || 'active') === 'active';
 };
@@ -81,6 +80,10 @@ const mergeCharacterRecords = (base: Character, override?: Character): Character
 };
 
 const getSeedCharacters = (): Character[] => {
+  if (_activeCharacterBrandSlug !== 'kaboo') {
+    return [];
+  }
+
   return CHARACTER_SEED.map((character) => normalizeCharacter(character));
 };
 
@@ -170,6 +173,17 @@ export const getLiveCharacters = (): Character[] => {
   }
 
   const storedCharacters = readStoredCharacters();
+
+  if (_activeCharacterBrandSlug !== 'kaboo') {
+    const normalizedStoredCharacters = sortCharacters((storedCharacters ?? []).map((character) => normalizeCharacter(character)));
+
+    if (storedCharacters && JSON.stringify(sortCharacters(storedCharacters)) !== JSON.stringify(normalizedStoredCharacters)) {
+      writeStoredCharacters(normalizedStoredCharacters);
+    }
+
+    return normalizedStoredCharacters;
+  }
+
   const mergedCharacters = mergeSeedCharacters(storedCharacters);
 
   if (mergedCharacters.changed) {

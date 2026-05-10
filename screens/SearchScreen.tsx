@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { ScreenName, Collection } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { CharacterAvatar } from '../components/CharacterAvatar';
+import { layoutSpacing } from '../design-system/layout/spacing';
 
 interface SearchScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -98,7 +99,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
       <PageHeader title="Buscar" onBack={() => onNavigate('home')} />
 
       {/* Search Input Area */}
-      <div className="px-6 py-6 md:px-8 bg-white z-10 shadow-sm shadow-gray-50">
+      <div className={`${layoutSpacing.pageSection} bg-white z-10 shadow-sm shadow-gray-50`}>
         <div className="relative max-w-3xl">
           <input 
             type="text" 
@@ -120,7 +121,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 pb-6 md:px-8 no-scrollbar">
+      <div className={`flex-1 overflow-y-auto ${layoutSpacing.pageContent} no-scrollbar`}>
         {loading ? (
            <div className="text-center py-10 text-gray-400">Carregando acervo...</div>
         ) : error ? (
@@ -132,7 +133,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
                 {filteredCollections.length} {filteredCollections.length === 1 ? 'Resultado encontrado' : 'Resultados encontrados'}
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${layoutSpacing.cardGridGap}`}>
                 {filteredCollections.map((collection) => (
                 <div 
                     key={collection.id}

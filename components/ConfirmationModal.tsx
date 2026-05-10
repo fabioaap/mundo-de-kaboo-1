@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icons } from './Icons';
 import { Button } from '../design-system';
+import { layoutSpacing } from '../design-system/layout/spacing';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       {/* Modal Content */}
       <div role="dialog" aria-modal="true" aria-labelledby="confirmation-modal-title" className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-100">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className={`${layoutSpacing.modalHeader} border-b border-gray-200`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
               <Icons.AlertCircle size={20} className="text-red-600" />
@@ -52,12 +53,12 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="px-6 py-4">
+        <div className={layoutSpacing.modalBody}>
           <p className="text-gray-600">{message}</p>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex gap-3">
+        <div className={`${layoutSpacing.modalFooter} border-t border-gray-200 flex gap-3`}>
           <Button variant="secondary" fullWidth onClick={onCancel} disabled={loading}>
             {cancelText}
           </Button>

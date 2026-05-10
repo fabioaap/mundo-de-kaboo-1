@@ -533,9 +533,20 @@ const buildCollectionBackedMediaHubResponse = (hub: MediaHub, collections: Colle
   };
 };
 
+const buildEmptyMediaHubResponse = (hub: MediaHub): MediaHubResponse => ({
+  hub,
+  hero: null,
+  shelves: [],
+  counts: {
+    total: 0,
+    favorites: 0,
+    continueWatching: 0,
+  },
+});
+
 const buildMockMediaHubResponse = (hub: MediaHub): MediaHubResponse => {
   const mock = LIBRARY_HUB_MOCKS[hub as LibraryHubKind];
-  const hero = buildMockMediaItemCard(hub, mock.featured);
+  const hero = mock.featured ? buildMockMediaItemCard(hub, mock.featured) : null;
   const shelves: MediaShelf[] = mock.rails.map((rail) => ({
     id: rail.id,
     hub,
@@ -550,7 +561,7 @@ const buildMockMediaHubResponse = (hub: MediaHub): MediaHubResponse => {
     hero,
     shelves,
     counts: {
-      total: shelves.reduce((accumulator, shelf) => accumulator + shelf.items.length, 0) + 1,
+      total: shelves.reduce((accumulator, shelf) => accumulator + shelf.items.length, 0) + (hero ? 1 : 0),
       favorites: 0,
       continueWatching: 0,
     },
@@ -591,10 +602,14 @@ const findMockMediaItem = (
     return collectionBackedMatch;
   }
 
+  if (_activeBrandSlugForApi !== 'kaboo') {
+    return null;
+  }
+
   const hubs = Object.entries(LIBRARY_HUB_MOCKS) as Array<[LibraryHubKind, typeof LIBRARY_HUB_MOCKS[LibraryHubKind]]>;
 
   for (const [hub, mock] of hubs) {
-    if (mock.featured.id === mediaItemId) {
+    if (mock.featured?.id === mediaItemId) {
       return { hub: mapLibraryHubToMediaHub(hub), item: mock.featured };
     }
 
@@ -1571,7 +1586,9 @@ export const api = {
   async getMediaHub(hub: MediaHub): Promise<MediaHubResponse> {
     const collections = await this.getCollections();
     const collectionBackedResponse = buildCollectionBackedMediaHubResponse(hub, collections);
-    const staticFallbackResponse = buildMockMediaHubResponse(hub);
+    const staticFallbackResponse = _activeBrandSlugForApi === 'kaboo'
+      ? buildMockMediaHubResponse(hub)
+      : buildEmptyMediaHubResponse(hub);
     const preferredFallbackResponse = getMediaHubResponseCount(collectionBackedResponse) > 0
       ? collectionBackedResponse
       : staticFallbackResponse;

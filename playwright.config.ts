@@ -10,7 +10,7 @@ export default defineConfig({
     timeout: 60_000,
     expect: { timeout: 10_000 },
     use: {
-        baseURL: process.env.E2E_BASE_URL || 'http://localhost:4100',
+        baseURL: process.env.E2E_BASE_URL || 'http://127.0.0.1:4100',
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
         video: 'retain-on-failure',
@@ -20,7 +20,7 @@ export default defineConfig({
     ],
     webServer: {
         command: 'npm run dev -- --port 4100',
-        url: 'http://localhost:4100',
+        url: 'http://127.0.0.1:4100',
         reuseExistingServer: true,
         timeout: 120_000,
         env: {

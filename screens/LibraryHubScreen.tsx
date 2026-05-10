@@ -4,7 +4,7 @@ import { CollectionFiltersModal } from '../components/CollectionFiltersModal';
 import { Icons } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
 import catalogSeed from '../data/catalog.seed.json';
-import { LIBRARY_HUB_MOCKS, LibraryHubKind, LibraryMockItem, LibraryMockItemVariant } from '../data/library-hubs';
+import { LIBRARY_HUB_MOCKS, LibraryHubData, LibraryHubKind, LibraryMockItem, LibraryMockItemVariant } from '../data/library-hubs';
 import { api } from '../lib/api';
 import { useBrandConfig } from '../hooks/useBrandConfig';
 import useIsMobile from '../hooks/useIsMobile';
@@ -63,6 +63,34 @@ type CompactLibraryKind = Exclude<LibraryHubKind, 'videos'>;
 const COMPACT_FILTER_LABELS: Partial<Record<CompactLibraryKind, string[]>> = {
   formations: ['Acolhimento', 'Roda', 'Conflitos', 'Percurso curto'],
   materials: ['Uso imediato', 'Planejamento', 'Convivência', 'Exploração'],
+};
+
+const buildBrandScopedLibraryConfig = (config: LibraryHubData, brandSlug: string): LibraryHubData => {
+  if (brandSlug === 'kaboo') {
+    return config;
+  }
+
+  return {
+    ...config,
+    quickFilters: [],
+    featured: null,
+    rails: [],
+  };
+};
+
+const getLibraryEmptyStateMessage = (hub: LibraryHubKind, brandDisplayName: string): string => {
+  switch (hub) {
+    case 'videos':
+      return `Publique videos nas colecoes de ${brandDisplayName} para começar esta biblioteca.`;
+    case 'music':
+      return `Publique musicas nas colecoes de ${brandDisplayName} para começar esta biblioteca.`;
+    case 'formations':
+      return `Publique guias e formacoes nas colecoes de ${brandDisplayName} para começar esta biblioteca.`;
+    case 'materials':
+      return `Publique materiais nas colecoes de ${brandDisplayName} para começar esta biblioteca.`;
+    default:
+      return 'Ainda nao ha conteudos publicados nesta biblioteca.';
+  }
 };
 
 const getFormationStepLabel = (item: LibraryMockItem) => {
@@ -437,11 +465,77 @@ const formatLibraryDurationLabel = (durationSeconds?: number | null) => {
   return `${totalMinutes} min`;
 };
 
+const getLibraryItemVariantFromMediaCard = (card: MediaItemCard): LibraryMockItemVariant => {
+  if (card.hub === 'formations') {
+    return 'formation';
+  }
+
+  if (card.hub === 'materials') {
+    if (card.kind === 'video') {
+      return 'video';
+    }
+
+    if (card.kind === 'audio') {
+      return 'track';
+    }
+
+    return 'material';
+  }
+
+  return card.kind === 'video' ? 'video' : 'track';
+};
+
+const getLibraryItemAssetTypeFromMediaCard = (card: MediaItemCard): LibraryMockItem['assetType'] => {
+  if (card.kind === 'video') {
+    return 'video';
+  }
+
+  if (card.kind === 'audio') {
+    return 'audio';
+  }
+
+  return 'pdf';
+};
+
+const buildLibraryItemMetaFromMediaCard = (
+  card: MediaItemCard,
+  variant: LibraryMockItemVariant,
+  durationLabel: string,
+): string => {
+  if (variant === 'video') {
+    return `vídeo${durationLabel ? ` • ${durationLabel}` : ''}`;
+  }
+
+  if (variant === 'track') {
+    return `faixa${durationLabel ? ` • ${durationLabel}` : ''}`;
+  }
+
+  if (card.summary?.trim()) {
+    return card.summary.trim();
+  }
+
+  if (variant === 'formation') {
+    return card.kind === 'video' ? 'formação • videoaula' : 'formação • guia';
+  }
+
+  if (card.kind === 'video') {
+    return 'material • vídeo';
+  }
+
+  if (card.kind === 'audio') {
+    return 'material • áudio';
+  }
+
+  return 'PDF • material';
+};
+
 const adaptMediaCardToLibraryItem = (card: MediaItemCard): LibraryMockItem => {
   const isVideo = card.kind === 'video';
   const durationLabel = formatLibraryDurationLabel(card.durationSeconds);
   const clampedProgress = Math.max(0, Math.min(100, Math.round(card.progressPercent ?? 0)));
   const showVideoProgress = isVideo && clampedProgress > 0 && clampedProgress < 100;
+  const variant = getLibraryItemVariantFromMediaCard(card);
+  const assetType = getLibraryItemAssetTypeFromMediaCard(card);
   const chips = Array.from(new Set([
     ...(card.badges ?? []),
     ...(showVideoProgress ? ['Em andamento'] : []),
@@ -449,19 +543,19 @@ const adaptMediaCardToLibraryItem = (card: MediaItemCard): LibraryMockItem => {
 
   return {
     id: card.id,
-    variant: isVideo ? 'video' : 'track',
-    eyebrow: card.collectionTitle ?? (isVideo ? 'Vídeo' : 'Faixa'),
+    variant,
+    eyebrow: card.collectionTitle ?? (variant === 'video' ? 'Vídeo' : variant === 'track' ? 'Faixa' : variant === 'formation' ? 'Formação' : 'Material'),
     title: card.title,
     description: card.description ?? card.summary ?? '',
-    meta: `${isVideo ? 'vídeo' : 'faixa'}${durationLabel ? ` • ${durationLabel}` : ''}`,
-    secondaryMeta: card.summary ?? undefined,
+    meta: buildLibraryItemMetaFromMediaCard(card, variant, durationLabel),
+    secondaryMeta: variant === 'video' || variant === 'track' ? card.summary ?? undefined : undefined,
     relatedCollection: card.collectionTitle ?? undefined,
     collectionId: card.collectionId ?? undefined,
     coverImage: card.thumbnailUrl ?? undefined,
     progress: isVideo ? card.progressPercent : undefined,
     chips,
-    ctaLabel: isVideo ? 'Assistir agora' : 'Ouvir agora',
-    assetType: isVideo ? 'video' : 'audio',
+    ctaLabel: assetType === 'video' ? 'Assistir agora' : assetType === 'audio' ? 'Ouvir agora' : 'Abrir PDF',
+    assetType,
     assetTitle: card.title,
   };
 };
@@ -480,7 +574,9 @@ const flattenMediaHubResponseToLibraryItems = (hub: MediaHubResponse): LibraryMo
     ...regularShelfItems,
   ];
 
-  return Array.from(new Map(items.map((item) => [item.id, item])).values()).map(adaptMediaCardToLibraryItem);
+  return buildUniqueLibraryItems(
+    Array.from(new Map(items.map((item) => [item.id, item])).values()).map(adaptMediaCardToLibraryItem),
+  );
 };
 
 const adaptMediaShelvesToLibraryItems = (
@@ -627,8 +723,11 @@ const renderItemPreview = (item: LibraryMockItem, featured: boolean = false, cor
 };
 
 export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNavigate }) => {
-  const config = LIBRARY_HUB_MOCKS[screen];
   const { bootstrap: brandBootstrap, slug: brandSlug } = useBrandConfig();
+  const config = React.useMemo(
+    () => buildBrandScopedLibraryConfig(LIBRARY_HUB_MOCKS[screen], brandSlug),
+    [brandSlug, screen],
+  );
   const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
   const brandHomeHeroImageUrl = brandBootstrap.settings.home_hero_image_url || '';
   const isMobile = useIsMobile();
@@ -637,7 +736,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
   const screenSurface = isCorujaLibraryHub ? CORUJA_LIBRARY_SURFACE : SCREEN_SURFACE_CLASSES[screen];
   const isVideoHub = screen === 'videos';
   const isMusicHub = screen === 'music';
-  const shouldUseMediaApi = isVideoHub || isMusicHub;
+  const shouldUseMediaApi = true;
   const isMaterialsHub = screen === 'materials';
   const isFormationsHub = screen === 'formations';
   const [showLibraryFilters, setShowLibraryFilters] = React.useState(false);
@@ -654,7 +753,10 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
   const [mediaHubData, setMediaHubData] = React.useState<MediaHubResponse | null>(null);
   const [mediaSourceStatus, setMediaSourceStatus] = React.useState<'idle' | 'loading' | 'ready' | 'fallback'>('idle');
   const mockFlattenedItems = React.useMemo(
-    () => buildUniqueLibraryItems([config.featured, ...config.rails.flatMap((rail) => rail.items)]),
+    () => buildUniqueLibraryItems([
+      ...(config.featured ? [config.featured] : []),
+      ...config.rails.flatMap((rail) => rail.items),
+    ]),
     [config],
   );
 
@@ -701,12 +803,26 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
           return;
         }
 
+        if (mockFlattenedItems.length === 0) {
+          setMediaDrivenItems([]);
+          setMediaHubData(response);
+          setMediaSourceStatus('ready');
+          return;
+        }
+
         setMediaDrivenItems(mockFlattenedItems);
         setMediaHubData(null);
         setMediaSourceStatus('fallback');
       })
       .catch(() => {
         if (!isActive) {
+          return;
+        }
+
+        if (mockFlattenedItems.length === 0) {
+          setMediaDrivenItems([]);
+          setMediaHubData(null);
+          setMediaSourceStatus('ready');
           return;
         }
 
@@ -726,6 +842,8 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
   const compactLibraryItems = !isVideoHub
     ? (shouldUseMediaApi ? mediaDrivenItems : mockFlattenedItems)
     : [];
+  const isBaseVideoCatalogEmpty = isVideoHub && videoLibraryItems.length === 0;
+  const isBaseCompactCatalogEmpty = !isVideoHub && compactLibraryItems.length === 0;
   const currentLibraryItems = isVideoHub ? videoLibraryItems : compactLibraryItems;
   const availableCollectionFilterOptions = getLibraryCollectionFilterOptions(currentLibraryItems);
   const activeLibraryFilterCount = (Object.values(libraryCollectionFilters) as string[][]).reduce((total, values) => total + values.length, 0);
@@ -766,6 +884,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
     })
     : [];
   const videoFilterTabs = isVideoHub
+    && videoLibraryItems.length > 0
     ? [
       { label: 'Todos' as VideoLibraryFilter, count: videoLibraryItems.length, active: videoActiveFilter === 'Todos' },
       { label: 'Infantil' as VideoLibraryFilter, count: videoLibraryItems.filter((item) => matchesVideoLibraryFilter(item, 'Infantil')).length, active: videoActiveFilter === 'Infantil' },
@@ -775,7 +894,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
     : [];
   const normalizedCompactQuery = normalizeLibraryText(compactQuery.trim());
   const compactFilterSource = !isVideoHub
-    ? COMPACT_FILTER_LABELS[screen as CompactLibraryKind] ?? config.quickFilters
+    ? (compactLibraryItems.length === 0 ? [] : COMPACT_FILTER_LABELS[screen as CompactLibraryKind] ?? config.quickFilters)
     : [];
   const compactFilterLabels = !isVideoHub ? ['Todos', ...compactFilterSource] : [];
   const filteredCompactItems = !isVideoHub
@@ -833,14 +952,25 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
       active: compactActiveFilter === label,
     }))
     : [];
+  const compactEmptyStateMessage = isBaseCompactCatalogEmpty
+    ? getLibraryEmptyStateMessage(screen, brandDisplayName)
+    : 'Ajuste a busca ou limpe os filtros para voltar ao acervo completo.';
   const compactSectionTitle = isMaterialsHub
-    ? 'Documentos para abrir agora.'
+    ? (isBaseCompactCatalogEmpty ? 'Nenhum material publicado ainda.' : 'Documentos para abrir agora.')
     : isFormationsHub
-      ? 'Escolha o roteiro pelo momento da conversa.'
+      ? (isBaseCompactCatalogEmpty ? 'Nenhum roteiro publicado ainda.' : 'Escolha o roteiro pelo momento da conversa.')
       : `${sortedCompactItems.length} entradas disponíveis para explorar.`;
   const compactGridClassName = 'md:grid-cols-2';
+  const videoEmptyStateMessage = isBaseVideoCatalogEmpty
+    ? getLibraryEmptyStateMessage('videos', brandDisplayName)
+    : 'Ajuste a busca ou limpe os filtros para voltar ao acervo completo.';
+  const musicEmptyStateMessage = compactLibraryItems.length === 0
+    ? getLibraryEmptyStateMessage('music', brandDisplayName)
+    : 'Ajuste a busca ou limpe os filtros para voltar ao acervo completo.';
   const libraryFilterTabs = isVideoHub ? videoFilterTabs : compactFilterTabs;
-  const librarySectionTitle = isVideoHub ? `${sortedVideoItems.length} entradas disponíveis para explorar.` : compactSectionTitle;
+  const librarySectionTitle = isVideoHub
+    ? (isBaseVideoCatalogEmpty ? 'Nenhum video publicado ainda.' : `${sortedVideoItems.length} entradas disponíveis para explorar.`)
+    : compactSectionTitle;
   const corujaSortActiveClass = 'border-[#7A2A98] bg-[#5D1E76] text-white shadow-[0_14px_28px_rgba(93,30,118,0.35)]';
   const corujaSortIdleClass = 'border-white/12 bg-white/10 text-white/82 hover:bg-white/14';
   const corujaStageShellClass = 'border border-white/12 bg-[linear-gradient(180deg,rgba(7,32,42,0.78),rgba(4,27,36,0.72))] shadow-[0_20px_48px_rgba(4,27,36,0.24)] backdrop-blur-xl';
@@ -885,15 +1015,29 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
 
   const openItem = async (item: LibraryMockItem) => {
     const fallbackCollectionId = item.collectionId || FALLBACK_LIBRARY_COLLECTION_ID;
-
-    const resolvedPlayback = (item.assetType === 'audio' || item.assetType === 'video')
+    const pendingDocumentWindow = item.assetType === 'pdf' && !item.assetUrl
+      ? window.open('', '_blank', 'noopener,noreferrer')
+      : null;
+    const shouldResolvePlayback = item.assetType === 'audio'
+      || item.assetType === 'video'
+      || item.assetType === 'pdf'
+      || !item.assetUrl;
+    const resolvedPlayback = shouldResolvePlayback
       ? await api.resolveMediaPlayback(item.id)
       : null;
 
     const resolvedUrl = resolvedPlayback?.source.url ?? item.assetUrl;
+    const resolvedAssetType = resolvedPlayback?.item.kind === 'video'
+      ? 'video'
+      : resolvedPlayback?.item.kind === 'audio'
+        ? 'audio'
+        : resolvedUrl
+          ? 'pdf'
+          : item.assetType;
     const resolvedTitle = resolvedPlayback?.item.title ?? item.assetTitle ?? item.title;
 
-    if (item.assetType === 'audio' && resolvedUrl) {
+    if (resolvedAssetType === 'audio' && resolvedUrl) {
+      pendingDocumentWindow?.close();
       onNavigate('player_audio', {
         collectionId: fallbackCollectionId,
         mediaItemId: item.id,
@@ -903,7 +1047,8 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
       return;
     }
 
-    if (item.assetType === 'video' && resolvedUrl) {
+    if (resolvedAssetType === 'video' && resolvedUrl) {
+      pendingDocumentWindow?.close();
       onNavigate('player_video', {
         collectionId: fallbackCollectionId,
         mediaItemId: item.id,
@@ -913,6 +1058,16 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
       return;
     }
 
+    if (resolvedAssetType === 'pdf' && resolvedUrl) {
+      if (pendingDocumentWindow) {
+        pendingDocumentWindow.location.href = resolvedUrl;
+      } else {
+        window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
+      }
+      return;
+    }
+
+    pendingDocumentWindow?.close();
     openCollection(item.collectionId);
   };
 
@@ -1416,7 +1571,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                       ? corujaMediaCardClass
                       : 'group rounded-[1.2rem] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
                     'sm:grid-cols-2 xl:grid-cols-3',
-                    'Ajuste a busca ou limpe os filtros para voltar ao acervo completo.',
+                    videoEmptyStateMessage,
                     {
                       compactMode: videoActiveFilter === 'Todos' && sortedVideoItems.length <= 10,
                       flatItems: sortedVideoItems,
@@ -1606,7 +1761,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                       ? corujaMediaCardClass
                       : `group rounded-[1.2rem] border border-kaboo-primary/10 p-2.5 shadow-[0_10px_24px_rgba(27,31,35,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(27,31,35,0.08)] active:scale-[0.995] ${screenSurface.card}`,
                     'sm:grid-cols-2 xl:grid-cols-3',
-                    'Ajuste a busca ou limpe os filtros para voltar ao acervo completo.',
+                    musicEmptyStateMessage,
                     {
                       compactMode: compactActiveFilter === 'Todos' && sortedCompactItems.length <= 10,
                       flatItems: sortedCompactItems,
@@ -1628,7 +1783,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                         <div className={`mt-4 rounded-[1.35rem] px-5 py-8 text-center ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 shadow-[0_16px_34px_rgba(4,27,36,0.18)] backdrop-blur-xl' : 'border border-dashed border-kaboo-primary/18 bg-white/90 shadow-sm'}`}>
                           <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaLibraryHub ? 'text-white/55' : 'text-kaboo-primary/55'}`}>Nenhum resultado</p>
                           <p className={`mt-2 text-sm leading-6 ${isCorujaLibraryHub ? 'text-white/72' : 'text-gray-500'}`}>
-                            Ajuste a busca ou limpe os filtros para voltar ao acervo completo.
+                            {compactEmptyStateMessage}
                           </p>
                         </div>
                       )}

@@ -140,7 +140,10 @@ const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, gra
   const isCorujaTone = tone === 'central-coruja';
 
   return (
-    <div className={`grid auto-rows-fr ${isCorujaTone ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} ${layoutSpacing.cardGridGap}`}>
+    <div
+      className={`grid auto-rows-fr ${isCorujaTone ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} ${layoutSpacing.cardGridGap}`}
+      style={{ contain: 'layout style' }}
+    >
       {collections.map((collection) => (
         <div key={collection.id} className="h-full w-full">
           <Card3D
@@ -1625,7 +1628,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               placeholder="Título, BNCC, personagem, competência..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              className={`h-14 rounded-[28px] pl-11 shadow-sm bg-white/92 border-transparent hover:border-transparent focus:border-kaboo-primary ${showInlineFilterTrigger ? 'pr-24 md:pr-72' : 'pr-24 md:pr-40'}`}
+              className={`h-14 rounded-[28px] pl-11 shadow-sm bg-white/92 border-transparent hover:border-transparent focus:border-kaboo-primary pr-24 md:pr-72`}
             />
             <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
               {searchTerm && (
@@ -1638,7 +1641,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   <Icons.X size={16} />
                 </button>
               )}
-              {showInlineFilterTrigger && (
+              {true && (
                 <button
                   type="button"
                   onClick={() => openFilterDrawer()}

@@ -172,13 +172,16 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
     }
   };
 
+  const isActive = tilt.x !== 0 || tilt.y !== 0;
+
   return (
     <div
       key={collection.id}
       onClick={() => onCollectionClick(collection)}
-      className="cursor-pointer active:scale-95 transition-transform touch-manipulation flex h-full flex-col w-full"
+      className="cursor-pointer touch-manipulation flex h-full flex-col w-full"
       style={{
-        touchAction: 'manipulation',
+        touchAction: 'pan-y',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
       <div
@@ -187,12 +190,14 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
           ? 'mb-3 rounded-[28px] bg-transparent shadow-none'
           : 'mb-3 rounded-lg shadow-md shadow-gray-100'}`}
         style={{
-          WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-          transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale3d(1, 1, 1)`,
-          transformStyle: 'preserve-3d',
+          ...(isActive && { WebkitMaskImage: '-webkit-radial-gradient(white, black)' }),
+          transform: isActive
+            ? `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale3d(1, 1, 1)`
+            : undefined,
+          transformStyle: isActive ? 'preserve-3d' : 'flat',
           transition: isMobile
             ? 'transform 0.1s ease-out'
-            : (tilt.x === 0 && tilt.y === 0 ? 'transform 0.5s ease-out' : 'transform 0.1s ease-out'),
+            : (isActive ? 'transform 0.1s ease-out' : 'transform 0.35s ease-out'),
           touchAction: 'manipulation',
           aspectRatio: isCentralCorujaTone ? '0.78 / 1' : '1 / 1',
           width: '100%',
@@ -212,6 +217,8 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
                 src={displayCoverImage}
                 alt={collection.title}
                 className="h-full w-full object-cover bg-[#091525]"
+                loading="lazy"
+                decoding="async"
                 style={{
                   transform: 'translateZ(20px)',
                 }}
@@ -225,6 +232,8 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             src={displayCoverImage}
             alt={collection.title}
             className="w-full h-full object-cover bg-gray-200"
+            loading="lazy"
+            decoding="async"
             style={{
               transform: 'translateZ(20px)',
             }}
@@ -248,34 +257,36 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             {locked ? <Icons.Lock size={16} /> : <Icons.Check size={18} className="stroke-[3px]" />}
           </div>
         )}
-        {/* Light reflection effect - moves based on tilt */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `linear-gradient(${135 + (tilt.y * 2)
-              }deg, 
-              transparent 0%, 
-              rgba(255, 255, 255, 0.3) ${50 + (tilt.x * 0.5) + (tilt.y * 0.5)}%, 
-              transparent 100%
-            )`,
-            transform: `translateZ(25px) translateX(${tilt.y * 2}px) translateY(${tilt.x * 2}px)`,
-            transition: 'background 0.1s ease-out, transform 0.1s ease-out',
-            mixBlendMode: 'overlay',
-          }}
-        />
-        {/* Secondary light reflection for more realism */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse at ${50 + (tilt.y * 1.5)}% ${50 + (tilt.x * 1.5)}%, 
-              rgba(255, 255, 255, 0.4) 0%, 
-              transparent 60%
-            )`,
-            transform: 'translateZ(30px)',
-            transition: 'background 0.1s ease-out',
-            mixBlendMode: 'soft-light',
-          }}
-        />
+        {/* Light reflection effect - only rendered when card is actively tilting */}
+        {isActive && (
+          <>
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `linear-gradient(${135 + (tilt.y * 2)
+                  }deg, 
+                  transparent 0%, 
+                  rgba(255, 255, 255, 0.3) ${50 + (tilt.x * 0.5) + (tilt.y * 0.5)}%, 
+                  transparent 100%
+                )`,
+                transform: `translateZ(25px) translateX(${tilt.y * 2}px) translateY(${tilt.x * 2}px)`,
+                mixBlendMode: 'overlay',
+              }}
+            />
+            {/* Secondary light reflection for more realism */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `radial-gradient(ellipse at ${50 + (tilt.y * 1.5)}% ${50 + (tilt.x * 1.5)}%, 
+                  rgba(255, 255, 255, 0.4) 0%, 
+                  transparent 60%
+                )`,
+                transform: 'translateZ(30px)',
+                mixBlendMode: 'soft-light',
+              }}
+            />
+          </>
+        )}
         <div className={`absolute inset-0 transition-opacity ${isCentralCorujaTone
           ? 'bg-gradient-to-t from-[#0f2335]/0 via-transparent to-white/10 opacity-100'
           : 'bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100'}`} />

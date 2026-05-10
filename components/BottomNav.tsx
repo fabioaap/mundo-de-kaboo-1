@@ -7,6 +7,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockSession } from '../lib/api';
 import { getMockCurrentUserRole } from '../lib/mockData';
 import { getMockProfile } from '../lib/mockData';
+import { layoutSpacing } from '../design-system/layout/spacing';
 
 interface BottomNavProps {
   currentScreen: ScreenName;
@@ -60,7 +61,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     }
   }, [isCollapsed]);
 
+  // Auto-collapse when entering the admin screen to give space to the secondary sidebar
   useEffect(() => {
+    if (currentScreen === 'admin') {
+      setIsCollapsed(true);
+    }
     setIsMoreMenuOpen(false);
   }, [currentScreen]);
 
@@ -151,7 +156,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     ? 'bg-kaboo-primary border-white/15 hover:bg-white/[0.08]'
     : 'bg-kaboo-bg border-kaboo-primary/20 hover:bg-kaboo-primary/5';
   const desktopToggleIconClass = isCentralCoruja ? 'text-white/85' : 'text-gray-600';
-  const desktopTogglePositionClass = isCentralCoruja ? 'right-4' : '-right-3';
   const desktopSectionTitleClass = isCentralCoruja ? 'text-white/45' : 'text-kaboo-primary/50';
   const desktopSectionDividerClass = isCentralCoruja ? 'border-white/10' : 'border-kaboo-primary/10';
   const desktopItemActiveClass = isCentralCoruja
@@ -166,19 +170,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
   const desktopSectionPaddingClass = isCollapsed
     ? 'px-2'
     : isCentralCoruja
-      ? 'pl-4 pr-0'
+      ? 'px-4'
       : 'px-4';
   const desktopFooterPaddingClass = isCollapsed
     ? 'px-2 py-4'
     : isCentralCoruja
-      ? 'pl-4 pr-0 pt-4 pb-6'
+      ? 'px-4 pt-4 pb-6'
       : 'px-4 pt-4 pb-6';
-  const desktopFooterTextOffsetClass = isCentralCoruja && !isCollapsed ? 'pr-4' : '';
+  const desktopFooterTextOffsetClass = '';
 
   return (
     <>
       {/* MOBILE BOTTOM NAV */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-gray-100/90 bg-white/95 backdrop-blur-md px-3 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2 rounded-t-3xl shadow-[0_-8px_24px_rgba(15,23,42,0.08)] z-50">
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 border-t border-gray-100/90 bg-white/95 backdrop-blur-md rounded-t-3xl shadow-[0_-8px_24px_rgba(15,23,42,0.08)] z-50 ${layoutSpacing.bottomNavShell}`}>
         <div className="grid grid-cols-5 gap-1">
           {mobilePrimaryNavItems.map((item) => {
             const isActive = isItemActive(item);
@@ -188,7 +192,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                 key={item.key}
                 onClick={() => handleMobileNavigate(item.screen, item.params)}
                 aria-label={item.label}
-                className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-all duration-200 ${isActive ? 'bg-kaboo-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
+                className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-[background-color,transform] duration-150 ${isActive ? 'bg-kaboo-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
               >
                 <div className={`rounded-xl p-2 transition-colors ${isActive ? 'bg-kaboo-primary/12' : 'bg-transparent'}`}>
                   <Icon
@@ -206,7 +210,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
           <button
             onClick={() => setIsMoreMenuOpen((open) => !open)}
             aria-label={isMoreMenuOpen ? 'Fechar menu' : 'Abrir mais opções'}
-            className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-all duration-200 ${isMoreItemActive || isMoreMenuOpen ? 'bg-kaboo-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
+            className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-[background-color,transform] duration-150 ${isMoreItemActive || isMoreMenuOpen ? 'bg-kaboo-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
           >
             <div className={`rounded-xl p-2 transition-colors ${isMoreItemActive || isMoreMenuOpen ? 'bg-kaboo-primary/12' : 'bg-transparent'}`}>
               <Icons.MoreHorizontal size={22} className={`transition-colors ${isMoreItemActive || isMoreMenuOpen ? 'text-kaboo-primary stroke-[2.8px]' : 'text-gray-400 stroke-[2px]'}`} />
@@ -221,7 +225,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
       {isMoreMenuOpen && (
         <div className="md:hidden fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]" onClick={() => setIsMoreMenuOpen(false)}>
           <div
-            className="absolute bottom-[88px] left-3 right-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-2xl"
+            className={`absolute rounded-2xl border border-gray-100 bg-white shadow-2xl ${layoutSpacing.bottomNavPopover}`}
             onClick={(event) => event.stopPropagation()}
           >
             <p className="px-2 pb-2 text-[11px] font-black uppercase tracking-[0.15em] text-gray-400">Mais opções</p>
@@ -234,7 +238,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                     key={item.key}
                     onClick={() => handleMobileNavigate(item.screen, item.params)}
                     aria-label={item.label}
-                    className={`flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 transition-all duration-200 ${isActive ? 'bg-kaboo-primary text-white shadow-sm shadow-kaboo-primary/25' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 active:scale-[0.99]'}`}
+                    className={`flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 transition-[background-color,color,transform,box-shadow] duration-150 ${isActive ? 'bg-kaboo-primary text-white shadow-sm shadow-kaboo-primary/25' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 active:scale-[0.99]'}`}
                   >
                     <Icon size={18} className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'} />
                     <span className="text-sm font-bold">{item.label}</span>
@@ -247,13 +251,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
       )}
 
       {/* DESKTOP SIDEBAR */}
-      <div className={`hidden md:flex flex-col h-screen shrink-0 z-50 transition-all duration-300 ease-in-out relative ${desktopShellClass} ${isCollapsed ? 'w-20' : 'w-[268px]'
+      <div className={`hidden md:flex flex-col h-screen shrink-0 z-50 transition-[width] duration-180 ease-out relative ${desktopShellClass} ${isCollapsed ? 'w-20 overflow-visible' : 'w-[268px] overflow-hidden'
         }`}>
 
-        {/* Toggle Button - Top Border */}
+        {/* Toggle Button - always at top, on the right edge of sidebar */}
         <button
           onClick={toggleSidebar}
-          className={`absolute top-4 w-6 h-6 flex items-center justify-center border rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200 z-10 ${desktopTogglePositionClass} ${desktopToggleClass}`}
+          className={`absolute top-4 -right-3 w-6 h-6 flex items-center justify-center border rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-[transform,box-shadow,background-color,border-color] duration-150 z-20 ${desktopToggleClass}`}
           aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
           title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
@@ -267,7 +271,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
         {/* Logo Area - Clickable */}
         <button
           onClick={() => onNavigate('home')}
-          className={`relative z-10 w-full flex justify-center hover:opacity-80 transition-opacity focus:outline-none ${isCollapsed ? 'p-4' : 'p-8'
+          className={`relative z-10 w-full flex justify-center hover:opacity-80 transition-opacity duration-150 focus:outline-none ${isCollapsed ? 'p-4' : 'p-8'
             }`}
           aria-label="Ir para o Início"
           title="Ir para o Início"
@@ -293,7 +297,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
         </button>
 
         {/* Nav Items */}
-        <div className={`relative z-10 flex-1 space-y-4 py-4 transition-all duration-300 ${desktopSectionPaddingClass}`}>
+        <div className={`relative z-10 flex-1 space-y-4 py-4 transition-[padding] duration-180 ease-out ${desktopSectionPaddingClass}`}>
           {desktopNavSections.map((section, sectionIndex) => (
             <div key={`${section.title}-${sectionIndex}`} className={`space-y-2 ${sectionIndex > 0 ? `pt-4 border-t ${desktopSectionDividerClass}` : ''}`}>
               {!isCollapsed && section.title && (
@@ -306,31 +310,53 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                 const isActive = isItemActive(item);
                 const Icon = item.icon;
                 return (
-                  <button
-                    key={item.key}
-                    onClick={() => onNavigate(item.screen, item.params)}
-                    aria-label={item.label}
-                    className={`relative w-full flex items-center rounded-[100px] transition-all duration-200 group ${isCollapsed
-                      ? 'justify-center px-3 py-4'
-                      : 'gap-4 px-6 py-4'
-                      } ${isActive
-                        ? desktopItemActiveClass
-                        : desktopItemInactiveClass
-                      }`}
-                  >
-                     {!isCollapsed && isActive && (
-                       <span className={`absolute left-2 ${isCentralCoruja ? 'h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]' : 'h-5 w-1 rounded-full bg-white/85'}`} aria-hidden="true" />
-                     )}
-                     <Icon
-                       size={22}
-                       className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${desktopItemInactiveHoverIconClass}`}
-                     />
-                     {!isCollapsed && (
-                       <span className={`text-sm font-bold ${isActive ? '' : desktopItemInactiveHoverLabelClass}`}>
-                         {item.label}
-                       </span>
-                     )}
-                  </button>
+                  <div key={item.key} className={`relative ${isCollapsed ? 'group/tooltip' : ''}`}>
+                    {isCollapsed && (
+                      <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold shadow-lg opacity-0 transition-opacity duration-150 group-hover/tooltip:opacity-100 group-hover/tooltip:pointer-events-none select-none
+                        bg-gray-900 text-white">
+                        {item.label}
+                        <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+                      </div>
+                    )}
+                    <button
+                      onClick={() => onNavigate(item.screen, item.params)}
+                      aria-label={item.label}
+                      className={`relative w-full flex items-center rounded-[100px] transition-[background-color,color,transform,box-shadow,padding] duration-150 group ${isCollapsed
+                        ? 'justify-center px-[var(--space-drawer-inset)] py-[var(--space-modal-header-y)]'
+                        : 'gap-4 px-[var(--space-page-x)] py-[var(--space-modal-header-y)]'
+                        } ${isActive
+                          ? desktopItemActiveClass
+                          : desktopItemInactiveClass
+                        }`}
+                    >
+                       {!isCollapsed && isActive && (
+                         isCentralCoruja ? (
+                            <span
+                              className="absolute left-[0.42rem] flex h-5 w-5 items-center justify-center text-[#FFB347] drop-shadow-[0_0_8px_rgba(255,179,71,0.28)]"
+                              style={{ transform: 'translateX(-4px)' }}
+                              aria-hidden="true"
+                            >
+                              <Icons.Feather
+                                size={14}
+                                className="stroke-[2.35px]"
+                                style={{ transform: 'scaleX(-1) rotate(18deg)' }}
+                              />
+                           </span>
+                         ) : (
+                           <span className="absolute left-2 h-5 w-1 rounded-full bg-white/85" aria-hidden="true" />
+                         )
+                       )}
+                       <Icon
+                         size={22}
+                         className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${desktopItemInactiveHoverIconClass}`}
+                       />
+                       {!isCollapsed && (
+                         <span className={`text-sm font-bold ${isActive ? '' : desktopItemInactiveHoverLabelClass}`}>
+                           {item.label}
+                         </span>
+                       )}
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -338,35 +364,42 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
         </div>
 
         {/* Footer */}
-        <div className={`relative z-10 transition-all duration-300 border-t ${desktopSectionDividerClass} ${desktopFooterPaddingClass}`}>
+        <div className={`relative z-10 transition-[padding] duration-180 ease-out border-t ${desktopSectionDividerClass} ${desktopFooterPaddingClass}`}>
           <div className="space-y-2">
             {footerNavItems.map((item) => {
               const isActive = isItemActive(item);
               const Icon = item.icon;
 
               return (
-                <button
-                  key={item.key}
-                  onClick={() => onNavigate(item.screen, item.params)}
-                  aria-label={item.label}
-                  className={`w-full flex items-center rounded-[100px] transition-all duration-200 group ${isCollapsed
-                    ? 'justify-center px-3 py-4'
-                    : 'gap-4 px-6 py-4'
-                    } ${isActive
-                      ? desktopItemActiveClass
-                      : desktopItemInactiveClass
-                    }`}
-                >
-                  <Icon
-                    size={22}
-                    className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${desktopItemInactiveHoverIconClass}`}
-                  />
-                  {!isCollapsed && (
-                    <span className={`text-sm font-bold ${isActive ? '' : desktopItemInactiveHoverLabelClass}`}>
+                <div key={item.key} className={`relative ${isCollapsed ? 'group/tooltip' : ''}`}>
+                  {isCollapsed && (
+                    <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold shadow-lg opacity-0 transition-opacity duration-150 group-hover/tooltip:opacity-100 select-none bg-gray-900 text-white">
                       {item.label}
-                    </span>
+                      <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+                    </div>
                   )}
-                </button>
+                  <button
+                    onClick={() => onNavigate(item.screen, item.params)}
+                    aria-label={item.label}
+                    className={`w-full flex items-center rounded-[100px] transition-[background-color,color,transform,box-shadow,padding] duration-150 group ${isCollapsed
+                      ? 'justify-center px-[var(--space-drawer-inset)] py-[var(--space-modal-header-y)]'
+                      : 'gap-4 px-[var(--space-page-x)] py-[var(--space-modal-header-y)]'
+                      } ${isActive
+                        ? desktopItemActiveClass
+                        : desktopItemInactiveClass
+                      }`}
+                  >
+                    <Icon
+                      size={22}
+                      className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${desktopItemInactiveHoverIconClass}`}
+                    />
+                    {!isCollapsed && (
+                      <span className={`text-sm font-bold ${isActive ? '' : desktopItemInactiveHoverLabelClass}`}>
+                        {item.label}
+                      </span>
+                    )}
+                  </button>
+                </div>
               );
             })}
           </div>

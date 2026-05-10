@@ -4,6 +4,7 @@ import { ScreenName } from '../types';
 import { Icons } from '../components/Icons';
 import { LOGO_URL } from '../constants';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { layoutSpacing } from '../design-system/layout/spacing';
 
 interface EmailConfirmationScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -50,7 +51,7 @@ export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = (
     : 'Sua conta foi verificada com sucesso. Agora você tem acesso completo ao Mundo de Kaboo.';
 
   return (
-    <div className={`flex min-h-screen items-center justify-center p-6 relative overflow-hidden ${isCentralCoruja ? 'bg-[#0C1A34]' : 'bg-gray-50'}`} style={shellBackgroundStyle}>
+    <div className={`flex min-h-screen items-center justify-center px-[var(--space-page-x)] py-[var(--space-page-x)] md:p-[var(--space-auth-shell-desktop)] relative overflow-hidden ${isCentralCoruja ? 'bg-[#0C1A34]' : 'bg-gray-50'}`} style={shellBackgroundStyle}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {isCentralCoruja ? (
           <>
@@ -66,14 +67,14 @@ export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = (
         )}
       </div>
 
-      <div className={`w-full max-w-md flex flex-col items-center text-center relative z-10 animate-in fade-in zoom-in-95 duration-500 ${isCentralCoruja
-        ? 'rounded-[36px] border border-white/20 bg-[linear-gradient(180deg,rgba(251,248,255,0.97)_0%,rgba(246,242,252,0.97)_100%)] p-8 shadow-[0_34px_84px_rgba(6,18,31,0.34)]'
-        : 'bg-white rounded-3xl shadow-xl p-8'}`}>
+      <div className={`w-full max-w-md flex flex-col items-center text-center relative z-10 animate-in fade-in zoom-in-95 duration-500 ${layoutSpacing.pageSection} ${isCentralCoruja
+        ? 'rounded-[36px] border border-white/20 bg-[linear-gradient(180deg,rgba(251,248,255,0.97)_0%,rgba(246,242,252,0.97)_100%)] shadow-[0_34px_84px_rgba(6,18,31,0.34)]'
+        : 'bg-white rounded-3xl shadow-xl'}`}>
 
         {resolvedBrandLogoUrl ? (
           <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="w-32 h-auto mb-8" />
         ) : (
-          <div className={`mb-8 inline-flex items-center justify-center rounded-[28px] px-6 py-4 text-center font-black leading-tight ${isCentralCoruja
+          <div className={`mb-8 inline-flex items-center justify-center rounded-[28px] px-[var(--space-page-x)] py-[var(--space-modal-header-y)] text-center font-black leading-tight ${isCentralCoruja
             ? 'border border-[#f3d8b0]/55 bg-[#fff7eb]/85 text-[#0C1A34] shadow-[0_16px_34px_rgba(17,42,60,0.12)] text-3xl'
             : 'border border-gray-200 bg-white text-gray-800 shadow-sm text-2xl'}`}>
             {resolvedBrandName}

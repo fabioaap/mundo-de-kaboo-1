@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { Icons } from '../components/Icons';
 import { LOGO_URL } from '../constants';
 import backgroundImage from '../assets/images/background-login.jpg';
+import { layoutSpacing } from '../design-system/layout/spacing';
 
 interface ForgotPasswordScreenProps {
   onNavigate: (screen: ScreenName) => void;
@@ -92,7 +93,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
 
   return (
     <div
-      className={`flex min-h-screen items-center justify-center p-0 md:p-8 relative overflow-hidden ${isCentralCoruja ? 'bg-[#0C1A34]' : 'bg-gray-50 bg-no-repeat'}`}
+      className={`flex min-h-screen items-center justify-center relative overflow-hidden ${layoutSpacing.authShell} ${isCentralCoruja ? 'bg-[#0C1A34]' : 'bg-gray-50 bg-no-repeat'}`}
       style={shellBackgroundStyle}
     >
       <div className={`absolute inset-0 ${isCentralCoruja
@@ -104,7 +105,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
         : 'bg-white md:rounded-3xl md:shadow-2xl'}`}>
 
         {/* HEADER */}
-        <div className={`px-6 pt-12 pb-4 flex items-center gap-4 shrink-0 md:pt-8 ${isCentralCoruja ? 'border-b border-[#ece5fa]' : 'border-b border-gray-100'}`}>
+        <div className={`${layoutSpacing.authHeader} flex items-center gap-4 shrink-0 ${isCentralCoruja ? 'border-b border-[#ece5fa]' : 'border-b border-gray-100'}`}>
           <button
             type="button"
             onClick={() => onNavigate('login')}
@@ -115,7 +116,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
           <div className="flex-1 flex justify-center pr-10">{renderBrandMark()}</div>
         </div>
 
-        <div className="w-full mx-auto flex-1 flex flex-col justify-center px-6 py-6 md:pb-12">
+        <div className={`w-full mx-auto flex-1 flex flex-col justify-center ${layoutSpacing.authContent}`}>
 
           <div className="text-center mb-8">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${isCentralCoruja

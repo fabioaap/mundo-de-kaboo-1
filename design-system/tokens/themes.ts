@@ -1,3 +1,5 @@
+import { spacing, type SpacingSemanticToken } from './spacing'
+
 // Temas white-label — cada tema sobrescreve as variáveis CSS brand-*
 // Para aplicar um tema, chame applyTheme(theme) ou use o atributo data-brand="id" no HTML
 
@@ -18,6 +20,7 @@ export interface BrandTheme {
       '2xl'?: string
       '3xl'?: string
     }
+    spacing?: Partial<Record<SpacingSemanticToken, string>>
   }
 }
 
@@ -27,6 +30,7 @@ const DEFAULT_RADIUS_TOKENS = {
   '2xl': '1.5rem',
   '3xl': '2rem',
 } as const
+const DEFAULT_SPACING_TOKENS = spacing.semantic
 
 // ─── Temas de exemplo ──────────────────────────────────────
 export const themes: Record<string, BrandTheme> = {
@@ -95,6 +99,15 @@ export const themes: Record<string, BrandTheme> = {
 export function applyTheme(theme: BrandTheme, root: HTMLElement = document.documentElement): void {
   const { colors, font, tokens } = theme
   const radius = tokens?.radius
+  const brandSpacing =
+    theme.id in spacing.brands
+      ? spacing.brands[theme.id as keyof typeof spacing.brands]
+      : undefined
+  const resolvedSpacing = {
+    ...DEFAULT_SPACING_TOKENS,
+    ...brandSpacing,
+    ...tokens?.spacing,
+  }
   root.style.setProperty('--color-kaboo-primary', colors.primary)
   root.style.setProperty('--color-kaboo-light', colors.light)
   root.style.setProperty('--color-kaboo-bg', colors.bg)
@@ -109,5 +122,8 @@ export function applyTheme(theme: BrandTheme, root: HTMLElement = document.docum
   root.style.setProperty('--radius-xl', radius?.xl ?? DEFAULT_RADIUS_TOKENS.xl)
   root.style.setProperty('--radius-2xl', radius?.['2xl'] ?? DEFAULT_RADIUS_TOKENS['2xl'])
   root.style.setProperty('--radius-3xl', radius?.['3xl'] ?? DEFAULT_RADIUS_TOKENS['3xl'])
+  Object.entries(resolvedSpacing).forEach(([token, value]) => {
+    root.style.setProperty(`--space-${token}`, value)
+  })
   root.setAttribute('data-brand', theme.id)
 }

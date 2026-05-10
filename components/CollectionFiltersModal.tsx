@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '../design-system';
 import { CharacterAvatar } from './CharacterAvatar';
 import { Icons } from './Icons';
+import { layoutSpacing } from '../design-system/layout/spacing';
 
 export interface CollectionFilterState {
     characters: string[];
@@ -173,7 +174,7 @@ export const CollectionFiltersModal: React.FC<CollectionFiltersModalProps> = ({
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
             <div className={`relative w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-in-up ${isCorujaTone ? 'border border-[#eadff8] bg-[#fcf9ff]' : 'bg-white'}`}>
-                <div className={`px-6 py-4 border-b flex items-center justify-between shrink-0 ${isCorujaTone ? 'border-[#eee5fa] bg-[linear-gradient(180deg,#fffdfd_0%,#fcf9ff_100%)]' : 'border-gray-100 bg-white'}`}>
+                <div className={`${layoutSpacing.modalHeader} border-b flex items-center justify-between shrink-0 ${isCorujaTone ? 'border-[#eee5fa] bg-[linear-gradient(180deg,#fffdfd_0%,#fcf9ff_100%)]' : 'border-gray-100 bg-white'}`}>
                     <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isCorujaTone ? 'bg-[#f6efff] text-[#5D1E76]' : 'bg-kaboo-primary/10 text-kaboo-primary'}`}>
                             <Icons.Filter size={20} />
@@ -193,7 +194,7 @@ export const CollectionFiltersModal: React.FC<CollectionFiltersModalProps> = ({
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
+                <div className={`flex-1 overflow-y-auto ${layoutSpacing.modalBody} space-y-8 no-scrollbar`}>
                     <section className="space-y-1">
                         <p className="text-[11px] font-black uppercase tracking-[0.18em] text-gray-400">Filtros rápidos</p>
                         <p className="text-sm text-gray-500">Use os atalhos abaixo para refinar o acervo sem sair da home.</p>
@@ -302,11 +303,11 @@ export const CollectionFiltersModal: React.FC<CollectionFiltersModalProps> = ({
                     <div className="h-10" />
                 </div>
 
-                <div className={`p-4 border-t shrink-0 flex gap-4 ${isCorujaTone ? 'border-[#eee5fa] bg-[#fcf9ff]' : 'border-gray-100 bg-white'}`}>
+                <div className={`${layoutSpacing.modalFooter} border-t shrink-0 flex gap-4 ${isCorujaTone ? 'border-[#eee5fa] bg-[#fcf9ff]' : 'border-gray-100 bg-white'}`}>
                     <button
                         type="button"
                         onClick={onClear}
-                        className={`px-6 py-4 rounded-2xl font-bold transition-colors ${isCorujaTone ? 'text-[#5D1E76] hover:bg-[#f6efff]' : 'text-gray-500 hover:bg-gray-100'}`}
+                        className={`px-[var(--space-modal-footer-x)] py-[var(--space-modal-header-y)] rounded-2xl font-bold transition-colors ${isCorujaTone ? 'text-[#5D1E76] hover:bg-[#f6efff]' : 'text-gray-500 hover:bg-gray-100'}`}
                     >
                         Limpar
                     </button>

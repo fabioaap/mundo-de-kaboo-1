@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import { api } from '../lib/api';
 import { ScreenName, Collection } from '../types';
+import { layoutSpacing } from '../design-system/layout/spacing';
 
 interface LibraryScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -44,7 +45,7 @@ export const LibraryScreen: React.FC<LibraryScreenProps> = ({ onNavigate }) => {
   return (
     <div className="flex flex-col h-full bg-white pb-24">
       {/* Header */}
-      <div className="px-6 pt-12 pb-6">
+      <div className={layoutSpacing.pageIntro}>
         <h1 className="text-2xl font-black text-kaboo-primary mb-6">Minha Biblioteca</h1>
         
         {/* Tabs */}
@@ -68,16 +69,16 @@ export const LibraryScreen: React.FC<LibraryScreenProps> = ({ onNavigate }) => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 pb-6 no-scrollbar">
+      <div className={`flex-1 overflow-y-auto ${layoutSpacing.pageContent} no-scrollbar`}>
         {loading ? (
              <div className="text-center text-gray-400 mt-10">Carregando...</div>
         ) : displayCollections.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-[var(--space-card-gap)]">
             {displayCollections.map((collection) => (
               <div 
                 key={collection.id}
                 onClick={() => handleCollectionClick(collection)}
-                className="flex gap-4 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all active:scale-98 cursor-pointer"
+                className="flex gap-[var(--space-card-gap)] p-[var(--space-page-inset-y)] rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all active:scale-98 cursor-pointer"
               >
                 <img 
                   src={collection.cover_image} 

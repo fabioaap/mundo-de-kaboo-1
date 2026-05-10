@@ -985,3 +985,79 @@ US-034 (Academia) ──► US-035 (Trilha formação)
 | Inserção de catálogo real da CC | ⬜ | 0% | US-CAT-001 |
 | v1.3 produção real | ⬜ | 20% | Supabase real, conta Empatia, build nativo |
 | v2.0 expansão | ⬜ | 0% | Não iniciado |
+
+---
+
+## 19. SPRINT NOVOS RECURSOS — 09/05/2026
+
+> Sprint com 4 itens: 2 quick wins (P), 1 spike técnico (P), 1 feature média (M) e 1 feature grande (G).
+
+### US-BTN-001 — Ajustar botão "Ler o Livro" ✅ CONCLUÍDO
+
+**Como** usuário, **quero** que o botão "Ler livro" tenha formato quadrado (não pill), **para** não confundir com as tags de segmento/nível que usam o mesmo shape arredondado.
+
+**Critérios de aceite:**
+- ✅ Botão "Ler livro" usa `rounded-2xl` em vez de `rounded-full`
+- ✅ Visual consistente com CTAs de coleção
+- ✅ Não parece tag
+
+**Arquivo:** `screens/DetailsScreen.tsx` linha 708 — `rounded-full` → `rounded-2xl`
+
+**Classificação:** MVP | **Tipo:** FE/DESIGN | **Tamanho:** P | **Status:** ✅ Concluído (09/05/2026)
+
+---
+
+### US-DRM-001 — Spike: YouTube DRM e download offline 🔬 SPIKE ENCERRADO
+
+**Como** equipe técnica, **queremos** saber se é possível baixar vídeos do YouTube localmente para uso offline, **para** decidir se incluímos essa funcionalidade no produto.
+
+**Resultado do spike:**
+
+> **Resposta: NÃO É POSSÍVEL.**
+>
+> Vídeos do YouTube são protegidos por DRM (Digital Rights Management) via Widevine (Chrome/Android), FairPlay (Safari/iOS) e PlayReady (Edge). Os tokens de descifração são emitidos por servidores de licença do Google e nunca saem do dispositivo em texto claro — mesmo com acesso root ao dispositivo, o conteúdo descriptografado não pode ser persistido.
+>
+> A captura via `yt-dlp` ou ferramentas similares funciona apenas para vídeos sem DRM ativo e viola os Termos de Serviço do YouTube (ToS §4.b), expondo a empresa a risco legal.
+>
+> **Decisão de produto:** para offline, usar apenas conteúdo hospedado internamente (não YouTube). Vídeos próprios hospedados em CDN sem DRM podem ser baixados via `fetch` + Cache API / Service Worker. Vídeos do YouTube permanecem sempre online-only.
+>
+> **Alternativa viável (escopo v1.3):** vídeos internos marcados como `offline_available` podem ser cacheados via Service Worker. Implementação separada em US-OFF-001.
+
+**Classificação:** Spike | **Status:** 🔬 Encerrado — decisão tomada (09/05/2026)
+
+---
+
+### US-MUS-001 — Letra da Música ⬜ PENDENTE
+
+**Como** usuário, **quero** ver a letra de uma música enquanto ela toca no player, **para** acompanhar e aprender a canção.
+
+**Critérios de aceite:**
+- [ ] Campo `lyrics_url` adicionado em `CollectionAsset` (opcional, só relevante para assets de audio)
+- [ ] No admin (slot `storytelling`), campo de upload de arquivo de letra aparece
+- [ ] No `AudioPlayerScreen`, botão "Ver Letra" aparece quando `lyrics_url` está preenchido
+- [ ] Letra exibida em painel deslizável sobre o player
+- [ ] Botão alterna entre "Ver Letra" e "Ocultar Letra"
+
+**Arquivos estimados:** `types.ts`, `screens/AdminCollectionsScreen.tsx`, `screens/AudioPlayerScreen.tsx`
+
+**Classificação:** PÓS-MVP | **Tipo:** FE | **Tamanho:** M | **Status:** ⬜ Pendente
+
+---
+
+### US-OFF-001 — Disponibilidade Offline (Feature Flag + UI) ⬜ PENDENTE
+
+**Como** administrador, **quero** marcar quais coleções podem ser baixadas para uso offline, **para** que usuários possam consumir conteúdo sem internet.
+
+**Critérios de aceite:**
+- [ ] Campo `offline_available: boolean` adicionado em `Collection`
+- [ ] Toggle "Disponível offline" no form de edição de coleção no admin
+- [ ] Botão "Baixar para offline" exibido em `DetailsScreen` quando `offline_available = true`
+- [ ] Mock de download em localStorage (armazena flag de que a coleção está "baixada")
+- [ ] Botão muda para "Conteúdo offline disponível" após o download mock
+- [ ] Sem Service Worker nesta iteração (mock apenas)
+
+**Nota técnica:** baseado no spike US-DRM-001 — apenas conteúdo interno (não YouTube) pode ser marcado como offline_available. Admin deve receber aviso sobre isso.
+
+**Arquivos estimados:** `types.ts`, `screens/AdminCollectionsScreen.tsx`, `screens/DetailsScreen.tsx`, `lib/mockData.ts`
+
+**Classificação:** PÓS-MVP | **Tipo:** FE | **Tamanho:** G | **Status:** ⬜ Pendente

@@ -25,7 +25,7 @@
 
   /* ─── Animations ────────────────────────────────────────── */
   --animate-blob: blob 25s infinite;
-  --animate-fade-in-up: fadeInUp 0.5s ease-out forwards;
+  --animate-fade-in-up: fadeInUp 0.32s ease-out forwards;
 
   @keyframes blob {
     0% {
@@ -52,7 +52,7 @@
   @keyframes fadeInUp {
     0% {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(14px);
     }
 
     100% {
@@ -60,6 +60,48 @@
       transform: translateY(0);
     }
   }
+}
+
+:root {
+  --space-page-x: 1.5rem;
+  --space-page-x-desktop: 2rem;
+  --space-page-header-top: 1.5rem;
+  --space-page-header-top-desktop: 1.5rem;
+  --space-page-header-bottom: 1.5rem;
+  --space-page-header-bottom-desktop: 2rem;
+  --space-page-section-y: 1.5rem;
+  --space-page-section-y-desktop: 2rem;
+  --space-page-inset-y: 1rem;
+  --space-page-inset-y-desktop: 1.5rem;
+  --space-card-gap: 1rem;
+  --space-card-gap-desktop: 1.5rem;
+  --space-modal-header-x: 1.5rem;
+  --space-modal-header-y: 1rem;
+  --space-modal-body: 1.5rem;
+  --space-modal-body-desktop: 1.5rem;
+  --space-modal-footer-x: 1.5rem;
+  --space-modal-footer-y: 1rem;
+  --space-mobile-nav-x: 0.75rem;
+  --space-mobile-nav-top: 0.5rem;
+  --space-mobile-nav-bottom-extra: 0.625rem;
+  --space-mobile-nav-popover-bottom: 5.5rem;
+  --space-drawer-inset: 0.75rem;
+  --space-auth-shell-desktop: 2rem;
+  --space-auth-header-top: 3rem;
+  --space-auth-header-top-desktop: 2rem;
+  --space-auth-header-bottom: 1rem;
+  --space-auth-content-y: 1.5rem;
+  --space-auth-content-bottom-desktop: 3rem;
+  --space-detail-top: 2.25rem;
+  --space-detail-bottom: 6rem;
+  --space-detail-desktop: 3rem;
+  --space-list-item-y: 1.25rem;
+}
+
+[data-brand="central-coruja"] {
+  --space-page-x-desktop: 1.5rem;
+  --space-card-gap-desktop: 1.25rem;
+  --space-page-inset-y-desktop: 1.25rem;
 }
 
 /* ─── Scrollbar ──────────────────────────────────────────── */
@@ -158,9 +200,9 @@ body {
 }
 
 .content-fade-in {
-  animation: content-fade-in 0.25s ease-out forwards;
+  animation: content-fade-in 0.18s ease-out forwards;
 }
 
 .skeleton-fade-out {
-  animation: skeleton-fade-out 0.2s ease-in forwards;
+  animation: skeleton-fade-out 0.14s ease-in forwards;
 }

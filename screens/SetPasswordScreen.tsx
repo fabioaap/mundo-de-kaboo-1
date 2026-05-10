@@ -6,6 +6,7 @@ import { clearPendingPasswordSetup } from '../lib/passwordSetupFlow';
 import { Icons } from '../components/Icons';
 import { LOGO_URL } from '../constants';
 import backgroundImage from '../assets/images/background-login.jpg';
+import { layoutSpacing } from '../design-system/layout/spacing';
 
 interface SetPasswordScreenProps {
   onNavigate: (screen: ScreenName) => void;
@@ -124,10 +125,10 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
   };
 
   return (
-    <div
-      className={`flex min-h-screen items-center justify-center p-0 md:p-8 relative overflow-hidden ${isCentralCoruja ? 'bg-[#0C1A34]' : 'bg-gray-50 bg-no-repeat'}`}
-      style={shellBackgroundStyle}
-    >
+      <div
+        className={`flex min-h-screen items-center justify-center relative overflow-hidden ${layoutSpacing.authShell} ${isCentralCoruja ? 'bg-[#0C1A34]' : 'bg-gray-50 bg-no-repeat'}`}
+        style={shellBackgroundStyle}
+      >
       <div className={`absolute inset-0 ${isCentralCoruja
         ? 'bg-[radial-gradient(56%_42%_at_14%_8%,rgba(234,154,59,0.18),transparent_55%),radial-gradient(46%_34%_at_88%_12%,rgba(93,30,118,0.18),transparent_58%),linear-gradient(180deg,rgba(9,23,35,0.34),rgba(9,23,35,0.1))] backdrop-blur-[1px]'
         : 'bg-kaboo-primary/20 backdrop-blur-[2px]'}`} />
@@ -137,11 +138,11 @@ export const SetPasswordScreen: React.FC<SetPasswordScreenProps> = ({ onNavigate
         : 'bg-white md:rounded-3xl md:shadow-2xl'}`}>
 
         {/* Header */}
-        <div className={`px-6 pt-12 pb-4 flex items-center justify-center shrink-0 md:pt-8 ${isCentralCoruja ? 'border-b border-[#ece5fa]' : 'border-b border-gray-100'}`}>
+        <div className={`${layoutSpacing.authHeader} flex items-center justify-center shrink-0 ${isCentralCoruja ? 'border-b border-[#ece5fa]' : 'border-b border-gray-100'}`}>
           {renderBrandMark()}
         </div>
 
-        <div className="w-full mx-auto flex-1 flex flex-col justify-center px-6 py-6 md:pb-12">
+        <div className={`w-full mx-auto flex-1 flex flex-col justify-center ${layoutSpacing.authContent}`}>
 
           {/* Link expirado */}
           {linkExpired ? (
