@@ -62,6 +62,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
     isDownloading: isOfflineDownloading,
     downloadError: offlineDownloadError,
     handleDownload: handleOfflineDownload,
+    handleRemove: handleOfflineRemove,
   } = useOfflineDownload(collection, [resolvedAudioUrl, lyricsUrl]);
 
   // Set browser background to match theme color
@@ -470,24 +471,26 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
           {canDownloadOffline && (
             <button
               type="button"
-              onClick={handleOfflineDownload}
-              disabled={isOfflineDownloading || isOfflineDownloaded}
-              aria-label={isOfflineDownloaded ? 'Conteúdo disponível offline' : 'Baixar áudio para offline'}
-              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md disabled:cursor-default ${
+              onClick={isOfflineDownloaded ? handleOfflineRemove : handleOfflineDownload}
+              disabled={isOfflineDownloading}
+              aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar áudio para offline'}
+              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors backdrop-blur-md disabled:cursor-default ${
                 isOfflineDownloaded
-                  ? 'border-emerald-200/60 bg-emerald-400/20'
+                  ? 'border-red-300/50 bg-red-500/20 text-red-200 hover:bg-red-500/35'
                   : isOfflineDownloading
-                    ? 'border-white/30 bg-white/15'
-                    : 'border-white/25 bg-black/30 hover:bg-black/45'
+                    ? 'border-white/30 bg-white/15 text-white/90'
+                    : 'border-white/25 bg-black/30 text-white/90 hover:bg-black/45'
               }`}
             >
               {isOfflineDownloading ? (
                 <Icons.RotateCw size={13} className="animate-spin" />
+              ) : isOfflineDownloaded ? (
+                <Icons.Trash2 size={13} />
               ) : (
                 <Icons.Download size={13} />
               )}
               <span className="hidden sm:inline">
-                {isOfflineDownloaded ? 'Offline OK' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
+                {isOfflineDownloaded ? 'Remover offline' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
               </span>
             </button>
           )}

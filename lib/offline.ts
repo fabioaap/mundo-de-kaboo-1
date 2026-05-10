@@ -202,13 +202,48 @@ export const offlineManager = {
   },
 
   /**
-   * Remove a coleção do modo offline
+   * Remove a coleção do modo offline: apaga arquivos do Cache API e remove do localStorage
    */
-  disableOffline: async (id: string): Promise<void> => {
-    const updatedList = getStoredOfflineCollectionIds().filter((item: string) => item !== id);
+  disableOffline: async (
+    collection: Collection,
+    options: EnableOfflineOptions = {}
+  ): Promise<void> => {
+    const updatedList = getStoredOfflineCollectionIds().filter(
+      (item: string) => item !== collection.id
+    );
     setStoredOfflineCollectionIds(updatedList);
 
-    // Nota: Em uma implementação completa, deveríamos iterar sobre as chaves do cache
-    // e deletar os arquivos específicos. Para este escopo, remover da lista de permissão é suficiente.
-  }
+    if (typeof window === 'undefined' || !('caches' in window)) {
+      return;
+    }
+
+    const urlsToDelete = getOfflineCacheUrls(
+      collection,
+      options.extraUrls,
+      options.preferExtraUrls
+    );
+
+    if (urlsToDelete.length === 0) {
+      return;
+    }
+
+    let cache: Cache;
+
+    try {
+      cache = await caches.open(CACHE_NAME);
+    } catch (error) {
+      logger.warn('Erro ao acessar Cache API para remoção:', error);
+      return;
+    }
+
+    await Promise.all(
+      urlsToDelete.map(async (url) => {
+        try {
+          await cache.delete(url);
+        } catch (error) {
+          logger.warn(`Falha ao remover cache de ${url}:`, error);
+        }
+      })
+    );
+  },
 };

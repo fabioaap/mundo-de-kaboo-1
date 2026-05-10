@@ -133,11 +133,41 @@ export const useOfflineDownload = (
     relevantUrls,
   ]);
 
+  const handleRemove = useCallback(async () => {
+    if (!isAvailable || !isDownloaded || isDownloading) {
+      return;
+    }
+
+    setDownloadError(null);
+
+    try {
+      await offlineManager.disableOffline(collection, {
+        extraUrls: relevantUrls,
+        preferExtraUrls: hasExplicitTargets,
+      });
+      setIsDownloaded(false);
+    } catch (error) {
+      setDownloadError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível remover o conteúdo offline.'
+      );
+    }
+  }, [
+    collection,
+    hasExplicitTargets,
+    isAvailable,
+    isDownloaded,
+    isDownloading,
+    relevantUrls,
+  ]);
+
   return {
     isAvailable,
     isDownloaded,
     isDownloading,
     downloadError,
     handleDownload,
+    handleRemove,
   };
 };

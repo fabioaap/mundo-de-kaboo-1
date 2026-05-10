@@ -92,6 +92,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     isDownloading: isOfflineDownloading,
     downloadError: offlineDownloadError,
     handleDownload: handleOfflineDownload,
+    handleRemove: handleOfflineRemove,
   } = useOfflineDownload(collection, [resolvedVideoUrl]);
 
   // Set browser background to black for video player
@@ -786,25 +787,31 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
-                  handleOfflineDownload();
+                  if (isOfflineDownloaded) {
+                    handleOfflineRemove();
+                  } else {
+                    handleOfflineDownload();
+                  }
                 }}
-                disabled={isOfflineDownloading || isOfflineDownloaded}
-                aria-label={isOfflineDownloaded ? 'Conteúdo disponível offline' : 'Baixar vídeo para offline'}
-                className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors disabled:cursor-default ${
+                disabled={isOfflineDownloading}
+                aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar vídeo para offline'}
+                className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors disabled:cursor-default ${
                   isOfflineDownloaded
-                    ? 'border-emerald-200/60 bg-emerald-400/20'
+                    ? 'border-red-300/50 bg-red-500/20 text-red-200 hover:bg-red-500/35'
                     : isOfflineDownloading
-                      ? 'border-white/30 bg-white/15'
-                      : 'border-white/25 bg-black/30 hover:bg-black/45'
+                      ? 'border-white/30 bg-white/15 text-white/90'
+                      : 'border-white/25 bg-black/30 text-white/90 hover:bg-black/45'
                 }`}
               >
                 {isOfflineDownloading ? (
                   <Icons.RotateCw size={13} className="animate-spin" />
+                ) : isOfflineDownloaded ? (
+                  <Icons.Trash2 size={13} />
                 ) : (
                   <Icons.Download size={13} />
                 )}
                 <span className="hidden md:inline">
-                  {isOfflineDownloaded ? 'Offline OK' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
+                  {isOfflineDownloaded ? 'Remover offline' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
                 </span>
               </button>
             )}

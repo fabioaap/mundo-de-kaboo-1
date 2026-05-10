@@ -30,6 +30,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
     isDownloading: isOfflineDownloading,
     downloadError: offlineDownloadError,
     handleDownload: handleOfflineDownload,
+    handleRemove: handleOfflineRemove,
   } = useOfflineDownload(collection, [collection.pdf_url]);
   
   // Set browser background to match theme color
@@ -241,24 +242,26 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             {canDownloadOffline && (
               <button
                 type="button"
-                onClick={handleOfflineDownload}
-                disabled={isOfflineDownloading || isOfflineDownloaded}
-                aria-label={isOfflineDownloaded ? 'Conteúdo disponível offline' : 'Baixar livro para offline'}
-                className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md disabled:cursor-default ${
+                onClick={isOfflineDownloaded ? handleOfflineRemove : handleOfflineDownload}
+                disabled={isOfflineDownloading}
+                aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar livro para offline'}
+                className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors backdrop-blur-md disabled:cursor-default ${
                   isOfflineDownloaded
-                    ? 'border-emerald-200/60 bg-emerald-400/20'
+                    ? 'border-red-300/50 bg-red-500/20 text-red-200 hover:bg-red-500/35'
                     : isOfflineDownloading
-                      ? 'border-white/30 bg-white/15'
-                      : 'border-white/25 bg-black/30 hover:bg-black/45'
+                      ? 'border-white/30 bg-white/15 text-white/90'
+                      : 'border-white/25 bg-black/30 text-white/90 hover:bg-black/45'
                 }`}
               >
                 {isOfflineDownloading ? (
                   <Icons.RotateCw size={13} className="animate-spin" />
+                ) : isOfflineDownloaded ? (
+                  <Icons.Trash2 size={13} />
                 ) : (
                   <Icons.Download size={13} />
                 )}
                 <span className="hidden sm:inline">
-                  {isOfflineDownloaded ? 'Offline OK' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
+                  {isOfflineDownloaded ? 'Remover offline' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
                 </span>
               </button>
             )}
@@ -277,30 +280,32 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
         </button>
       )}
 
-      {/* Text mode toggle for mobile landscape */}
+      {/* Offline button for mobile landscape - Floating top right */}
       {isMobileLandscape && (
         <div className="fixed top-4 right-4 z-30 flex items-center gap-2">
           {canDownloadOffline && (
             <button
               type="button"
-              onClick={handleOfflineDownload}
-              disabled={isOfflineDownloading || isOfflineDownloaded}
-              aria-label={isOfflineDownloaded ? 'Conteúdo disponível offline' : 'Baixar livro para offline'}
-              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md disabled:cursor-default ${
+              onClick={isOfflineDownloaded ? handleOfflineRemove : handleOfflineDownload}
+              disabled={isOfflineDownloading}
+              aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar livro para offline'}
+              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors backdrop-blur-md disabled:cursor-default ${
                 isOfflineDownloaded
-                  ? 'border-emerald-200/60 bg-emerald-400/20'
+                  ? 'border-red-300/50 bg-red-500/20 text-red-200 hover:bg-red-500/35'
                   : isOfflineDownloading
-                    ? 'border-white/30 bg-white/15'
-                    : 'border-white/25 bg-black/30 hover:bg-black/45'
+                    ? 'border-white/30 bg-white/15 text-white/90'
+                    : 'border-white/25 bg-black/30 text-white/90 hover:bg-black/45'
               }`}
             >
               {isOfflineDownloading ? (
                 <Icons.RotateCw size={13} className="animate-spin" />
+              ) : isOfflineDownloaded ? (
+                <Icons.Trash2 size={13} />
               ) : (
                 <Icons.Download size={13} />
               )}
               <span className="hidden sm:inline">
-                {isOfflineDownloaded ? 'Offline OK' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
+                {isOfflineDownloaded ? 'Remover offline' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
               </span>
             </button>
           )}
