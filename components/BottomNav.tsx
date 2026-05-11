@@ -157,8 +157,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     : 'bg-kaboo-bg border-kaboo-primary/20 hover:bg-kaboo-primary/5';
   const desktopToggleIconClass = isCentralCoruja ? 'text-white/85' : 'text-gray-600';
   const desktopTogglePositionClass = isCollapsed
-    ? 'top-5 right-3 h-8 w-8'
+    ? 'top-4 -right-3 h-7 w-7'
     : 'top-6 right-4 h-8 w-8';
+  const desktopToggleIconSize = isCollapsed ? 14 : 16;
   const desktopSectionTitleClass = isCentralCoruja ? 'text-white/45' : 'text-kaboo-primary/50';
   const desktopSectionDividerClass = isCentralCoruja ? 'border-white/10' : 'border-kaboo-primary/10';
   const desktopItemActiveClass = isCentralCoruja
@@ -265,9 +266,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
           title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           {isCollapsed ? (
-            <Icons.ChevronRight size={16} className={desktopToggleIconClass} />
+            <Icons.ChevronRight size={desktopToggleIconSize} className={desktopToggleIconClass} />
           ) : (
-            <Icons.ChevronLeft size={16} className={desktopToggleIconClass} />
+            <Icons.ChevronLeft size={desktopToggleIconSize} className={desktopToggleIconClass} />
           )}
         </button>
 
