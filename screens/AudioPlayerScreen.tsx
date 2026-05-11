@@ -14,6 +14,10 @@ import {
   shouldUseAudioPlayerMobileLandscapeLayout,
   shouldResetAudioPlayerPanels,
 } from '../lib/audioPlayerLayout';
+import {
+  AUDIO_PLAYER_SKIP_SECONDS,
+  getAudioPlayerSkipTarget,
+} from '../lib/audioPlayerSkip';
 
 interface AudioPlayerScreenProps {
   collection: Collection;
@@ -358,15 +362,31 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   };
 
   const skipForward = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = Math.min(audioRef.current.currentTime + 15, duration);
+    if (!audioRef.current) {
+      return;
     }
+
+    const nextTime = getAudioPlayerSkipTarget(
+      audioRef.current.currentTime,
+      Number.isFinite(audioRef.current.duration) ? audioRef.current.duration : duration,
+      'forward'
+    );
+    audioRef.current.currentTime = nextTime;
+    setCurrentTime(nextTime);
   };
 
   const skipBackward = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = Math.max(audioRef.current.currentTime - 15, 0);
+    if (!audioRef.current) {
+      return;
     }
+
+    const nextTime = getAudioPlayerSkipTarget(
+      audioRef.current.currentTime,
+      Number.isFinite(audioRef.current.duration) ? audioRef.current.duration : duration,
+      'backward'
+    );
+    audioRef.current.currentTime = nextTime;
+    setCurrentTime(nextTime);
   };
 
   const toggleSpeed = () => {
@@ -439,19 +459,41 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
     setTrackEnded(false);
   };
 
-  const SkipBack15Icon = ({ size = 28 }: { size?: number }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
-      <text x="12" y="16.5" textAnchor="middle" fontSize="6" fontWeight="900" fill="currentColor">15</text>
-    </svg>
-  );
+  const SkipTenGlyph: React.FC<{ direction: 'back' | 'forward'; size?: number }> = ({
+    direction,
+    size = 24,
+  }) => {
+    const glyphPaths = direction === 'back'
+      ? [
+          'M11.99,5V1l-5,5l5,5V7c3.31,0,6,2.69,6,6s-2.69,6-6,6s-6-2.69-6-6h-2c0,4.42,3.58,8,8,8s8-3.58,8-8S16.41,5,11.99,5z',
+          'M10.89,16h-0.85v-3.26l-1.01,0.31v-0.69l1.77-0.63h0.09V16z',
+          'M15.17,14.24c0,0.32-0.03,0.6-0.1,0.82s-0.17,0.42-0.29,0.57s-0.28,0.26-0.45,0.33s-0.37,0.1-0.59,0.1s-0.41-0.03-0.59-0.1s-0.33-0.18-0.46-0.33s-0.23-0.34-0.3-0.57s-0.11-0.5-0.11-0.82V13.5c0-0.32,0.03-0.6,0.1-0.82s0.17-0.42,0.29-0.57s0.28-0.26,0.45-0.33s0.37-0.1,0.59-0.1s0.41,0.03,0.59,0.1c0.18,0.07,0.33,0.18,0.46,0.33s0.23,0.34,0.3,0.57s0.11,0.5,0.11,0.82V14.24z M14.32,13.38c0-0.19-0.01-0.35-0.04-0.48s-0.07-0.23-0.12-0.31s-0.11-0.14-0.19-0.17s-0.16-0.05-0.25-0.05s-0.18,0.02-0.25,0.05s-0.14,0.09-0.19,0.17s-0.09,0.18-0.12,0.31s-0.04,0.29-0.04,0.48v0.97c0,0.19,0.01,0.35,0.04,0.48s0.07,0.24,0.12,0.32s0.11,0.14,0.19,0.17s0.16,0.05,0.25,0.05s0.18-0.02,0.25-0.05s0.14-0.09,0.19-0.17s0.09-0.19,0.11-0.32s0.04-0.29,0.04-0.48V13.38z',
+        ]
+      : [
+          'M18,13c0,3.31-2.69,6-6,6s-6-2.69-6-6s2.69-6,6-6v4l5-5l-5-5v4c-4.42,0-8,3.58-8,8c0,4.42,3.58,8,8,8s8-3.58,8-8H18z',
+          'M10.86,15.94V11.67H10.77L9,12.3v0.69l1.01-0.31v3.26H10.86z',
+          'M12.25,13.44v0.74c0,1.9,1.31,1.82,1.44,1.82c0.14,0,1.44,0.09,1.44-1.82v-0.74c0-1.9-1.31-1.82-1.44-1.82C13.55,11.62,12.25,11.53,12.25,13.44z M14.29,13.32v0.97c0,0.77-0.21,1.03-0.59,1.03c-0.38,0-0.6-0.26-0.6-1.03v-0.97c0-0.75,0.22-1.01,0.59-1.01C14.07,12.3,14.29,12.57,14.29,13.32z',
+        ];
 
-  const SkipForward15Icon = ({ size = 28 }: { size?: number }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 5V1l5 5-5 5V7C8.69 7 6 9.69 6 13s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" />
-      <text x="12" y="16.5" textAnchor="middle" fontSize="6" fontWeight="900" fill="currentColor">15</text>
-    </svg>
-  );
+    const [outlinePath, ...numberPaths] = glyphPaths;
+
+    return (
+      <svg
+        aria-hidden="true"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        className="overflow-visible fill-current text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+      >
+        <path d={outlinePath} />
+        <g transform="translate(12 13.85) scale(1.18) translate(-12 -13.85)">
+          {numberPaths.map((path) => (
+            <path key={path} d={path} />
+          ))}
+        </g>
+      </svg>
+    );
+  };
 
   const handleBack = () => {
     maybeSaveProgress(true);
@@ -867,9 +909,9 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
               <button
                 onClick={skipBackward}
                 className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
-                aria-label="Retroceder 15 segundos"
+                aria-label={`Retroceder ${AUDIO_PLAYER_SKIP_SECONDS} segundos`}
               >
-                <SkipBack15Icon size={24} />
+                <SkipTenGlyph direction="back" size={24} />
               </button>
 
               {/* Play/Pause */}
@@ -889,9 +931,9 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
               <button
                 onClick={skipForward}
                 className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
-                aria-label="Avançar 15 segundos"
+                aria-label={`Avançar ${AUDIO_PLAYER_SKIP_SECONDS} segundos`}
               >
-                <SkipForward15Icon size={24} />
+                <SkipTenGlyph direction="forward" size={24} />
               </button>
             </div>
 
