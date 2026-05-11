@@ -203,10 +203,14 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     };
   }, [collection.description, mediaItemId]);
 
+  useEffect(() => {
+    setShowMobileQueue(false);
+  }, [mediaItemId]);
+
   const resetControlsTimeout = () => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    if (isPlaying) {
+    if (isPlaying && !isMobilePortrait) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
       }, 3000);
@@ -550,6 +554,504 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       controlsElement.removeAttribute('inert');
     };
   }, [overlayActive]);
+
+  if (isMobilePortrait) {
+    const visibleMobileQueueItems = showMobileQueue ? relatedItems : relatedItems.slice(0, 2);
+    const hiddenQueueCount = Math.max(relatedItems.length - visibleMobileQueueItems.length, 0);
+
+    return (
+      <div
+        ref={containerRef}
+        className="fixed inset-0 z-50 overflow-y-auto bg-black text-white"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Player de vídeo"
+        onTouchStart={resetControlsTimeout}
+      >
+        <div className="min-h-full pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <header className="sticky top-0 z-30 border-b border-white/10 bg-black/80 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white transition-colors hover:bg-white/10"
+                aria-label="Voltar"
+              >
+                <Icons.ChevronLeft size={22} strokeWidth={2.5} />
+              </button>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/45">Vídeo</p>
+                <h1 className="truncate text-sm font-black text-white">{resolvedTitle}</h1>
+                <p className="truncate text-xs text-white/55">{collection.title}</p>
+              </div>
+
+              {canDownloadOffline && !isYouTubeSource && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (isOfflineDownloaded) {
+                      handleOfflineRemove();
+                    } else {
+                      handleOfflineDownload();
+                    }
+                  }}
+                  disabled={isOfflineDownloading}
+                  aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar vídeo para offline'}
+                  className={`inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[10px] font-black uppercase tracking-[0.08em] transition-colors disabled:cursor-default ${
+                    isOfflineDownloaded
+                      ? 'border-red-300/50 bg-red-500/20 text-red-100 hover:bg-red-500/30'
+                      : isOfflineDownloading
+                        ? 'border-white/30 bg-white/15 text-white/85'
+                        : 'border-white/20 bg-white/5 text-white/80 hover:bg-white/10'
+                  }`}
+                >
+                  {isOfflineDownloading ? (
+                    <Icons.RotateCw size={14} className="animate-spin" />
+                  ) : isOfflineDownloaded ? (
+                    <Icons.Trash2 size={14} />
+                  ) : (
+                    <Icons.Download size={14} />
+                  )}
+                  <span className="hidden min-[360px]:inline">{isOfflineDownloaded ? 'Remover' : isOfflineDownloading ? 'Baixando' : 'Offline'}</span>
+                </button>
+              )}
+            </div>
+          </header>
+
+          <div className="px-4 pt-4">
+            <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-black shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
+              <div className="aspect-video">
+                {youtubeEmbedUrl ? (
+                  <iframe
+                    src={youtubeEmbedUrl}
+                    title={resolvedTitle || 'Vídeo do YouTube'}
+                    className="h-full w-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    onLoad={() => { setIsLoading(false); setPlayerState('playing'); }}
+                  />
+                ) : resolvedVideoUrl ? (
+                  <video
+                    ref={videoRef}
+                    src={resolvedVideoUrl}
+                    className="h-full w-full bg-black object-contain"
+                    playsInline
+                    onClick={(event) => { event.stopPropagation(); togglePlay(); }}
+                    onTimeUpdate={handleTimeUpdate}
+                    onLoadedData={handleLoadedData}
+                    onWaiting={() => { setIsLoading(true); }}
+                    onPlaying={() => { setIsLoading(false); setPlayerState('playing'); }}
+                    onPause={() => {
+                      setIsPlaying(false);
+                      setPlayerState('paused');
+                      maybeSaveProgress(true);
+                    }}
+                    onError={() => {
+                      setIsLoading(false);
+                      setIsPlaying(false);
+                      setPlayError('Não foi possível carregar o vídeo nesta conexão.');
+                      const isPersistent = retryCountRef.current >= 2;
+                      setPlayerState(isPersistent ? 'error_persistent' : 'error');
+                    }}
+                    onEnded={() => {
+                      setIsPlaying(false);
+                      setPlayerState('ended');
+                      setShowControls(true);
+                      maybeSaveProgress(true);
+                    }}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center px-6">
+                    <div className="max-w-md rounded-2xl border border-white/15 bg-black/50 p-6 text-center backdrop-blur-sm">
+                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-white/70">Transmissão indisponível</p>
+                      <h2 className="mt-3 text-lg font-black text-white">Não conseguimos carregar este vídeo agora</h2>
+                      <p className="mt-2 text-sm text-white/80">
+                        Você pode voltar para a biblioteca ou seguir para outro conteúdo relacionado.
+                      </p>
+                      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleBack}
+                          className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-white/20"
+                        >
+                          Voltar para biblioteca
+                        </button>
+                        {leadRelatedItem && (
+                          <button
+                            type="button"
+                            onClick={() => openRelatedItem(leadRelatedItem)}
+                            className="rounded-xl border border-white/20 bg-kaboo-primary/80 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-kaboo-primary"
+                          >
+                            Tentar próximo vídeo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {!isYouTubeSource && resolvedVideoUrl && playerState !== 'ended' && playerState !== 'error_persistent' && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={(event) => togglePlay(event)}
+                    className="pointer-events-auto inline-flex h-20 w-20 items-center justify-center rounded-full border border-white/25 bg-black/28 text-white shadow-[0_20px_36px_rgba(0,0,0,0.35)] backdrop-blur-md transition-transform active:scale-95"
+                    aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
+                  >
+                    {isPlaying ? (
+                      <Icons.Pause size={34} fill="currentColor" strokeWidth={2} />
+                    ) : (
+                      <Icons.Play size={34} fill="currentColor" strokeWidth={2} className="ml-1" />
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {isLoading && (resolvedVideoUrl || youtubeEmbedUrl) && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                  <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white"></div>
+                </div>
+              )}
+
+              {playerState === 'ended' && (
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="overlay-ended-title-mobile"
+                  className="absolute inset-0 z-20 flex items-center justify-center bg-black/75 px-4 text-center backdrop-blur-sm"
+                >
+                  <div className="flex max-w-xs flex-col items-center gap-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/40 bg-white/10 backdrop-blur-md">
+                      <Icons.Check size={32} className="text-white" strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60">Concluído</p>
+                      <h2 id="overlay-ended-title-mobile" className="mt-1 text-xl font-black text-white">{resolvedTitle}</h2>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      <button
+                        ref={endedFocusRef}
+                        autoFocus
+                        type="button"
+                        onClick={() => {
+                          if (videoRef.current) {
+                            videoRef.current.currentTime = 0;
+                            videoRef.current.play().then(() => {
+                              setIsPlaying(true);
+                              setPlayerState('playing');
+                              retryCountRef.current = 0;
+                            }).catch(() => undefined);
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/25 active:scale-95"
+                      >
+                        <Icons.RotateCw size={15} /> Assistir de novo
+                      </button>
+                      {leadRelatedItem && (
+                        <button
+                          type="button"
+                          onClick={() => openRelatedItem(leadRelatedItem)}
+                          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-black transition-colors hover:bg-white/90 active:scale-95"
+                        >
+                          <Icons.ChevronRight size={15} />
+                          <span className="max-w-[150px] truncate">{leadRelatedItem.title}</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {playerState === 'error_persistent' && (
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="overlay-error-title-mobile"
+                  className="absolute inset-0 z-20 flex items-center justify-center bg-black/80 px-4 text-center backdrop-blur-sm"
+                >
+                  <div className="w-full max-w-sm rounded-2xl border border-red-400/30 bg-red-900/60 p-6 backdrop-blur-md shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-red-400/40 bg-red-500/20">
+                      <Icons.AlertCircle size={28} className="text-red-300" />
+                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-300/80">Falha persistente</p>
+                    <h2 id="overlay-error-title-mobile" className="mt-2 text-lg font-black text-white">Não foi possível carregar o vídeo</h2>
+                    <p className="mt-2 text-sm text-white/70">
+                      Verifique sua conexão e tente novamente, ou acesse outro conteúdo.
+                    </p>
+                    <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                      <button
+                        ref={errorPersistentFocusRef}
+                        autoFocus
+                        type="button"
+                        onClick={() => {
+                          retryCountRef.current = 0;
+                          setPlayerState('loading');
+                          retryPlayback();
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/25 active:scale-95"
+                      >
+                        <Icons.RotateCw size={15} /> Tentar novamente
+                      </button>
+                      {leadRelatedItem && (
+                        <button
+                          type="button"
+                          onClick={() => openRelatedItem(leadRelatedItem)}
+                          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-black transition-colors hover:bg-white/90 active:scale-95"
+                        >
+                          <Icons.ChevronRight size={15} />
+                          <span className="max-w-[150px] truncate">{leadRelatedItem.title}</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-3 px-4 pt-4">
+            {playError && (
+              <div className={`${panelChromeClass} border-red-300/35 bg-red-500/82 px-4 py-3 text-sm text-white`}>
+                <p>{playError}</p>
+                {resolvedVideoUrl && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      retryPlayback();
+                    }}
+                    className="mt-2 rounded-lg border border-white/35 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white"
+                  >
+                    Tentar novamente
+                  </button>
+                )}
+              </div>
+            )}
+
+            {offlineDownloadError && (
+              <div className={`${panelChromeClass} border-red-300/35 bg-red-500/82 px-4 py-3 text-sm text-white`}>
+                <p>{offlineDownloadError}</p>
+              </div>
+            )}
+
+            {!isYouTubeSource ? (
+              <section className={`${panelChromeClass} p-4`}>
+                <div className="flex items-center gap-2.5 text-[11px] font-bold text-white/85">
+                  <span className="tabular-nums">{formatTime(currentTime)}</span>
+                  <div className="relative flex h-5 flex-1 items-center">
+                    <input
+                      type="range"
+                      min={0}
+                      max={duration || 100}
+                      value={currentTime}
+                      onChange={handleSeek}
+                      onMouseUp={handleSeekEnd}
+                      onTouchEnd={handleSeekEnd}
+                      className="relative z-20 h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-white/30 focus:outline-none"
+                      style={{
+                        background: `linear-gradient(to right, ${themeColor} ${progressPercent}%, rgba(255,255,255,0.3) ${progressPercent}%)`
+                      }}
+                    />
+                  </div>
+                  <span className="tabular-nums text-white/70">-{formatTime(remainingTime)}</span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => skip(-10)}
+                    className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/8 text-white transition-colors hover:bg-white/14"
+                    aria-label="Voltar 10 segundos"
+                  >
+                    <Icons.SkipBack size={20} />
+                    <span className="text-[11px] font-bold">-10s</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => togglePlay(event)}
+                    className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-2xl border border-white/25 bg-white/12 text-white transition-colors hover:bg-white/20"
+                    aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
+                  >
+                    {isPlaying ? <Icons.Pause size={22} fill="currentColor" /> : <Icons.Play size={22} fill="currentColor" className="ml-0.5" />}
+                    <span className="text-[11px] font-bold">{isPlaying ? 'Pausar' : 'Play'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => skip(10)}
+                    className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/8 text-white transition-colors hover:bg-white/14"
+                    aria-label="Avançar 10 segundos"
+                  >
+                    <Icons.SkipForward size={20} />
+                    <span className="text-[11px] font-bold">+10s</span>
+                  </button>
+                </div>
+
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleMute}
+                    className="flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/6 px-2 text-center text-white transition-colors hover:bg-white/12"
+                  >
+                    {isMuted || volume === 0 ? <Icons.VolumeX size={18} /> : <Icons.Volume2 size={18} />}
+                    <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Som</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleSpeed}
+                    className="flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/6 px-2 text-center text-white transition-colors hover:bg-white/12"
+                  >
+                    <span className="text-sm font-black">{playbackRate}x</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Veloc.</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleFullscreen}
+                    className="flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/6 px-2 text-center text-white transition-colors hover:bg-white/12"
+                  >
+                    {isFullscreen ? <Icons.Minimize size={18} /> : <Icons.Maximize size={18} />}
+                    <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Tela</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileQueue((prev) => !prev)}
+                    className="flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/6 px-2 text-center text-white transition-colors hover:bg-white/12"
+                  >
+                    <Icons.ChevronRight size={18} className={`transition-transform ${showMobileQueue ? 'rotate-90' : ''}`} />
+                    <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Fila</span>
+                  </button>
+                </div>
+
+                {leadRelatedItem && (
+                  <button
+                    type="button"
+                    onClick={() => openRelatedItem(leadRelatedItem)}
+                    className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-white/20 bg-white/8 p-3 text-left transition-colors hover:bg-white/14"
+                  >
+                    <div
+                      className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/20 bg-white/8"
+                      style={leadRelatedItem.thumbnailUrl ? {
+                        backgroundImage: `url(${leadRelatedItem.thumbnailUrl})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      } : undefined}
+                    >
+                      <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/65 text-white">
+                        <Icons.Play size={8} className="ml-0.5 fill-current stroke-none" />
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white/55">Próximo vídeo</p>
+                      <p className="mt-1 truncate text-sm font-bold text-white">{leadRelatedItem.title}</p>
+                      <p className="truncate text-xs text-white/60">{leadRelatedItem.collectionTitle ?? collection.title}</p>
+                    </div>
+                    <Icons.ChevronRight size={16} className="shrink-0 text-white/70" />
+                  </button>
+                )}
+              </section>
+            ) : (
+              <section className={`${panelChromeClass} p-4 text-sm text-white/80`}>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Controles</p>
+                <p className="mt-2 leading-6">
+                  Reprodução via YouTube. Use os controles nativos do vídeo para avançar, pausar, ajustar som e tela cheia.
+                </p>
+              </section>
+            )}
+
+            {itemDescription && (
+              <section className={`${panelChromeClass} p-4`}>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Descrição</p>
+                <p className="mt-2 text-sm leading-6 text-white/85">{itemDescription}</p>
+              </section>
+            )}
+
+            <section className={`${panelChromeClass} p-4`}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos</p>
+                  <p className="mt-1 text-sm font-bold text-white">
+                    {relatedItems.length > 0 ? `${relatedItems.length} vídeos na fila` : 'Sem vídeos relacionados'}
+                  </p>
+                </div>
+                {relatedItems.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileQueue((prev) => !prev)}
+                    className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/8 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white/80 transition-colors hover:bg-white/14"
+                  >
+                    {showMobileQueue ? 'Enxugar' : 'Ver fila'}
+                    <Icons.ChevronRight size={12} className={`transition-transform ${showMobileQueue ? 'rotate-90' : ''}`} />
+                  </button>
+                )}
+              </div>
+
+              {relatedItems.length === 0 ? (
+                <p className="mt-3 rounded-2xl border border-white/20 bg-white/6 px-3 py-3 text-sm text-white/65">
+                  Não há outros vídeos disponíveis para esta trilha agora.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {visibleMobileQueueItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => openRelatedItem(item)}
+                      className="flex w-full items-center gap-3 rounded-2xl border border-white/20 bg-white/8 p-3 text-left transition-colors hover:bg-white/14"
+                    >
+                      <div
+                        className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/20 bg-white/8"
+                        style={item.thumbnailUrl ? {
+                          backgroundImage: `url(${item.thumbnailUrl})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        } : undefined}
+                      >
+                        <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/65 text-white">
+                          <Icons.Play size={8} className="ml-0.5 fill-current stroke-none" />
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-bold leading-5 text-white">{item.title}</p>
+                        <p className="mt-0.5 text-xs text-white/60">{item.collectionTitle ?? collection.title}</p>
+                      </div>
+                      <Icons.ChevronRight size={16} className="shrink-0 text-white/65" />
+                    </button>
+                  ))}
+
+                  {!showMobileQueue && hiddenQueueCount > 0 && (
+                    <p className="px-1 text-xs text-white/55">
+                      +{hiddenQueueCount} vídeo{hiddenQueueCount > 1 ? 's' : ''} escondido{hiddenQueueCount > 1 ? 's' : ''} na fila.
+                    </p>
+                  )}
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
+
+        <style>{`
+          input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: ${themeColor};
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            border: 2px solid white;
+            transform: scale(1);
+          }
+          input[type=range]::-webkit-slider-runnable-track {
+            height: 4px;
+            background: transparent;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div
