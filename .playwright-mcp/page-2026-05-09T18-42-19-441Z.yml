@@ -1,0 +1,275 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Expandir menu" [ref=e5]:
+      - img [ref=e6]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Mundo de Kaboo" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic: Coleções
+          - button "Coleções" [ref=e13]:
+            - img [ref=e14]
+        - generic [ref=e16]:
+          - generic: Livros
+          - button "Livros" [ref=e17]:
+            - img [ref=e18]
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic: Vídeos
+          - button "Vídeos" [ref=e22]:
+            - img [ref=e23]
+        - generic [ref=e26]:
+          - generic: Músicas
+          - button "Músicas" [ref=e27]:
+            - img [ref=e28]
+        - generic [ref=e30]:
+          - generic: Formações
+          - button "Formações" [ref=e31]:
+            - img [ref=e32]
+        - generic [ref=e34]:
+          - generic: Materiais
+          - button "Materiais" [ref=e35]:
+            - img [ref=e36]
+      - generic [ref=e40]:
+        - generic: Gerenciar
+        - button "Gerenciar" [active] [ref=e41]:
+          - img [ref=e42]
+    - button "Abrir perfil de Editor" [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]: ET
+        - img "Avatar" [ref=e50]
+  - main [ref=e51]:
+    - generic [ref=e4688]:
+      - complementary [ref=e4689]:
+        - generic [ref=e4690]:
+          - generic [ref=e4691]: Administração
+          - button "Recolher menu" [ref=e4692]:
+            - img [ref=e4693]
+        - navigation [ref=e4695]:
+          - button "Coleções" [ref=e4696]:
+            - img [ref=e4697]
+            - generic [ref=e4699]: Coleções
+          - button "Vídeos" [ref=e4700]:
+            - img [ref=e4701]
+            - generic [ref=e4704]: Vídeos
+          - button "Músicas" [ref=e4705]:
+            - img [ref=e4706]
+            - generic [ref=e4708]: Músicas
+          - button "Formações" [ref=e4709]:
+            - img [ref=e4710]
+            - generic [ref=e4712]: Formações
+          - button "Materiais" [ref=e4713]:
+            - img [ref=e4714]
+            - generic [ref=e4717]: Materiais
+          - button "Personagens" [ref=e4718]:
+            - img [ref=e4719]
+            - generic [ref=e4724]: Personagens
+      - generic [ref=e4726]:
+        - generic [ref=e4727]:
+          - button "Voltar" [ref=e4728]:
+            - img [ref=e4729]
+          - heading "Gerenciar" [level=1] [ref=e4731]
+        - generic [ref=e4733]:
+          - generic [ref=e4734]:
+            - generic [ref=e4736]:
+              - img [ref=e4737]
+              - textbox "Buscar por título ou tema..." [ref=e4740]
+            - button "Todos os segmentos" [ref=e4742]:
+              - generic [ref=e4743]: Todos os segmentos
+              - img [ref=e4744]
+            - button "Ordenar" [ref=e4748]:
+              - img [ref=e4749]
+              - generic [ref=e4752]: Ordenar
+              - img [ref=e4753]
+            - button "Nova Coleção" [ref=e4755]:
+              - img [ref=e4756]
+              - generic [ref=e4757]: Nova Coleção
+          - generic [ref=e4758]:
+            - generic [ref=e4759] [cursor=pointer]:
+              - generic [ref=e4760]:
+                - generic [ref=e4761]:
+                  - img "Kaboo e a Carta Misteriosa" [ref=e4762]
+                  - generic [ref=e4763]: Coleção
+                  - generic [ref=e4764]: E.F. Anos Iniciais
+                - button "Ações da coleção" [ref=e4767]:
+                  - img [ref=e4768]
+              - heading "Kaboo e a Carta Misteriosa" [level=3] [ref=e4772]
+              - generic [ref=e4774]: Kit multimodal
+              - paragraph [ref=e4775]: Pertencimento e diversidade
+            - generic [ref=e4776] [cursor=pointer]:
+              - generic [ref=e4777]:
+                - generic [ref=e4778]:
+                  - img "Mensageiro e a Canção Certa" [ref=e4779]
+                  - generic [ref=e4780]: Coleção
+                  - generic [ref=e4781]: E.F. Anos Iniciais
+                - button "Ações da coleção" [ref=e4784]:
+                  - img [ref=e4785]
+              - heading "Mensageiro e a Canção Certa" [level=3] [ref=e4789]
+              - generic [ref=e4791]: Kit multimodal
+              - paragraph [ref=e4792]: Sensibilidade, regulação sensorial e respeito ao silêncio
+            - generic [ref=e4793] [cursor=pointer]:
+              - generic [ref=e4794]:
+                - generic [ref=e4795]:
+                  - img "Baratinha e Baratão no Labirinto do Eco" [ref=e4796]
+                  - generic [ref=e4797]: Coleção
+                  - generic [ref=e4798]: E.F. Anos Iniciais
+                - button "Ações da coleção" [ref=e4801]:
+                  - img [ref=e4802]
+              - heading "Baratinha e Baratão no Labirinto do Eco" [level=3] [ref=e4806]
+              - generic [ref=e4808]: Kit multimodal
+              - paragraph [ref=e4809]: Escuta ativa e diálogo
+            - generic [ref=e4810] [cursor=pointer]:
+              - generic [ref=e4811]:
+                - generic [ref=e4812]:
+                  - img "Kaboo e o Desafio das Cores" [ref=e4813]
+                  - generic [ref=e4814]: Coleção
+                  - generic [ref=e4815]: E.F. Anos Iniciais
+                - button "Ações da coleção" [ref=e4818]:
+                  - img [ref=e4819]
+              - heading "Kaboo e o Desafio das Cores" [level=3] [ref=e4823]
+              - generic [ref=e4825]: Kit multimodal
+              - paragraph [ref=e4826]: Conflitos, respeito e reconciliação
+            - generic [ref=e4827] [cursor=pointer]:
+              - generic [ref=e4828]:
+                - generic [ref=e4829]:
+                  - img "Gaio e a Hora de Voar Alto" [ref=e4830]
+                  - generic [ref=e4831]: Livro
+                  - generic [ref=e4832]: E.F. Anos Iniciais
+                - button "Ações da coleção" [ref=e4835]:
+                  - img [ref=e4836]
+              - heading "Gaio e a Hora de Voar Alto" [level=3] [ref=e4840]
+              - generic [ref=e4842]: Livro avulso
+              - paragraph [ref=e4843]: Coragem e superação
+            - generic [ref=e4844] [cursor=pointer]:
+              - generic [ref=e4845]:
+                - generic [ref=e4846]:
+                  - img "Papa e o Plano Furado" [ref=e4847]
+                  - generic [ref=e4848]: Livro
+                  - generic [ref=e4849]: E.F. Anos Iniciais
+                - button "Ações da coleção" [ref=e4852]:
+                  - img [ref=e4853]
+              - heading "Papa e o Plano Furado" [level=3] [ref=e4857]
+              - generic [ref=e4859]: Livro avulso
+              - paragraph [ref=e4860]: Criatividade, erro e recomeço
+            - generic [ref=e4861] [cursor=pointer]:
+              - generic [ref=e4862]:
+                - generic [ref=e4863]:
+                  - img "Batatinha e o Espelho da Alegria" [ref=e4864]
+                  - generic [ref=e4865]: Livro
+                  - generic [ref=e4866]: E.F. Anos Iniciais
+                - button "Ações da coleção" [ref=e4869]:
+                  - img [ref=e4870]
+              - heading "Batatinha e o Espelho da Alegria" [level=3] [ref=e4874]
+              - generic [ref=e4876]: Livro avulso
+              - paragraph [ref=e4877]: Autoimagem e identidade
+            - generic [ref=e4878] [cursor=pointer]:
+              - generic [ref=e4879]:
+                - generic [ref=e4880]:
+                  - img "Blado e a Caixa dos Sentimentos" [ref=e4881]
+                  - generic [ref=e4882]: Livro
+                  - generic [ref=e4883]: E.F. Anos Iniciais
+                - button "Ações da coleção" [ref=e4886]:
+                  - img [ref=e4887]
+              - heading "Blado e a Caixa dos Sentimentos" [level=3] [ref=e4891]
+              - generic [ref=e4893]: Livro avulso
+              - paragraph [ref=e4894]: Confiança, emoções, sentimentos e segurança emocional
+            - generic [ref=e4895] [cursor=pointer]:
+              - generic [ref=e4896]:
+                - generic [ref=e4897]:
+                  - img "Gaio e o Vento da Coragem" [ref=e4898]
+                  - generic [ref=e4899]: Livro
+                  - generic [ref=e4900]: Ed. Infantil
+                - button "Ações da coleção" [ref=e4903]:
+                  - img [ref=e4904]
+              - heading "Gaio e o Vento da Coragem" [level=3] [ref=e4908]
+              - generic [ref=e4910]: Livro avulso
+              - paragraph [ref=e4911]: Coragem, enfrentamento do medo e autoconfiança
+            - generic [ref=e4912] [cursor=pointer]:
+              - generic [ref=e4913]:
+                - generic [ref=e4914]:
+                  - img "Batatinha e o Giro das Emoções" [ref=e4915]
+                  - generic [ref=e4916]: Livro
+                  - generic [ref=e4917]: Ed. Infantil
+                - button "Ações da coleção" [ref=e4920]:
+                  - img [ref=e4921]
+              - heading "Batatinha e o Giro das Emoções" [level=3] [ref=e4925]
+              - generic [ref=e4927]: Livro avulso
+              - paragraph [ref=e4928]: Alfabetização emocional por meio da música
+            - generic [ref=e4929] [cursor=pointer]:
+              - generic [ref=e4930]:
+                - generic [ref=e4931]:
+                  - img "Blado e a Escolha do Dia" [ref=e4932]
+                  - generic [ref=e4933]: Livro
+                  - generic [ref=e4934]: Ed. Infantil
+                - button "Ações da coleção" [ref=e4937]:
+                  - img [ref=e4938]
+              - heading "Blado e a Escolha do Dia" [level=3] [ref=e4942]
+              - generic [ref=e4944]: Livro avulso
+              - paragraph [ref=e4945]: Tomada de decisão, empatia e reparação
+            - generic [ref=e4946] [cursor=pointer]:
+              - generic [ref=e4947]:
+                - generic [ref=e4948]:
+                  - img "Kaboo e o Espelho das Emoções" [ref=e4949]
+                  - generic [ref=e4950]: Livro
+                  - generic [ref=e4951]: Ed. Infantil
+                - button "Ações da coleção" [ref=e4954]:
+                  - img [ref=e4955]
+              - heading "Kaboo e o Espelho das Emoções" [level=3] [ref=e4959]
+              - generic [ref=e4961]: Livro avulso
+              - paragraph [ref=e4962]: Nomeação das emoções, expressão verbal e escuta empática
+            - generic [ref=e4963] [cursor=pointer]:
+              - generic [ref=e4964]:
+                - generic [ref=e4965]:
+                  - img "Batatinha e o Ritmo do Acolhimento" [ref=e4966]
+                  - generic [ref=e4967]: Livro
+                  - generic [ref=e4968]: Ed. Infantil
+                - button "Ações da coleção" [ref=e4971]:
+                  - img [ref=e4972]
+              - heading "Batatinha e o Ritmo do Acolhimento" [level=3] [ref=e4976]
+              - generic [ref=e4978]: Livro avulso
+              - paragraph [ref=e4979]: Acolhimento, rotina e pertencimento
+            - generic [ref=e4980] [cursor=pointer]:
+              - generic [ref=e4981]:
+                - generic [ref=e4982]:
+                  - img "Onde está Gaio?" [ref=e4983]
+                  - generic [ref=e4984]: Livro
+                  - generic [ref=e4985]: Ed. Infantil
+                - button "Ações da coleção" [ref=e4988]:
+                  - img [ref=e4989]
+              - heading "Onde está Gaio?" [level=3] [ref=e4993]
+              - generic [ref=e4995]: Livro avulso
+              - paragraph [ref=e4996]: Cooperação, pensamento investigativo e brincadeira simbólica
+            - generic [ref=e4997] [cursor=pointer]:
+              - generic [ref=e4998]:
+                - generic [ref=e4999]:
+                  - img "Blado e os Sons que Brilham" [ref=e5000]
+                  - generic [ref=e5001]: Livro
+                  - generic [ref=e5002]: Ed. Infantil
+                - button "Ações da coleção" [ref=e5005]:
+                  - img [ref=e5006]
+              - heading "Blado e os Sons que Brilham" [level=3] [ref=e5010]
+              - generic [ref=e5012]: Livro avulso
+              - paragraph [ref=e5013]: Percepção sensorial e escuta ativa
+            - generic [ref=e5014] [cursor=pointer]:
+              - generic [ref=e5015]:
+                - generic [ref=e5016]:
+                  - img "A Cor do Sentir" [ref=e5017]
+                  - generic [ref=e5018]: Livro
+                  - generic [ref=e5019]: Ed. Infantil
+                - button "Ações da coleção" [ref=e5022]:
+                  - img [ref=e5023]
+              - heading "A Cor do Sentir" [level=3] [ref=e5027]
+              - generic [ref=e5029]: Livro avulso
+              - paragraph [ref=e5030]: Emoções Básicas
+            - generic [ref=e5031] [cursor=pointer]:
+              - generic [ref=e5032]:
+                - generic [ref=e5033]:
+                  - img "QA Sprint 2 Cache Fix Visible" [ref=e5034]
+                  - generic [ref=e5035]: Livro
+                  - generic [ref=e5036]: E.F. Anos Iniciais
+                - button "Ações da coleção" [ref=e5039]:
+                  - img [ref=e5040]
+              - heading "QA Sprint 2 Cache Fix Visible" [level=3] [ref=e5044]
+              - generic [ref=e5046]: Livro avulso
+              - paragraph [ref=e5047]: QA cache sync

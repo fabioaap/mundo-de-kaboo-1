@@ -1,0 +1,91 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Expandir menu" [ref=e5]:
+      - img [ref=e6]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Mundo de Kaboo" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic: Coleções
+          - button "Coleções" [ref=e13]:
+            - img [ref=e14]
+        - generic [ref=e16]:
+          - generic: Livros
+          - button "Livros" [ref=e17]:
+            - img [ref=e18]
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic: Vídeos
+          - button "Vídeos" [ref=e22]:
+            - img [ref=e23]
+        - generic [ref=e26]:
+          - generic: Músicas
+          - button "Músicas" [ref=e27]:
+            - img [ref=e28]
+        - generic [ref=e30]:
+          - generic: Formações
+          - button "Formações" [ref=e31]:
+            - img [ref=e32]
+        - generic [ref=e34]:
+          - generic: Materiais
+          - button "Materiais" [ref=e35]:
+            - img [ref=e36]
+      - generic [ref=e40]:
+        - generic: Gerenciar
+        - button "Gerenciar" [ref=e41]:
+          - img [ref=e42]
+    - button "Abrir perfil de Editor" [ref=e410]:
+      - generic [ref=e48]:
+        - generic [ref=e49]: ET
+        - img "Avatar" [ref=e50]
+  - main [ref=e51]:
+    - generic [ref=e495]:
+      - complementary [ref=e496]:
+        - generic [ref=e497]:
+          - generic [ref=e498]: Administração
+          - button "Recolher menu" [ref=e499]:
+            - img [ref=e500]
+        - navigation [ref=e502]:
+          - button "Coleções" [ref=e503]:
+            - img [ref=e504]
+            - generic [ref=e506]: Coleções
+          - button "Vídeos" [ref=e507]:
+            - img [ref=e508]
+            - generic [ref=e511]: Vídeos
+          - button "Músicas" [ref=e512]:
+            - img [ref=e513]
+            - generic [ref=e515]: Músicas
+          - button "Formações" [ref=e516]:
+            - img [ref=e517]
+            - generic [ref=e519]: Formações
+          - button "Materiais" [ref=e520]:
+            - img [ref=e521]
+            - generic [ref=e524]: Materiais
+          - button "Personagens" [ref=e525]:
+            - img [ref=e526]
+            - generic [ref=e531]: Personagens
+      - generic [ref=e533]:
+        - generic [ref=e534]:
+          - button "Voltar" [active] [ref=e535]:
+            - img [ref=e536]
+          - heading "Gerenciar" [level=1] [ref=e538]
+        - generic [ref=e540]:
+          - generic [ref=e1702]:
+            - generic [ref=e1704]:
+              - img [ref=e1705]
+              - textbox "Buscar por título ou tema..." [ref=e1708]: QA Sprint 2 Colecao Fluxo Editor
+            - button "Todos os segmentos" [ref=e1710]:
+              - generic [ref=e1711]: Todos os segmentos
+              - img [ref=e1712]
+            - button "Ordenar" [ref=e1716]:
+              - img [ref=e1717]
+              - generic [ref=e1720]: Ordenar
+              - img [ref=e1721]
+            - button "Nova Coleção" [ref=e1723]:
+              - img [ref=e1724]
+              - generic [ref=e1725]: Nova Coleção
+          - generic [ref=e1208]:
+            - img [ref=e1726]
+            - paragraph [ref=e1728]: Nenhuma coleção corresponde aos filtros.
+            - button "Limpar filtros" [ref=e1729]

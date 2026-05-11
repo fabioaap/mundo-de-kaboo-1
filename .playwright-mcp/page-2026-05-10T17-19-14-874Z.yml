@@ -1,0 +1,86 @@
+- main [ref=e4]:
+  - dialog "Player de vídeo" [ref=e5]:
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - button "Voltar" [ref=e10]:
+          - img [ref=e11]
+        - heading "Desenho Animado" [level=1] [ref=e15]
+        - generic [ref=e16]:
+          - button "Conteúdo disponível offline" [disabled] [ref=e73]:
+            - img [ref=e74]
+            - generic [ref=e21]: Offline OK
+          - button "Mostrar relacionados" [ref=e22]:
+            - text: Relacionados
+            - img [ref=e23]
+      - generic [ref=e25]:
+        - button "-10s" [ref=e26]:
+          - generic [ref=e27]:
+            - img [ref=e28]
+            - generic [ref=e30]: "-10s"
+        - button "Reproduzir" [ref=e31]:
+          - img [ref=e32]
+        - button "+10s" [ref=e34]:
+          - generic [ref=e35]:
+            - img [ref=e36]
+            - generic [ref=e38]: +10s
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]: 00:00
+          - slider [ref=e45] [cursor=pointer]: "0"
+          - generic [ref=e46]: "-02:30"
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - button "Voltar 10 segundos" [ref=e49]:
+              - img [ref=e50]
+            - button "Reproduzir" [ref=e52]:
+              - img [ref=e53]
+            - button "Avançar 10 segundos" [ref=e55]:
+              - img [ref=e56]
+            - paragraph [ref=e58]: 00:00/02:30
+          - generic [ref=e59]:
+            - button "Ativar/desativar som (M)" [ref=e60]:
+              - img [ref=e61]
+            - slider [ref=e65]: "1"
+            - button "1x" [ref=e66]
+            - button "Tela cheia (F)" [ref=e67]:
+              - img [ref=e68]
+    - complementary:
+      - generic:
+        - paragraph: Próximos vídeos
+        - heading "Relacionados" [level=2]
+      - generic:
+        - button "Desenho Animado Gaio e o Vento da Coragem":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Desenho Animado
+            - paragraph: Gaio e o Vento da Coragem
+        - button "Desenho Animado Kaboo e a Carta Misteriosa":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Desenho Animado
+            - paragraph: Kaboo e a Carta Misteriosa
+        - button "Com Libras Kaboo e a Carta Misteriosa":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Com Libras
+            - paragraph: Kaboo e a Carta Misteriosa
+        - button "Como Jogar com a Coleção Kaboo e a Carta Misteriosa":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Como Jogar com a Coleção
+            - paragraph: Kaboo e a Carta Misteriosa
+        - button "Videoaula de Mediação Kaboo e a Carta Misteriosa":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Videoaula de Mediação
+            - paragraph: Kaboo e a Carta Misteriosa

@@ -1,0 +1,250 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Expandir menu" [ref=e157]:
+      - img [ref=e158]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Mundo de Kaboo" [ref=e160]
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic: Coleções
+          - button "Coleções" [ref=e13]:
+            - img [ref=e14]
+        - generic [ref=e16]:
+          - generic: Livros
+          - button "Livros" [ref=e17]:
+            - img [ref=e18]
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic: Vídeos
+          - button "Vídeos" [ref=e22]:
+            - img [ref=e23]
+        - generic [ref=e26]:
+          - generic: Músicas
+          - button "Músicas" [ref=e27]:
+            - img [ref=e28]
+        - generic [ref=e30]:
+          - generic: Formações
+          - button "Formações" [ref=e31]:
+            - img [ref=e32]
+        - generic [ref=e34]:
+          - generic: Materiais
+          - button "Materiais" [ref=e35]:
+            - img [ref=e36]
+      - generic [ref=e40]:
+        - generic: Gerenciar
+        - button "Gerenciar" [ref=e41]:
+          - img [ref=e42]
+    - button "Abrir perfil de Editor" [ref=e161]:
+      - generic [ref=e48]:
+        - generic [ref=e49]: ET
+        - img "Avatar" [ref=e50]
+  - main [ref=e51]:
+    - generic [ref=e163]:
+      - complementary [ref=e164]:
+        - generic [ref=e165]:
+          - generic [ref=e166]: Administração
+          - button "Recolher menu" [ref=e167]:
+            - img [ref=e168]
+        - navigation [ref=e170]:
+          - button "Coleções" [ref=e171]:
+            - img [ref=e172]
+            - generic [ref=e174]: Coleções
+          - button "Vídeos" [ref=e175]:
+            - img [ref=e176]
+            - generic [ref=e179]: Vídeos
+          - button "Músicas" [ref=e180]:
+            - img [ref=e181]
+            - generic [ref=e183]: Músicas
+          - button "Formações" [ref=e184]:
+            - img [ref=e185]
+            - generic [ref=e187]: Formações
+          - button "Materiais" [ref=e188]:
+            - img [ref=e189]
+            - generic [ref=e192]: Materiais
+          - button "Usuários" [ref=e193]:
+            - img [ref=e194]
+            - generic [ref=e197]: Usuários
+          - button "Personagens" [ref=e198]:
+            - img [ref=e199]
+            - generic [ref=e204]: Personagens
+          - button "Vouchers" [ref=e205]:
+            - img [ref=e206]
+            - generic [ref=e208]: Vouchers
+          - button "White Label" [active] [ref=e209]:
+            - img [ref=e210]
+            - generic [ref=e213]: White Label
+      - generic [ref=e533]:
+        - generic [ref=e535]:
+          - generic [ref=e536]:
+            - generic [ref=e537]:
+              - img [ref=e539]
+              - heading "Crítico" [level=3] [ref=e542]
+            - generic [ref=e543]: 14:37:54
+          - generic [ref=e544]:
+            - generic [ref=e545]:
+              - img [ref=e547]
+              - generic [ref=e549]:
+                - generic [ref=e550]: Feature Flags
+                - generic [ref=e551]: 1 flag(s) ativa(s)
+            - generic [ref=e552]:
+              - img [ref=e554]
+              - generic [ref=e557]:
+                - generic [ref=e558]: Rollout & Publicação
+                - generic [ref=e559]: Rollout em geral sem publicação registrada.
+            - generic [ref=e560]:
+              - img [ref=e562]
+              - generic [ref=e564]:
+                - generic [ref=e565]: Alertas Externos
+                - generic [ref=e566]: Alertas externos desabilitados (normal)
+            - generic [ref=e567]:
+              - img [ref=e569]
+              - generic [ref=e571]:
+                - generic [ref=e572]: Integridade de Métricas
+                - generic [ref=e573]: 0 mudança(s) total, 0 nas últimas 24h
+        - generic [ref=e574]:
+          - generic [ref=e575]:
+            - heading "Gestão de Marca" [level=1] [ref=e576]
+            - paragraph [ref=e577]: Console White Label — identidade visual, feature flags e governança operacional.
+          - generic [ref=e578]:
+            - img [ref=e579]
+            - text: Mock local
+        - generic [ref=e584]:
+          - generic [ref=e585]:
+            - generic [ref=e586]: "Marca:"
+            - button "Mundo de Kaboo" [ref=e587]:
+              - text: Mundo de Kaboo
+              - img [ref=e588]
+            - button "Central Coruja" [ref=e590]
+          - generic [ref=e591]:
+            - generic [ref=e592]: kaboo
+            - generic [ref=e593]: "Rollout: Geral"
+            - generic [ref=e594]: Não publicada
+            - generic [ref=e595]: Ativa
+        - navigation "Seções do White Label" [ref=e596]:
+          - button "Identidade Visual" [ref=e597]:
+            - img [ref=e598]
+            - text: Identidade Visual
+          - button "Operações" [ref=e604]:
+            - img [ref=e605]
+            - text: Operações
+          - button "Auditoria" [ref=e608]:
+            - img [ref=e609]
+            - text: Auditoria
+        - generic [ref=e613]:
+          - generic [ref=e614]:
+            - generic [ref=e615]:
+              - heading "Dados da marca" [level=3] [ref=e616]
+              - generic [ref=e617]:
+                - generic [ref=e618]:
+                  - generic [ref=e619]: Nome exibido
+                  - textbox "Nome exibido" [ref=e620]:
+                    - /placeholder: "Ex.: Central Coruja"
+                    - text: Mundo de Kaboo
+                - generic [ref=e621]:
+                  - generic [ref=e622]: Família tipográfica
+                  - textbox "Família tipográfica" [ref=e623]:
+                    - /placeholder: "Ex.: Nunito, Poppins"
+            - generic [ref=e624]:
+              - heading "Imagens" [level=3] [ref=e625]
+              - generic [ref=e626]:
+                - generic [ref=e628]:
+                  - generic [ref=e629]: Logo da marca
+                  - textbox "URL ou faça upload de um arquivo..." [ref=e631]
+                  - generic [ref=e633] [cursor=pointer]:
+                    - img [ref=e634]
+                    - generic [ref=e637]: Fazer Upload
+                  - paragraph [ref=e638]: "Formatos aceitos: JPG, PNG, WebP e SVG (máx. 500MB)"
+                - generic [ref=e640]:
+                  - generic [ref=e641]: Fundo do login
+                  - textbox "URL ou faça upload de um arquivo..." [ref=e643]
+                  - generic [ref=e645] [cursor=pointer]:
+                    - img [ref=e646]
+                    - generic [ref=e649]: Fazer Upload
+                  - paragraph [ref=e650]: "Formatos aceitos: JPG, PNG, WebP e SVG (máx. 500MB)"
+                - generic [ref=e652]:
+                  - generic [ref=e653]: Hero da home
+                  - textbox "URL ou faça upload de um arquivo..." [ref=e655]
+                  - generic [ref=e657] [cursor=pointer]:
+                    - img [ref=e658]
+                    - generic [ref=e661]: Fazer Upload
+                  - paragraph [ref=e662]: "Formatos aceitos: JPG, PNG, WebP e SVG (máx. 500MB)"
+            - generic [ref=e663]:
+              - generic [ref=e664]:
+                - img [ref=e665]
+                - heading "Paleta de cores" [level=3] [ref=e668]
+              - generic [ref=e669]:
+                - generic [ref=e670]:
+                  - generic [ref=e671]: Cor principal
+                  - generic [ref=e672]:
+                    - textbox [ref=e675] [cursor=pointer]: "#5d1f58"
+                    - textbox "Cor principal" [ref=e677]:
+                      - /placeholder: "#000000"
+                      - text: "#5D1F58"
+                - generic [ref=e678]:
+                  - generic [ref=e679]: Cor clara
+                  - generic [ref=e680]:
+                    - textbox [ref=e683] [cursor=pointer]: "#883e82"
+                    - textbox "Cor clara" [ref=e685]:
+                      - /placeholder: "#000000"
+                      - text: "#883E82"
+                - generic [ref=e686]:
+                  - generic [ref=e687]: Cor de fundo
+                  - generic [ref=e688]:
+                    - textbox [ref=e691] [cursor=pointer]: "#f9f5f9"
+                    - textbox "Cor de fundo" [ref=e693]:
+                      - /placeholder: "#000000"
+                      - text: "#F9F5F9"
+                - generic [ref=e694]:
+                  - generic [ref=e695]: Cor de destaque
+                  - generic [ref=e696]:
+                    - textbox [ref=e699] [cursor=pointer]: "#4ea8de"
+                    - textbox "Cor de destaque" [ref=e701]:
+                      - /placeholder: "#000000"
+                      - text: "#4EA8DE"
+            - generic [ref=e702]:
+              - generic [ref=e703]:
+                - img [ref=e704]
+                - heading "Tokens de design" [level=3] [ref=e706]
+              - generic [ref=e707]:
+                - generic [ref=e708]:
+                  - generic [ref=e709]: Cor de sucesso
+                  - generic [ref=e710]:
+                    - textbox [ref=e713] [cursor=pointer]: "#70e000"
+                    - textbox "Cor de sucesso" [ref=e715]:
+                      - /placeholder: "#000000"
+                      - text: "#70E000"
+                - generic [ref=e716]: "Tokens de radius aceitam qualquer valor CSS válido. Exemplos: 1rem, 24px, 1.75rem."
+                - generic [ref=e717]:
+                  - generic [ref=e718]: Radius XL
+                  - textbox "Radius XL" [ref=e719]:
+                    - /placeholder: 1rem
+                    - text: 1rem
+                - generic [ref=e720]:
+                  - generic [ref=e721]: Radius 2XL
+                  - textbox "Radius 2XL" [ref=e722]:
+                    - /placeholder: 1.5rem
+                    - text: 1.5rem
+                - generic [ref=e723]:
+                  - generic [ref=e724]: Radius 3XL
+                  - textbox "Radius 3XL" [ref=e725]:
+                    - /placeholder: 2rem
+                    - text: 2rem
+            - button "Salvar identidade visual" [ref=e726]
+          - generic [ref=e728]:
+            - generic [ref=e729]:
+              - img [ref=e730]
+              - text: Prévia ao vivo
+            - generic [ref=e733]:
+              - generic [ref=e736]:
+                - generic [ref=e738]: Sem logo
+                - generic [ref=e739]:
+                  - paragraph [ref=e740]: Login
+                  - heading "Mundo de Kaboo" [level=3] [ref=e741]
+              - generic [ref=e742]:
+                - paragraph [ref=e744]: Mundo de Kaboo
+                - generic [ref=e746]:
+                  - paragraph [ref=e748]: Principal
+                  - paragraph [ref=e751]: Destaque
+                  - paragraph [ref=e754]: Sucesso
+            - paragraph [ref=e756]: Prévia usa a paleta e ativos em edição. Ao salvar, o cache é invalidado.

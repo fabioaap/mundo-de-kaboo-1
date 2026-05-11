@@ -1,0 +1,152 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - img "Educacross" [ref=e7]
+    - navigation [ref=e8]:
+      - generic [ref=e9]: Navegação
+      - link "home Início" [ref=e10] [cursor=pointer]:
+        - /url: "#"
+        - generic [ref=e11]: home
+        - text: Início
+      - generic [ref=e12]: Personas
+      - button "Ver jornadas de Professor" [ref=e13] [cursor=pointer]:
+        - generic [ref=e14]: manage_accounts
+        - generic [ref=e15]: Professor
+        - generic [ref=e16]: chevron_right
+      - button "Ver jornadas de Aluno" [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: school
+        - generic [ref=e19]: Aluno
+        - generic [ref=e20]: chevron_right
+      - button "Ver jornadas de Coordenador" [ref=e21] [cursor=pointer]:
+        - generic [ref=e22]: account_tree
+        - generic [ref=e23]: Coordenador
+        - generic [ref=e24]: chevron_right
+      - button "Ver jornadas de Diretor" [ref=e25] [cursor=pointer]:
+        - generic [ref=e26]: apartment
+        - generic [ref=e27]: Diretor
+        - generic [ref=e28]: chevron_right
+      - button "Ver jornadas de Administrador" [ref=e29] [cursor=pointer]:
+        - generic [ref=e30]: settings
+        - generic [ref=e31]: Administrador
+        - generic [ref=e32]: chevron_right
+      - button "Ver jornadas de Gestor de Rede" [ref=e33] [cursor=pointer]:
+        - generic [ref=e34]: language
+        - generic [ref=e35]: Gestor de Rede
+        - generic [ref=e36]: chevron_right
+      - generic [ref=e37]: Recursos
+      - link "info Sobre" [ref=e38] [cursor=pointer]:
+        - /url: /sobre
+        - generic [ref=e39]: info
+        - text: Sobre
+      - link "menu_book Wiki TO-BE open_in_new" [ref=e40] [cursor=pointer]:
+        - /url: http://localhost:3000/Ambiente_de_Prototipacao_V5/wiki/
+        - generic [ref=e41]: menu_book
+        - text: Wiki TO-BE
+        - generic [ref=e42]: open_in_new
+      - link "design_services Design System" [ref=e43] [cursor=pointer]:
+        - /url: /design-system
+        - generic [ref=e44]: design_services
+        - text: Design System
+      - generic:
+        - generic: view_kanban
+        - text: Kanban
+        - generic: Em breve
+    - generic [ref=e46]: Redesenho-home
+  - main [ref=e48]:
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - heading "Ambiente de Prototipação" [level=1] [ref=e51]
+        - paragraph [ref=e52]: Explore e valide fluxos de cada persona antes de migrar para produção.
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - generic [ref=e55]: 7/26
+          - generic [ref=e56]: Jornadas Ativas
+        - generic [ref=e58]:
+          - generic [ref=e59]: 27%
+          - generic [ref=e60]: Cobertura
+        - generic [ref=e62]:
+          - generic [ref=e63]: "6"
+          - generic [ref=e64]: Personas
+    - generic [ref=e65]:
+      - text: Progresso por Persona
+      - generic [ref=e66]:
+        - button "Ver jornadas de Professor" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]:
+            - generic [ref=e70]: manage_accounts
+            - generic [ref=e71]: Professor
+            - generic [ref=e72]: 6/9
+          - progressbar [ref=e73]
+        - button "Ver jornadas de Aluno" [ref=e75] [cursor=pointer]:
+          - generic [ref=e76]:
+            - generic [ref=e78]: school
+            - generic [ref=e79]: Aluno
+            - generic [ref=e80]: 0/4
+          - progressbar [ref=e81]
+        - button "Ver jornadas de Coordenador" [ref=e82] [cursor=pointer]:
+          - generic [ref=e83]:
+            - generic [ref=e85]: account_tree
+            - generic [ref=e86]: Coordenador
+            - generic [ref=e87]: 0/3
+          - progressbar [ref=e88]
+        - button "Ver jornadas de Diretor" [ref=e89] [cursor=pointer]:
+          - generic [ref=e90]:
+            - generic [ref=e92]: apartment
+            - generic [ref=e93]: Diretor
+            - generic [ref=e94]: 0/3
+          - progressbar [ref=e95]
+        - button "Ver jornadas de Administrador" [ref=e96] [cursor=pointer]:
+          - generic [ref=e97]:
+            - generic [ref=e99]: settings
+            - generic [ref=e100]: Administrador
+            - generic [ref=e101]: 0/3
+          - progressbar [ref=e102]
+        - button "Ver jornadas de Gestor de Rede" [ref=e103] [cursor=pointer]:
+          - generic [ref=e104]:
+            - generic [ref=e106]: language
+            - generic [ref=e107]: Gestor de Rede
+            - generic [ref=e108]: 1/4
+          - progressbar [ref=e109]
+    - generic [ref=e111]:
+      - heading "Acesso rápido" [level=2] [ref=e113]
+      - generic [ref=e114]:
+        - button "Abrir jornada Dashboard Professor de Professor" [ref=e115] [cursor=pointer]:
+          - generic [ref=e116]:
+            - generic [ref=e118]: view_sidebar
+            - generic [ref=e119]: arrow_forward
+          - paragraph [ref=e120]: Dashboard Professor
+          - paragraph [ref=e121]: Professor
+        - button "Abrir jornada Engajamento de Gestor de Rede" [ref=e122] [cursor=pointer]:
+          - generic [ref=e123]:
+            - generic [ref=e125]: bar_chart
+            - generic [ref=e126]: arrow_forward
+          - paragraph [ref=e127]: Engajamento
+          - paragraph [ref=e128]: Gestor de Rede
+        - button "Abrir jornada Calendario de Eventos de Professor" [ref=e129] [cursor=pointer]:
+          - generic [ref=e130]:
+            - generic [ref=e132]: calendar_month
+            - generic [ref=e133]: arrow_forward
+          - paragraph [ref=e134]: Calendario de Eventos
+          - paragraph [ref=e135]: Professor
+        - button "Abrir jornada Livros do Sistema Educacional de Professor" [ref=e136] [cursor=pointer]:
+          - generic [ref=e137]:
+            - generic [ref=e139]: menu_book
+            - generic [ref=e140]: arrow_forward
+          - paragraph [ref=e141]: Livros do Sistema Educacional
+          - paragraph [ref=e142]: Professor
+        - button "Abrir jornada Missoes da Escola de Professor" [ref=e143] [cursor=pointer]:
+          - generic [ref=e144]:
+            - generic [ref=e146]: flag
+            - generic [ref=e147]: arrow_forward
+          - paragraph [ref=e148]: Missoes da Escola
+          - paragraph [ref=e149]: Professor
+        - button "Abrir jornada FLUE de Professor" [ref=e150] [cursor=pointer]:
+          - generic [ref=e151]:
+            - generic [ref=e153]: record_voice_over
+            - generic [ref=e154]: arrow_forward
+          - paragraph [ref=e155]: FLUE
+          - paragraph [ref=e156]: Professor
+        - button "Abrir jornada Ajudas e Materiais de Professor" [ref=e157] [cursor=pointer]:
+          - generic [ref=e158]:
+            - generic [ref=e160]: folder_open
+            - generic [ref=e161]: arrow_forward
+          - paragraph [ref=e162]: Ajudas e Materiais
+          - paragraph [ref=e163]: Professor

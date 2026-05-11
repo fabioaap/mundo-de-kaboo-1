@@ -1,0 +1,31 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Expandir menu" [ref=e5]:
+      - img [ref=e6]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Central Coruja" [ref=e95]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]
+        - generic [ref=e15]
+      - generic [ref=e19]:
+        - generic [ref=e20]
+        - generic [ref=e25]
+        - generic [ref=e29]
+        - generic [ref=e33]
+      - generic [ref=e39]:
+        - generic: Gerenciar
+        - button "Gerenciar" [ref=e40]
+    - button "Abrir perfil de Editor" [ref=e46]:
+      - generic [ref=e47]:
+        - generic [ref=e48]: ET
+        - img "Avatar" [ref=e49]
+  - main [ref=e50]:
+    - generic [ref=e51]:
+      - generic [ref=e52]:
+        - button "Voltar" [ref=e53]
+        - heading "Formações" [level=1] [ref=e56]
+      - generic [ref=e58]:
+        - generic [ref=e59]
+        - generic [ref=e64]
+        - generic [ref=e80]
