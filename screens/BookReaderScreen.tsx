@@ -135,74 +135,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
 
   const rgb = hexToRgb(themeColor);
   const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-
-  // Show orientation overlay if in portrait mode (but not if user chose to continue)
-  if (!isLandscape && !forcePortrait) {
-    return (
-      <div 
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden" 
-        style={{ 
-          height: '100dvh', 
-          width: '100vw',
-          backgroundColor: bgColor
-        }}
-      >
-        {/* Galaxy Effect - Only show after book is loaded and not on mobile */}
-        {!isLoading && !isMobile && <GalaxyBackground />}
-        
-        {/* Dark overlay to darken background - Works on both desktop and mobile */}
-        <div className="absolute inset-0 bg-black/20" style={{ zIndex: 1 }} />
-        
-        {/* Back Button */}
-        <button 
-          onClick={onBack}
-          className="absolute top-4 left-4 z-30 w-12 h-12 rounded-full bg-white/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-white/30 transition-all active:scale-95 border border-white/30"
-          aria-label="Voltar"
-        >
-          <Icons.ChevronLeft size={24} strokeWidth={2.5} />
-        </button>
-
-        <div className="text-center p-8 max-w-md mx-auto relative z-10">
-          <style>{`
-            @keyframes rotatePhone {
-              0% {
-                transform: rotate(0deg);
-              }
-              50% {
-                transform: rotate(90deg);
-              }
-              100% {
-                transform: rotate(0deg);
-              }
-            }
-            .phone-rotate-animation {
-              animation: rotatePhone 3s ease-in-out infinite;
-              transform-origin: center center;
-            }
-          `}</style>
-          <div className="mb-6 flex justify-center">
-            <Icons.Smartphone 
-              size={80} 
-              className="text-white/90 phone-rotate-animation" 
-              strokeWidth={2}
-            />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-lg">
-            Gire seu dispositivo
-          </h2>
-          <p className="text-lg text-white/90 mb-6 drop-shadow-md">
-            Para uma melhor experiência de leitura, gire seu dispositivo para o modo horizontal.
-          </p>
-          <button
-            onClick={() => setForcePortrait(true)}
-            className="text-sm text-white/60 underline underline-offset-2 hover:text-white/90 transition-colors mt-2"
-          >
-            Continuar em retrato mesmo assim
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const showOrientationPrompt = !isLandscape && !forcePortrait;
 
   return (
     <div 
@@ -219,8 +152,64 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       {/* Dark overlay to darken background - Works on both desktop and mobile */}
       <div className={`absolute inset-0 ${isMobile ? 'bg-black/20' : 'bg-black/10'}`} style={{ zIndex: 1 }} />
 
+      {showOrientationPrompt && (
+        <div
+          className="absolute inset-0 z-40 flex flex-col items-center justify-center overflow-hidden bg-black/35 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Gire seu dispositivo"
+        >
+          <button 
+            onClick={onBack}
+            className="absolute left-4 top-4 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-xl backdrop-blur-md transition-all hover:bg-white/30 active:scale-95"
+            aria-label="Voltar"
+          >
+            <Icons.ChevronLeft size={24} strokeWidth={2.5} />
+          </button>
+
+          <div className="text-center p-8 max-w-md mx-auto relative z-10">
+            <style>{`
+              @keyframes rotatePhone {
+                0% {
+                  transform: rotate(0deg);
+                }
+                50% {
+                  transform: rotate(90deg);
+                }
+                100% {
+                  transform: rotate(0deg);
+                }
+              }
+              .phone-rotate-animation {
+                animation: rotatePhone 3s ease-in-out infinite;
+                transform-origin: center center;
+              }
+            `}</style>
+            <div className="mb-6 flex justify-center">
+              <Icons.Smartphone 
+                size={80} 
+                className="text-white/90 phone-rotate-animation" 
+                strokeWidth={2}
+              />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-lg">
+              Gire seu dispositivo
+            </h2>
+            <p className="text-lg text-white/90 mb-6 drop-shadow-md">
+              Para uma melhor experiência de leitura, gire seu dispositivo para o modo horizontal.
+            </p>
+            <button
+              onClick={() => setForcePortrait(true)}
+              className="text-sm text-white/60 underline underline-offset-2 hover:text-white/90 transition-colors mt-2"
+            >
+              Continuar em retrato mesmo assim
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header - Hidden on mobile landscape */}
-      {!isMobileLandscape && (
+      {!showOrientationPrompt && !isMobileLandscape && (
         <div className="relative z-20 p-4 flex items-center justify-between flex-shrink-0">
           <button 
             onClick={onBack}
@@ -270,7 +259,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       )}
 
       {/* Back button for mobile landscape - Floating top left */}
-      {isMobileLandscape && (
+      {!showOrientationPrompt && isMobileLandscape && (
         <button 
           onClick={onBack}
           className="fixed top-4 left-4 z-30 w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30"
@@ -281,7 +270,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       )}
 
       {/* Offline button for mobile landscape - Floating top right */}
-      {isMobileLandscape && (
+      {!showOrientationPrompt && isMobileLandscape && (
         <div className="fixed top-4 right-4 z-30 flex items-center gap-2">
           {canDownloadOffline && (
             <button
@@ -322,7 +311,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
 
       {/* Book Container - Full screen centered for mobile landscape */}
       <div
-        className={`${isMobileLandscape ? 'fixed inset-0 flex items-center justify-center z-10' : 'flex-1 relative z-10 overflow-hidden'}`} 
+        className={`${isMobileLandscape ? 'fixed inset-0 flex items-center justify-center z-10' : 'flex-1 relative z-10 overflow-hidden'} ${showOrientationPrompt ? 'pointer-events-none opacity-0' : ''}`} 
         style={isMobileLandscape ? { minHeight: 0 } : { minHeight: 0 }}
       >
         {error ? (
@@ -364,7 +353,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       </div>
 
       {/* Navigation Controls */}
-      {isMobileLandscape ? (
+      {!showOrientationPrompt && isMobileLandscape ? (
         <>
           {/* Left Arrow - Center far left corner */}
           <button
@@ -384,7 +373,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             <Icons.ChevronLeft size={28} className="rotate-180" strokeWidth={2.5} />
           </button>
         </>
-      ) : (
+      ) : !showOrientationPrompt ? (
         <div className="relative z-20 pb-6 pt-4 flex items-center justify-center gap-6 flex-shrink-0">
           <button
             onClick={flipPrev}
@@ -409,7 +398,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             <Icons.ChevronLeft size={28} className="rotate-180" strokeWidth={2.5} />
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

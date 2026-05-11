@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection, MediaItemCard, ScreenName } from '../types';
+import useIsMobile from '../hooks/useIsMobile';
+import useOrientation from '../hooks/useOrientation';
 import { useThemeBackground } from '../hooks/useThemeBackground';
 import { api } from '../lib/api';
 import { useOfflineDownload } from '../hooks/useOfflineDownload';
@@ -79,6 +81,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const errorPersistentFocusRef = useRef<HTMLButtonElement>(null);
 
   const themeColor = collection.color_theme || '#5D1F58';
+  const isMobile = useIsMobile();
+  const isLandscape = useOrientation();
+  const isMobilePortrait = isMobile && !isLandscape;
   const resolvedVideoUrl = resolvedPlaybackUrl ?? assetUrl ?? collection.video_url;
   const resolvedTitle = resolvedPlaybackTitle ?? assetTitle ?? collection.title;
   const youtubeVideoId = getYouTubeVideoId(resolvedVideoUrl);
@@ -386,6 +391,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     : 'var(--player-edge-gap)';
   const panelChromeClass = 'rounded-2xl border border-white/20 bg-black/52 backdrop-blur-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]';
   const cardChromeClass = 'rounded-xl border border-white/20 bg-white/8 transition-colors hover:bg-white/14';
+  const mobilePortraitMediaTransform = isMobilePortrait ? 'translateY(-9vh)' : undefined;
+  const mobilePortraitCenterTransform = isMobilePortrait
+    ? 'translate(-50%, calc(-50% - 9vh))'
+    : 'translate(-50%, -50%)';
 
   const retryPlayback = async () => {
     resetControlsTimeout();
@@ -567,7 +576,8 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         <iframe
           src={youtubeEmbedUrl}
           title={resolvedTitle || 'Vídeo do YouTube'}
-          className="w-full h-full"
+          className="h-full w-full"
+          style={mobilePortraitMediaTransform ? { transform: mobilePortraitMediaTransform } : undefined}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           onLoad={() => { setIsLoading(false); setPlayerState('playing'); }}
@@ -577,6 +587,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           ref={videoRef}
           src={resolvedVideoUrl}
           className="w-full h-full object-contain"
+          style={mobilePortraitMediaTransform ? { transform: mobilePortraitMediaTransform } : undefined}
           playsInline
           onClick={(e) => { e.stopPropagation(); togglePlay(); }}
           onTimeUpdate={handleTimeUpdate}
@@ -840,7 +851,11 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         {!isYouTubeSource && (
           <>
             {/* Center Play Button */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-12" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="absolute left-1/2 top-1/2 flex items-center gap-12"
+              style={{ transform: mobilePortraitCenterTransform }}
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 onClick={() => skip(-10)}
                 className="text-white/70 hover:text-white transition-colors p-4 rounded-full hover:bg-white/10 active:scale-95 hidden md:block"
@@ -1027,7 +1042,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => openRelatedItem(leadRelatedItem)}
-                  className="mt-2 inline-flex w-full items-center justify-between rounded-xl border border-white/20 bg-white/8 px-3 py-2 text-left text-xs text-white/85 transition-colors hover:bg-white/14 lg:hidden"
+                  className={`mt-2 inline-flex w-full items-center justify-between rounded-xl border border-white/20 bg-white/8 px-3 py-2 text-left text-xs text-white/85 transition-colors hover:bg-white/14 lg:hidden ${isMobilePortrait ? 'hidden' : ''}`}
                 >
                   <span className="min-w-0">
                     <span className="text-[10px] uppercase tracking-[0.12em] text-white/60">Próximo</span>
@@ -1089,7 +1104,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         </div>
       </aside>
 
-      <section className={`pointer-events-auto absolute left-4 right-4 z-30 rounded-2xl border border-white/15 bg-black/55 p-3 backdrop-blur-md transition-all duration-300 lg:hidden ${showMobileQueue ? 'bottom-4 max-h-[52vh]' : 'bottom-20 max-h-[72px]'}`} onClick={(event) => event.stopPropagation()}>
+      <section className={`pointer-events-auto absolute left-4 right-4 z-30 rounded-2xl border border-white/15 bg-black/55 p-3 backdrop-blur-md transition-all duration-300 lg:hidden ${showMobileQueue ? 'bottom-4 max-h-[52vh]' : isMobilePortrait ? 'bottom-4 max-h-[112px]' : 'bottom-20 max-h-[72px]'}`} onClick={(event) => event.stopPropagation()}>
         <div className="mb-2 flex items-center justify-between px-0.5">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos</p>
           <button
@@ -1104,9 +1119,38 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         </div>
 
         {!showMobileQueue ? (
-          <p className="text-[11px] text-white/70">
-            {relatedItems.length > 0 ? `${relatedItems.length} vídeos na fila` : 'Sem vídeos na fila'}
-          </p>
+          <div className="space-y-2">
+            <p className="text-[11px] text-white/70">
+              {relatedItems.length > 0 ? `${relatedItems.length} vídeos na fila` : 'Sem vídeos na fila'}
+            </p>
+            {isMobilePortrait && leadRelatedItem && (
+              <button
+                type="button"
+                onClick={() => openRelatedItem(leadRelatedItem)}
+                className="flex w-full items-center gap-2.5 rounded-xl border border-white/20 bg-white/8 p-2 text-left transition-colors hover:bg-white/14"
+              >
+                <div
+                  className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/8"
+                  style={leadRelatedItem.thumbnailUrl ? {
+                    backgroundImage: `url(${leadRelatedItem.thumbnailUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  } : undefined}
+                >
+                  <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/65 text-white">
+                    <Icons.Play size={8} className="ml-0.5 fill-current stroke-none" />
+                  </span>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-white/55">Próximo</p>
+                  <p className="mt-0.5 line-clamp-2 text-[12px] font-bold leading-4 text-white">{leadRelatedItem.title}</p>
+                </div>
+
+                <Icons.ChevronRight size={14} className="shrink-0 text-white/70" />
+              </button>
+            )}
+          </div>
         ) : relatedItems.length === 0 ? (
           <p className="rounded-xl border border-white/20 bg-white/8 px-3 py-2 text-xs text-white/70">
             Sem relacionados para este vídeo.

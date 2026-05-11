@@ -661,6 +661,84 @@ const CardContainer: React.FC<{
   );
 };
 
+const HorizontalFilterRail: React.FC<{
+  tone: 'default' | 'coruja';
+  children: React.ReactNode;
+}> = ({ tone, children }) => {
+  const railRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(false);
+
+  const syncScrollState = React.useCallback(() => {
+    const rail = railRef.current;
+    if (!rail) {
+      return;
+    }
+
+    const maxScrollLeft = rail.scrollWidth - rail.clientWidth;
+    setCanScrollLeft(rail.scrollLeft > 6);
+    setCanScrollRight(maxScrollLeft - rail.scrollLeft > 6);
+  }, []);
+
+  React.useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) {
+      return;
+    }
+
+    syncScrollState();
+    rail.addEventListener('scroll', syncScrollState, { passive: true });
+    window.addEventListener('resize', syncScrollState);
+
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => syncScrollState())
+      : null;
+
+    resizeObserver?.observe(rail);
+
+    return () => {
+      rail.removeEventListener('scroll', syncScrollState);
+      window.removeEventListener('resize', syncScrollState);
+      resizeObserver?.disconnect();
+    };
+  }, [children, syncScrollState]);
+
+  const leftFadeClass = tone === 'coruja'
+    ? 'from-[#0d2430] via-[#0d2430]/86 to-transparent'
+    : 'from-white via-white/94 to-transparent';
+  const rightFadeClass = tone === 'coruja'
+    ? 'from-transparent via-[#0d2430]/86 to-[#0d2430]'
+    : 'from-transparent via-white/94 to-white';
+  const hintClass = tone === 'coruja'
+    ? 'border-white/12 bg-[#0d2430]/88 text-white/72'
+    : 'border-kaboo-primary/10 bg-white/96 text-kaboo-primary/60 shadow-sm';
+
+  return (
+    <div className="relative">
+      <div
+        ref={railRef}
+        className="-mx-0.5 flex items-center gap-2 overflow-x-auto px-0.5 pb-0.5 pt-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {children}
+      </div>
+
+      {canScrollLeft && (
+        <div className={`pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r ${leftFadeClass}`} />
+      )}
+
+      {canScrollRight && (
+        <>
+          <div className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l ${rightFadeClass}`} />
+          <div className={`pointer-events-none absolute right-1 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] ${hintClass}`}>
+            <Icons.ChevronRight size={11} />
+            Deslize
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 const renderItemPreview = (item: LibraryMockItem, featured: boolean = false, corujaTone: boolean = false, compact: boolean = false) => {
   const PreviewIcon = getLibraryBadgeIcon(item);
   const aspectClassName = featured ? FEATURED_PREVIEW_ASPECT[item.variant] : CARD_PREVIEW_ASPECT[item.variant];
@@ -1507,7 +1585,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                   )}
 
                   {videoFilterTabs.length > 0 && (
-                    <div className="-mx-0.5 flex items-center gap-2 overflow-x-auto px-0.5 pb-0.5 pt-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    <HorizontalFilterRail tone={isCorujaLibraryHub ? 'coruja' : 'default'}>
                       {videoFilterTabs.map((filter) => (
                         <button
                           key={`video-filter-${filter.label}`}
@@ -1523,7 +1601,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                           </span>
                         </button>
                       ))}
-                    </div>
+                    </HorizontalFilterRail>
                   )}
                 </div>
               </section>
@@ -1697,7 +1775,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                   )}
 
                   {compactFilterTabs.length > 0 && (
-                    <div className="-mx-0.5 flex items-center gap-2 overflow-x-auto px-0.5 pb-0.5 pt-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    <HorizontalFilterRail tone={isCorujaLibraryHub ? 'coruja' : 'default'}>
                       {compactFilterTabs.map((filter) => (
                         <button
                           key={`compact-filter-${filter.label}`}
@@ -1713,7 +1791,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                           </span>
                         </button>
                       ))}
-                    </div>
+                    </HorizontalFilterRail>
                   )}
                 </div>
               </section>
