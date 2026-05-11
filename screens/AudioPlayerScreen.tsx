@@ -795,11 +795,6 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                 transition: isDragging ? 'none' : 'transform 0.05s linear',
                 willChange: 'transform'
               }}
-
-              onClick={(e) => {
-                e.stopPropagation();
-                togglePlay();
-              }}
             >
               {/* Outer Ring - Vinyl Grooves */}
               <div className="absolute inset-0 rounded-full border-8 border-black/40 shadow-2xl">
