@@ -101,7 +101,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
 
   if (!collection.pdf_url) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-white" style={{ height: '100vh', width: '100vw' }}>
+      <div className="fixed inset-0 z-50 flex flex-col bg-white" style={{ height: '100dvh', width: '100vw' }}>
         <div className="relative z-10 p-6 pt-12">
           <button 
             onClick={onBack}
@@ -142,7 +142,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       <div 
         className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden" 
         style={{ 
-          height: '100vh', 
+          height: '100dvh', 
           width: '100vw',
           backgroundColor: bgColor
         }}
@@ -208,7 +208,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
     <div 
       className="fixed inset-0 z-50 flex flex-col overflow-hidden" 
       style={{ 
-        height: '100vh', 
+        height: '100dvh', 
         width: '100vw',
         backgroundColor: bgColor
       }}
