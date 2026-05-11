@@ -97,28 +97,27 @@ const AdminTabBar: React.FC<{
     modules: AdminModule[];
     onSelect: (m: AdminModule) => void;
 }> = ({ active, modules, onSelect }) => (
-    <div className="flex border-b border-gray-200 bg-gray-50 px-2">
-        {modules.map((mod) => {
-            const meta = MODULE_META[mod];
-            const isActive = active === mod;
-            const Icon = meta.icon;
-            return (
-                <button
-                    key={mod}
-                    onClick={() => onSelect(mod)}
-                    className={`
-            flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors border-b-2
-            ${isActive
+    <div className="overflow-x-auto border-b border-gray-200 bg-gray-50 px-4 no-scrollbar">
+        <div className="flex min-w-max gap-1">
+            {modules.map((mod) => {
+                const meta = MODULE_META[mod];
+                const isActive = active === mod;
+                const Icon = meta.icon;
+                return (
+                    <button
+                        key={mod}
+                        onClick={() => onSelect(mod)}
+                        className={`shrink-0 flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-3 text-xs font-medium transition-colors border-b-2 ${isActive
                             ? 'text-kaboo-primary border-kaboo-primary'
                             : 'text-gray-500 border-transparent hover:text-gray-700'
-                        }
-          `}
-                >
-                    <Icon className="w-4 h-4" />
-                    <span>{meta.label}</span>
-                </button>
-            );
-        })}
+                            }`}
+                    >
+                        <Icon className="w-4 h-4" />
+                        <span>{meta.label}</span>
+                    </button>
+                );
+            })}
+        </div>
     </div>
 );
 
