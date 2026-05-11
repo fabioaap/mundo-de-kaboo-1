@@ -540,6 +540,10 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
 
   const mobileHeaderButtonClass = 'h-10 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/28 px-3 text-[11px] font-bold text-white/90 shadow-lg backdrop-blur-md transition-colors hover:bg-black/40';
   const mobileUtilityActionClass = 'flex min-h-[56px] items-center gap-3 rounded-[22px] border border-white/14 bg-black/26 px-4 text-left text-sm font-semibold text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_22px_rgba(0,0,0,0.18)] backdrop-blur-md transition-colors hover:bg-black/36';
+  const transportButtonHitAreaClass = 'group relative inline-flex h-16 w-16 items-center justify-center rounded-full border border-transparent bg-transparent text-white outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/75';
+  const transportButtonSurfaceClass = 'pointer-events-none flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-black/20 shadow-xl backdrop-blur-md transition-all duration-150 group-hover:scale-[1.08] group-hover:bg-black/30';
+  const playButtonHitAreaClass = 'group relative inline-flex h-20 w-20 items-center justify-center rounded-full border border-transparent bg-transparent text-white outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/75';
+  const playButtonSurfaceClass = 'pointer-events-none flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full border-2 border-white/40 bg-white/20 shadow-2xl backdrop-blur-md transition-all duration-150 group-hover:scale-[1.05] group-hover:bg-white/30';
 
   const renderRelatedTracksList = (cardClassName: string) => (
     <>
@@ -907,33 +911,42 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
             <div className={`flex items-center justify-center ${isMobileLandscape ? 'gap-5' : 'gap-7'}`}>
               {/* Skip Backward */}
               <button
+                type="button"
                 onClick={skipBackward}
-                className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
+                className={transportButtonHitAreaClass}
                 aria-label={`Retroceder ${AUDIO_PLAYER_SKIP_SECONDS} segundos`}
               >
-                <SkipTenGlyph direction="back" size={24} />
+                <span className={transportButtonSurfaceClass}>
+                  <SkipTenGlyph direction="back" size={24} />
+                </span>
               </button>
 
               {/* Play/Pause */}
               <button
+                type="button"
                 onClick={togglePlay}
-                className="w-[4.5rem] h-[4.5rem] rounded-full bg-white/20 backdrop-blur-md shadow-2xl flex items-center justify-center text-white border-2 border-white/40 transition-all active:scale-95 hover:bg-white/30 hover:scale-110"
+                className={playButtonHitAreaClass}
                 aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
               >
-                {isPlaying ? (
-                  <Icons.Pause size={32} fill="currentColor" strokeWidth={2} />
-                ) : (
-                  <Icons.Play size={32} fill="currentColor" strokeWidth={2} className="ml-1" />
-                )}
+                <span className={playButtonSurfaceClass}>
+                  {isPlaying ? (
+                    <Icons.Pause size={32} fill="currentColor" strokeWidth={2} />
+                  ) : (
+                    <Icons.Play size={32} fill="currentColor" strokeWidth={2} className="ml-1" />
+                  )}
+                </span>
               </button>
 
               {/* Skip Forward */}
               <button
+                type="button"
                 onClick={skipForward}
-                className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
+                className={transportButtonHitAreaClass}
                 aria-label={`Avançar ${AUDIO_PLAYER_SKIP_SECONDS} segundos`}
               >
-                <SkipTenGlyph direction="forward" size={24} />
+                <span className={transportButtonSurfaceClass}>
+                  <SkipTenGlyph direction="forward" size={24} />
+                </span>
               </button>
             </div>
 
