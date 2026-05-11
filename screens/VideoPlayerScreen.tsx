@@ -5,6 +5,11 @@ import useIsMobile from '../hooks/useIsMobile';
 import useOrientation from '../hooks/useOrientation';
 import { useThemeBackground } from '../hooks/useThemeBackground';
 import { api } from '../lib/api';
+import {
+  getVideoPlayerSurfaceAction,
+  shouldAutoHideVideoPlayerControls,
+  shouldRenderInlineNextVideoCard,
+} from '../lib/videoPlayerLandscape';
 import { useOfflineDownload } from '../hooks/useOfflineDownload';
 
 interface VideoPlayerScreenProps {
@@ -65,8 +70,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const [itemDescription, setItemDescription] = useState<string>('');
   const [showShortcutsHint, setShowShortcutsHint] = useState(true);
   const [showMobileQueue, setShowMobileQueue] = useState(false);
+  const [showMobileDetails, setShowMobileDetails] = useState(false);
   const [showDesktopRelated, setShowDesktopRelated] = useState(false);
   const [isDesktopDescriptionExpanded, setIsDesktopDescriptionExpanded] = useState(false);
+  const [isCompactHeightViewport, setIsCompactHeightViewport] = useState(false);
   const [playerState, setPlayerState] = useState<PlayerState>('loading');
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -84,6 +91,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const isMobile = useIsMobile();
   const isLandscape = useOrientation();
   const isMobilePortrait = isMobile && !isLandscape;
+  const isMobileLandscape = isLandscape && (isMobile || isCompactHeightViewport);
   const resolvedVideoUrl = resolvedPlaybackUrl ?? assetUrl ?? collection.video_url;
   const resolvedTitle = resolvedPlaybackTitle ?? assetTitle ?? collection.title;
   const youtubeVideoId = getYouTubeVideoId(resolvedVideoUrl);
@@ -117,6 +125,19 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
     return () => {
       document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    const checkCompactHeightViewport = () => {
+      setIsCompactHeightViewport(window.innerHeight <= 500 && window.innerWidth <= 960);
+    };
+
+    checkCompactHeightViewport();
+    window.addEventListener('resize', checkCompactHeightViewport);
+
+    return () => {
+      window.removeEventListener('resize', checkCompactHeightViewport);
     };
   }, []);
 
@@ -205,17 +226,45 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
   useEffect(() => {
     setShowMobileQueue(false);
+    setShowMobileDetails(false);
   }, [mediaItemId]);
+
+  useEffect(() => {
+    if (!showControls && isMobileLandscape) {
+      setShowMobileQueue(false);
+      setShowMobileDetails(false);
+    }
+  }, [isMobileLandscape, showControls]);
 
   const resetControlsTimeout = () => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    if (isPlaying && !isMobilePortrait) {
+    if (shouldAutoHideVideoPlayerControls(isPlaying, isMobilePortrait)) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
       }, 3000);
     }
   };
+
+  useEffect(() => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+
+    if (!shouldAutoHideVideoPlayerControls(isPlaying, isMobilePortrait)) {
+      return;
+    }
+
+    controlsTimeoutRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 3000);
+
+    return () => {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    };
+  }, [isMobilePortrait, isPlaying]);
 
   const maybeSaveProgress = useCallback((force = false) => {
     if (!mediaItemId || saveInFlightRef.current) {
@@ -290,6 +339,35 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       setIsPlaying(false);
       setPlayerState('error');
     }
+  };
+
+  const toggleControlsVisibility = (event?: React.MouseEvent) => {
+    event?.stopPropagation();
+
+    if (showControls) {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+
+      setShowControls(false);
+      return;
+    }
+
+    resetControlsTimeout();
+  };
+
+  const handleVideoSurfaceClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    const surfaceAction = getVideoPlayerSurfaceAction(isMobileLandscape, showControls);
+
+    if (surfaceAction !== 'toggle-play') {
+      event.preventDefault();
+      toggleControlsVisibility();
+      return;
+    }
+
+    togglePlay();
   };
 
   const handleTimeUpdate = () => {
@@ -439,6 +517,20 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       mediaItemId: item.id,
       assetTitle: item.title,
     });
+  };
+
+  const toggleMobileQueuePanel = (event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    resetControlsTimeout();
+    setShowMobileDetails(false);
+    setShowMobileQueue((prev) => !prev);
+  };
+
+  const toggleMobileDetailsPanel = (event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    resetControlsTimeout();
+    setShowMobileQueue(false);
+    setShowMobileDetails((prev) => !prev);
   };
 
   useEffect(() => {
@@ -1068,7 +1160,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       aria-label="Player de vídeo"
       onMouseMove={resetControlsTimeout}
       onTouchStart={resetControlsTimeout}
-      onClick={() => setShowControls(!showControls)}
+      onClick={toggleControlsVisibility}
     >
       {/* Dark overlay to darken background */}
       <div className="absolute inset-0 bg-black/10 z-0" />
@@ -1091,7 +1183,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           className="w-full h-full object-contain"
           style={mobilePortraitMediaTransform ? { transform: mobilePortraitMediaTransform } : undefined}
           playsInline
-          onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+          onClick={handleVideoSurfaceClick}
           onTimeUpdate={handleTimeUpdate}
           onLoadedData={handleLoadedData}
           onWaiting={() => { setIsLoading(true); }}
@@ -1344,7 +1436,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           </div>
         </div>
 
-        {showShortcutsHint && (
+        {showShortcutsHint && !isMobileLandscape && (
           <div className="pointer-events-none absolute right-4 top-16 hidden rounded-xl border border-white/15 bg-black/35 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/75 backdrop-blur-md md:block">
             Espaço/K: play, J/L: 10s, M: mute, F: full, ESC: voltar
           </div>
@@ -1476,7 +1568,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-1.5 md:gap-2">
+                    <div className={`flex items-center gap-1.5 md:gap-2 ${isMobileLandscape ? 'flex-wrap justify-end' : ''}`}>
                       <button
                         onClick={toggleMute}
                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/8 text-white/90 transition-colors hover:bg-white/14"
@@ -1510,10 +1602,117 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                       >
                         {isFullscreen ? <Icons.Minimize size={18} /> : <Icons.Maximize size={18} />}
                       </button>
+                      {isMobileLandscape && itemDescription && (
+                        <button
+                          type="button"
+                          onClick={toggleMobileDetailsPanel}
+                          className={`inline-flex h-9 items-center gap-1 rounded-lg border px-2.5 text-[11px] font-black transition-colors ${
+                            showMobileDetails
+                              ? 'border-white/35 bg-white/18 text-white'
+                              : 'border-white/20 bg-white/8 text-white/85 hover:bg-white/14'
+                          }`}
+                          aria-label={showMobileDetails ? 'Ocultar descrição' : 'Mostrar descrição'}
+                        >
+                          <Icons.FileText size={15} />
+                          Info
+                        </button>
+                      )}
+                      {isMobileLandscape && relatedItems.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={toggleMobileQueuePanel}
+                          className={`inline-flex h-9 items-center gap-1 rounded-lg border px-2.5 text-[11px] font-black transition-colors ${
+                            showMobileQueue
+                              ? 'border-white/35 bg-white/18 text-white'
+                              : 'border-white/20 bg-white/8 text-white/85 hover:bg-white/14'
+                          }`}
+                          aria-label={showMobileQueue ? 'Ocultar próximos vídeos' : 'Mostrar próximos vídeos'}
+                        >
+                          <Icons.Video size={15} />
+                          Fila
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
+
+              {isMobileLandscape && showControls && (showMobileDetails || showMobileQueue) && (
+                <section className="pointer-events-auto mx-auto w-full max-w-[min(100%,980px)] lg:hidden">
+                  <div className={`${panelChromeClass} max-h-[38vh] overflow-hidden p-3`}>
+                    {showMobileDetails && itemDescription && (
+                      <div>
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Descrição</p>
+                          <button
+                            type="button"
+                            onClick={toggleMobileDetailsPanel}
+                            className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/8 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white/80"
+                          >
+                            Fechar
+                            <Icons.X size={12} />
+                          </button>
+                        </div>
+                        <p className="max-h-[24vh] overflow-y-auto pr-1 text-sm leading-6 text-white/85">
+                          {itemDescription}
+                        </p>
+                      </div>
+                    )}
+
+                    {showMobileQueue && (
+                      <div>
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos</p>
+                          <button
+                            type="button"
+                            onClick={toggleMobileQueuePanel}
+                            className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/8 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white/80"
+                          >
+                            Fechar
+                            <Icons.X size={12} />
+                          </button>
+                        </div>
+                        {relatedItems.length === 0 ? (
+                          <p className="rounded-xl border border-white/20 bg-white/8 px-3 py-2 text-xs text-white/70">
+                            Sem relacionados para este vídeo.
+                          </p>
+                        ) : (
+                          <div className="max-h-[28vh] space-y-2 overflow-y-auto pr-0.5">
+                            {relatedItems.slice(0, 5).map((item) => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => openRelatedItem(item)}
+                                className="flex w-full items-center gap-2.5 rounded-xl border border-white/20 bg-white/8 p-2 text-left transition-colors hover:bg-white/14"
+                              >
+                                <div
+                                  className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/8"
+                                  style={item.thumbnailUrl ? {
+                                    backgroundImage: `url(${item.thumbnailUrl})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                  } : undefined}
+                                >
+                                  <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/65 text-white">
+                                    <Icons.Play size={8} className="ml-0.5 fill-current stroke-none" />
+                                  </span>
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <p className="line-clamp-2 text-[12px] font-bold leading-4 text-white">{item.title}</p>
+                                  <p className="mt-0.5 text-[10px] text-white/70">{item.collectionTitle ?? 'Kaboo'}</p>
+                                </div>
+
+                                <Icons.ChevronRight size={14} className="shrink-0 text-white/70" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
 
               {itemDescription && (
                 <section className="pointer-events-auto mx-auto hidden w-full max-w-[min(100%,980px)] lg:block lg:max-w-none lg:ml-0 lg:mr-[var(--player-dock-right)]">
@@ -1540,11 +1739,11 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 </section>
               )}
 
-              {leadRelatedItem && (
+              {leadRelatedItem && shouldRenderInlineNextVideoCard(isMobilePortrait, isMobileLandscape) && (
                 <button
                   type="button"
                   onClick={() => openRelatedItem(leadRelatedItem)}
-                  className={`mt-2 inline-flex w-full items-center justify-between rounded-xl border border-white/20 bg-white/8 px-3 py-2 text-left text-xs text-white/85 transition-colors hover:bg-white/14 lg:hidden ${isMobilePortrait ? 'hidden' : ''}`}
+                  className="mt-2 inline-flex w-full items-center justify-between rounded-xl border border-white/20 bg-white/8 px-3 py-2 text-left text-xs text-white/85 transition-colors hover:bg-white/14 lg:hidden"
                 >
                   <span className="min-w-0">
                     <span className="text-[10px] uppercase tracking-[0.12em] text-white/60">Próximo</span>
@@ -1606,12 +1805,12 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         </div>
       </aside>
 
-      <section className={`pointer-events-auto absolute left-4 right-4 z-30 rounded-2xl border border-white/15 bg-black/55 p-3 backdrop-blur-md transition-all duration-300 lg:hidden ${showMobileQueue ? 'bottom-4 max-h-[52vh]' : isMobilePortrait ? 'bottom-4 max-h-[112px]' : 'bottom-20 max-h-[72px]'}`} onClick={(event) => event.stopPropagation()}>
+      <section className={`pointer-events-auto absolute left-4 right-4 z-30 rounded-2xl border border-white/15 bg-black/55 p-3 backdrop-blur-md transition-all duration-300 lg:hidden ${isMobileLandscape ? 'opacity-0 pointer-events-none hidden' : showMobileQueue ? 'bottom-4 max-h-[52vh]' : isMobilePortrait ? 'bottom-4 max-h-[112px]' : 'bottom-20 max-h-[72px]'}`} onClick={(event) => event.stopPropagation()}>
         <div className="mb-2 flex items-center justify-between px-0.5">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos</p>
           <button
             type="button"
-            onClick={() => setShowMobileQueue((prev) => !prev)}
+            onClick={toggleMobileQueuePanel}
             aria-label={showMobileQueue ? 'Ocultar fila de vídeos' : 'Mostrar fila de vídeos'}
             className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/8 px-2 py-1 text-[10px] font-bold text-white/75"
           >
