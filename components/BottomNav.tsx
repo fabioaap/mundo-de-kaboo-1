@@ -156,6 +156,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     ? 'bg-kaboo-primary border-white/15 hover:bg-white/[0.08]'
     : 'bg-kaboo-bg border-kaboo-primary/20 hover:bg-kaboo-primary/5';
   const desktopToggleIconClass = isCentralCoruja ? 'text-white/85' : 'text-gray-600';
+  const desktopTogglePositionClass = isCollapsed
+    ? 'top-5 right-3 h-8 w-8'
+    : 'top-6 right-4 h-8 w-8';
   const desktopSectionTitleClass = isCentralCoruja ? 'text-white/45' : 'text-kaboo-primary/50';
   const desktopSectionDividerClass = isCentralCoruja ? 'border-white/10' : 'border-kaboo-primary/10';
   const desktopItemActiveClass = isCentralCoruja
@@ -257,14 +260,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
         {/* Toggle Button - always at top, on the right edge of sidebar */}
         <button
           onClick={toggleSidebar}
-          className={`absolute top-4 -right-3 w-6 h-6 flex items-center justify-center border rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-[transform,box-shadow,background-color,border-color] duration-150 z-20 ${desktopToggleClass}`}
+          className={`absolute ${desktopTogglePositionClass} flex items-center justify-center border rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-[transform,box-shadow,background-color,border-color] duration-150 z-20 ${desktopToggleClass}`}
           aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
           title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           {isCollapsed ? (
-            <Icons.ChevronRight size={14} className={desktopToggleIconClass} />
+            <Icons.ChevronRight size={16} className={desktopToggleIconClass} />
           ) : (
-            <Icons.ChevronLeft size={14} className={desktopToggleIconClass} />
+            <Icons.ChevronLeft size={16} className={desktopToggleIconClass} />
           )}
         </button>
 
