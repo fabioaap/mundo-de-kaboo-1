@@ -929,13 +929,13 @@ const App: React.FC = () => {
   const showNav = ['home', 'search', 'videos', 'music', 'formations', 'materials', 'support', 'profile', 'my_data', 'admin', 'characters'].includes(navState.currentScreen);
   // Modal opens immediately when collectionId is present, even if collection is still loading
   const isModalOpen = !!navState.params?.collectionId && ['home', 'search'].includes(navState.currentScreen);
-  const mainShellClassName = `flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative h-screen w-full bg-white overscroll-none`;
+  const mainShellClassName = `relative w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-white overscroll-none md:h-screen`;
 
 
   const appShellBg = showNav && brandSlug === 'central-coruja' ? 'bg-[#0C1A34]' : 'bg-white';
 
   return (
-    <div className={`min-h-screen w-full flex flex-col md:flex-row overflow-x-hidden ${appShellBg}`}>
+    <div className={`flex h-[100dvh] min-h-[100dvh] w-full flex-col overflow-x-hidden md:h-auto md:min-h-screen md:flex-row ${appShellBg}`}>
 
       {showNav && (
         <BottomNav
