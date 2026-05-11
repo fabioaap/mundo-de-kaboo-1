@@ -6,6 +6,14 @@ import { useThemeBackground } from '../hooks/useThemeBackground';
 import { GalaxyBackground } from '../components/GalaxyBackground';
 import { api } from '../lib/api';
 import { useOfflineDownload } from '../hooks/useOfflineDownload';
+import useIsMobile from '../hooks/useIsMobile';
+import useOrientation from '../hooks/useOrientation';
+import {
+  getAudioPlayerLayout,
+  shouldTreatAudioPlayerAsCompactViewport,
+  shouldUseAudioPlayerMobileLandscapeLayout,
+  shouldResetAudioPlayerPanels,
+} from '../lib/audioPlayerLayout';
 
 interface AudioPlayerScreenProps {
   collection: Collection;
@@ -34,7 +42,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartTime, setDragStartTime] = useState(0);
   const [dragStartRotation, setDragStartRotation] = useState(0);
-  const [isHoveringCd, setIsHoveringCd] = useState(false);
+
   const [playError, setPlayError] = useState<string | null>(null);
   const [resolvedPlaybackUrl, setResolvedPlaybackUrl] = useState<string | null>(null);
   const [resolvedPlaybackTitle, setResolvedPlaybackTitle] = useState<string | null>(null);
@@ -45,6 +53,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const [showLyrics, setShowLyrics] = useState(false);
   const [lyricsText, setLyricsText] = useState<string | null>(null);
   const [lyricsLoading, setLyricsLoading] = useState(false);
+  const [showMobileUtilitySheet, setShowMobileUtilitySheet] = useState(false);
+  const [isCompactHeightViewport, setIsCompactHeightViewport] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rotationIntervalRef = useRef<number | null>(null);
@@ -52,6 +62,16 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const lastSavedPositionRef = useRef(0);
   const saveInFlightRef = useRef(false);
 
+  const isMobile = useIsMobile();
+  const isLandscape = useOrientation();
+  const isMobilePortrait = isMobile && !isLandscape;
+  const isMobileLandscape = shouldUseAudioPlayerMobileLandscapeLayout(
+    isLandscape,
+    isMobile,
+    isCompactHeightViewport
+  );
+  const currentPlayerLayout = getAudioPlayerLayout(isMobilePortrait, isMobileLandscape);
+  const previousPlayerLayoutRef = useRef(currentPlayerLayout);
   const themeColor = collection.color_theme || '#5D1F58';
   const resolvedAudioUrl = resolvedPlaybackUrl ?? assetUrl ?? collection.audio_url;
   const resolvedTitle = resolvedPlaybackTitle ?? assetTitle ?? collection.title;
@@ -120,11 +140,29 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   }, [playbackRate]);
 
   useEffect(() => {
+    const checkCompactHeightViewport = () => {
+      setIsCompactHeightViewport(
+        shouldTreatAudioPlayerAsCompactViewport(window.innerWidth, window.innerHeight)
+      );
+    };
+
+    checkCompactHeightViewport();
+    window.addEventListener('resize', checkCompactHeightViewport);
+
+    return () => {
+      window.removeEventListener('resize', checkCompactHeightViewport);
+    };
+  }, []);
+
+  useEffect(() => {
     let isActive = true;
 
     setResolvedPlaybackUrl(null);
     setResolvedPlaybackTitle(null);
     setTrackEnded(false);
+    setShowSidebar(false);
+    setShowLyrics(false);
+    setShowMobileUtilitySheet(false);
 
     if (!mediaItemId) {
       return () => {
@@ -196,6 +234,18 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       isActive = false;
     };
   }, [collection.description, mediaItemId]);
+
+  useEffect(() => {
+    const previousLayout = previousPlayerLayoutRef.current;
+
+    if (shouldResetAudioPlayerPanels(previousLayout, currentPlayerLayout)) {
+      setShowSidebar(false);
+      setShowLyrics(false);
+      setShowMobileUtilitySheet(false);
+    }
+
+    previousPlayerLayoutRef.current = currentPlayerLayout;
+  }, [currentPlayerLayout]);
 
   // Reset CD rotation when audio resets to 0 and not playing
   // But don't reset if we're about to play (isPlaying becomes true)
@@ -408,6 +458,36 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
     onBack();
   };
 
+  const toggleSuggestionsPanel = () => {
+    if (isMobile) {
+      setShowMobileUtilitySheet(true);
+    }
+
+    setShowLyrics(false);
+    setShowSidebar((prev) => !prev);
+  };
+
+  const toggleLyricsPanel = () => {
+    if (isMobile) {
+      setShowSidebar(false);
+      setShowMobileUtilitySheet(false);
+    }
+
+    setShowLyrics((prev) => !prev);
+  };
+
+  const toggleMobileUtilityControls = () => {
+    setShowMobileUtilitySheet((prev) => {
+      const next = !prev;
+
+      if (!next) {
+        setShowSidebar(false);
+      }
+
+      return next;
+    });
+  };
+
   const openRelatedTrack = (item: MediaItemCard) => {
     onNavigate('player_audio', {
       collectionId: item.collectionId ?? collection.id,
@@ -415,6 +495,50 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       assetTitle: item.title,
     });
   };
+
+  const mobileHeaderButtonClass = 'h-10 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/28 px-3 text-[11px] font-bold text-white/90 shadow-lg backdrop-blur-md transition-colors hover:bg-black/40';
+  const mobileUtilityActionClass = 'flex min-h-[56px] items-center gap-3 rounded-[22px] border border-white/14 bg-black/26 px-4 text-left text-sm font-semibold text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_22px_rgba(0,0,0,0.18)] backdrop-blur-md transition-colors hover:bg-black/36';
+
+  const renderRelatedTracksList = (cardClassName: string) => (
+    <>
+      <div className="px-1">
+        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Catálogo relacionado</p>
+        <h2 className="mt-1 text-sm font-black text-white">Sugestões da biblioteca</h2>
+      </div>
+
+      {relatedTracks.length === 0 && (
+        <p className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/75">
+          Sem outras faixas relacionadas no momento.
+        </p>
+      )}
+
+      {relatedTracks.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => openRelatedTrack(item)}
+          className={cardClassName}
+        >
+          <div
+            className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-white/10"
+            style={item.thumbnailUrl ? {
+              backgroundImage: `url(${item.thumbnailUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            } : undefined}
+          >
+            <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/65 text-white">
+              <Icons.Play size={9} className="ml-0.5 fill-current stroke-none" />
+            </span>
+          </div>
+          <div className="min-w-0">
+            <p className="line-clamp-1 text-xs font-bold">{item.title}</p>
+            <p className="text-[11px] text-white/70">{item.collectionTitle ?? 'Kaboo'}</p>
+          </div>
+        </button>
+      ))}
+    </>
+  );
 
   return (
     <div
@@ -450,7 +574,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       )}
 
       {/* Header */}
-      <div className="relative z-20 p-4 flex items-center justify-between flex-shrink-0">
+      <div className={`relative z-20 flex flex-shrink-0 items-center justify-between gap-3 ${isMobile ? 'px-4 py-4' : 'p-4'}`}>
         <button
           onClick={handleBack}
           className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30"
@@ -459,68 +583,167 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
           <Icons.ChevronLeft size={24} strokeWidth={2.5} />
         </button>
 
-        <div className="flex-1 text-center">
-          <div className="inline-block bg-black/20 backdrop-blur-md px-6 py-2 rounded-full shadow-lg border border-white/10">
-            <h1 className="text-sm md:text-base font-bold text-white drop-shadow-sm">
+        <div className="min-w-0 flex-1 text-center">
+          <div className={`inline-flex max-w-full items-center justify-center border border-white/10 bg-black/20 shadow-lg backdrop-blur-md ${isMobile ? 'rounded-[24px] px-4 py-2' : 'rounded-full px-6 py-2'}`}>
+            <h1 className={`${isMobile ? 'line-clamp-2 text-sm' : 'text-sm md:text-base'} font-bold text-white drop-shadow-sm`}>
               {resolvedTitle}
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {canDownloadOffline && (
-            <button
-              type="button"
-              onClick={isOfflineDownloaded ? handleOfflineRemove : handleOfflineDownload}
-              disabled={isOfflineDownloading}
-              aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar áudio para offline'}
-              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors backdrop-blur-md disabled:cursor-default ${
-                isOfflineDownloaded
-                  ? 'border-red-300/50 bg-red-500/20 text-red-200 hover:bg-red-500/35'
-                  : isOfflineDownloading
-                    ? 'border-white/30 bg-white/15 text-white/90'
-                    : 'border-white/25 bg-black/30 text-white/90 hover:bg-black/45'
-              }`}
-            >
-              {isOfflineDownloading ? (
-                <Icons.RotateCw size={13} className="animate-spin" />
-              ) : isOfflineDownloaded ? (
-                <Icons.Trash2 size={13} />
-              ) : (
-                <Icons.Download size={13} />
-              )}
-              <span className="hidden sm:inline">
-                {isOfflineDownloaded ? 'Remover offline' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
-              </span>
-            </button>
-          )}
-
+        {isMobile ? (
           <button
-            onClick={() => setShowSidebar(s => !s)}
-            aria-label={showSidebar ? 'Ocultar sugestões' : 'Ver sugestões'}
-            className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md ${showSidebar
-                ? 'border-white/40 bg-white/20'
-                : 'border-white/25 bg-black/30 hover:bg-black/45'
-              }`}
+            type="button"
+            onClick={toggleMobileUtilityControls}
+            aria-label={showMobileUtilitySheet ? 'Ocultar controles extras' : 'Mostrar controles extras'}
+            className={mobileHeaderButtonClass}
           >
-            {showSidebar ? 'Ocultar' : 'Sugestões'}
-            <Icons.ChevronRight size={13} className={`transition-transform ${showSidebar ? 'rotate-180' : ''}`} />
+            <Icons.MoreHorizontal size={16} />
+            <span>{showMobileUtilitySheet ? 'Fechar' : 'Mais'}</span>
+            <Icons.ChevronDown size={14} className={`transition-transform ${showMobileUtilitySheet ? 'rotate-180' : ''}`} />
           </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            {canDownloadOffline && (
+              <button
+                type="button"
+                onClick={isOfflineDownloaded ? handleOfflineRemove : handleOfflineDownload}
+                disabled={isOfflineDownloading}
+                aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar áudio para offline'}
+                className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors backdrop-blur-md disabled:cursor-default ${
+                  isOfflineDownloaded
+                    ? 'border-red-300/50 bg-red-500/20 text-red-200 hover:bg-red-500/35'
+                    : isOfflineDownloading
+                      ? 'border-white/30 bg-white/15 text-white/90'
+                      : 'border-white/25 bg-black/30 text-white/90 hover:bg-black/45'
+                }`}
+              >
+                {isOfflineDownloading ? (
+                  <Icons.RotateCw size={13} className="animate-spin" />
+                ) : isOfflineDownloaded ? (
+                  <Icons.Trash2 size={13} />
+                ) : (
+                  <Icons.Download size={13} />
+                )}
+                <span className="hidden sm:inline">
+                  {isOfflineDownloaded ? 'Remover offline' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
+                </span>
+              </button>
+            )}
 
-          {lyricsUrl && (
             <button
-              onClick={() => setShowLyrics(s => !s)}
-              aria-label={showLyrics ? 'Ocultar letra' : 'Ver letra'}
-              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md ${showLyrics
+              onClick={toggleSuggestionsPanel}
+              aria-label={showSidebar ? 'Ocultar sugestões' : 'Ver sugestões'}
+              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md ${showSidebar
                   ? 'border-white/40 bg-white/20'
                   : 'border-white/25 bg-black/30 hover:bg-black/45'
                 }`}
             >
-              {showLyrics ? 'Ocultar' : '♪ Letra'}
+              {showSidebar ? 'Ocultar' : 'Sugestões'}
+              <Icons.ChevronRight size={13} className={`transition-transform ${showSidebar ? 'rotate-180' : ''}`} />
             </button>
-          )}
-        </div>
+
+            {lyricsUrl && (
+              <button
+                onClick={toggleLyricsPanel}
+                aria-label={showLyrics ? 'Ocultar letra' : 'Ver letra'}
+                className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md ${showLyrics
+                    ? 'border-white/40 bg-white/20'
+                    : 'border-white/25 bg-black/30 hover:bg-black/45'
+                  }`}
+              >
+                {showLyrics ? 'Ocultar' : '♪ Letra'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
+
+      {isMobile && showMobileUtilitySheet && (
+        <section
+          className={`absolute z-30 rounded-[28px] border border-white/14 bg-black/55 p-4 text-white shadow-[0_18px_42px_rgba(0,0,0,0.34)] backdrop-blur-md ${isMobileLandscape ? 'right-4 top-[88px] bottom-4 w-[min(320px,42vw)]' : 'left-4 right-4 bottom-4 max-h-[44vh]'}`}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/55">Controles extras</p>
+              <p className="mt-1 text-sm font-semibold text-white/90">Sugestões, letra e download ficam escondidos até você precisar.</p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleMobileUtilityControls}
+              aria-label="Fechar controles extras"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/18 bg-white/8 text-white/80 transition-colors hover:bg-white/12"
+            >
+              <Icons.X size={16} />
+            </button>
+          </div>
+
+          <div className={`mt-4 grid gap-2 ${lyricsUrl || canDownloadOffline ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {canDownloadOffline && (
+              <button
+                type="button"
+                onClick={isOfflineDownloaded ? handleOfflineRemove : handleOfflineDownload}
+                disabled={isOfflineDownloading}
+                aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar áudio para offline'}
+                className={`${mobileUtilityActionClass} disabled:cursor-default ${isOfflineDownloaded ? 'border-red-300/45 bg-red-500/20 text-red-100 hover:bg-red-500/28' : ''}`}
+              >
+                {isOfflineDownloading ? (
+                  <Icons.RotateCw size={16} className="animate-spin" />
+                ) : isOfflineDownloaded ? (
+                  <Icons.Trash2 size={16} />
+                ) : (
+                  <Icons.Download size={16} />
+                )}
+                <div>
+                  <p className="text-sm font-semibold">{isOfflineDownloaded ? 'Remover offline' : isOfflineDownloading ? 'Baixando...' : 'Download offline'}</p>
+                  <p className="text-[11px] text-white/60">{isOfflineDownloaded ? 'Limpa a cópia salva neste aparelho.' : 'Salva a faixa para ouvir depois.'}</p>
+                </div>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={toggleSuggestionsPanel}
+              aria-label={showSidebar ? 'Ocultar sugestões' : 'Ver sugestões'}
+              className={`${mobileUtilityActionClass} ${showSidebar ? 'border-white/26 bg-white/[0.12]' : ''}`}
+            >
+              <Icons.ChevronRight size={16} className={`transition-transform ${showSidebar ? 'rotate-90' : ''}`} />
+              <div>
+                <p className="text-sm font-semibold">{showSidebar ? 'Ocultar sugestões' : 'Sugestões'}</p>
+                <p className="text-[11px] text-white/60">Veja a próxima faixa sem poluir o header.</p>
+              </div>
+            </button>
+
+            {lyricsUrl && (
+              <button
+                type="button"
+                onClick={toggleLyricsPanel}
+                aria-label={showLyrics ? 'Ocultar letra' : 'Ver letra'}
+                className={`${mobileUtilityActionClass} col-span-full ${showLyrics ? 'border-white/26 bg-white/[0.12]' : ''}`}
+              >
+                <Icons.FileText size={16} />
+                <div>
+                  <p className="text-sm font-semibold">{showLyrics ? 'Ocultar letra' : 'Abrir letra'}</p>
+                  <p className="text-[11px] text-white/60">Mostra a letra em tela cheia para leitura confortável.</p>
+                </div>
+              </button>
+            )}
+          </div>
+
+          {!showSidebar && (
+            <p className="mt-4 text-xs leading-5 text-white/65">
+              O player mobile ficou focado no essencial. Abra as sugestões só quando quiser trocar de faixa.
+            </p>
+          )}
+
+          {showSidebar && (
+            <div className={`mt-4 space-y-2 overflow-y-auto pr-1 ${isMobileLandscape ? 'h-[calc(100%-182px)]' : 'max-h-[22vh]'}`}>
+              {renderRelatedTracksList('flex w-full items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10 text-white')}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Track Ended Overlay */}
       {trackEnded && (
@@ -559,21 +782,20 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       )}
 
       {/* Main Content - two-column layout on desktop */}
-      <div className="flex-1 flex flex-col lg:flex-row relative z-10 overflow-hidden">
+      <div className={`relative z-10 flex-1 overflow-hidden ${isMobileLandscape ? 'px-4 pb-4' : 'flex flex-col lg:flex-row'}`}>
 
         {/* Player Column */}
-        <div className="flex flex-col items-center justify-start pt-3 overflow-y-auto min-w-0 flex-1">
+        <div className={`min-w-0 flex-1 ${isMobileLandscape ? 'flex h-full items-center justify-center gap-5 overflow-hidden' : 'flex flex-col items-center justify-start overflow-y-auto pt-3'}`}>
           {/* CD/Vinyl Disc */}
-          <div className="relative mb-2">
+          <div className={`relative ${isMobileLandscape ? 'shrink-0' : 'mb-2'}`}>
             <div
-              className="w-56 h-56 md:w-72 md:h-72 rounded-full relative cursor-pointer select-none"
+              className={`${isMobileLandscape ? 'h-40 w-40' : 'h-56 w-56 md:h-72 md:w-72'} relative select-none rounded-full`}
               style={{
-                transform: `rotate(${cdRotation}deg) scale(${isHoveringCd ? 1.05 : 1})`,
+                transform: `rotate(${cdRotation}deg)`,
                 transition: isDragging ? 'none' : 'transform 0.05s linear',
                 willChange: 'transform'
               }}
-              onMouseEnter={() => setIsHoveringCd(true)}
-              onMouseLeave={() => setIsHoveringCd(false)}
+
               onClick={(e) => {
                 e.stopPropagation();
                 togglePlay();
@@ -602,22 +824,12 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                 <div className="w-4 h-4 rounded-full bg-black/80" />
               </div>
 
-              {/* Play/Pause Affordance Overlay */}
-              <div
-                className={`absolute inset-0 rounded-full flex items-center justify-center bg-black/25 transition-opacity duration-200 pointer-events-none ${!isPlaying ? 'opacity-100' : isHoveringCd ? 'opacity-100' : 'opacity-0'
-                  }`}
-              >
-                {isPlaying ? (
-                  <Icons.Pause size={44} fill="white" strokeWidth={0} className="text-white drop-shadow-lg" />
-                ) : (
-                  <Icons.Play size={44} fill="white" strokeWidth={0} className="text-white drop-shadow-lg ml-2" />
-                )}
-              </div>
+
             </div>
           </div>
 
           {/* Controls Section */}
-          <div className="w-full max-w-md px-6 pb-5 space-y-4">
+          <div className={`w-full space-y-4 ${isMobileLandscape ? 'max-w-[360px] rounded-[28px] border border-white/14 bg-black/18 px-4 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.28)] backdrop-blur-md' : 'max-w-md px-6 pb-5'}`}>
             {/* Progress Bar */}
             <div className="space-y-2">
               <div className="relative">
@@ -631,8 +843,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                   onChange={handleSeek}
                   onMouseUp={handleSeekEnd}
                   onTouchEnd={handleSeekEnd}
-                  className="w-full h-3 bg-white/20 rounded-full appearance-none cursor-pointer"
-                  style={{
+                className="w-full h-3 bg-white/20 rounded-full appearance-none cursor-pointer"
+                style={{
                     background: `linear-gradient(to right, white ${progressPercent}%, rgba(255,255,255,0.2) ${progressPercent}%)`
                   }}
                 />
@@ -655,7 +867,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
             </div>
 
             {/* Main Controls */}
-            <div className="flex items-center justify-center gap-7">
+            <div className={`flex items-center justify-center ${isMobileLandscape ? 'gap-5' : 'gap-7'}`}>
               {/* Skip Backward */}
               <button
                 onClick={skipBackward}
@@ -736,52 +948,19 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
         )}
 
         {/* Sidebar — catálogo relacionado */}
-        <div
-          className={`flex-shrink-0 overflow-y-auto transition-all duration-300 border-t lg:border-t-0 lg:border-l border-white/10 bg-black/25 backdrop-blur-md ${showSidebar
-              ? 'w-full h-72 lg:h-auto lg:w-80 xl:w-96'
-              : 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none border-0'
-            }`}
-          style={{ scrollbarWidth: 'none' } as React.CSSProperties}
-        >
-          <div className="p-4 space-y-3 min-w-[280px]">
-            <div className="px-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Catálogo relacionado</p>
-              <h2 className="mt-1 text-sm font-black text-white">Sugestões da biblioteca</h2>
+        {!isMobile && (
+          <div
+            className={`flex-shrink-0 overflow-y-auto transition-all duration-300 border-t lg:border-t-0 lg:border-l border-white/10 bg-black/25 backdrop-blur-md ${showSidebar
+                ? 'w-full h-72 lg:h-auto lg:w-80 xl:w-96'
+                : 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none border-0'
+              }`}
+            style={{ scrollbarWidth: 'none' } as React.CSSProperties}
+          >
+            <div className="min-w-[280px] space-y-3 p-4">
+              {renderRelatedTracksList('flex w-full items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10 text-white')}
             </div>
-
-            {relatedTracks.length === 0 && (
-              <p className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/75">
-                Sem outras faixas relacionadas no momento.
-              </p>
-            )}
-
-            {relatedTracks.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => openRelatedTrack(item)}
-                className="flex w-full items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10 text-white"
-              >
-                <div
-                  className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-white/10"
-                  style={item.thumbnailUrl ? {
-                    backgroundImage: `url(${item.thumbnailUrl})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  } : undefined}
-                >
-                  <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/65 text-white">
-                    <Icons.Play size={9} className="ml-0.5 fill-current stroke-none" />
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p className="line-clamp-1 text-xs font-bold">{item.title}</p>
-                  <p className="text-[11px] text-white/70">{item.collectionTitle ?? 'Kaboo'}</p>
-                </div>
-              </button>
-            ))}
           </div>
-        </div>
+        )}
 
       </div>
 
