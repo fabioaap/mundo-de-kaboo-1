@@ -19,6 +19,7 @@ interface VideoPlayerScreenProps {
   mediaItemId?: string;
   assetUrl?: string;
   assetTitle?: string;
+  assetOfflineAvailable?: boolean | null;
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
 }
@@ -91,6 +92,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   mediaItemId,
   assetUrl,
   assetTitle,
+  assetOfflineAvailable,
   onNavigate,
   onBack,
 }) => {
@@ -152,7 +154,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     downloadError: offlineDownloadError,
     handleDownload: handleOfflineDownload,
     handleRemove: handleOfflineRemove,
-  } = useOfflineDownload(collection, [resolvedVideoUrl]);
+  } = useOfflineDownload(collection, [resolvedVideoUrl], assetOfflineAvailable);
 
   // Set browser background to black for video player
   useThemeBackground('#000000');

@@ -415,6 +415,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
         assetUrl: asset.url,
         assetTitle: asset.title,
         lyricsUrl: asset.lyrics_url ?? undefined,
+        assetOfflineAvailable: asset.offline_available ?? undefined,
       });
       return;
     }
@@ -424,6 +425,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
         collectionId: collection.id,
         assetUrl: asset.url,
         assetTitle: asset.title,
+        assetOfflineAvailable: asset.offline_available ?? undefined,
       });
       return;
     }

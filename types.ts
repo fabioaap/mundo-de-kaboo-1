@@ -144,6 +144,8 @@ export interface CollectionAsset {
   description?: string | null;
   scope?: 'primary' | 'library';
   lyrics_url?: string | null;
+  /** Per-asset download flag. null/undefined = inherits collection-level offline_available. */
+  offline_available?: boolean | null;
 }
 
 export interface Collection {

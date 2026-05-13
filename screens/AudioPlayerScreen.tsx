@@ -25,6 +25,7 @@ interface AudioPlayerScreenProps {
   assetUrl?: string;
   assetTitle?: string;
   lyricsUrl?: string;
+  assetOfflineAvailable?: boolean | null;
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
 }
@@ -35,6 +36,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   assetUrl,
   assetTitle,
   lyricsUrl,
+  assetOfflineAvailable,
   onNavigate,
   onBack,
 }) => {
@@ -87,7 +89,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
     downloadError: offlineDownloadError,
     handleDownload: handleOfflineDownload,
     handleRemove: handleOfflineRemove,
-  } = useOfflineDownload(collection, [resolvedAudioUrl, lyricsUrl]);
+  } = useOfflineDownload(collection, [resolvedAudioUrl, lyricsUrl], assetOfflineAvailable);
 
   // Set browser background to match theme color
   useThemeBackground(themeColor);

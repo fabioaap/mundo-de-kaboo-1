@@ -843,6 +843,7 @@ const App: React.FC = () => {
             assetUrl={navState.params?.assetUrl}
             assetTitle={navState.params?.assetTitle}
             lyricsUrl={navState.params?.lyricsUrl}
+            assetOfflineAvailable={navState.params?.assetOfflineAvailable}
             onNavigate={navigate}
             onBack={goBack}
           />
@@ -914,6 +915,7 @@ const App: React.FC = () => {
             mediaItemId={navState.params?.mediaItemId}
             assetUrl={navState.params?.assetUrl}
             assetTitle={navState.params?.assetTitle}
+            assetOfflineAvailable={navState.params?.assetOfflineAvailable}
             onNavigate={navigate}
             onBack={goBack}
           />

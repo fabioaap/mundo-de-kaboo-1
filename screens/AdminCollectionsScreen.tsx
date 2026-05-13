@@ -580,6 +580,18 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     );
   };
 
+  const setAssetOfflineAvailable = (category: FixedMediaSlotCategory, value: boolean) => {
+    const currentAsset = getAssetByCategory(category);
+    if (!currentAsset) {
+      return;
+    }
+    updateFormWithAssets(
+      formData.collection_assets.map((asset) =>
+        asset.category === category ? { ...asset, offline_available: value } : asset
+      )
+    );
+  };
+
   const removeAsset = (category: FixedMediaSlotCategory) => {
     updateFormWithAssets(formData.collection_assets.filter((asset) => asset.category !== category));
   };
@@ -1713,6 +1725,24 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                       />
                                     </div>
                                   )}
+                                </div>
+                              )}
+                              {/* Offline download toggle — shows only when there is content uploaded */}
+                              {asset?.url && (
+                                <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3 mt-1">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold text-gray-800">Disponível offline</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">Permite download deste arquivo para uso sem internet. Não funciona com YouTube.</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={asset.offline_available !== false}
+                                    onClick={() => setAssetOfflineAvailable(slot.category, asset.offline_available === false ? true : false)}
+                                    className={`ml-4 relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-kaboo-primary focus:ring-offset-2 ${asset.offline_available !== false ? 'bg-kaboo-primary' : 'bg-gray-200'}`}
+                                  >
+                                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${asset.offline_available !== false ? 'translate-x-5' : 'translate-x-0'}`} />
+                                  </button>
                                 </div>
                               )}
                             </div>

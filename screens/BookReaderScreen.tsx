@@ -31,7 +31,11 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
     downloadError: offlineDownloadError,
     handleDownload: handleOfflineDownload,
     handleRemove: handleOfflineRemove,
-  } = useOfflineDownload(collection, [collection.pdf_url]);
+  } = useOfflineDownload(
+    collection,
+    [collection.pdf_url],
+    collection.collection_assets?.find((a) => a.category === 'reading')?.offline_available
+  );
   
   // Set browser background to match theme color
   useThemeBackground(themeColor);

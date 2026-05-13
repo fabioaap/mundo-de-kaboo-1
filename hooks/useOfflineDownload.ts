@@ -5,9 +5,11 @@ import { offlineManager } from '../lib/offline';
 
 export const useOfflineDownload = (
   collection: Collection,
-  extraUrls: Array<string | null | undefined> = []
+  extraUrls: Array<string | null | undefined> = [],
+  /** Per-asset override. null/undefined = inherits collection-level flag. false = disabled even if collection allows. */
+  assetOfflineAvailable?: boolean | null
 ) => {
-  const isAvailable = collection.offline_available === true;
+  const isAvailable = collection.offline_available === true && assetOfflineAvailable !== false;
   const hasExplicitTargets = extraUrls.length > 0;
   const relevantUrlsKey = extraUrls
     .filter((url): url is string => typeof url === 'string')
