@@ -591,7 +591,8 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
 };
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, accessProfile, screenName = 'home', searchMode = false }) => {
-  const isSearchExperience = searchMode || Boolean(params?.inlineSearch);
+  const [localSearchActive, setLocalSearchActive] = React.useState(false);
+  const isSearchExperience = searchMode || Boolean(params?.inlineSearch) || localSearchActive;
   const currentCollectionGroup: HomeCollectionGroup = params?.collectionGroup === 'books' ? 'books' : 'kits';
   const baseHomeParams = currentCollectionGroup === 'books' ? { collectionGroup: 'books' as const } : undefined;
   const collectionGroupTitle = currentCollectionGroup === 'books' ? 'Livros' : 'Coleções';
@@ -703,7 +704,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const shouldRenderBrandHero = !isSearchExperience && (Boolean(brandHomeHeroImageUrl) || isCentralCoruja || brandSlug === 'kaboo');
   const isCorujaHomeLayout = isCentralCoruja && !isSearchExperience;
   const isCorujaPinnedShelfLayout = isCorujaHomeLayout && Boolean(brandHomeHeroImageUrl);
-  const searchLauncherPlaceholder = 'Buscar por título, tema, BNCC ou personagem';
   const desktopShellPaddingClass = isCorujaPinnedShelfLayout
     ? 'px-[var(--space-page-x)] md:mx-auto md:w-full md:max-w-6xl md:px-0'
     : isCentralCoruja
@@ -1350,6 +1350,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   };
 
   const closeInlineSearch = () => {
+    setLocalSearchActive(false);
     onNavigate('home', baseHomeParams);
   };
 
@@ -1587,37 +1588,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               <Icons.Search size={18} />
             </div>
 
-            {isSearchExperience ? (
-              <>
-                <Input
-                  ref={searchInputRef}
-                  aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
-                  placeholder="Título, BNCC, personagem, competência..."
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  className={`h-14 rounded-[26px] pl-11 pr-12 md:h-12 md:rounded-[24px] ${searchSurfaceClass}`}
-                />
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm('')}
-                    className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition-colors hover:text-gray-700"
-                    title="Limpar busca"
-                  >
-                    <Icons.X size={16} />
-                  </button>
-                )}
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
-                className={`h-14 w-full truncate rounded-[26px] border pl-11 pr-6 text-left text-[15px] font-medium transition-colors md:h-12 md:rounded-[24px] ${searchSurfaceClass}`}
-                aria-label="Abrir pesquisa"
-              >
-                <span className="truncate">{searchLauncherPlaceholder}</span>
-              </button>
-            )}
+            <Input
+                ref={searchInputRef}
+                aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
+                placeholder="Título, BNCC, personagem, competência..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                onFocus={() => setLocalSearchActive(true)}
+                className={`h-14 rounded-[26px] pl-11 pr-12 md:h-12 md:rounded-[24px] ${searchSurfaceClass}`}
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition-colors hover:text-gray-700"
+                  title="Limpar busca"
+                >
+                  <Icons.X size={16} />
+                </button>
+              )}
           </div>
 
           <button
@@ -1653,9 +1642,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     const searchInputClass = isKabooTone
       ? 'h-14 rounded-[28px] pl-11 pr-24 md:pr-72 bg-white border border-gray-200 hover:border-kaboo-primary/24 focus:border-kaboo-primary shadow-sm'
       : 'h-14 rounded-[28px] pl-11 shadow-sm bg-white/92 border-transparent hover:border-transparent focus:border-kaboo-primary pr-24 md:pr-72';
-    const searchLauncherClass = isKabooTone
-      ? 'w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 border border-gray-200 bg-white text-gray-500 shadow-sm hover:border-kaboo-primary/24 hover:bg-white truncate'
-      : 'w-full text-left font-medium h-14 rounded-[28px] pl-11 pr-16 md:pr-28 border border-white/40 bg-white/95 text-gray-500 shadow-[0_14px_30px_rgba(0,0,0,0.22)] hover:border-[#EA9A3B]/60 hover:bg-white truncate';
     const passiveFilterClass = isKabooTone
       ? 'bg-white text-kaboo-primary border-gray-200 shadow-sm hover:border-kaboo-primary/24'
       : 'bg-white/95 text-[#0C1A34] border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60';
@@ -1669,62 +1655,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
             <Icons.Search size={18} />
           </div>
-          {isSearchExperience ? (
-            <>
-              <Input
-                ref={searchInputRef}
-                aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
-                placeholder="Título, BNCC, personagem, competência..."
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className={searchInputClass}
-              />
-              <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchTerm('')}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/90 backdrop-blur-sm text-gray-500 transition-colors hover:text-gray-700"
-                    title="Limpar busca"
-                  >
-                    <Icons.X size={16} />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => openFilterDrawer()}
-                  className="inline-flex h-10 items-center gap-2 rounded-[20px] border border-kaboo-primary/82 bg-kaboo-primary px-3 md:px-4 text-white transition-all active:scale-95 shadow-sm hover:opacity-90"
-                  title="Refinar busca"
-                >
-                  <Icons.Filter size={18} strokeWidth={2} />
-                  <span className="hidden md:inline text-sm font-bold">Filtros</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={closeInlineSearch}
-                  className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 backdrop-blur-sm px-3 text-gray-500 transition-colors hover:text-gray-700"
-                  title="Fechar busca"
-                >
-                  <Icons.X size={16} />
-                  <span className="text-sm font-bold">Fechar</span>
-                </button>
-              </div>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
-              className={searchLauncherClass}
-              aria-label="Abrir pesquisa"
-            >
-              <span className="truncate">{searchLauncherPlaceholder}</span>
-            </button>
-          )}
-          {!isSearchExperience && (
+          <Input
+            ref={searchInputRef}
+            aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
+            placeholder="Título, BNCC, personagem, competência..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            onFocus={() => setLocalSearchActive(true)}
+            className={searchInputClass}
+          />
+          <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/90 backdrop-blur-sm text-gray-500 transition-colors hover:text-gray-700"
+                title="Limpar busca"
+              >
+                <Icons.X size={16} />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => openFilterDrawer()}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : passiveFilterClass}`}
+              className={`flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)] inline-flex' : `${passiveFilterClass} inline-flex`}`}
               title="Refinar busca"
             >
               <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
@@ -1735,7 +1689,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 </span>
               )}
             </button>
-          )}
+            {isSearchExperience && (
+              <button
+                type="button"
+                onClick={closeInlineSearch}
+                className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 backdrop-blur-sm px-3 text-gray-500 transition-colors hover:text-gray-700"
+                title="Fechar busca"
+              >
+                <Icons.X size={16} />
+                <span className="text-sm font-bold">Fechar</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {!isSearchExperience && (
