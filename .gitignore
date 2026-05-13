@@ -37,3 +37,7 @@ storybook-static
 test-results/
 playwright-report/
 blob-report/
+
+# gstack / QA tooling artifacts
+.gstack/
+.playwright-mcp/
