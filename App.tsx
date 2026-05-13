@@ -152,6 +152,8 @@ const loadPreviousState = (): { screen: ScreenName; params?: any } | null => {
 };
 
 const DEFAULT_BRAND_PRIMARY_COLOR = '#5D1F58';
+const DEFAULT_FAVICON_URL = '/favicon.ico';
+const DEFAULT_APPLE_TOUCH_ICON_URL = '/apple-touch-icon.png';
 
 const upsertHeadMeta = (name: string, content: string) => {
   const existingMeta = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
@@ -165,6 +167,19 @@ const upsertHeadMeta = (name: string, content: string) => {
   meta.name = name;
   meta.content = content;
   document.head.appendChild(meta);
+};
+
+const replaceHeadLinks = (rel: string, href: string) => {
+  const existingLinks = Array.from(document.querySelectorAll(`link[rel="${rel}"]`)) as HTMLLinkElement[];
+
+  existingLinks.forEach(link => {
+    link.remove();
+  });
+
+  const link = document.createElement('link');
+  link.rel = rel;
+  link.href = href;
+  document.head.appendChild(link);
 };
 
 const App: React.FC = () => {
@@ -218,6 +233,8 @@ const App: React.FC = () => {
   const brandLogoUrl = brandBootstrap.settings.logo_url || (brandBootstrap.brand.slug === 'kaboo' ? LOGO_URL : undefined);
   const brandLoginBackgroundUrl = brandBootstrap.settings.login_background_url || undefined;
   const brandPrimaryColor = brandBootstrap.settings.primary_color || DEFAULT_BRAND_PRIMARY_COLOR;
+  const brandIconUrl = brandLogoUrl || DEFAULT_FAVICON_URL;
+  const brandAppleTouchIconUrl = brandLogoUrl || DEFAULT_APPLE_TOUCH_ICON_URL;
 
   // Save navState to localStorage whenever it changes
   useEffect(() => {
@@ -236,7 +253,9 @@ const App: React.FC = () => {
   useEffect(() => {
     document.title = brandDisplayName;
     upsertHeadMeta('apple-mobile-web-app-title', brandDisplayName);
-  }, [brandDisplayName]);
+    replaceHeadLinks('icon', brandIconUrl);
+    replaceHeadLinks('apple-touch-icon', brandAppleTouchIconUrl);
+  }, [brandAppleTouchIconUrl, brandDisplayName, brandIconUrl]);
 
   useEffect(() => {
     if (!isPlayerScreen) {
