@@ -172,14 +172,14 @@ const getCollectionCardLayout = (cardWidth: number, isMobile: boolean): Collecti
     };
   }
 
-  const stackWidth = clampNumber(resolvedWidth * 0.45, 154, 194);
+  const stackWidth = clampNumber(resolvedWidth * 0.49, 172, 220);
   return {
-    aspectRatio: '1.7 / 1',
+    aspectRatio: '1.6 / 1',
     stackWidth,
-    stackRight: 12,
-    headerPaddingRight: Math.max(112, stackWidth - 18),
-    bodyPaddingRight: Math.max(106, stackWidth - 22),
-    footerPaddingRight: Math.max(98, stackWidth - 30),
+    stackRight: 8,
+    headerPaddingRight: Math.max(126, stackWidth - 4),
+    bodyPaddingRight: Math.max(120, stackWidth),
+    footerPaddingRight: Math.max(108, stackWidth - 12),
     visibleFormatLimit: 3,
     summaryClampClassName: 'line-clamp-3',
   };
@@ -383,17 +383,17 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             >
               <div className="relative aspect-square w-full" style={{ transform: 'translateZ(24px)' }}>
                 <div
-                  className="absolute left-[1%] top-[27%] w-[58%] aspect-square overflow-hidden rounded-[24px] border border-white/25 shadow-[0_20px_42px_rgba(15,23,42,0.12)]"
+                  className="absolute left-[3%] top-[29%] w-[62%] aspect-square overflow-hidden rounded-[26px] border border-white/25 shadow-[0_22px_46px_rgba(15,23,42,0.14)]"
                   style={{
                     background: `linear-gradient(165deg, ${toRgba(themeColor, 0.9)} 0%, rgba(15,23,42,0.94) 100%)`,
-                    transform: 'rotate(-10deg)',
+                    transform: 'rotate(-12deg)',
                   }}
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.16)_0%,transparent_100%)]" />
                 </div>
                 <div
-                  className="absolute left-[18%] top-[13%] w-[63%] aspect-square overflow-hidden rounded-[24px] border border-slate-200/85 bg-white/94 p-3 shadow-[0_22px_40px_rgba(15,23,42,0.14)]"
-                  style={{ transform: 'rotate(4deg)' }}
+                  className="absolute left-[14%] top-[10%] w-[68%] aspect-square overflow-hidden rounded-[26px] border border-slate-200/85 bg-white/94 p-3.5 shadow-[0_24px_44px_rgba(15,23,42,0.16)]"
+                  style={{ transform: 'rotate(5deg)' }}
                 >
                   <div
                     className="flex h-full flex-col justify-between rounded-[18px] border border-dashed p-2.5"
@@ -432,7 +432,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
                     </div>
                   </div>
                 </div>
-                <div className="absolute right-0 top-0 w-[74%] aspect-square overflow-hidden rounded-[28px] border border-white/75 bg-white shadow-[0_30px_58px_rgba(15,23,42,0.22)]">
+                <div className="absolute right-0 top-[1%] w-[82%] aspect-square overflow-hidden rounded-[30px] border border-white/75 bg-white shadow-[0_34px_62px_rgba(15,23,42,0.24)]">
                   <img
                     src={collectionHeroCover}
                     alt={collection.title}
@@ -485,7 +485,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
                 className="mt-auto"
                 style={{ paddingRight: `${collectionCardLayout.footerPaddingRight}px` }}
               >
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1">
                   {visibleFormatKinds.map((formatKind) => {
                     const { Icon, label, toneClassName } = COLLECTION_FORMAT_META[formatKind];
                     return (
