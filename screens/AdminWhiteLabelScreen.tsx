@@ -98,6 +98,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const [menuMusicEnabled, setMenuMusicEnabled] = useState<boolean>(true);
     const [heroParallaxEnabled, setHeroParallaxEnabled] = useState<boolean>(false);
     const [heroParallaxMode, setHeroParallaxMode] = useState<HeroParallaxMode>('off');
+    const [contentOfflineEnabled, setContentOfflineEnabled] = useState<boolean>(false);
     const [auditEntries, setAuditEntries] = useState<WhiteLabelAuditEntry[]>([]);
     const [publicationState, setPublicationState] = useState<WhiteLabelPublicationState>({ version: 1, published_at: null });
     const [rolloutConfig, setRolloutConfig] = useState<WhiteLabelRolloutConfig>({ enabled: true, wave: 'pilot', started_at: null, last_changed_at: null, last_reason: null });
@@ -217,10 +218,11 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             setBrandIdentity(DEFAULT_BRAND_IDENTITY);
         }
 
-        const features = await getWhiteLabelFeatures(brandId, ['menu.music', 'hero.parallax']);
+        const features = await getWhiteLabelFeatures(brandId, ['menu.music', 'hero.parallax', 'content.offline']);
         setMenuMusicEnabled(features['menu.music']?.enabled ?? true);
         setHeroParallaxEnabled(features['hero.parallax']?.enabled ?? false);
         setHeroParallaxMode(resolveHeroParallaxMode(features['hero.parallax']));
+        setContentOfflineEnabled(features['content.offline']?.enabled ?? false);
 
         try {
             const publication = await getWhiteLabelPublicationState(brandId);
@@ -484,6 +486,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         try {
             await persistFeature('menu.music', false, {});
             await persistFeature('hero.parallax', true, { mode: 'subtle' });
+            await persistFeature('content.offline', false, {});
             showToast('Preset Central Coruja aplicado com sucesso!', 'success');
         } catch (err) {
             showToast('Erro ao aplicar preset Central Coruja.', 'error');
@@ -498,6 +501,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         try {
             await persistFeature('menu.music', true, {});
             await persistFeature('hero.parallax', false, { mode: 'off' });
+            await persistFeature('content.offline', false, {});
             showToast('Baseline Kaboo aplicado com sucesso!', 'success');
         } catch (err) {
             showToast('Erro ao aplicar baseline Kaboo.', 'error');
@@ -1190,6 +1194,28 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     </button>
                                                 );
                                             })}
+                                        </div>
+                                    </div>
+
+                                    {/* Offline toggle */}
+                                    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900">Download Offline</p>
+                                                <p className="mt-1 text-sm text-gray-500">
+                                                    Permite que usuários baixem conteúdos para uso sem internet.
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={contentOfflineEnabled}
+                                                onClick={() => persistFeature('content.offline', !contentOfflineEnabled, {})}
+                                                className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${contentOfflineEnabled ? 'bg-kaboo-primary' : 'bg-gray-300'}`}
+                                                disabled={loading || saving || !selectedBrand}
+                                            >
+                                                <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${contentOfflineEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+                                            </button>
                                         </div>
                                     </div>
 

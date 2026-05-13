@@ -99,6 +99,7 @@ const DEFAULT_FEATURES: Record<string, BrandFeatureState> = {
     'hero.parallax': { enabled: false, config: {} },
     'module.characters': { enabled: true, config: {} },
     'module.vouchers': { enabled: true, config: {} },
+    'content.offline': { enabled: false, config: {} },
 };
 
 /** Defaults por slug para o mock local (sem Supabase). */

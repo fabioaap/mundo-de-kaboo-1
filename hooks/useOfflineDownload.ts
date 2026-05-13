@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Collection } from '../types';
 import { offlineManager } from '../lib/offline';
+import { useBrandConfig } from './useBrandConfig';
 
 export const useOfflineDownload = (
   collection: Collection,
@@ -9,7 +10,9 @@ export const useOfflineDownload = (
   /** Per-asset override. null/undefined = inherits collection-level flag. false = disabled even if collection allows. */
   assetOfflineAvailable?: boolean | null
 ) => {
-  const isAvailable = collection.offline_available === true && assetOfflineAvailable !== false;
+  const { isFeatureEnabled } = useBrandConfig();
+  const brandAllowsOffline = isFeatureEnabled('content.offline');
+  const isAvailable = brandAllowsOffline && collection.offline_available === true && assetOfflineAvailable !== false;
   const hasExplicitTargets = extraUrls.length > 0;
   const relevantUrlsKey = extraUrls
     .filter((url): url is string => typeof url === 'string')

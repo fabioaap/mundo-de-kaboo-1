@@ -158,10 +158,12 @@ const MOCK_FEATURES_BY_BRAND: Record<string, Record<string, WhiteLabelFeatureSta
     'mock-kaboo': {
         'menu.music': { enabled: true, config: {} },
         'hero.parallax': { enabled: false, config: { mode: 'off' } },
+        'content.offline': { enabled: false, config: {} },
     },
     'mock-central-coruja': {
         'menu.music': { enabled: true, config: {} },
         'hero.parallax': { enabled: false, config: { mode: 'off' } },
+        'content.offline': { enabled: false, config: {} },
     },
 };
 
@@ -501,12 +503,13 @@ export async function setWhiteLabelBrandIdentity(input: {
 
 export async function getWhiteLabelFeatures(
     brandId: string,
-    keys: string[] = ['menu.music', 'hero.parallax'],
+    keys: string[] = ['menu.music', 'hero.parallax', 'content.offline'],
 ): Promise<Record<string, WhiteLabelFeatureState>> {
     if (!canUseRemoteWhiteLabel()) {
         return MOCK_FEATURES_BY_BRAND[brandId] ?? {
             'menu.music': { enabled: true, config: {} },
             'hero.parallax': { enabled: false, config: { mode: 'off' } },
+            'content.offline': { enabled: false, config: {} },
         };
     }
 
@@ -520,6 +523,7 @@ export async function getWhiteLabelFeatures(
         return MOCK_FEATURES_BY_BRAND[brandId] ?? {
             'menu.music': { enabled: true, config: {} },
             'hero.parallax': { enabled: false, config: { mode: 'off' } },
+            'content.offline': { enabled: false, config: {} },
         };
     }
 
@@ -536,6 +540,7 @@ export async function getWhiteLabelFeatures(
         return MOCK_FEATURES_BY_BRAND[brandId] ?? {
             'menu.music': { enabled: true, config: {} },
             'hero.parallax': { enabled: false, config: { mode: 'off' } },
+            'content.offline': { enabled: false, config: {} },
         };
     }
 
@@ -1373,7 +1378,7 @@ export async function getWhiteLabelHealthCheck(brandId: string): Promise<WhiteLa
     let hasCritical = false;
 
     try {
-        const features = await getWhiteLabelFeatures(brandId, ['menu.music', 'hero.parallax']);
+        const features = await getWhiteLabelFeatures(brandId, ['menu.music', 'hero.parallax', 'content.offline']);
         const enabledFlags = Object.values(features).filter((f) => f.enabled).length;
 
         if (enabledFlags === 0) {
