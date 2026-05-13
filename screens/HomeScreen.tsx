@@ -591,8 +591,7 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
 };
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, accessProfile, screenName = 'home', searchMode = false }) => {
-  const [localSearchActive, setLocalSearchActive] = React.useState(false);
-  const isSearchExperience = searchMode || Boolean(params?.inlineSearch) || localSearchActive;
+  const isSearchExperience = searchMode || Boolean(params?.inlineSearch);
   const currentCollectionGroup: HomeCollectionGroup = params?.collectionGroup === 'books' ? 'books' : 'kits';
   const baseHomeParams = currentCollectionGroup === 'books' ? { collectionGroup: 'books' as const } : undefined;
   const collectionGroupTitle = currentCollectionGroup === 'books' ? 'Livros' : 'Coleções';
@@ -1350,7 +1349,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   };
 
   const closeInlineSearch = () => {
-    setLocalSearchActive(false);
     onNavigate('home', baseHomeParams);
   };
 
@@ -1594,7 +1592,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 placeholder="Título, BNCC, personagem, competência..."
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                onFocus={() => setLocalSearchActive(true)}
                 className={`h-14 rounded-[26px] pl-11 pr-12 md:h-12 md:rounded-[24px] ${searchSurfaceClass}`}
               />
               {searchTerm && (
@@ -1661,7 +1658,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             placeholder="Título, BNCC, personagem, competência..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            onFocus={() => setLocalSearchActive(true)}
             className={searchInputClass}
           />
           <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
