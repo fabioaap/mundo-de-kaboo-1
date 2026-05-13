@@ -262,9 +262,6 @@ export const CollectionFiltersModal: React.FC<CollectionFiltersModalProps> = ({
 
                     {availableOptions.bncc.length > 0 && (
                         <section ref={sectionRefHandlers?.bncc}>
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                <Icons.BookOpen size={14} /> Habilidades BNCC
-                            </h3>
                             <BnccSummaryEntry selectedCodes={activeFilters.bncc} onOpen={onOpenBncc} tone={tone} />
                         </section>
                     )}
