@@ -1052,7 +1052,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
   const corujaSortActiveClass = 'border-[#7A2A98] bg-[#5D1E76] text-white shadow-[0_14px_28px_rgba(93,30,118,0.35)]';
   const corujaSortIdleClass = 'border-white/12 bg-white/10 text-white/82 hover:bg-white/14';
   const corujaStageShellClass = 'border border-white/12 bg-[linear-gradient(180deg,rgba(7,32,42,0.78),rgba(4,27,36,0.72))] shadow-[0_20px_48px_rgba(4,27,36,0.24)] backdrop-blur-xl';
-  const corujaSearchFieldClass = 'flex flex-1 items-center gap-3 rounded-[0.95rem] border border-white/12 bg-white/10 px-3 py-2.5 text-sm text-white/72 shadow-[0_12px_28px_rgba(4,27,36,0.18)] backdrop-blur-xl transition-colors focus-within:border-[#EA9A3B]/45';
+  const corujaSearchFieldClass = 'flex flex-1 h-14 items-center gap-3 rounded-[28px] border border-white/12 bg-white/10 pl-4 pr-3 text-sm text-white/72 shadow-[0_12px_28px_rgba(4,27,36,0.18)] backdrop-blur-xl transition-colors focus-within:border-[#EA9A3B]/45';
   const corujaSearchResultBadgeClass = 'ml-auto inline-flex items-center rounded-full bg-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/78';
   const corujaSectionTitleClass = 'text-[1.12rem] font-black leading-[1] tracking-[-0.03em] text-[#FFB347] md:text-[1.2rem]';
   const corujaMediaCardClass = 'group rounded-[1.2rem] border border-white/[0.08] bg-[rgba(12,26,52,0.45)] p-2.5 pb-3 shadow-[0_8px_32px_rgba(3,10,22,0.28)] backdrop-blur-xl transition-all duration-200 md:hover:-translate-y-1 hover:border-white/[0.14] hover:bg-[rgba(12,26,52,0.55)] hover:shadow-[0_22px_42px_rgba(4,27,36,0.32)] active:scale-[0.995]';
@@ -1500,8 +1500,8 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
               <section className={`animate-fade-in-up rounded-[1.35rem] px-4 py-3.5 md:px-5 ${isCorujaLibraryHub ? corujaStageShellClass : 'border border-kaboo-primary/10 bg-white/92 shadow-[0_16px_34px_rgba(93,31,88,0.04)]'}`}>
                 <div className="flex w-full flex-col gap-3">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                    <label className={isCorujaLibraryHub ? corujaSearchFieldClass : 'flex flex-1 items-center gap-3 rounded-[0.95rem] border border-kaboo-primary/10 bg-white px-3 py-2.5 text-sm text-gray-500 shadow-sm transition-colors focus-within:border-kaboo-primary/30 focus-within:ring-2 focus-within:ring-kaboo-primary/10'}>
-                      <Icons.Search size={16} className={isCorujaLibraryHub ? 'text-white/60' : 'text-kaboo-primary/55'} />
+                    <label className={isCorujaLibraryHub ? corujaSearchFieldClass : 'flex flex-1 h-14 items-center gap-3 rounded-[28px] border border-gray-200 bg-white pl-4 pr-3 text-sm text-gray-500 shadow-sm transition-colors hover:border-kaboo-primary/24 focus-within:border-kaboo-primary focus-within:ring-2 focus-within:ring-kaboo-primary/10'}>
+                      <Icons.Search size={18} className={isCorujaLibraryHub ? 'text-white/60 shrink-0' : 'text-kaboo-primary/55 shrink-0'} />
                       <input
                         type="search"
                         value={videoQuery}
@@ -1690,8 +1690,8 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
               <section className={`animate-fade-in-up rounded-[1.35rem] px-4 py-3.5 md:px-5 ${isCorujaLibraryHub ? corujaStageShellClass : 'border border-kaboo-primary/10 bg-white/92 shadow-[0_16px_34px_rgba(27,31,35,0.04)]'}`}>
                 <div className="flex w-full flex-col gap-3">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                    <label className={isCorujaLibraryHub ? corujaSearchFieldClass : 'flex flex-1 items-center gap-3 rounded-[0.95rem] border border-kaboo-primary/10 bg-white px-3 py-2.5 text-sm text-gray-500 shadow-sm transition-colors focus-within:border-kaboo-primary/30 focus-within:ring-2 focus-within:ring-kaboo-primary/10'}>
-                      <Icons.Search size={16} className={isCorujaLibraryHub ? 'text-white/60' : 'text-kaboo-primary/55'} />
+                    <label className={isCorujaLibraryHub ? corujaSearchFieldClass : 'flex flex-1 h-14 items-center gap-3 rounded-[28px] border border-gray-200 bg-white pl-4 pr-3 text-sm text-gray-500 shadow-sm transition-colors hover:border-kaboo-primary/24 focus-within:border-kaboo-primary focus-within:ring-2 focus-within:ring-kaboo-primary/10'}>
+                      <Icons.Search size={18} className={isCorujaLibraryHub ? 'text-white/60 shrink-0' : 'text-kaboo-primary/55 shrink-0'} />
                       <input
                         type="search"
                         value={compactQuery}
