@@ -151,6 +151,22 @@ const loadPreviousState = (): { screen: ScreenName; params?: any } | null => {
   return null;
 };
 
+const DEFAULT_BRAND_PRIMARY_COLOR = '#5D1F58';
+
+const upsertHeadMeta = (name: string, content: string) => {
+  const existingMeta = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+
+  if (existingMeta) {
+    existingMeta.content = content;
+    return;
+  }
+
+  const meta = document.createElement('meta');
+  meta.name = name;
+  meta.content = content;
+  document.head.appendChild(meta);
+};
+
 const App: React.FC = () => {
   // Initialize state from localStorage if available
   const [navState, setNavState] = useState<NavState>(() => {
@@ -201,6 +217,7 @@ const App: React.FC = () => {
   const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
   const brandLogoUrl = brandBootstrap.settings.logo_url || (brandBootstrap.brand.slug === 'kaboo' ? LOGO_URL : undefined);
   const brandLoginBackgroundUrl = brandBootstrap.settings.login_background_url || undefined;
+  const brandPrimaryColor = brandBootstrap.settings.primary_color || DEFAULT_BRAND_PRIMARY_COLOR;
 
   // Save navState to localStorage whenever it changes
   useEffect(() => {
@@ -215,17 +232,21 @@ const App: React.FC = () => {
   // Reset background to default for non-player screens
   // Player screens will set their own background via useThemeBackground hook
   const isPlayerScreen = PLAYER_SCREENS.includes(navState.currentScreen);
+
+  useEffect(() => {
+    document.title = brandDisplayName;
+    upsertHeadMeta('apple-mobile-web-app-title', brandDisplayName);
+  }, [brandDisplayName]);
+
   useEffect(() => {
     if (!isPlayerScreen) {
       // Reset to default white background for regular screens
       document.documentElement.style.backgroundColor = '#ffffff';
       document.body.style.backgroundColor = '#ffffff';
-      const existingMeta = document.querySelector('meta[name="theme-color"]');
-      if (existingMeta) {
-        existingMeta.remove();
-      }
+      upsertHeadMeta('theme-color', brandPrimaryColor);
+      upsertHeadMeta('msapplication-TileColor', brandPrimaryColor);
     }
-  }, [isPlayerScreen]);
+  }, [brandPrimaryColor, isPlayerScreen]);
 
   // Auth Listener
   useEffect(() => {

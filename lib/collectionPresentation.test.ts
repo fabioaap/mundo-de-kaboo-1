@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  getCollectionFormatKinds,
   getKitLinkedBookCount,
   getVisiblePrimaryCollectionAssets,
   normalizeSingleKitBookIds,
@@ -55,5 +56,27 @@ describe('kit linked book presentation', () => {
       { id: 'reading', category: 'reading', media_type: 'document', title: 'Leitura', url: '/reading.pdf', scope: 'primary' },
       { id: 'video', category: 'animation', media_type: 'video', title: 'Animado', url: '/video.mp4', scope: 'primary' },
     ], true).map((asset) => asset.category)).toEqual(['animation']);
+  });
+});
+
+describe('getCollectionFormatKinds', () => {
+  it('summarizes the multimodal surfaces of a collection in a stable order', () => {
+    expect(getCollectionFormatKinds({
+      kit_book_ids: ['book-1'],
+      audio_url: '/audio.mp3',
+      collection_assets: [
+        { id: 'video', category: 'animation', media_type: 'video', title: 'Animado', url: '/video.mp4', scope: 'primary' },
+      ],
+      extra_materials: ['/guia.pdf'],
+    } as any)).toEqual(['reading', 'audio', 'video', 'materials']);
+  });
+
+  it('detects formats even when they only exist inside collection assets', () => {
+    expect(getCollectionFormatKinds({
+      collection_assets: [
+        { id: 'reading', category: 'reading', media_type: 'document', title: 'Leitura', url: '/reading.pdf', scope: 'primary' },
+        { id: 'audio', category: 'storytelling', media_type: 'audio', title: 'Contação', url: '/audio.mp3', scope: 'primary' },
+      ],
+    } as any)).toEqual(['reading', 'audio']);
   });
 });

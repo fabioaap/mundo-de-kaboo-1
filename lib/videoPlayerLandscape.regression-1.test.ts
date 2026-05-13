@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  getVideoPlayerLayout,
   getVideoPlayerSurfaceAction,
   shouldAutoHideVideoPlayerControls,
+  shouldResetMobileUtilityPanels,
   shouldRenderInlineNextVideoCard,
 } from './videoPlayerLandscape';
 
@@ -26,5 +28,35 @@ describe('video player landscape regressions', () => {
     expect(getVideoPlayerSurfaceAction(true, false)).toBe('show-controls');
     expect(getVideoPlayerSurfaceAction(true, true)).toBe('hide-controls');
     expect(getVideoPlayerSurfaceAction(false, false)).toBe('toggle-play');
+  });
+
+  it('resets mobile utility panels when the player changes context', () => {
+    // Regression: the mobile extras sheet stayed open after rotating or entering fullscreen.
+    // Found by /qa on 2026-05-11
+    // Report: conversational validation for the mobile player edge-case pass
+    expect(
+      shouldResetMobileUtilityPanels(
+        getVideoPlayerLayout(true, false),
+        getVideoPlayerLayout(false, true),
+        false,
+        false
+      )
+    ).toBe(true);
+    expect(
+      shouldResetMobileUtilityPanels(
+        getVideoPlayerLayout(false, true),
+        getVideoPlayerLayout(false, true),
+        false,
+        true
+      )
+    ).toBe(true);
+    expect(
+      shouldResetMobileUtilityPanels(
+        getVideoPlayerLayout(false, true),
+        getVideoPlayerLayout(false, true),
+        true,
+        true
+      )
+    ).toBe(false);
   });
 });

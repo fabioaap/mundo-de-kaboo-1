@@ -1,9 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Collection } from '../types';
 import { Icons } from './Icons';
 import useIsMobile from '../hooks/useIsMobile';
+import { useRefSize } from '../hooks/useRefSize';
 import { formatSegmentLabel } from '../constants';
-import { getCollectionDisplayCover, getCollectionTypeMeta } from '../lib/collectionPresentation';
+import {
+  getCollectionDisplayCover,
+  getCollectionFormatKinds,
+  getCollectionTypeMeta,
+  normalizeSingleKitBookIds,
+  type CollectionFormatKind,
+} from '../lib/collectionPresentation';
 
 interface Card3DProps {
   collection: Collection & { progress?: number };
@@ -67,14 +74,135 @@ const requestIOSPermission = async (): Promise<boolean> => {
   }
 };
 
+const DEFAULT_COLLECTION_THEME = '#5D1F58';
+
+const COLLECTION_FORMAT_META: Record<
+  CollectionFormatKind,
+  {
+    label: string;
+    Icon: React.ComponentType<{ size?: number; className?: string }>;
+    toneClassName: string;
+  }
+> = {
+  reading: {
+    label: 'Leitura',
+    Icon: Icons.BookOpen,
+    toneClassName: 'bg-slate-900 text-white',
+  },
+  audio: {
+    label: 'Áudio',
+    Icon: Icons.Headphones,
+    toneClassName: 'bg-[#1E3A8A] text-white',
+  },
+  video: {
+    label: 'Vídeo',
+    Icon: Icons.Video,
+    toneClassName: 'bg-[#7C2D12] text-white',
+  },
+  materials: {
+    label: 'Materiais',
+    Icon: Icons.FileText,
+    toneClassName: 'bg-[#14532D] text-white',
+  },
+};
+
+const hexToRgb = (hex: string) => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16),
+    }
+    : {
+      r: 93,
+      g: 31,
+      b: 88,
+    };
+};
+
+const toRgba = (hex: string, alpha: number) => {
+  const rgb = hexToRgb(hex);
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+};
+
+const clampNumber = (value: number, min: number, max: number) => (
+  Math.min(max, Math.max(min, value))
+);
+
+type CollectionCardLayout = {
+  aspectRatio: string;
+  stackWidth: number;
+  stackRight: number;
+  headerPaddingRight: number;
+  bodyPaddingRight: number;
+  footerPaddingRight: number;
+  visibleFormatLimit: number;
+  summaryClampClassName: string;
+};
+
+const getCollectionCardLayout = (cardWidth: number, isMobile: boolean): CollectionCardLayout => {
+  const resolvedWidth = cardWidth > 0 ? cardWidth : (isMobile ? 343 : 320);
+
+  if (isMobile) {
+    const stackWidth = clampNumber(resolvedWidth * 0.39, 132, 156);
+    return {
+      aspectRatio: '1.28 / 1',
+      stackWidth,
+      stackRight: 10,
+      headerPaddingRight: Math.max(84, stackWidth - 34),
+      bodyPaddingRight: Math.max(88, stackWidth - 28),
+      footerPaddingRight: Math.max(76, stackWidth - 40),
+      visibleFormatLimit: 2,
+      summaryClampClassName: 'line-clamp-2',
+    };
+  }
+
+  if (resolvedWidth < 360) {
+    const stackWidth = clampNumber(resolvedWidth * 0.38, 118, 140);
+    return {
+      aspectRatio: '1.46 / 1',
+      stackWidth,
+      stackRight: 8,
+      headerPaddingRight: Math.max(80, stackWidth - 28),
+      bodyPaddingRight: Math.max(84, stackWidth - 22),
+      footerPaddingRight: Math.max(72, stackWidth - 34),
+      visibleFormatLimit: 2,
+      summaryClampClassName: 'line-clamp-2',
+    };
+  }
+
+  const stackWidth = clampNumber(resolvedWidth * 0.45, 154, 194);
+  return {
+    aspectRatio: '1.7 / 1',
+    stackWidth,
+    stackRight: 12,
+    headerPaddingRight: Math.max(112, stackWidth - 18),
+    bodyPaddingRight: Math.max(106, stackWidth - 22),
+    footerPaddingRight: Math.max(98, stackWidth - 30),
+    visibleFormatLimit: 3,
+    summaryClampClassName: 'line-clamp-3',
+  };
+};
+
 export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, locked, tone = 'default' }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const cardRef = useRef<HTMLDivElement>(null);
+  const { ref: cardRef, width: cardWidth } = useRefSize();
   const isMobile = useIsMobile();
   const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
   const collectionTypeMeta = getCollectionTypeMeta(collection);
   const isCentralCorujaTone = tone === 'central-coruja';
+  const isCollectionCard = !isCentralCorujaTone && collectionTypeMeta.type === 'kit';
   const progress = collection.progress ?? 0;
+  const themeColor = collection.color_theme?.trim() || DEFAULT_COLLECTION_THEME;
+  const collectionHeroCover = collection.cover_image?.trim() || displayCoverImage;
+  const formatKinds = getCollectionFormatKinds(collection);
+  const collectionCardLayout = getCollectionCardLayout(cardWidth, isMobile);
+  const visibleFormatKinds = formatKinds.slice(0, collectionCardLayout.visibleFormatLimit);
+  const linkedBooksCount = normalizeSingleKitBookIds(collection.kit_book_ids).length;
+  const kitContentSummary = collection.theme?.trim()
+    || collection.synopsis?.trim()
+    || collectionTypeMeta.detailSummary;
   const coverBadgeLabel = isCentralCorujaTone
     ? collectionTypeMeta.shortLabel
     : collection.level
@@ -188,7 +316,9 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         ref={cardRef}
         className={`overflow-hidden relative group w-full ${isCentralCorujaTone
           ? 'mb-3 rounded-[28px] bg-transparent shadow-none'
-          : 'mb-3 rounded-lg shadow-md shadow-gray-100'}`}
+          : isCollectionCard
+            ? 'rounded-[30px] bg-transparent shadow-[0_28px_60px_rgba(15,23,42,0.12)]'
+            : 'mb-3 rounded-lg shadow-md shadow-gray-100'}`}
         style={{
           ...(isActive && { WebkitMaskImage: '-webkit-radial-gradient(white, black)' }),
           transform: isActive
@@ -199,7 +329,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             ? 'transform 0.1s ease-out'
             : (isActive ? 'transform 0.1s ease-out' : 'transform 0.35s ease-out'),
           touchAction: 'manipulation',
-          aspectRatio: isCentralCorujaTone ? '0.78 / 1' : '1 / 1',
+          aspectRatio: isCentralCorujaTone ? '0.78 / 1' : isCollectionCard ? collectionCardLayout.aspectRatio : '1 / 1',
           width: '100%',
           height: 'auto',
         }}
@@ -227,34 +357,215 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             </div>
           </>
         )}
+        {isCollectionCard && (
+          <>
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(150deg, ${toRgba(themeColor, 0.18)} 0%, rgba(255,255,255,0.98) 38%, rgba(248,250,252,0.98) 100%)`,
+                transform: 'translateZ(10px)',
+              }}
+            />
+            <div
+              className="absolute inset-0 opacity-95"
+              style={{
+                background: `radial-gradient(circle at 0% 100%, ${toRgba(themeColor, 0.22)} 0%, transparent 42%), radial-gradient(circle at 100% 0%, ${toRgba(themeColor, 0.18)} 0%, transparent 28%), linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 60%)`,
+                transform: 'translateZ(12px)',
+              }}
+            />
+
+            <div
+              className="absolute top-1/2 -translate-y-1/2"
+              style={{
+                right: `${collectionCardLayout.stackRight}px`,
+                width: `${collectionCardLayout.stackWidth}px`,
+              }}
+            >
+              <div className="relative aspect-square w-full" style={{ transform: 'translateZ(24px)' }}>
+                <div
+                  className="absolute left-[1%] top-[27%] w-[58%] aspect-square overflow-hidden rounded-[24px] border border-white/25 shadow-[0_20px_42px_rgba(15,23,42,0.12)]"
+                  style={{
+                    background: `linear-gradient(165deg, ${toRgba(themeColor, 0.9)} 0%, rgba(15,23,42,0.94) 100%)`,
+                    transform: 'rotate(-10deg)',
+                  }}
+                >
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.16)_0%,transparent_100%)]" />
+                </div>
+                <div
+                  className="absolute left-[18%] top-[13%] w-[63%] aspect-square overflow-hidden rounded-[24px] border border-slate-200/85 bg-white/94 p-3 shadow-[0_22px_40px_rgba(15,23,42,0.14)]"
+                  style={{ transform: 'rotate(4deg)' }}
+                >
+                  <div
+                    className="flex h-full flex-col justify-between rounded-[18px] border border-dashed p-2.5"
+                    style={{
+                      borderColor: toRgba(themeColor, 0.2),
+                      background: `linear-gradient(180deg, rgba(255,255,255,0.98) 0%, ${toRgba(themeColor, 0.07)} 100%)`,
+                    }}
+                  >
+                    <div
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-2xl"
+                      style={{
+                        backgroundColor: toRgba(themeColor, 0.12),
+                        color: toRgba(themeColor, 0.84),
+                      }}
+                    >
+                      <Icons.Grid size={14} />
+                    </div>
+                    <div>
+                      <p
+                        className="text-[8px] font-black uppercase tracking-[0.18em]"
+                        style={{ color: toRgba(themeColor, 0.82) }}
+                      >
+                        {formatKinds.length > 0 ? `${formatKinds.length} formatos` : 'Coleção'}
+                      </p>
+                      <div className="mt-2 space-y-1.5">
+                        <div
+                          className="h-2 rounded-full"
+                          style={{ width: '84%', backgroundColor: toRgba(themeColor, 0.22) }}
+                        />
+                        <div className="h-2 w-3/5 rounded-full bg-slate-200" />
+                        <div
+                          className="h-2 rounded-full"
+                          style={{ width: linkedBooksCount > 0 ? '72%' : '48%', backgroundColor: toRgba(themeColor, 0.12) }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="absolute right-0 top-0 w-[74%] aspect-square overflow-hidden rounded-[28px] border border-white/75 bg-white shadow-[0_30px_58px_rgba(15,23,42,0.22)]">
+                  <img
+                    src={collectionHeroCover}
+                    alt={collection.title}
+                    className="h-full w-full object-cover bg-slate-100"
+                    loading="lazy"
+                    decoding="async"
+                    style={{
+                      transform: 'translateZ(28px)',
+                      objectPosition: 'center top',
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,transparent_48%,rgba(15,23,42,0.2)_100%)]" />
+                </div>
+              </div>
+            </div>
+
+            <div className="relative z-10 flex h-full flex-col px-4 pb-3.5 pt-3.5 sm:px-5 sm:pb-5 sm:pt-5">
+              <div
+                className="flex items-start justify-between gap-3"
+                style={{ paddingRight: `${collectionCardLayout.headerPaddingRight}px` }}
+              >
+                <span
+                  className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em]"
+                  style={{
+                    backgroundColor: toRgba(themeColor, 0.08),
+                    borderColor: toRgba(themeColor, 0.18),
+                    color: toRgba(themeColor, 0.9),
+                  }}
+                >
+                  <Icons.Grid size={12} />
+                  Coleção viva
+                </span>
+              </div>
+
+              <div
+                className="mt-3 sm:mt-4"
+                style={{ paddingRight: `${collectionCardLayout.bodyPaddingRight}px` }}
+              >
+                <h3 className="text-base font-black leading-tight text-slate-900 sm:text-lg md:text-[1.1rem] line-clamp-2">
+                  {collection.title}
+                </h3>
+                {kitContentSummary && (
+                  <p className={`mt-2 text-xs font-medium leading-relaxed text-slate-600 sm:text-sm ${collectionCardLayout.summaryClampClassName}`}>
+                    {kitContentSummary}
+                  </p>
+                )}
+              </div>
+
+              <div
+                className="mt-auto"
+                style={{ paddingRight: `${collectionCardLayout.footerPaddingRight}px` }}
+              >
+                <div className="flex flex-wrap gap-2">
+                  {visibleFormatKinds.map((formatKind) => {
+                    const { Icon, label, toneClassName } = COLLECTION_FORMAT_META[formatKind];
+                    return (
+                      <span
+                        key={formatKind}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold shadow-sm ${toneClassName}`}
+                      >
+                        <Icon size={13} />
+                        {label}
+                      </span>
+                    );
+                  })}
+                </div>
+
+                {progress > 0 && (
+                  <div className="mt-3 sm:mt-4 rounded-[18px] border border-white/80 bg-white/86 p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${progress}%`,
+                            background: `linear-gradient(90deg, ${themeColor} 0%, ${toRgba(themeColor, 0.55)} 100%)`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[11px] font-black uppercase tracking-[0.14em]" style={{ color: toRgba(themeColor, 0.9) }}>
+                        {progress >= 100 ? 'Pronta' : `${progress}%`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
         {!isCentralCorujaTone && (
-          <img
-            src={displayCoverImage}
-            alt={collection.title}
-            className="w-full h-full object-cover bg-gray-200"
-            loading="lazy"
-            decoding="async"
-            style={{
-              transform: 'translateZ(20px)',
-            }}
-          />
+          !isCollectionCard && (
+            <img
+              src={displayCoverImage}
+              alt={collection.title}
+              className="w-full h-full object-cover bg-gray-200"
+              loading="lazy"
+              decoding="async"
+              style={{
+                transform: 'translateZ(20px)',
+              }}
+            />
+          )
         )}
         <div
           className={`absolute border ${isCentralCorujaTone
             ? 'left-3 top-3 max-w-[calc(100%-4rem)] truncate rounded-full border-[#ffd28a]/70 bg-[#EA9A3B] px-3 py-1.5 text-[10px] text-white shadow-[0_12px_22px_rgba(62,28,4,0.28)]'
-            : `top-2 left-2 whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] ${collectionTypeMeta.coverClassName}`
+            : isCollectionCard
+              ? 'left-4 top-4 hidden'
+              : `top-2 left-2 whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] ${collectionTypeMeta.coverClassName}`
             } font-black uppercase tracking-[0.14em]`}
           style={{ transform: 'translateZ(30px)' }}
         >
           {isCentralCorujaTone ? coverBadgeLabel : collectionTypeMeta.shortLabel}
         </div>
 
-        {isCentralCorujaTone && (locked || progress > 0) && (
+        {(isCentralCorujaTone || isCollectionCard) && (locked || progress > 0) && (
           <div
-            className={`absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border shadow-[0_12px_22px_rgba(14,9,34,0.28)] ${locked ? 'border-[#ecd495]/80 bg-[#1d2037]/92 text-[#ffeab8]' : 'border-[#f2d87b]/90 bg-[#ffcf4d] text-[#62331a]'}`}
+            className={`absolute ${isCollectionCard ? 'right-4 top-4 h-11 min-w-[2.75rem] px-3' : 'right-3 top-3 h-10 w-10'} flex items-center justify-center rounded-full border shadow-[0_12px_22px_rgba(14,9,34,0.28)] ${locked
+              ? 'border-[#ecd495]/80 bg-[#1d2037]/92 text-[#ffeab8]'
+              : isCollectionCard
+                ? 'border-white/80 bg-white/90 text-slate-700'
+                : 'border-[#f2d87b]/90 bg-[#ffcf4d] text-[#62331a]'}`}
             style={{ transform: 'translateZ(34px)' }}
           >
-            {locked ? <Icons.Lock size={16} /> : <Icons.Check size={18} className="stroke-[3px]" />}
+            {locked
+              ? <Icons.Lock size={16} />
+              : progress >= 100
+                ? <Icons.Check size={18} className="stroke-[3px]" />
+                : (
+                  <span className="text-[10px] font-black uppercase tracking-[0.16em]" style={isCollectionCard ? { color: toRgba(themeColor, 0.9) } : undefined}>
+                    {progress}%
+                  </span>
+                )}
           </div>
         )}
         {/* Light reflection effect - only rendered when card is actively tilting */}
@@ -289,7 +600,9 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         )}
         <div className={`absolute inset-0 transition-opacity ${isCentralCorujaTone
           ? 'bg-gradient-to-t from-[#0f2335]/0 via-transparent to-white/10 opacity-100'
-          : 'bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100'}`} />
+          : isCollectionCard
+            ? 'bg-[linear-gradient(140deg,rgba(255,255,255,0)_48%,rgba(255,255,255,0.28)_100%)] opacity-100'
+            : 'bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100'}`} />
 
         {isCentralCorujaTone && progress > 0 && (
           <div
@@ -309,8 +622,11 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
 
         {/* Lock overlay for content-gated collections */}
         {locked && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center" style={{ transform: 'translateZ(35px)' }}>
-            {!isCentralCorujaTone && (
+          <div
+            className={`absolute inset-0 flex items-center justify-center ${isCollectionCard ? 'bg-white/28 backdrop-blur-[2px]' : 'bg-black/40'}`}
+            style={{ transform: 'translateZ(35px)' }}
+          >
+            {!isCentralCorujaTone && !isCollectionCard && (
               <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/90 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-gray-600">
                   <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
@@ -321,7 +637,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
           </div>
         )}
 
-        {!isCentralCorujaTone && (() => {
+        {!isCentralCorujaTone && !isCollectionCard && (() => {
           const segments = collection.segments;
           if (segments && segments.length > 1) {
             const visible = segments.slice(0, 2);
@@ -360,13 +676,13 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         })()}
       </div>
 
-      {!isCentralCorujaTone && collection.title && (
+      {!isCentralCorujaTone && !isCollectionCard && collection.title && (
         <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-2">
           {collection.title}
         </h3>
       )}
 
-      {!isCentralCorujaTone && collection.theme && collection.theme.trim() !== '' && (
+      {!isCentralCorujaTone && !isCollectionCard && collection.theme && collection.theme.trim() !== '' && (
         <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">
           {collection.theme}
         </p>
@@ -384,7 +700,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         </p>
       )}
 
-      {!isCentralCorujaTone && collection.progress !== undefined && collection.progress > 0 && (
+      {!isCentralCorujaTone && !isCollectionCard && collection.progress !== undefined && collection.progress > 0 && (
         <div className="mt-1 flex items-center gap-1 text-xs font-bold text-kaboo-light">
           <div className="h-1.5 w-1.5 rounded-full bg-kaboo-light" />
           Em andamento

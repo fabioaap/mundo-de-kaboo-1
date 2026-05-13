@@ -15,6 +15,8 @@ type CollectionPresentationCopy = {
   materialsEmptyState: string;
 };
 
+export type CollectionFormatKind = 'reading' | 'audio' | 'video' | 'materials';
+
 type KitLinkedBookState = {
   linkedBookIdsCount: number;
   linkedBooksCount: number;
@@ -96,6 +98,34 @@ export const getVisiblePrimaryCollectionAssets = (
   return showLinkedBooksPanel
     ? primaryAssets.filter((asset) => asset.category !== 'reading')
     : primaryAssets;
+};
+
+export const getCollectionFormatKinds = (
+  collection?: Partial<Collection> | null
+): CollectionFormatKind[] => {
+  if (!collection) {
+    return [];
+  }
+
+  const assets = collection.collection_assets || [];
+  const linkedBookIds = normalizeSingleKitBookIds(collection.kit_book_ids);
+
+  const hasReading = linkedBookIds.length > 0
+    || Boolean(normalizeImageUrl(collection.pdf_url))
+    || assets.some((asset) => asset.category === 'reading');
+  const hasAudio = Boolean(normalizeImageUrl(collection.audio_url))
+    || assets.some((asset) => asset.media_type === 'audio');
+  const hasVideo = Boolean(normalizeImageUrl(collection.video_url))
+    || assets.some((asset) => asset.media_type === 'video');
+  const hasMaterials = (collection.extra_materials?.length || 0) > 0
+    || assets.some((asset) => asset.media_type === 'document' && asset.category !== 'reading');
+
+  return [
+    hasReading ? 'reading' : null,
+    hasAudio ? 'audio' : null,
+    hasVideo ? 'video' : null,
+    hasMaterials ? 'materials' : null,
+  ].filter(Boolean) as CollectionFormatKind[];
 };
 
 export const getCollectionDisplayCover = (collection?: Partial<Collection> | null): string => {

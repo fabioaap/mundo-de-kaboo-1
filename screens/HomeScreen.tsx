@@ -138,11 +138,23 @@ interface GridViewProps {
 
 const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, grants, tone = 'default' }) => {
   const isCorujaTone = tone === 'central-coruja';
+  const usesCollectionLayout = !isCorujaTone
+    && collections.length > 0
+    && collections.every((collection) => getCollectionTypeMeta(collection).type === 'kit');
 
   return (
     <div
-      className={`grid auto-rows-fr ${isCorujaTone ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} ${layoutSpacing.cardGridGap}`}
-      style={{ contain: 'layout style' }}
+      className={`grid auto-rows-fr ${isCorujaTone
+        ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+          : usesCollectionLayout
+            ? 'grid-cols-1'
+          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} ${layoutSpacing.cardGridGap}`}
+      style={{
+        contain: 'layout style',
+        ...(usesCollectionLayout
+          ? { gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 26rem), 1fr))' }
+          : null)
+      }}
     >
       {collections.map((collection) => (
         <div key={collection.id} className="h-full w-full">
@@ -1756,10 +1768,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           {/* GRID SKELETON */}
           <div className="mt-6">
-            <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 ${layoutSpacing.cardGridGap}`}>
+            <div className={`grid ${currentCollectionGroup === 'kits' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} ${layoutSpacing.cardGridGap}`}>
               {[...Array(12)].map((_, i) => (
                 <div key={i} className="w-full animate-pulse">
-                  <div className="mb-3 rounded-lg overflow-hidden relative bg-gray-200 aspect-square"></div>
+                  <div className={`mb-3 overflow-hidden relative bg-gray-200 ${currentCollectionGroup === 'kits' ? 'rounded-[30px] aspect-[1.7/1]' : 'rounded-lg aspect-square'}`}></div>
                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                   <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                 </div>
