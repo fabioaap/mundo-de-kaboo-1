@@ -145,6 +145,9 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     label: COLLECTION_ASSET_META.storytelling.label,
     folder: 'audio',
     accept: 'audio/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: A Cor do Sentir',
+    descriptionPlaceholder: 'Descrição opcional desta música ou contação.',
   },
   {
     category: 'animation',
