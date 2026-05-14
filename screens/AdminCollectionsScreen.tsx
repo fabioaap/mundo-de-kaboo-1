@@ -39,6 +39,19 @@ type CollectionFormData = Partial<Collection> & {
 };
 
 type FixedMediaSlotCategory = Exclude<CollectionAssetCategory, 'extra_material'>;
+type LibraryAreaKey = NonNullable<AdminCollectionsScreenProps['initialLibraryArea']>;
+
+type LibraryAssetListItem = {
+  key: string;
+  collection: Collection;
+  asset: CollectionAsset;
+  displayTitle: string;
+  previewText: string | null;
+  coverImage: string;
+  searchText: string;
+  levelLabel: string;
+  iconName: keyof typeof Icons;
+};
 
 type FixedMediaSlot = {
   category: FixedMediaSlotCategory;
@@ -107,6 +120,51 @@ const normalizeAssetTitle = (url: string, fallback: string) => {
 
 const normalizeKitBookIds = (value?: string[] | null): string[] => {
   return normalizeSingleKitBookIds(value);
+};
+
+const normalizeSearchableText = (...values: Array<string | null | undefined>) => {
+  return values
+    .map((value) => (value ?? '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+};
+
+const getCollectionLevelChipLabel = (level?: Collection['level']) => {
+  return level === 'Fundamental I' ? 'E.F. Anos Iniciais' : 'Ed. Infantil';
+};
+
+const getLibraryAssetIcon = (asset: CollectionAsset): keyof typeof Icons => {
+  switch (asset.category) {
+    case 'storytelling':
+      return 'Headphones';
+    case 'animation':
+    case 'accessible_video':
+    case 'how_to_play':
+    case 'video_lesson':
+      return 'Video';
+    case 'reading':
+      return 'BookOpen';
+    case 'teacher_guide':
+    case 'extra_material':
+    default:
+      return 'FileText';
+  }
+};
+
+const getLibraryAssetDisplayTitle = (collection: Collection, asset: CollectionAsset) => {
+  const normalizedTitle = (asset.title || '').trim();
+  const defaultLabel = COLLECTION_ASSET_META[asset.category].label;
+  const shouldUseCollectionTitle = !normalizedTitle
+    || (normalizedTitle === defaultLabel && ['reading', 'storytelling', 'animation', 'accessible_video'].includes(asset.category));
+
+  if (shouldUseCollectionTitle && collection.title?.trim()) {
+    return collection.title.trim();
+  }
+
+  return normalizedTitle || defaultLabel;
 };
 
 const buildCollectionFormData = (collection?: Partial<Collection>): CollectionFormData => {
@@ -193,30 +251,67 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
   },
 ];
 
-const LIBRARY_AREA_LABEL: Record<NonNullable<AdminCollectionsScreenProps['initialLibraryArea']>, string> = {
+const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
   videos: 'Vídeos',
   music: 'Músicas',
   formations: 'Formações',
   materials: 'Materiais',
 };
 
-const LIBRARY_AREA_PRIMARY_SLOTS: Record<NonNullable<AdminCollectionsScreenProps['initialLibraryArea']>, FixedMediaSlotCategory[]> = {
+const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, FixedMediaSlotCategory[]> = {
   videos: ['animation', 'accessible_video', 'how_to_play', 'video_lesson'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
   materials: ['reading'],
 };
 
-// Indicator pill shown on each card in library area mode
-const LIBRARY_AREA_MEDIA_BADGE: Record<NonNullable<AdminCollectionsScreenProps['initialLibraryArea']>, {
+const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
+  videos: ['animation', 'accessible_video', 'how_to_play', 'video_lesson'],
+  music: ['storytelling'],
+  formations: ['teacher_guide', 'video_lesson'],
+  materials: ['reading', 'extra_material'],
+};
+
+const LIBRARY_AREA_UI_META: Record<LibraryAreaKey, {
   icon: keyof typeof Icons;
-  label: (count: number) => string;
-  className: string;
+  badgeClassName: string;
+  iconSurfaceClassName: string;
+  searchPlaceholder: string;
+  emptyMessage: string;
+  createLabel: string;
 }> = {
-  music: { icon: 'Headphones', label: (n) => n === 1 ? '1 música' : `${n} músicas`, className: 'bg-purple-100 text-purple-700' },
-  videos: { icon: 'Video', label: (n) => n === 1 ? '1 vídeo' : `${n} vídeos`, className: 'bg-blue-100 text-blue-700' },
-  formations: { icon: 'FileText', label: (n) => n === 1 ? '1 material' : `${n} materiais`, className: 'bg-amber-100 text-amber-700' },
-  materials: { icon: 'BookOpen', label: (n) => n === 1 ? '1 arquivo PDF' : `${n} arquivos PDF`, className: 'bg-green-100 text-green-700' },
+  music: {
+    icon: 'Headphones',
+    badgeClassName: 'bg-fuchsia-100 text-fuchsia-700',
+    iconSurfaceClassName: 'bg-gradient-to-br from-fuchsia-500 via-purple-500 to-violet-500',
+    searchPlaceholder: 'Buscar por música, coleção ou tema...',
+    emptyMessage: 'Nenhuma música corresponde aos filtros.',
+    createLabel: 'Novo conteúdo',
+  },
+  videos: {
+    icon: 'Video',
+    badgeClassName: 'bg-sky-100 text-sky-700',
+    iconSurfaceClassName: 'bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500',
+    searchPlaceholder: 'Buscar por vídeo, coleção ou tema...',
+    emptyMessage: 'Nenhum vídeo corresponde aos filtros.',
+    createLabel: 'Novo conteúdo',
+  },
+  formations: {
+    icon: 'FileText',
+    badgeClassName: 'bg-amber-100 text-amber-700',
+    iconSurfaceClassName: 'bg-gradient-to-br from-amber-400 via-orange-400 to-yellow-500',
+    searchPlaceholder: 'Buscar por formação, guia ou coleção...',
+    emptyMessage: 'Nenhuma formação corresponde aos filtros.',
+    createLabel: 'Novo conteúdo',
+  },
+  materials: {
+    icon: 'BookOpen',
+    badgeClassName: 'bg-emerald-100 text-emerald-700',
+    iconSurfaceClassName: 'bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500',
+    searchPlaceholder: 'Buscar por material, PDF ou coleção...',
+    emptyMessage: 'Nenhum material corresponde aos filtros.',
+    createLabel: 'Novo conteúdo',
+  },
 };
 
 // Componente interno para card com efeito 3D
@@ -404,9 +499,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const levelDropdownRef = useRef<HTMLDivElement>(null);
   const formLevelDropdownRef = useRef<HTMLDivElement>(null);
   const actionsDropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const mediaSectionRefs = useRef<Partial<Record<CollectionAssetCategory, HTMLDivElement | null>>>({});
+  const extraMaterialsSectionRef = useRef<HTMLDivElement | null>(null);
   const [formData, setFormData] = useState<CollectionFormData>(buildCollectionFormData());
+  const [highlightedAssetId, setHighlightedAssetId] = useState<string | null>(null);
+  const [highlightedAssetCategory, setHighlightedAssetCategory] = useState<CollectionAssetCategory | null>(null);
 
   const activeLibraryAreaLabel = initialLibraryArea ? LIBRARY_AREA_LABEL[initialLibraryArea] : null;
+  const activeLibraryAreaUi = initialLibraryArea ? LIBRARY_AREA_UI_META[initialLibraryArea] : null;
 
   useEffect(() => {
     if (mainTab !== 'collections') {
@@ -416,10 +516,90 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     setActiveTab(defaultCollectionTab);
   }, [defaultCollectionTab, mainTab]);
 
-  // NOTE: When initialLibraryArea is set (e.g. "Vídeos" sidebar item), we intentionally
-  // show the collections list first so the user can pick an existing collection to edit.
-  // Clicking any collection opens it on the 'media' tab (via defaultCollectionTab = 'media').
-  // The old code forced showCreateForm=true here, which skipped the list entirely.
+  useEffect(() => {
+    if (activeTab !== 'media' || !editingId || !highlightedAssetCategory) {
+      return;
+    }
+
+    const target = highlightedAssetCategory === 'extra_material'
+      ? extraMaterialsSectionRef.current
+      : mediaSectionRefs.current[highlightedAssetCategory];
+
+    if (!target) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [activeTab, editingId, highlightedAssetCategory, highlightedAssetId]);
+
+  // NOTE: When initialLibraryArea is set (e.g. "Vídeos" sidebar item), we now show a
+  // direct asset list first. Clicking any card opens the owning collection on the
+  // 'media' tab and highlights the selected asset for editing.
+
+  const libraryAssetItems = React.useMemo<LibraryAssetListItem[]>(() => {
+    if (!initialLibraryArea) {
+      return [];
+    }
+
+    const relevantCategories = LIBRARY_AREA_LISTING_CATEGORIES[initialLibraryArea];
+
+    return collections.flatMap((collection) => {
+      const coverImage = getCollectionDisplayCover(collection) || collection.cover_image || placeholderImageUrl;
+
+      return inferCollectionAssets(collection)
+        .filter((asset) => relevantCategories.includes(asset.category))
+        .map((asset) => {
+          const displayTitle = getLibraryAssetDisplayTitle(collection, asset);
+
+          return {
+            key: `${collection.id}:${asset.id}`,
+            collection,
+            asset,
+            displayTitle,
+            previewText: (asset.description || '').trim() || (collection.theme || '').trim() || null,
+            coverImage,
+            searchText: normalizeSearchableText(
+              displayTitle,
+              asset.title,
+              COLLECTION_ASSET_META[asset.category].label,
+              collection.title,
+              collection.theme,
+              asset.description,
+            ),
+            levelLabel: getCollectionLevelChipLabel(collection.level),
+            iconName: getLibraryAssetIcon(asset),
+          };
+        });
+    });
+  }, [collections, initialLibraryArea]);
+
+  const filteredLibraryAssets = React.useMemo(() => {
+    let filtered = [...libraryAssetItems];
+
+    if (searchFilter.trim()) {
+      const searchLower = normalizeSearchableText(searchFilter);
+      filtered = filtered.filter((item) => item.searchText.includes(searchLower));
+    }
+
+    if (levelFilter !== 'all') {
+      filtered = filtered.filter((item) => item.collection.level === levelFilter);
+    }
+
+    if (sortOrder) {
+      filtered.sort((a, b) => {
+        const titleA = (a.displayTitle || '').toLowerCase();
+        const titleB = (b.displayTitle || '').toLowerCase();
+        const comparison = titleA.localeCompare(titleB, 'pt-BR');
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    return filtered;
+  }, [libraryAssetItems, searchFilter, levelFilter, sortOrder]);
 
   const accessSummary = users.reduce((summary, user) => {
     const status = getProfileAccessStatus(user);
@@ -604,6 +784,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   };
 
   const extraMaterialAssets = formData.collection_assets.filter((asset) => asset.category === 'extra_material');
+  const isExtraMaterialsHighlighted = highlightedAssetCategory === 'extra_material'
+    || (highlightedAssetId ? extraMaterialAssets.some((asset) => asset.id === highlightedAssetId) : false);
+  const highlightedAsset = highlightedAssetId
+    ? formData.collection_assets.find((asset) => asset.id === highlightedAssetId) ?? null
+    : null;
   const availableKitBooks = collections
     .filter((collection) => collection.id !== editingId && getCollectionTypeMeta(collection).type === 'book')
     .sort((firstCollection, secondCollection) => (firstCollection.title || '').localeCompare(secondCollection.title || '', 'pt-BR'));
@@ -931,15 +1116,42 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
   };
 
-  const handleEdit = (collection: Collection) => {
+  const openCollectionEditor = (
+    collection: Collection,
+    options?: { focusCategory?: CollectionAssetCategory; focusAssetId?: string | null }
+  ) => {
     const initialData = buildCollectionFormData({
       ...collection,
       collection_assets: inferCollectionAssets(collection),
     });
+    setShowCreateForm(false);
     setEditingId(collection.id);
     setActiveTab(defaultCollectionTab);
     setFormData(initialData);
     setOriginalFormData(initialData);
+    setHighlightedAssetCategory(options?.focusCategory ?? null);
+    setHighlightedAssetId(options?.focusAssetId ?? null);
+  };
+
+  const handleEdit = (collection: Collection) => {
+    openCollectionEditor(collection);
+  };
+
+  const handleLibraryAssetEdit = (item: LibraryAssetListItem) => {
+    const openAssetEditor = () => {
+      openCollectionEditor(item.collection, {
+        focusCategory: item.asset.category,
+        focusAssetId: item.asset.id,
+      });
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingAction(() => openAssetEditor);
+      setShowUnsavedChangesModal(true);
+      return;
+    }
+
+    openAssetEditor();
   };
 
   const handleDeleteClick = (id: string) => {
@@ -1051,9 +1263,15 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     hasUnsavedChanges,
   }));
 
+  const clearLibraryAssetFocus = () => {
+    setHighlightedAssetId(null);
+    setHighlightedAssetCategory(null);
+  };
+
   const resetForm = () => {
     setFormData(buildCollectionFormData());
     setOriginalFormData(null);
+    clearLibraryAssetFocus();
   };
 
   const handleCancel = () => {
@@ -1645,6 +1863,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             <span className="font-bold">Área de cadastro: {activeLibraryAreaLabel}.</span> Os campos destacados são os mais usados para esta biblioteca.
                           </div>
                         )}
+                        {highlightedAssetCategory && (
+                          <div className="rounded-2xl border border-kaboo-primary/15 bg-white px-4 py-3 text-sm text-gray-700 mb-4 shadow-sm">
+                            <span className="font-bold text-kaboo-primary">Asset selecionado:</span>{' '}
+                            {highlightedAsset?.title || COLLECTION_ASSET_META[highlightedAssetCategory].label}
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-4">
@@ -1653,11 +1877,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           const isPrimaryForArea = Boolean(
                             initialLibraryArea && LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea].includes(slot.category)
                           );
+                          const isHighlightedSlot = highlightedAssetCategory === slot.category
+                            || (highlightedAssetId ? asset?.id === highlightedAssetId : false);
 
                           return (
                             <div
                               key={slot.category}
-                              className={`rounded-2xl border p-4 space-y-3 bg-white ${isPrimaryForArea ? 'border-kaboo-primary/35 bg-kaboo-primary/[0.03]' : 'border-gray-200'}`}
+                              ref={(element) => {
+                                mediaSectionRefs.current[slot.category] = element;
+                              }}
+                              className={`rounded-2xl border p-4 space-y-3 bg-white transition-all ${isPrimaryForArea ? 'border-kaboo-primary/35 bg-kaboo-primary/[0.03]' : 'border-gray-200'} ${isHighlightedSlot ? 'ring-2 ring-kaboo-primary ring-offset-2 shadow-[0_0_0_6px_rgba(93,31,88,0.08)]' : ''}`}
                             >
                               {isPrimaryForArea && (
                                 <p className="text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary">Prioritário para {activeLibraryAreaLabel}</p>
@@ -1765,7 +1994,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           );
                         })}
 
-                        <div className="rounded-2xl border border-gray-200 p-4 bg-white">
+                        <div
+                          ref={extraMaterialsSectionRef}
+                          className={`rounded-2xl border p-4 bg-white transition-all ${isExtraMaterialsHighlighted ? 'border-kaboo-primary/35 ring-2 ring-kaboo-primary ring-offset-2 shadow-[0_0_0_6px_rgba(93,31,88,0.08)]' : 'border-gray-200'}`}
+                        >
                           {initialLibraryArea === 'materials' && (
                             <p className="text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary mb-3">Prioritário para Materiais</p>
                           )}
@@ -1813,7 +2045,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           type="text"
                           value={searchFilter}
                           onChange={(e) => setSearchFilter(e.target.value)}
-                          placeholder="Buscar por título ou tema..."
+                          placeholder={activeLibraryAreaUi?.searchPlaceholder || 'Buscar por título ou tema...'}
                           className="w-full bg-gray-100 border-none rounded-2xl pl-12 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all font-medium"
                         />
                       </div>
@@ -1957,6 +2189,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           if (hasUnsavedChanges()) {
                             setPendingAction(() => () => {
                               const emptyFormData = buildCollectionFormData();
+                              clearLibraryAssetFocus();
                               setShowCreateForm(true);
                               setActiveTab(defaultCollectionTab);
                               setFormData(emptyFormData);
@@ -1965,6 +2198,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             setShowUnsavedChangesModal(true);
                           } else {
                             const emptyFormData = buildCollectionFormData();
+                            clearLibraryAssetFocus();
                             setShowCreateForm(true);
                             setActiveTab(defaultCollectionTab);
                             setFormData(emptyFormData);
@@ -1974,13 +2208,109 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         className="h-11 px-6 rounded-2xl bg-kaboo-primary text-white flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all active:scale-95 shadow-sm font-bold text-sm whitespace-nowrap"
                       >
                         <Icons.Plus size={18} />
-                        <span>Nova Coleção</span>
+                        <span>{activeLibraryAreaUi?.createLabel || 'Nova Coleção'}</span>
                       </button>
                     )}
                   </div>
 
-                  {/* Lista de Coleções */}
-                  {getFilteredAndSortedCollections().length === 0 ? (
+                  {/* Lista de conteúdo */}
+                  {initialLibraryArea ? (
+                    filteredLibraryAssets.length === 0 ? (
+                      <div className="text-center py-12">
+                        {(() => {
+                          const EmptyIcon = Icons[activeLibraryAreaUi?.icon || 'BookOpen'] as React.ElementType;
+                          return <EmptyIcon size={48} className="mx-auto mb-4 text-gray-300" />;
+                        })()}
+                        <p className="text-gray-500 font-bold">
+                          {libraryAssetItems.length > 0
+                            ? activeLibraryAreaUi?.emptyMessage || 'Nenhum asset corresponde aos filtros.'
+                            : `Nenhum asset publicado em ${activeLibraryAreaLabel?.toLowerCase() || 'esta área'}.`}
+                        </p>
+                        {libraryAssetItems.length > 0 && (searchFilter || levelFilter !== 'all' || sortOrder) && (
+                          <button
+                            onClick={() => { setSearchFilter(''); setLevelFilter('all'); setSortOrder(null); }}
+                            className="mt-3 text-sm font-bold text-kaboo-primary hover:underline"
+                          >
+                            Limpar filtros
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
+                        {filteredLibraryAssets.map((item) => {
+                          const CardIcon = Icons[item.iconName] as React.ElementType;
+
+                          return (
+                            <button
+                              type="button"
+                              key={item.key}
+                              className="group w-full rounded-[28px] border border-gray-200 bg-white p-4 text-left shadow-[0_20px_50px_-32px_rgba(15,23,42,0.35)] transition-all hover:-translate-y-0.5 hover:border-kaboo-primary/25 hover:shadow-[0_28px_60px_-30px_rgba(93,31,88,0.28)] active:scale-[0.99]"
+                              onClick={() => handleLibraryAssetEdit(item)}
+                            >
+                              <div className="flex items-start gap-4">
+                                <div className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] ${activeLibraryAreaUi?.iconSurfaceClassName || 'bg-gradient-to-br from-slate-500 to-slate-700'}`}>
+                                  <img
+                                    src={item.coverImage}
+                                    alt={item.collection.title || item.displayTitle}
+                                    className="h-full w-full object-cover opacity-25 mix-blend-soft-light"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-br from-white/18 via-transparent to-black/12" />
+                                  <div className="absolute left-2.5 top-2.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/92 text-gray-700 shadow-sm">
+                                    <CardIcon size={18} />
+                                  </div>
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] ${activeLibraryAreaUi?.badgeClassName || 'bg-slate-100 text-slate-700'}`}>
+                                      {COLLECTION_ASSET_META[item.asset.category].label}
+                                    </span>
+                                    {item.asset.lyrics_url && (
+                                      <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-gray-500 ring-1 ring-inset ring-gray-200">
+                                        Com letra
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <h3 className="text-base font-black leading-tight text-gray-900 line-clamp-2">
+                                    {item.displayTitle}
+                                  </h3>
+
+                                  {item.displayTitle !== item.collection.title && (
+                                    <p className="mt-1 text-sm font-medium text-gray-500 line-clamp-1">
+                                      Coleção: {item.collection.title}
+                                    </p>
+                                  )}
+
+                                  {item.previewText && (
+                                    <p className="mt-2 text-sm text-gray-600 line-clamp-2">
+                                      {item.previewText}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                    {item.levelLabel}
+                                  </span>
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                    {item.asset.media_type === 'audio' ? 'Áudio' : item.asset.media_type === 'video' ? 'Vídeo' : 'Documento'}
+                                  </span>
+                                </div>
+
+                                <span className="inline-flex items-center gap-1 text-sm font-bold text-kaboo-primary transition-transform group-hover:translate-x-0.5">
+                                  Editar
+                                  <Icons.ChevronRight size={16} />
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )
+                  ) : getFilteredAndSortedCollections().length === 0 ? (
                     <div className="text-center py-12">
                       <Icons.BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
                       <p className="text-gray-500 font-bold">
@@ -2058,7 +2388,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             className="cursor-pointer active:scale-95 transition-transform touch-manipulation"
                             style={{ touchAction: 'manipulation' }}
                             onClick={(e) => {
-                              // Não abrir edição se clicar no botão de ações ou dropdown
                               const target = e.target as HTMLElement;
                               if (
                                 target.closest('.actions-button') ||
@@ -2070,16 +2399,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 return;
                               }
                               if (hasUnsavedChanges()) {
-                                setPendingAction(() => () => {
-                                  const initialData = buildCollectionFormData({
-                                    ...collection,
-                                    collection_assets: inferCollectionAssets(collection),
-                                  });
-                                  setEditingId(collection.id);
-                                  setActiveTab(defaultCollectionTab);
-                                  setFormData(initialData);
-                                  setOriginalFormData(initialData);
-                                });
+                                setPendingAction(() => () => handleEdit(collection));
                                 setShowUnsavedChangesModal(true);
                               } else {
                                 handleEdit(collection);
@@ -2095,8 +2415,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                   imageUrl={displayCoverImage}
                                   alt={collection.title}
                                   level={collection.level}
-                                  collectionTypeLabel={initialLibraryArea ? undefined : collectionTypeMeta.shortLabel}
-                                  collectionTypeBadgeClassName={initialLibraryArea ? undefined : collectionTypeMeta.coverClassName}
+                                  collectionTypeLabel={collectionTypeMeta.shortLabel}
+                                  collectionTypeBadgeClassName={collectionTypeMeta.coverClassName}
                                   actionsButton={actionsButton}
                                 />
                               );
@@ -2109,24 +2429,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             )}
 
                             <div className="mb-2">
-                              {initialLibraryArea ? (() => {
-                                // In library area mode, replace collection type badge with media badge
-                                const badgeMeta = LIBRARY_AREA_MEDIA_BADGE[initialLibraryArea];
-                                const slots = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
-                                const assets = inferCollectionAssets(collection).filter(a => slots.includes(a.category as FixedMediaSlotCategory));
-                                if (assets.length === 0) return null;
-                                const IconComp = Icons[badgeMeta.icon] as React.ElementType;
-                                return (
-                                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${badgeMeta.className}`}>
-                                    <IconComp size={12} />
-                                    {badgeMeta.label(assets.length)}
-                                  </div>
-                                );
-                              })() : (
-                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-[0.14em] ${getCollectionTypeMeta(collection).softClassName}`}>
-                                  {getCollectionTypeMeta(collection).label}
-                                </span>
-                              )}
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-[0.14em] ${getCollectionTypeMeta(collection).softClassName}`}>
+                                {getCollectionTypeMeta(collection).label}
+                              </span>
                             </div>
 
                             {collection.theme && collection.theme.trim() !== '' && (
