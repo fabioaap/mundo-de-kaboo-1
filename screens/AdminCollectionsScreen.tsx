@@ -1884,10 +1884,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                   {activeTab === 'media' && (
                     <>
                       <div>
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">Arquivos de Mídia</h3>
-                        {activeLibraryAreaLabel && (
-                          <div className="rounded-2xl border border-kaboo-primary/20 bg-kaboo-primary/5 px-4 py-3 text-sm text-kaboo-primary mb-4">
-                            <span className="font-bold">Área de cadastro: {activeLibraryAreaLabel}.</span> Os campos destacados são os mais usados para esta biblioteca.
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">
+                          {activeLibraryAreaLabel ? activeLibraryAreaLabel : 'Arquivos de Mídia'}
+                        </h3>
+                        {activeLibraryAreaLabel && editingId && (
+                          <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 mb-4 flex items-center gap-2">
+                            <Icons.BookOpen size={15} className="shrink-0 text-gray-400" />
+                            <span className="truncate">
+                              <span className="text-gray-500">Coleção: </span>
+                              <span className="font-bold text-gray-800">{formData.title || 'Sem título'}</span>
+                            </span>
                           </div>
                         )}
                         {highlightedAssetCategory && (
@@ -1899,11 +1905,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       </div>
 
                       <div className="space-y-4">
-                        {FIXED_MEDIA_SLOTS.map((slot) => {
+                        {(isLibraryAreaMode
+                          ? FIXED_MEDIA_SLOTS.filter((s) => LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea!].includes(s.category))
+                          : FIXED_MEDIA_SLOTS
+                        ).map((slot) => {
                           const asset = getAssetByCategory(slot.category);
-                          const isPrimaryForArea = Boolean(
-                            initialLibraryArea && LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea].includes(slot.category)
-                          );
                           const isHighlightedSlot = highlightedAssetCategory === slot.category
                             || (highlightedAssetId ? asset?.id === highlightedAssetId : false);
 
@@ -1913,11 +1919,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               ref={(element) => {
                                 mediaSectionRefs.current[slot.category] = element;
                               }}
-                              className={`rounded-2xl border p-4 space-y-3 bg-white transition-all ${isPrimaryForArea ? 'border-kaboo-primary/35 bg-kaboo-primary/[0.03]' : 'border-gray-200'} ${isHighlightedSlot ? 'ring-2 ring-kaboo-primary ring-offset-2 shadow-[0_0_0_6px_rgba(93,31,88,0.08)]' : ''}`}
+                              className={`rounded-2xl border p-4 space-y-3 bg-white transition-all border-gray-200 ${isHighlightedSlot ? 'ring-2 ring-kaboo-primary ring-offset-2 shadow-[0_0_0_6px_rgba(93,31,88,0.08)]' : ''}`}
                             >
-                              {isPrimaryForArea && (
-                                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary">Prioritário para {activeLibraryAreaLabel}</p>
-                              )}
                               <FileUpload
                                 label={slot.label}
                                 value={asset?.url || ''}
@@ -2021,22 +2024,22 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           );
                         })}
 
-                        <div
-                          ref={extraMaterialsSectionRef}
-                          className={`rounded-2xl border p-4 bg-white transition-all ${isExtraMaterialsHighlighted ? 'border-kaboo-primary/35 ring-2 ring-kaboo-primary ring-offset-2 shadow-[0_0_0_6px_rgba(93,31,88,0.08)]' : 'border-gray-200'}`}
-                        >
-                          {initialLibraryArea === 'materials' && (
-                            <p className="text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary mb-3">Prioritário para Materiais</p>
-                          )}
-                          <MultipleFileUpload
-                            label="Materiais da Coleção"
-                            value={extraMaterialAssets.map((asset) => asset.url)}
-                            onChange={setExtraMaterialUrls}
-                            folder="extras"
-                            accept="*/*"
-                            collectionId={editingId || undefined}
-                          />
-                        </div>
+                        {/* Extra materials: always visible in collection edit mode, only visible in Materiais area mode */}
+                        {(!isLibraryAreaMode || initialLibraryArea === 'materials') && (
+                          <div
+                            ref={extraMaterialsSectionRef}
+                            className={`rounded-2xl border p-4 bg-white transition-all ${isExtraMaterialsHighlighted ? 'border-kaboo-primary/35 ring-2 ring-kaboo-primary ring-offset-2 shadow-[0_0_0_6px_rgba(93,31,88,0.08)]' : 'border-gray-200'}`}
+                          >
+                            <MultipleFileUpload
+                              label="Materiais da Coleção"
+                              value={extraMaterialAssets.map((asset) => asset.url)}
+                              onChange={setExtraMaterialUrls}
+                              folder="extras"
+                              accept="*/*"
+                              collectionId={editingId || undefined}
+                            />
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
