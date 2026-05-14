@@ -537,11 +537,30 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
     const relevantCategories = LIBRARY_AREA_LISTING_CATEGORIES[initialLibraryArea];
 
+    // Categorias primárias (reading, storytelling, animation) existem em TODA
+    // coleção por inferência dos campos legados (pdf_url, audio_url, video_url).
+    // Para que a listagem seja útil, só mostramos assets primários quando a
+    // coleção os declarou explicitamente via collection_assets.
+    const PRIMARY_LEGACY_CATEGORIES: CollectionAssetCategory[] = ['reading', 'storytelling', 'animation'];
+
     return collections.flatMap((collection) => {
       const coverImage = getCollectionDisplayCover(collection) || collection.cover_image || placeholderImageUrl;
+      const explicitCategories = new Set(
+        (collection.collection_assets ?? [])
+          .filter((a) => a.url?.trim())
+          .map((a) => a.category),
+      );
 
       return inferCollectionAssets(collection)
-        .filter((asset) => relevantCategories.includes(asset.category))
+        .filter((asset) => {
+          if (!relevantCategories.includes(asset.category)) return false;
+          // Assets primários inferidos de legado aparecem em todo livro — só
+          // incluir se a coleção os declarou explicitamente.
+          if (PRIMARY_LEGACY_CATEGORIES.includes(asset.category) && !explicitCategories.has(asset.category)) {
+            return false;
+          }
+          return true;
+        })
         .map((asset) => {
           const displayTitle = getLibraryAssetDisplayTitle(collection, asset);
 
@@ -2234,12 +2253,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             <button
                               type="button"
                               key={item.key}
-                              className="group w-full rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm transition-all hover:border-kaboo-primary/20 hover:shadow-md active:scale-[0.99]"
+                              className="group w-full rounded-2xl border border-gray-200 bg-white p-5 text-left shadow-sm transition-all hover:border-kaboo-primary/20 hover:shadow-md active:scale-[0.99]"
                               onClick={() => handleLibraryAssetEdit(item)}
                             >
                               <div className="flex items-start gap-4">
-                                {/* Book-cover thumbnail — proporção 3:4 */}
-                                <div className="relative h-[96px] w-[72px] shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-kaboo-primary/10 shadow-sm">
+                                {/* Thumbnail quadrado — mesma imagem do Card3DCover */}
+                                <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-100 shadow-sm">
                                   {item.coverImage ? (
                                     <img
                                       src={item.coverImage}
