@@ -404,18 +404,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     setActiveTab(defaultCollectionTab);
   }, [defaultCollectionTab, mainTab]);
 
-  useEffect(() => {
-    if (mainTab !== 'collections' || !initialLibraryArea) {
-      return;
-    }
-
-    const emptyFormData = buildCollectionFormData();
-    setEditingId(null);
-    setShowCreateForm(true);
-    setFormData(emptyFormData);
-    setOriginalFormData(emptyFormData);
-    setActiveTab('media');
-  }, [initialLibraryArea, mainTab]);
+  // NOTE: When initialLibraryArea is set (e.g. "Vídeos" sidebar item), we intentionally
+  // show the collections list first so the user can pick an existing collection to edit.
+  // Clicking any collection opens it on the 'media' tab (via defaultCollectionTab = 'media').
+  // The old code forced showCreateForm=true here, which skipped the list entirely.
 
   const accessSummary = users.reduce((summary, user) => {
     const status = getProfileAccessStatus(user);
@@ -1145,7 +1137,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   return (
     <div className="flex flex-col h-full bg-white pb-24 md:pb-0">
       <PageHeader
-        title="Gerenciar"
+        title={activeLibraryAreaLabel ? activeLibraryAreaLabel : 'Gerenciar'}
         onBack={handleBackClick}
         rightContent={
           mainTab === 'collections' && editingId ? (
