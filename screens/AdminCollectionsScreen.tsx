@@ -207,6 +207,18 @@ const LIBRARY_AREA_PRIMARY_SLOTS: Record<NonNullable<AdminCollectionsScreenProps
   materials: ['reading'],
 };
 
+// Indicator pill shown on each card in library area mode
+const LIBRARY_AREA_MEDIA_BADGE: Record<NonNullable<AdminCollectionsScreenProps['initialLibraryArea']>, {
+  icon: keyof typeof Icons;
+  label: (count: number) => string;
+  className: string;
+}> = {
+  music: { icon: 'Headphones', label: (n) => n === 1 ? '1 música' : `${n} músicas`, className: 'bg-purple-100 text-purple-700' },
+  videos: { icon: 'Video', label: (n) => n === 1 ? '1 vídeo' : `${n} vídeos`, className: 'bg-blue-100 text-blue-700' },
+  formations: { icon: 'FileText', label: (n) => n === 1 ? '1 material' : `${n} materiais`, className: 'bg-amber-100 text-amber-700' },
+  materials: { icon: 'BookOpen', label: (n) => n === 1 ? '1 arquivo PDF' : `${n} arquivos PDF`, className: 'bg-green-100 text-green-700' },
+};
+
 // Componente interno para card com efeito 3D
 const Card3DCover: React.FC<{
   imageUrl: string;
@@ -2101,6 +2113,21 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 {getCollectionTypeMeta(collection).label}
                               </span>
                             </div>
+
+                            {/* Library area media badge */}
+                            {initialLibraryArea && (() => {
+                              const badgeMeta = LIBRARY_AREA_MEDIA_BADGE[initialLibraryArea];
+                              const slots = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
+                              const assets = inferCollectionAssets(collection).filter(a => slots.includes(a.category as FixedMediaSlotCategory));
+                              if (assets.length === 0) return null;
+                              const IconComp = Icons[badgeMeta.icon] as React.ElementType;
+                              return (
+                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold mb-2 ${badgeMeta.className}`}>
+                                  <IconComp size={12} />
+                                  {badgeMeta.label(assets.length)}
+                                </div>
+                              );
+                            })()}
 
                             {collection.theme && collection.theme.trim() !== '' && (
                               <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">
