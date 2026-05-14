@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+﻿import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Icons } from '../components/Icons';
 import { Character, Collection, CollectionAsset, CollectionAssetCategory, ScreenName, UserAuthStatus, UserProfile, UserRole } from '../types';
 import { api } from '../lib/api';
@@ -494,8 +494,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [collectionToDelete, setCollectionToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [openActionsDropdown, setOpenActionsDropdown] = useState<string | null>(null);
-  const [showHeaderActionsDropdown, setShowHeaderActionsDropdown] = useState(false);
-  const headerActionsRef = useRef<HTMLDivElement>(null);
+
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const levelDropdownRef = useRef<HTMLDivElement>(null);
   const formLevelDropdownRef = useRef<HTMLDivElement>(null);
@@ -926,9 +925,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       if (formLevelDropdownRef.current && !formLevelDropdownRef.current.contains(event.target as Node)) {
         setShowFormLevelDropdown(false);
       }
-      if (headerActionsRef.current && !headerActionsRef.current.contains(event.target as Node)) {
-        setShowHeaderActionsDropdown(false);
-      }
       if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
         setShowRoleDropdown(false);
       }
@@ -945,14 +941,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       });
     };
 
-    if (showSortDropdown || showLevelDropdown || showFormLevelDropdown || openActionsDropdown || showHeaderActionsDropdown || showRoleDropdown || editUserRoleDropdownOpen) {
+    if (showSortDropdown || showLevelDropdown || showFormLevelDropdown || openActionsDropdown || showRoleDropdown || editUserRoleDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showSortDropdown, showLevelDropdown, showFormLevelDropdown, openActionsDropdown, showHeaderActionsDropdown, showRoleDropdown, editUserRoleDropdownOpen]);
+  }, [showSortDropdown, showLevelDropdown, showFormLevelDropdown, openActionsDropdown, showRoleDropdown, editUserRoleDropdownOpen]);
 
   const checkPermission = async () => {
     setCheckingPermission(true);
@@ -1405,40 +1401,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       <PageHeader
         title={activeLibraryAreaLabel ? activeLibraryAreaLabel : 'Gerenciar'}
         onBack={handleBackClick}
-        rightContent={
-          mainTab === 'collections' && editingId ? (
-            <div className="flex items-center gap-2">
-              <div className="relative" ref={headerActionsRef}>
-                <button
-                  onClick={() => setShowHeaderActionsDropdown(!showHeaderActionsDropdown)}
-                  className="w-10 h-10 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 flex items-center justify-center transition-all active:scale-95"
-                  aria-label="Ações da coleção"
-                >
-                  <Icons.MoreHorizontal size={20} className="text-gray-600" />
-                </button>
-
-                {showHeaderActionsDropdown && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-fade-in-up origin-top-right">
-                    {isAdminUser && (
-                      <button
-                        onClick={() => {
-                          if (editingId) {
-                            handleDeleteClick(editingId);
-                            setShowHeaderActionsDropdown(false);
-                          }
-                        }}
-                        className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl text-red-500 hover:bg-red-50 font-medium"
-                      >
-                        <Icons.Trash2 size={18} />
-                        <span>Excluir Coleção</span>
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : null
-        }
       />
 
       {/* Collections Tab Content */}
@@ -1448,21 +1410,502 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
             <div className="flex items-center justify-center h-64">
               <div className="w-8 h-8 border-4 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
-          ) : editingId || showCreateForm ? (
+          ) : (
             <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-6 pt-0">
-              <div className="max-w-2xl mx-auto">
-                {!isLibraryAreaMode && (
-                  <Tabs
-                    tabs={[
-                      { id: 'identification', label: 'Dados da Coleção' },
-                      { id: 'media', label: 'Arquivos de Mídia' }
-                    ]}
-                    activeTab={activeTab}
-                    onChange={(tabId) => setActiveTab(tabId as any)}
-                  />
-                )}
+              {collections.length === 0 ? (
+                <div className="text-center py-12">
+                  <Icons.BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-500 font-bold">Nenhuma coleção encontrada.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Filtros e Ordenação */}
+                  <div className="flex flex-col md:flex-row gap-3">
+                    {/* Campo de Busca */}
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Icons.Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          value={searchFilter}
+                          onChange={(e) => setSearchFilter(e.target.value)}
+                          placeholder={activeLibraryAreaUi?.searchPlaceholder || 'Buscar por título ou tema...'}
+                          className="w-full bg-gray-100 border-none rounded-2xl pl-12 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all font-medium"
+                        />
+                      </div>
+                    </div>
 
-                <div className="space-y-6">
+                    {/* Filtro de Segmento com Dropdown */}
+                    <div className="md:w-48 relative" ref={levelDropdownRef}>
+                      <button
+                        onClick={() => setShowLevelDropdown(!showLevelDropdown)}
+                        className={`h-11 px-4 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 shadow-sm font-bold text-sm w-full justify-between ${levelFilter !== 'all'
+                          ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
+                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                          }`}
+                      >
+                        <span className="truncate">
+                          {levelFilter === 'all' ? 'Todos os segmentos' : formatSegmentLabel(levelFilter)}
+                        </span>
+                        <Icons.ChevronDown size={16} className={`transition-transform flex-shrink-0 ${showLevelDropdown ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {showLevelDropdown && (
+                        <div className="absolute top-full right-0 mt-2 w-full bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-fade-in-up origin-top-right">
+                          <button
+                            onClick={() => {
+                              setLevelFilter('all');
+                              setShowLevelDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl ${levelFilter === 'all'
+                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              : 'text-gray-700 hover:bg-gray-50 font-medium'
+                              }`}
+                          >
+                            <span>Todos os segmentos</span>
+                            {levelFilter === 'all' && <Icons.Check size={18} className="ml-auto" />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setLevelFilter('Educação Infantil');
+                              setShowLevelDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${levelFilter === 'Educação Infantil'
+                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              : 'text-gray-700 hover:bg-gray-50 font-medium'
+                              }`}
+                          >
+                            <span>Educação Infantil</span>
+                            {levelFilter === 'Educação Infantil' && <Icons.Check size={18} className="ml-auto" />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setLevelFilter('Fundamental I');
+                              setShowLevelDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${levelFilter === 'Fundamental I'
+                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              : 'text-gray-700 hover:bg-gray-50 font-medium'
+                              }`}
+                          >
+                            <span>E.F. Anos Iniciais</span>
+                            {levelFilter === 'Fundamental I' && <Icons.Check size={18} className="ml-auto" />}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Botão de Ordenação com Dropdown */}
+                    <div className="relative" ref={sortDropdownRef}>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setShowSortDropdown(!showSortDropdown)}
+                          className={`h-11 px-4 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 shadow-sm font-bold text-sm ${sortOrder
+                            ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
+                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                            }`}
+                        >
+                          {sortOrder === 'asc' ? (
+                            <>
+                              <span className="hidden md:inline-block">A - Z</span>
+                            </>
+                          ) : sortOrder === 'desc' ? (
+                            <>
+                              <span className="hidden md:inline-block">Z - A</span>
+                            </>
+                          ) : (
+                            <>
+                              <Icons.ArrowUpDown size={18} />
+                              <span>Ordenar</span>
+                            </>
+                          )}
+                          <Icons.ChevronDown size={16} className={`transition-transform flex-shrink-0 ${showSortDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+                        {sortOrder && (
+                          <button
+                            onClick={() => setSortOrder(null)}
+                            className="h-11 w-11 rounded-2xl flex items-center justify-center border border-kaboo-primary bg-kaboo-primary text-white hover:bg-opacity-90 transition-all active:scale-95 shadow-sm shadow-kaboo-primary/20"
+                            title="Remover ordenação"
+                          >
+                            <Icons.X size={18} />
+                          </button>
+                        )}
+                      </div>
+
+                      {showSortDropdown && (
+                        <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-fade-in-up origin-top-right">
+                          <button
+                            onClick={() => {
+                              setSortOrder('asc');
+                              setShowSortDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl ${sortOrder === 'asc'
+                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              : 'text-gray-700 hover:bg-gray-50 font-medium'
+                              }`}
+                          >
+                            <Icons.ArrowDown size={18} />
+                            <span>Crescente (A - Z)</span>
+                            {sortOrder === 'asc' && <Icons.Check size={18} className="ml-auto" />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSortOrder('desc');
+                              setShowSortDropdown(false);
+                            }}
+                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${sortOrder === 'desc'
+                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              : 'text-gray-700 hover:bg-gray-50 font-medium'
+                              }`}
+                          >
+                            <Icons.ArrowUp size={18} />
+                            <span>Decrescente (Z - A)</span>
+                            {sortOrder === 'desc' && <Icons.Check size={18} className="ml-auto" />}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Botão Nova Coleção */}
+                    {!editingId && !showCreateForm && (
+                      <button
+                        onClick={() => {
+                          if (hasUnsavedChanges()) {
+                            setPendingAction(() => () => {
+                              const emptyFormData = buildCollectionFormData();
+                              clearLibraryAssetFocus();
+                              setShowCreateForm(true);
+                              setActiveTab(defaultCollectionTab);
+                              setFormData(emptyFormData);
+                              setOriginalFormData(emptyFormData);
+                            });
+                            setShowUnsavedChangesModal(true);
+                          } else {
+                            const emptyFormData = buildCollectionFormData();
+                            clearLibraryAssetFocus();
+                            setShowCreateForm(true);
+                            setActiveTab(defaultCollectionTab);
+                            setFormData(emptyFormData);
+                            setOriginalFormData(emptyFormData);
+                          }
+                        }}
+                        className="h-11 px-6 rounded-2xl bg-kaboo-primary text-white flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all active:scale-95 shadow-sm font-bold text-sm whitespace-nowrap"
+                      >
+                        <Icons.Plus size={18} />
+                        <span>{activeLibraryAreaUi?.createLabel || 'Nova Coleção'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Lista de conteúdo */}
+                  {initialLibraryArea ? (
+                    filteredLibraryAssets.length === 0 ? (
+                      <div className="text-center py-12">
+                        {(() => {
+                          const EmptyIcon = Icons[activeLibraryAreaUi?.icon || 'BookOpen'] as React.ElementType;
+                          return <EmptyIcon size={48} className="mx-auto mb-4 text-gray-300" />;
+                        })()}
+                        <p className="text-gray-500 font-bold">
+                          {libraryAssetItems.length > 0
+                            ? activeLibraryAreaUi?.emptyMessage || 'Nenhum asset corresponde aos filtros.'
+                            : `Nenhum asset publicado em ${activeLibraryAreaLabel?.toLowerCase() || 'esta área'}.`}
+                        </p>
+                        {libraryAssetItems.length > 0 && (searchFilter || levelFilter !== 'all' || sortOrder) && (
+                          <button
+                            onClick={() => { setSearchFilter(''); setLevelFilter('all'); setSortOrder(null); }}
+                            className="mt-3 text-sm font-bold text-kaboo-primary hover:underline"
+                          >
+                            Limpar filtros
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
+                        {filteredLibraryAssets.map((item) => {
+                          const CardIcon = Icons[item.iconName] as React.ElementType;
+
+                          return (
+                            <button
+                              type="button"
+                              key={item.key}
+                              className="group w-full rounded-2xl border border-gray-200 bg-white p-5 text-left shadow-sm transition-all hover:border-kaboo-primary/20 hover:shadow-md active:scale-[0.99]"
+                              onClick={() => handleLibraryAssetEdit(item)}
+                            >
+                              <div className="flex items-start gap-4">
+                                {/* Thumbnail quadrado — mesma imagem do Card3DCover */}
+                                <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-100 shadow-sm">
+                                  {item.coverImage ? (
+                                    <img
+                                      src={item.coverImage}
+                                      alt={item.collection.title || item.displayTitle}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-kaboo-primary/50">
+                                      <CardIcon size={24} />
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex items-center rounded-full bg-kaboo-primary/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary">
+                                      {COLLECTION_ASSET_META[item.asset.category].label}
+                                    </span>
+                                    {item.asset.lyrics_url && (
+                                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-500">
+                                        Com letra
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <h3 className="text-base font-black leading-tight text-gray-900 line-clamp-2">
+                                    {item.displayTitle}
+                                  </h3>
+
+                                  {item.displayTitle !== item.collection.title && (
+                                    <p className="mt-1 text-sm font-medium text-gray-500 line-clamp-1">
+                                      {item.collection.title}
+                                    </p>
+                                  )}
+
+                                  {item.previewText && (
+                                    <p className="mt-1.5 text-sm text-gray-500 line-clamp-2">
+                                      {item.previewText}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                    {item.levelLabel}
+                                  </span>
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                    {item.asset.media_type === 'audio' ? 'Áudio' : item.asset.media_type === 'video' ? 'Vídeo' : 'Documento'}
+                                  </span>
+                                </div>
+
+                                <span className="inline-flex items-center gap-1 text-sm font-bold text-kaboo-primary transition-transform group-hover:translate-x-0.5">
+                                  Editar
+                                  <Icons.ChevronRight size={16} />
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )
+                  ) : getFilteredAndSortedCollections().length === 0 ? (
+                    <div className="text-center py-12">
+                      <Icons.BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p className="text-gray-500 font-bold">
+                        {collections.length > 0 ? 'Nenhuma coleção corresponde aos filtros.' : 'Nenhuma coleção encontrada.'}
+                      </p>
+                      {collections.length > 0 && (searchFilter || levelFilter !== 'all' || sortOrder) && (
+                        <button
+                          onClick={() => { setSearchFilter(''); setLevelFilter('all'); setSortOrder(null); }}
+                          className="mt-3 text-sm font-bold text-kaboo-primary hover:underline"
+                        >
+                          Limpar filtros
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                      {getFilteredAndSortedCollections().map((collection) => {
+                        const actionsButton = (
+                          <div
+                            className="actions-button"
+                            ref={(el) => {
+                              actionsDropdownRefs.current[collection.id] = el;
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                setOpenActionsDropdown(openActionsDropdown === collection.id ? null : collection.id);
+                              }}
+                              className="w-8 h-8 rounded-full bg-white/90 hover:bg-white border border-gray-200 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
+                              aria-label="Ações da coleção"
+                            >
+                              <Icons.MoreHorizontal size={18} className="text-gray-600" />
+                            </button>
+
+                            {openActionsDropdown === collection.id && (
+                              <div
+                                className="absolute top-full right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-[100] animate-fade-in-up origin-top-right actions-dropdown"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                }}
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                }}
+                              >
+                                {isAdminUser && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      handleDeleteClick(collection.id);
+                                      setOpenActionsDropdown(null);
+                                    }}
+                                    onMouseDown={(e) => {
+                                      e.stopPropagation();
+                                    }}
+                                    className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl text-red-500 hover:bg-red-50 font-medium"
+                                  >
+                                    <Icons.Trash2 size={18} />
+                                    <span>Excluir</span>
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+
+                        return (
+                          <div
+                            key={collection.id}
+                            className="cursor-pointer active:scale-95 transition-transform touch-manipulation"
+                            style={{ touchAction: 'manipulation' }}
+                            onClick={(e) => {
+                              const target = e.target as HTMLElement;
+                              if (
+                                target.closest('.actions-button') ||
+                                target.closest('.actions-dropdown') ||
+                                target.tagName === 'BUTTON' ||
+                                target.closest('button')
+                              ) {
+                                e.stopPropagation();
+                                return;
+                              }
+                              if (hasUnsavedChanges()) {
+                                setPendingAction(() => () => handleEdit(collection));
+                                setShowUnsavedChangesModal(true);
+                              } else {
+                                handleEdit(collection);
+                              }
+                            }}
+                          >
+                            {collection.cover_image && (() => {
+                              const collectionTypeMeta = getCollectionTypeMeta(collection);
+                              const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
+
+                              return (
+                                <Card3DCover
+                                  imageUrl={displayCoverImage}
+                                  alt={collection.title}
+                                  level={collection.level}
+                                  collectionTypeLabel={collectionTypeMeta.shortLabel}
+                                  collectionTypeBadgeClassName={collectionTypeMeta.coverClassName}
+                                  actionsButton={actionsButton}
+                                />
+                              );
+                            })()}
+
+                            {collection.title && (
+                              <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-2 mt-3">
+                                {collection.title}
+                              </h3>
+                            )}
+
+                            <div className="mb-2">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-[0.14em] ${getCollectionTypeMeta(collection).softClassName}`}>
+                                {getCollectionTypeMeta(collection).label}
+                              </span>
+                            </div>
+
+                            {collection.theme && collection.theme.trim() !== '' && (
+                              <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">
+                                {collection.theme}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* === FORM DRAWER (always in DOM for CSS slide animation) === */}
+          {/* Backdrop */}
+          <div
+            onClick={handleCancel}
+            className={`fixed inset-0 z-40 transition-all duration-300 ${
+              (editingId || showCreateForm)
+                ? 'bg-black/40 pointer-events-auto'
+                : 'bg-transparent pointer-events-none'
+            }`}
+          />
+
+          {/* Drawer Panel */}
+          <div
+            className={`fixed inset-y-0 right-0 z-50 flex flex-col bg-white shadow-2xl w-full sm:w-[600px] max-w-full transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              (editingId || showCreateForm) ? 'translate-x-0' : 'translate-x-full'
+            }`}
+          >
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+              <div className="min-w-0 flex-1">
+                {activeLibraryAreaLabel && (
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-kaboo-primary/60 mb-0.5">
+                    {activeLibraryAreaLabel}
+                  </p>
+                )}
+                <h2 className="text-base font-bold text-gray-800 line-clamp-1">
+                  {editingId
+                    ? (formData.title || 'Sem título')
+                    : (activeLibraryAreaUi?.createLabel || 'Nova Coleção')}
+                </h2>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                {isAdminUser && editingId && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteClick(editingId)}
+                    className="w-9 h-9 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all text-red-500"
+                    title="Excluir coleção"
+                  >
+                    <Icons.Trash2 size={16} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all text-gray-600"
+                  aria-label="Fechar"
+                >
+                  <Icons.X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs - only in full collection edit mode */}
+            {!isLibraryAreaMode && (
+              <div className="px-6 pt-4 pb-0 flex-shrink-0">
+                <Tabs
+                  tabs={[
+                    { id: 'identification', label: 'Dados da Coleção' },
+                    { id: 'media', label: 'Arquivos de Mídia' }
+                  ]}
+                  activeTab={activeTab}
+                  onChange={(tabId) => setActiveTab(tabId as any)}
+                />
+              </div>
+            )}
+
+            {/* Scrollable form body */}
+            <div className="flex-1 overflow-y-auto px-6 pb-4 pt-4">
+              <div className="space-y-6">
                   {/* Tab: Dados da Coleção */}
                   {!isLibraryAreaMode && activeTab === 'identification' && (
                     <>
@@ -2044,443 +2487,19 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     </>
                   )}
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-4 pt-4 border-t border-gray-200">
-                    <Button variant="secondary" fullWidth onClick={handleCancel} disabled={isSaving}>
-                      Cancelar
-                    </Button>
-                    <Button variant="primary" fullWidth onClick={handleSave} disabled={isSaving}>
-                      {isSaving ? 'Salvando...' : (editingId ? 'Salvar Alterações' : 'Criar Coleção')}
-                    </Button>
-                  </div>
-                </div>
               </div>
             </div>
-          ) : (
-            <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-6 pt-0">
-              {collections.length === 0 ? (
-                <div className="text-center py-12">
-                  <Icons.BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
-                  <p className="text-gray-500 font-bold">Nenhuma coleção encontrada.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Filtros e Ordenação */}
-                  <div className="flex flex-col md:flex-row gap-3">
-                    {/* Campo de Busca */}
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Icons.Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="text"
-                          value={searchFilter}
-                          onChange={(e) => setSearchFilter(e.target.value)}
-                          placeholder={activeLibraryAreaUi?.searchPlaceholder || 'Buscar por título ou tema...'}
-                          className="w-full bg-gray-100 border-none rounded-2xl pl-12 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all font-medium"
-                        />
-                      </div>
-                    </div>
 
-                    {/* Filtro de Segmento com Dropdown */}
-                    <div className="md:w-48 relative" ref={levelDropdownRef}>
-                      <button
-                        onClick={() => setShowLevelDropdown(!showLevelDropdown)}
-                        className={`h-11 px-4 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 shadow-sm font-bold text-sm w-full justify-between ${levelFilter !== 'all'
-                          ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
-                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                          }`}
-                      >
-                        <span className="truncate">
-                          {levelFilter === 'all' ? 'Todos os segmentos' : formatSegmentLabel(levelFilter)}
-                        </span>
-                        <Icons.ChevronDown size={16} className={`transition-transform flex-shrink-0 ${showLevelDropdown ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {showLevelDropdown && (
-                        <div className="absolute top-full right-0 mt-2 w-full bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-fade-in-up origin-top-right">
-                          <button
-                            onClick={() => {
-                              setLevelFilter('all');
-                              setShowLevelDropdown(false);
-                            }}
-                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl ${levelFilter === 'all'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
-                              : 'text-gray-700 hover:bg-gray-50 font-medium'
-                              }`}
-                          >
-                            <span>Todos os segmentos</span>
-                            {levelFilter === 'all' && <Icons.Check size={18} className="ml-auto" />}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setLevelFilter('Educação Infantil');
-                              setShowLevelDropdown(false);
-                            }}
-                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${levelFilter === 'Educação Infantil'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
-                              : 'text-gray-700 hover:bg-gray-50 font-medium'
-                              }`}
-                          >
-                            <span>Educação Infantil</span>
-                            {levelFilter === 'Educação Infantil' && <Icons.Check size={18} className="ml-auto" />}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setLevelFilter('Fundamental I');
-                              setShowLevelDropdown(false);
-                            }}
-                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${levelFilter === 'Fundamental I'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
-                              : 'text-gray-700 hover:bg-gray-50 font-medium'
-                              }`}
-                          >
-                            <span>E.F. Anos Iniciais</span>
-                            {levelFilter === 'Fundamental I' && <Icons.Check size={18} className="ml-auto" />}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Botão de Ordenação com Dropdown */}
-                    <div className="relative" ref={sortDropdownRef}>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setShowSortDropdown(!showSortDropdown)}
-                          className={`h-11 px-4 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 shadow-sm font-bold text-sm ${sortOrder
-                            ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
-                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                            }`}
-                        >
-                          {sortOrder === 'asc' ? (
-                            <>
-                              <span className="hidden md:inline-block">A - Z</span>
-                            </>
-                          ) : sortOrder === 'desc' ? (
-                            <>
-                              <span className="hidden md:inline-block">Z - A</span>
-                            </>
-                          ) : (
-                            <>
-                              <Icons.ArrowUpDown size={18} />
-                              <span>Ordenar</span>
-                            </>
-                          )}
-                          <Icons.ChevronDown size={16} className={`transition-transform flex-shrink-0 ${showSortDropdown ? 'rotate-180' : ''}`} />
-                        </button>
-                        {sortOrder && (
-                          <button
-                            onClick={() => setSortOrder(null)}
-                            className="h-11 w-11 rounded-2xl flex items-center justify-center border border-kaboo-primary bg-kaboo-primary text-white hover:bg-opacity-90 transition-all active:scale-95 shadow-sm shadow-kaboo-primary/20"
-                            title="Remover ordenação"
-                          >
-                            <Icons.X size={18} />
-                          </button>
-                        )}
-                      </div>
-
-                      {showSortDropdown && (
-                        <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-fade-in-up origin-top-right">
-                          <button
-                            onClick={() => {
-                              setSortOrder('asc');
-                              setShowSortDropdown(false);
-                            }}
-                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl ${sortOrder === 'asc'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
-                              : 'text-gray-700 hover:bg-gray-50 font-medium'
-                              }`}
-                          >
-                            <Icons.ArrowDown size={18} />
-                            <span>Crescente (A - Z)</span>
-                            {sortOrder === 'asc' && <Icons.Check size={18} className="ml-auto" />}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSortOrder('desc');
-                              setShowSortDropdown(false);
-                            }}
-                            className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${sortOrder === 'desc'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
-                              : 'text-gray-700 hover:bg-gray-50 font-medium'
-                              }`}
-                          >
-                            <Icons.ArrowUp size={18} />
-                            <span>Decrescente (Z - A)</span>
-                            {sortOrder === 'desc' && <Icons.Check size={18} className="ml-auto" />}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Botão Nova Coleção */}
-                    {!editingId && !showCreateForm && (
-                      <button
-                        onClick={() => {
-                          if (hasUnsavedChanges()) {
-                            setPendingAction(() => () => {
-                              const emptyFormData = buildCollectionFormData();
-                              clearLibraryAssetFocus();
-                              setShowCreateForm(true);
-                              setActiveTab(defaultCollectionTab);
-                              setFormData(emptyFormData);
-                              setOriginalFormData(emptyFormData);
-                            });
-                            setShowUnsavedChangesModal(true);
-                          } else {
-                            const emptyFormData = buildCollectionFormData();
-                            clearLibraryAssetFocus();
-                            setShowCreateForm(true);
-                            setActiveTab(defaultCollectionTab);
-                            setFormData(emptyFormData);
-                            setOriginalFormData(emptyFormData);
-                          }
-                        }}
-                        className="h-11 px-6 rounded-2xl bg-kaboo-primary text-white flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all active:scale-95 shadow-sm font-bold text-sm whitespace-nowrap"
-                      >
-                        <Icons.Plus size={18} />
-                        <span>{activeLibraryAreaUi?.createLabel || 'Nova Coleção'}</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Lista de conteúdo */}
-                  {initialLibraryArea ? (
-                    filteredLibraryAssets.length === 0 ? (
-                      <div className="text-center py-12">
-                        {(() => {
-                          const EmptyIcon = Icons[activeLibraryAreaUi?.icon || 'BookOpen'] as React.ElementType;
-                          return <EmptyIcon size={48} className="mx-auto mb-4 text-gray-300" />;
-                        })()}
-                        <p className="text-gray-500 font-bold">
-                          {libraryAssetItems.length > 0
-                            ? activeLibraryAreaUi?.emptyMessage || 'Nenhum asset corresponde aos filtros.'
-                            : `Nenhum asset publicado em ${activeLibraryAreaLabel?.toLowerCase() || 'esta área'}.`}
-                        </p>
-                        {libraryAssetItems.length > 0 && (searchFilter || levelFilter !== 'all' || sortOrder) && (
-                          <button
-                            onClick={() => { setSearchFilter(''); setLevelFilter('all'); setSortOrder(null); }}
-                            className="mt-3 text-sm font-bold text-kaboo-primary hover:underline"
-                          >
-                            Limpar filtros
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
-                        {filteredLibraryAssets.map((item) => {
-                          const CardIcon = Icons[item.iconName] as React.ElementType;
-
-                          return (
-                            <button
-                              type="button"
-                              key={item.key}
-                              className="group w-full rounded-2xl border border-gray-200 bg-white p-5 text-left shadow-sm transition-all hover:border-kaboo-primary/20 hover:shadow-md active:scale-[0.99]"
-                              onClick={() => handleLibraryAssetEdit(item)}
-                            >
-                              <div className="flex items-start gap-4">
-                                {/* Thumbnail quadrado — mesma imagem do Card3DCover */}
-                                <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-100 shadow-sm">
-                                  {item.coverImage ? (
-                                    <img
-                                      src={item.coverImage}
-                                      alt={item.collection.title || item.displayTitle}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="flex h-full w-full items-center justify-center text-kaboo-primary/50">
-                                      <CardIcon size={24} />
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                                    <span className="inline-flex items-center rounded-full bg-kaboo-primary/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary">
-                                      {COLLECTION_ASSET_META[item.asset.category].label}
-                                    </span>
-                                    {item.asset.lyrics_url && (
-                                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-500">
-                                        Com letra
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  <h3 className="text-base font-black leading-tight text-gray-900 line-clamp-2">
-                                    {item.displayTitle}
-                                  </h3>
-
-                                  {item.displayTitle !== item.collection.title && (
-                                    <p className="mt-1 text-sm font-medium text-gray-500 line-clamp-1">
-                                      {item.collection.title}
-                                    </p>
-                                  )}
-
-                                  {item.previewText && (
-                                    <p className="mt-1.5 text-sm text-gray-500 line-clamp-2">
-                                      {item.previewText}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
-                                    {item.levelLabel}
-                                  </span>
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
-                                    {item.asset.media_type === 'audio' ? 'Áudio' : item.asset.media_type === 'video' ? 'Vídeo' : 'Documento'}
-                                  </span>
-                                </div>
-
-                                <span className="inline-flex items-center gap-1 text-sm font-bold text-kaboo-primary transition-transform group-hover:translate-x-0.5">
-                                  Editar
-                                  <Icons.ChevronRight size={16} />
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )
-                  ) : getFilteredAndSortedCollections().length === 0 ? (
-                    <div className="text-center py-12">
-                      <Icons.BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
-                      <p className="text-gray-500 font-bold">
-                        {collections.length > 0 ? 'Nenhuma coleção corresponde aos filtros.' : 'Nenhuma coleção encontrada.'}
-                      </p>
-                      {collections.length > 0 && (searchFilter || levelFilter !== 'all' || sortOrder) && (
-                        <button
-                          onClick={() => { setSearchFilter(''); setLevelFilter('all'); setSortOrder(null); }}
-                          className="mt-3 text-sm font-bold text-kaboo-primary hover:underline"
-                        >
-                          Limpar filtros
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                      {getFilteredAndSortedCollections().map((collection) => {
-                        const actionsButton = (
-                          <div
-                            className="actions-button"
-                            ref={(el) => {
-                              actionsDropdownRefs.current[collection.id] = el;
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                setOpenActionsDropdown(openActionsDropdown === collection.id ? null : collection.id);
-                              }}
-                              className="w-8 h-8 rounded-full bg-white/90 hover:bg-white border border-gray-200 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
-                              aria-label="Ações da coleção"
-                            >
-                              <Icons.MoreHorizontal size={18} className="text-gray-600" />
-                            </button>
-
-                            {openActionsDropdown === collection.id && (
-                              <div
-                                className="absolute top-full right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-[100] animate-fade-in-up origin-top-right actions-dropdown"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                }}
-                                onMouseDown={(e) => {
-                                  e.stopPropagation();
-                                }}
-                              >
-                                {isAdminUser && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      e.preventDefault();
-                                      handleDeleteClick(collection.id);
-                                      setOpenActionsDropdown(null);
-                                    }}
-                                    onMouseDown={(e) => {
-                                      e.stopPropagation();
-                                    }}
-                                    className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl text-red-500 hover:bg-red-50 font-medium"
-                                  >
-                                    <Icons.Trash2 size={18} />
-                                    <span>Excluir</span>
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-
-                        return (
-                          <div
-                            key={collection.id}
-                            className="cursor-pointer active:scale-95 transition-transform touch-manipulation"
-                            style={{ touchAction: 'manipulation' }}
-                            onClick={(e) => {
-                              const target = e.target as HTMLElement;
-                              if (
-                                target.closest('.actions-button') ||
-                                target.closest('.actions-dropdown') ||
-                                target.tagName === 'BUTTON' ||
-                                target.closest('button')
-                              ) {
-                                e.stopPropagation();
-                                return;
-                              }
-                              if (hasUnsavedChanges()) {
-                                setPendingAction(() => () => handleEdit(collection));
-                                setShowUnsavedChangesModal(true);
-                              } else {
-                                handleEdit(collection);
-                              }
-                            }}
-                          >
-                            {collection.cover_image && (() => {
-                              const collectionTypeMeta = getCollectionTypeMeta(collection);
-                              const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
-
-                              return (
-                                <Card3DCover
-                                  imageUrl={displayCoverImage}
-                                  alt={collection.title}
-                                  level={collection.level}
-                                  collectionTypeLabel={collectionTypeMeta.shortLabel}
-                                  collectionTypeBadgeClassName={collectionTypeMeta.coverClassName}
-                                  actionsButton={actionsButton}
-                                />
-                              );
-                            })()}
-
-                            {collection.title && (
-                              <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-2 mt-3">
-                                {collection.title}
-                              </h3>
-                            )}
-
-                            <div className="mb-2">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-[0.14em] ${getCollectionTypeMeta(collection).softClassName}`}>
-                                {getCollectionTypeMeta(collection).label}
-                              </span>
-                            </div>
-
-                            {collection.theme && collection.theme.trim() !== '' && (
-                              <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">
-                                {collection.theme}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
+            {/* Drawer Footer */}
+            <div className="flex gap-4 px-6 py-4 border-t border-gray-100 flex-shrink-0">
+              <Button variant="secondary" fullWidth onClick={handleCancel} disabled={isSaving}>
+                Cancelar
+              </Button>
+              <Button variant="primary" fullWidth onClick={handleSave} disabled={isSaving}>
+                {isSaving ? 'Salvando...' : (editingId ? 'Salvar Alterações' : 'Criar Coleção')}
+              </Button>
             </div>
-          )}
+          </div>
         </>
       )}
 
