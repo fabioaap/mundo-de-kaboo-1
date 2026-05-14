@@ -1095,6 +1095,15 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const getFilteredAndSortedCollections = (): Collection[] => {
     let filtered = [...collections];
 
+    // When in library area mode (Vídeos, Músicas, etc.), show only collections
+    // that have at least one asset whose category belongs to that area's slots.
+    if (initialLibraryArea) {
+      const relevantSlots = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
+      filtered = filtered.filter(collection =>
+        collection.collection_assets?.some(asset => relevantSlots.includes(asset.category as FixedMediaSlotCategory))
+      );
+    }
+
     // Apply search filter
     if (searchFilter.trim()) {
       const searchLower = searchFilter.toLowerCase();
