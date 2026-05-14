@@ -93,6 +93,17 @@ const createAssetId = (category: CollectionAssetCategory) => {
   return `${category}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 };
 
+const CATEGORY_COVER_URL: Partial<Record<CollectionAssetCategory, string>> = {
+  storytelling: '/mock/covers/asset-storytelling.svg',
+  animation: '/mock/covers/asset-animation.svg',
+  accessible_video: '/mock/covers/asset-accessible-video.svg',
+  how_to_play: '/mock/covers/asset-how-to-play.svg',
+  video_lesson: '/mock/covers/asset-video-lesson.svg',
+  teacher_guide: '/mock/covers/asset-teacher-guide.svg',
+  extra_material: '/mock/covers/asset-extra-material.svg',
+  reading: '/mock/covers/asset-reading.svg',
+};
+
 const inferAssetMediaTypeFromUrl = (url: string): CollectionAsset['media_type'] => {
   const lowerUrl = url.toLowerCase();
 
@@ -544,7 +555,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     const PRIMARY_LEGACY_CATEGORIES: CollectionAssetCategory[] = ['reading', 'storytelling', 'animation'];
 
     return collections.flatMap((collection) => {
-      const coverImage = getCollectionDisplayCover(collection) || collection.cover_image || placeholderImageUrl;
       const explicitCategories = new Set(
         (collection.collection_assets ?? [])
           .filter((a) => a.url?.trim())
@@ -563,6 +573,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         })
         .map((asset) => {
           const displayTitle = getLibraryAssetDisplayTitle(collection, asset);
+          const categoryCover = CATEGORY_COVER_URL[asset.category];
+          const resolvedCover = categoryCover || getCollectionDisplayCover(collection) || collection.cover_image || placeholderImageUrl;
 
           return {
             key: `${collection.id}:${asset.id}`,
@@ -570,7 +582,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
             asset,
             displayTitle,
             previewText: (asset.description || '').trim() || (collection.theme || '').trim() || null,
-            coverImage,
+            coverImage: resolvedCover,
             searchText: normalizeSearchableText(
               displayTitle,
               asset.title,
