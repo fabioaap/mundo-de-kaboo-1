@@ -573,8 +573,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         })
         .map((asset) => {
           const displayTitle = getLibraryAssetDisplayTitle(collection, asset);
-          const categoryCover = CATEGORY_COVER_URL[asset.category];
-          const resolvedCover = categoryCover || getCollectionDisplayCover(collection) || collection.cover_image || placeholderImageUrl;
+          const collectionCover = getCollectionDisplayCover(collection) || collection.cover_image;
+          const resolvedCover = collectionCover || CATEGORY_COVER_URL[asset.category] || placeholderImageUrl;
 
           return {
             key: `${collection.id}:${asset.id}`,
