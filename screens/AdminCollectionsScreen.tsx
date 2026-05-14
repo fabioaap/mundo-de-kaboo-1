@@ -2095,8 +2095,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                   imageUrl={displayCoverImage}
                                   alt={collection.title}
                                   level={collection.level}
-                                  collectionTypeLabel={collectionTypeMeta.shortLabel}
-                                  collectionTypeBadgeClassName={collectionTypeMeta.coverClassName}
+                                  collectionTypeLabel={initialLibraryArea ? undefined : collectionTypeMeta.shortLabel}
+                                  collectionTypeBadgeClassName={initialLibraryArea ? undefined : collectionTypeMeta.coverClassName}
                                   actionsButton={actionsButton}
                                 />
                               );
@@ -2109,25 +2109,25 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             )}
 
                             <div className="mb-2">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-[0.14em] ${getCollectionTypeMeta(collection).softClassName}`}>
-                                {getCollectionTypeMeta(collection).label}
-                              </span>
+                              {initialLibraryArea ? (() => {
+                                // In library area mode, replace collection type badge with media badge
+                                const badgeMeta = LIBRARY_AREA_MEDIA_BADGE[initialLibraryArea];
+                                const slots = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
+                                const assets = inferCollectionAssets(collection).filter(a => slots.includes(a.category as FixedMediaSlotCategory));
+                                if (assets.length === 0) return null;
+                                const IconComp = Icons[badgeMeta.icon] as React.ElementType;
+                                return (
+                                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${badgeMeta.className}`}>
+                                    <IconComp size={12} />
+                                    {badgeMeta.label(assets.length)}
+                                  </div>
+                                );
+                              })() : (
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-[0.14em] ${getCollectionTypeMeta(collection).softClassName}`}>
+                                  {getCollectionTypeMeta(collection).label}
+                                </span>
+                              )}
                             </div>
-
-                            {/* Library area media badge */}
-                            {initialLibraryArea && (() => {
-                              const badgeMeta = LIBRARY_AREA_MEDIA_BADGE[initialLibraryArea];
-                              const slots = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
-                              const assets = inferCollectionAssets(collection).filter(a => slots.includes(a.category as FixedMediaSlotCategory));
-                              if (assets.length === 0) return null;
-                              const IconComp = Icons[badgeMeta.icon] as React.ElementType;
-                              return (
-                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold mb-2 ${badgeMeta.className}`}>
-                                  <IconComp size={12} />
-                                  {badgeMeta.label(assets.length)}
-                                </div>
-                              );
-                            })()}
 
                             {collection.theme && collection.theme.trim() !== '' && (
                               <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">
