@@ -1,0 +1,26 @@
+<svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="800" y2="800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E40AF"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <circle cx="680" cy="140" r="190" fill="white" fill-opacity="0.06"/>
+  <!-- hands / Libras icon — simplified -->
+  <!-- left hand -->
+  <ellipse cx="310" cy="420" rx="80" ry="110" rx2="80" fill="white" fill-opacity="0.85" transform="rotate(-15 310 420)"/>
+  <rect x="248" y="320" width="28" height="80" rx="14" fill="white" fill-opacity="0.9" transform="rotate(-20 248 320)"/>
+  <rect x="278" y="290" width="28" height="90" rx="14" fill="white" fill-opacity="0.9" transform="rotate(-10 278 290)"/>
+  <rect x="312" y="278" width="28" height="92" rx="14" fill="white" fill-opacity="0.9" transform="rotate(0 312 278)"/>
+  <rect x="345" y="285" width="28" height="86" rx="14" fill="white" fill-opacity="0.9" transform="rotate(8 345 285)"/>
+  <!-- right hand (mirror) -->
+  <ellipse cx="490" cy="420" rx="80" ry="110" fill="white" fill-opacity="0.85" transform="rotate(15 490 420)"/>
+  <rect x="524" y="320" width="28" height="80" rx="14" fill="white" fill-opacity="0.9" transform="rotate(20 524 320)"/>
+  <rect x="494" y="290" width="28" height="90" rx="14" fill="white" fill-opacity="0.9" transform="rotate(10 494 290)"/>
+  <rect x="460" y="278" width="28" height="92" rx="14" fill="white" fill-opacity="0.9" transform="rotate(0 460 278)"/>
+  <rect x="427" y="285" width="28" height="86" rx="14" fill="white" fill-opacity="0.9" transform="rotate(-8 427 285)"/>
+  <!-- label -->
+  <rect x="140" y="650" width="520" height="76" rx="16" fill="white" fill-opacity="0.15"/>
+  <text x="400" y="698" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="white">COM LIBRAS</text>
+</svg>

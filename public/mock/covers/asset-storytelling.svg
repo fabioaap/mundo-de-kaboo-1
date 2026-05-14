@@ -1,0 +1,32 @@
+<svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="800" y2="800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5D1F58"/>
+      <stop offset="1" stop-color="#883E82"/>
+    </linearGradient>
+    <linearGradient id="disc" x1="300" y1="280" x2="500" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3E8FF"/>
+      <stop offset="1" stop-color="#C084FC"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <!-- decorative circles -->
+  <circle cx="680" cy="120" r="180" fill="white" fill-opacity="0.06"/>
+  <circle cx="100" cy="700" r="140" fill="white" fill-opacity="0.05"/>
+  <!-- vinyl disc -->
+  <circle cx="400" cy="400" r="210" fill="url(#disc)" fill-opacity="0.95"/>
+  <circle cx="400" cy="400" r="180" fill="#A855F7" fill-opacity="0.3"/>
+  <circle cx="400" cy="400" r="120" fill="#7C3AED"/>
+  <circle cx="400" cy="400" r="80" fill="#5B21B6"/>
+  <circle cx="400" cy="400" r="32" fill="#F3E8FF"/>
+  <circle cx="400" cy="400" r="16" fill="#7C3AED"/>
+  <!-- grooves -->
+  <circle cx="400" cy="400" r="155" fill="none" stroke="white" stroke-opacity="0.12" stroke-width="2"/>
+  <circle cx="400" cy="400" r="140" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="2"/>
+  <!-- music notes -->
+  <text x="340" y="310" font-family="Arial" font-size="52" fill="white" fill-opacity="0.9">♪</text>
+  <text x="460" y="350" font-family="Arial" font-size="36" fill="white" fill-opacity="0.7">♫</text>
+  <!-- label -->
+  <rect x="120" y="660" width="560" height="80" rx="16" fill="white" fill-opacity="0.15"/>
+  <text x="400" y="710" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="700" fill="white">CONTAÇÃO DA HISTÓRIA</text>
+</svg>
