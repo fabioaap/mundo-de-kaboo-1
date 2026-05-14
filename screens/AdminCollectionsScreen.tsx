@@ -281,14 +281,16 @@ const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
 };
 
 const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, FixedMediaSlotCategory[]> = {
-  videos: ['animation', 'accessible_video', 'how_to_play'],
+  // Vídeos: 1 slot por item (animation = o vídeo em si).
+  // accessible_video e how_to_play são variantes dentro do Kit completo (Coleção).
+  videos: ['animation'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
   materials: ['reading'],
 };
 
 const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
-  videos: ['animation', 'accessible_video', 'how_to_play'],
+  videos: ['animation'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
   materials: ['reading', 'extra_material'],
