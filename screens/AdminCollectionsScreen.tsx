@@ -2237,9 +2237,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               className="group w-full rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm transition-all hover:border-kaboo-primary/20 hover:shadow-md active:scale-[0.99]"
                               onClick={() => handleLibraryAssetEdit(item)}
                             >
-                              <div className="flex items-start gap-3">
-                                {/* Mini book-cover thumbnail */}
-                                <div className="relative h-[72px] w-[52px] shrink-0 overflow-hidden rounded-xl bg-kaboo-primary/10">
+                              <div className="flex items-start gap-4">
+                                {/* Book-cover thumbnail — proporção 3:4 */}
+                                <div className="relative h-[96px] w-[72px] shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-kaboo-primary/10 shadow-sm">
                                   {item.coverImage ? (
                                     <img
                                       src={item.coverImage}
@@ -2248,54 +2248,54 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     />
                                   ) : (
                                     <div className="flex h-full w-full items-center justify-center text-kaboo-primary/50">
-                                      <CardIcon size={20} />
+                                      <CardIcon size={24} />
                                     </div>
                                   )}
                                 </div>
 
                                 <div className="min-w-0 flex-1">
-                                  <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-                                    <span className="inline-flex items-center rounded-full bg-kaboo-primary/10 px-2.5 py-0.5 text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary">
+                                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex items-center rounded-full bg-kaboo-primary/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary">
                                       {COLLECTION_ASSET_META[item.asset.category].label}
                                     </span>
                                     {item.asset.lyrics_url && (
-                                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-bold text-gray-500">
+                                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-500">
                                         Com letra
                                       </span>
                                     )}
                                   </div>
 
-                                  <h3 className="text-sm font-black leading-tight text-gray-900 line-clamp-2">
+                                  <h3 className="text-base font-black leading-tight text-gray-900 line-clamp-2">
                                     {item.displayTitle}
                                   </h3>
 
                                   {item.displayTitle !== item.collection.title && (
-                                    <p className="mt-0.5 text-xs font-medium text-gray-500 line-clamp-1">
+                                    <p className="mt-1 text-sm font-medium text-gray-500 line-clamp-1">
                                       {item.collection.title}
                                     </p>
                                   )}
 
                                   {item.previewText && (
-                                    <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                                    <p className="mt-1.5 text-sm text-gray-500 line-clamp-2">
                                       {item.previewText}
                                     </p>
                                   )}
                                 </div>
                               </div>
 
-                              <div className="mt-3 flex items-center justify-between gap-2 border-t border-gray-100 pt-3">
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-bold text-gray-500">
+                              <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
                                     {item.levelLabel}
                                   </span>
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-bold text-gray-500">
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
                                     {item.asset.media_type === 'audio' ? 'Áudio' : item.asset.media_type === 'video' ? 'Vídeo' : 'Documento'}
                                   </span>
                                 </div>
 
-                                <span className="inline-flex items-center gap-1 text-xs font-bold text-kaboo-primary transition-transform group-hover:translate-x-0.5">
+                                <span className="inline-flex items-center gap-1 text-sm font-bold text-kaboo-primary transition-transform group-hover:translate-x-0.5">
                                   Editar
-                                  <Icons.ChevronRight size={14} />
+                                  <Icons.ChevronRight size={16} />
                                 </span>
                               </div>
                             </button>
