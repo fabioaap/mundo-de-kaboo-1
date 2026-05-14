@@ -37,7 +37,7 @@ const COLLECTION_TYPE_META: Record<CollectionType, CollectionTypeMeta> = {
   kit: {
     type: 'kit',
     label: 'Kit multimodal',
-    shortLabel: 'Coleção',
+    shortLabel: 'Kit',
     softClassName: 'bg-amber-50 text-amber-800 border-amber-200',
     coverClassName: 'bg-amber-500/90 text-white border-white/30 shadow-lg shadow-amber-950/20',
     detailSummary: 'Kit multimodal com livro, mídia e materiais de apoio reunidos na mesma experiência.',
