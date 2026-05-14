@@ -61,6 +61,8 @@ type FixedMediaSlot = {
   allowMetadata?: boolean;
   titlePlaceholder?: string;
   descriptionPlaceholder?: string;
+  urlLabel?: string;
+  urlPlaceholder?: string;
 };
 
 const EMPTY_COLLECTION_FORM_DATA: CollectionFormData = {
@@ -208,6 +210,8 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     label: COLLECTION_ASSET_META.reading.label,
     folder: 'pdfs',
     accept: 'application/pdf',
+    urlLabel: 'Cole o link do arquivo PDF',
+    urlPlaceholder: 'https://...',
   },
   {
     category: 'storytelling',
@@ -217,12 +221,17 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     allowMetadata: true,
     titlePlaceholder: 'Ex.: A Cor do Sentir',
     descriptionPlaceholder: 'Descrição opcional desta música ou contação.',
+    urlLabel: 'Cole o link do arquivo de áudio',
+    urlPlaceholder: 'https://...',
   },
   {
     category: 'animation',
     label: COLLECTION_ASSET_META.animation.label,
     folder: 'video',
     accept: 'video/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: Kaboo e a Floresta Encantada',
+    descriptionPlaceholder: 'Descrição opcional do vídeo animado.',
   },
   {
     category: 'accessible_video',
@@ -259,6 +268,8 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     allowMetadata: true,
     titlePlaceholder: 'Ex.: Guia do Professor',
     descriptionPlaceholder: 'Descreva brevemente o conteúdo do guia.',
+    urlLabel: 'Cole o link do arquivo PDF',
+    urlPlaceholder: 'https://...',
   },
 ];
 
@@ -270,14 +281,14 @@ const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
 };
 
 const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, FixedMediaSlotCategory[]> = {
-  videos: ['animation', 'accessible_video', 'how_to_play', 'video_lesson'],
+  videos: ['animation', 'accessible_video', 'how_to_play'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
   materials: ['reading'],
 };
 
 const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
-  videos: ['animation', 'accessible_video', 'how_to_play', 'video_lesson'],
+  videos: ['animation', 'accessible_video', 'how_to_play'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
   materials: ['reading', 'extra_material'],
@@ -489,7 +500,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showLevelDropdown, setShowLevelDropdown] = useState(false);
-  const [showFormLevelDropdown, setShowFormLevelDropdown] = useState(false);
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [collectionToDelete, setCollectionToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -497,7 +508,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const levelDropdownRef = useRef<HTMLDivElement>(null);
-  const formLevelDropdownRef = useRef<HTMLDivElement>(null);
+
   const actionsDropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const mediaSectionRefs = useRef<Partial<Record<CollectionAssetCategory, HTMLDivElement | null>>>({});
   const extraMaterialsSectionRef = useRef<HTMLDivElement | null>(null);
@@ -922,9 +933,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       if (levelDropdownRef.current && !levelDropdownRef.current.contains(event.target as Node)) {
         setShowLevelDropdown(false);
       }
-      if (formLevelDropdownRef.current && !formLevelDropdownRef.current.contains(event.target as Node)) {
-        setShowFormLevelDropdown(false);
-      }
       if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
         setShowRoleDropdown(false);
       }
@@ -941,14 +949,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       });
     };
 
-    if (showSortDropdown || showLevelDropdown || showFormLevelDropdown || openActionsDropdown || showRoleDropdown || editUserRoleDropdownOpen) {
+    if (showSortDropdown || showLevelDropdown || openActionsDropdown || showRoleDropdown || editUserRoleDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showSortDropdown, showLevelDropdown, showFormLevelDropdown, openActionsDropdown, showRoleDropdown, editUserRoleDropdownOpen]);
+  }, [showSortDropdown, showLevelDropdown, openActionsDropdown, showRoleDropdown, editUserRoleDropdownOpen]);
 
   const checkPermission = async () => {
     setCheckingPermission(true);
@@ -2141,12 +2149,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           )}
                         </div>
 
-                        <TagInput
-                          label="Nomes legados não mapeados"
-                          value={unmappedLegacyCharacters}
-                          onChange={setLegacyCharacterNames}
-                          placeholder="Digite um nome legado e pressione Enter"
-                        />
+
                       </div>
 
                       {/* Separation line */}
@@ -2157,54 +2160,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         <h3 className="text-lg font-bold text-gray-800 mb-4">Informações Pedagógicas</h3>
                       </div>
 
-                      {/* 1.4. Segmento */}
+
                       <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
-                        <div className="relative" ref={formLevelDropdownRef}>
-                          <button
-                            onClick={() => setShowFormLevelDropdown(!showFormLevelDropdown)}
-                            className="w-full h-14 bg-white border border-gray-200 rounded-2xl px-4 flex items-center justify-between transition-all active:scale-95 shadow-sm font-bold text-sm text-gray-800 hover:bg-gray-50"
-                          >
-                            <span>{formatSegmentLabel(formData.level)}</span>
-                            <Icons.ChevronDown size={16} className={`transition-transform flex-shrink-0 ${showFormLevelDropdown ? 'rotate-180' : ''}`} />
-                          </button>
-
-                          {showFormLevelDropdown && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-fade-in-up origin-top">
-                              <button
-                                onClick={() => {
-                                  setFormData({ ...formData, level: 'Educação Infantil' });
-                                  setShowFormLevelDropdown(false);
-                                }}
-                                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl ${formData.level === 'Educação Infantil'
-                                  ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
-                                  : 'text-gray-700 hover:bg-gray-50 font-medium'
-                                  }`}
-                              >
-                                <span>Educação Infantil</span>
-                                {formData.level === 'Educação Infantil' && <Icons.Check size={18} className="ml-auto" />}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setFormData({ ...formData, level: 'Fundamental I' });
-                                  setShowFormLevelDropdown(false);
-                                }}
-                                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${formData.level === 'Fundamental I'
-                                  ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
-                                  : 'text-gray-700 hover:bg-gray-50 font-medium'
-                                  }`}
-                              >
-                                <span>E.F. Anos Iniciais</span>
-                                {formData.level === 'Fundamental I' && <Icons.Check size={18} className="ml-auto" />}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Multissegmentos */}
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Segmentos</label>
                         <div className="space-y-2">
                           {AVAILABLE_SEGMENTS.map((seg) => {
                             const checked = formData.segments?.includes(seg) ?? false;
@@ -2222,14 +2180,25 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                         next = prev.filter(s => s !== seg);
                                         // If removing the primary, pick the first remaining or clear
                                         if (isPrimary) {
-                                          setFormData({ ...formData, segments: next, primary_segment: next[0] || '' });
+                                          const newPrimary = next[0] || '';
+                                          setFormData({
+                                            ...formData,
+                                            segments: next,
+                                            primary_segment: newPrimary,
+                                            level: newPrimary === 'Educação Infantil' ? 'Educação Infantil' : (newPrimary ? 'Fundamental I' : formData.level),
+                                          });
                                           return;
                                         }
                                       } else {
                                         next = [...prev, seg];
                                         // Auto-set primary if first segment
                                         if (next.length === 1) {
-                                          setFormData({ ...formData, segments: next, primary_segment: seg });
+                                          setFormData({
+                                            ...formData,
+                                            segments: next,
+                                            primary_segment: seg,
+                                            level: seg === 'Educação Infantil' ? 'Educação Infantil' : 'Fundamental I',
+                                          });
                                           return;
                                         }
                                       }
@@ -2245,7 +2214,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                       type="radio"
                                       name="primary_segment"
                                       checked={isPrimary}
-                                      onChange={() => setFormData({ ...formData, primary_segment: seg })}
+                                      onChange={() => setFormData({
+                                        ...formData,
+                                        primary_segment: seg,
+                                        level: seg === 'Educação Infantil' ? 'Educação Infantil' : 'Fundamental I',
+                                      })}
                                       className="w-3 h-3 text-kaboo-primary focus:ring-kaboo-primary"
                                     />
                                     <span className={isPrimary ? 'font-bold text-kaboo-primary' : ''}>Principal</span>
@@ -2348,6 +2321,64 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       </div>
 
                       <div className="space-y-4">
+                        {/* Mini-identificação: campos básicos visíveis no modo de área de biblioteca */}
+                        {isLibraryAreaMode && (
+                          <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-4">
+                            <div>
+                              <label className="block text-sm font-bold text-gray-700 mb-2">Título *</label>
+                              <input
+                                type="text"
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                className="w-full bg-white border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none shadow-sm"
+                                placeholder={
+                                  initialLibraryArea === 'music' ? 'Título da música'
+                                  : initialLibraryArea === 'videos' ? 'Título do vídeo'
+                                  : initialLibraryArea === 'formations' ? 'Título da formação'
+                                  : 'Título do material'
+                                }
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 items-start">
+                              <FileUpload
+                                label="Imagem de Capa"
+                                value={formData.cover_image || placeholderImageUrl}
+                                onChange={(url) => setFormData({ ...formData, cover_image: url })}
+                                folder="covers"
+                                accept="image/*"
+                                collectionId={editingId || undefined}
+                                hideUrlInput={true}
+                              />
+                              <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
+                                <div className="space-y-2">
+                                  {(['Educação Infantil', 'Fundamental I'] as const).map((seg) => {
+                                    const isActive = formData.level === seg;
+                                    return (
+                                      <button
+                                        key={seg}
+                                        type="button"
+                                        onClick={() => setFormData({
+                                          ...formData,
+                                          level: seg,
+                                          primary_segment: seg,
+                                          segments: formData.segments?.includes(seg) ? formData.segments : [...(formData.segments || []), seg],
+                                        })}
+                                        className={`w-full rounded-2xl border px-3 py-2.5 text-sm font-bold text-left transition-all active:scale-[0.99] ${isActive
+                                          ? 'border-kaboo-primary bg-kaboo-primary/10 text-kaboo-primary shadow-sm'
+                                          : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                      >
+                                        {formatSegmentLabel(seg)}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {(isLibraryAreaMode
                           ? FIXED_MEDIA_SLOTS.filter((s) => LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea!].includes(s.category))
                           : FIXED_MEDIA_SLOTS
@@ -2383,7 +2414,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                               <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2">
-                                  Ou cole um link (YouTube ou arquivo direto)
+                                  {slot.urlLabel ?? 'Ou cole um link (YouTube ou arquivo direto)'}
                                 </label>
                                 <input
                                   type="url"
@@ -2397,7 +2428,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                                     setAssetUrl(slot.category, nextUrl);
                                   }}
-                                  placeholder="https://www.youtube.com/watch?v=..."
+                                  placeholder={slot.urlPlaceholder ?? 'https://www.youtube.com/watch?v=...'}
                                   className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
                                 />
                               </div>
