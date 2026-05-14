@@ -21,7 +21,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollectionCharacters } from '../lib/characters';
 import { COLLECTION_ASSET_META, inferCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
-import { getCollectionDisplayCover, getCollectionTypeMeta, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
+import { getCollectionDisplayCover, getCollectionType, getCollectionTypeMeta, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
 
 interface AdminCollectionsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -1345,6 +1345,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
   const getFilteredAndSortedCollections = (): Collection[] => {
     let filtered = [...collections];
+
+    // In the main "Coleções" view (no library area), show only kits — standalone
+    // books (livros avulsos) have their own separate listing scope.
+    if (!initialLibraryArea) {
+      filtered = filtered.filter((c) => getCollectionType(c) === 'kit');
+    }
 
     // When in library area mode (Vídeos, Músicas, etc.), show only collections
     // that have at least one asset whose category belongs to that area's slots.
