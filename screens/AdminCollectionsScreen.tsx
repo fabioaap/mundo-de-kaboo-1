@@ -274,40 +274,30 @@ const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCat
 
 const LIBRARY_AREA_UI_META: Record<LibraryAreaKey, {
   icon: keyof typeof Icons;
-  badgeClassName: string;
-  iconSurfaceClassName: string;
   searchPlaceholder: string;
   emptyMessage: string;
   createLabel: string;
 }> = {
   music: {
     icon: 'Headphones',
-    badgeClassName: 'bg-fuchsia-100 text-fuchsia-700',
-    iconSurfaceClassName: 'bg-gradient-to-br from-fuchsia-500 via-purple-500 to-violet-500',
     searchPlaceholder: 'Buscar por música, coleção ou tema...',
     emptyMessage: 'Nenhuma música corresponde aos filtros.',
     createLabel: 'Novo conteúdo',
   },
   videos: {
     icon: 'Video',
-    badgeClassName: 'bg-sky-100 text-sky-700',
-    iconSurfaceClassName: 'bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500',
     searchPlaceholder: 'Buscar por vídeo, coleção ou tema...',
     emptyMessage: 'Nenhum vídeo corresponde aos filtros.',
     createLabel: 'Novo conteúdo',
   },
   formations: {
     icon: 'FileText',
-    badgeClassName: 'bg-amber-100 text-amber-700',
-    iconSurfaceClassName: 'bg-gradient-to-br from-amber-400 via-orange-400 to-yellow-500',
     searchPlaceholder: 'Buscar por formação, guia ou coleção...',
     emptyMessage: 'Nenhuma formação corresponde aos filtros.',
     createLabel: 'Novo conteúdo',
   },
   materials: {
     icon: 'BookOpen',
-    badgeClassName: 'bg-emerald-100 text-emerald-700',
-    iconSurfaceClassName: 'bg-gradient-to-br from-emerald-500 via-green-500 to-teal-500',
     searchPlaceholder: 'Buscar por material, PDF ou coleção...',
     emptyMessage: 'Nenhum material corresponde aos filtros.',
     createLabel: 'Novo conteúdo',
@@ -2244,65 +2234,68 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             <button
                               type="button"
                               key={item.key}
-                              className="group w-full rounded-[28px] border border-gray-200 bg-white p-4 text-left shadow-[0_20px_50px_-32px_rgba(15,23,42,0.35)] transition-all hover:-translate-y-0.5 hover:border-kaboo-primary/25 hover:shadow-[0_28px_60px_-30px_rgba(93,31,88,0.28)] active:scale-[0.99]"
+                              className="group w-full rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm transition-all hover:border-kaboo-primary/20 hover:shadow-md active:scale-[0.99]"
                               onClick={() => handleLibraryAssetEdit(item)}
                             >
-                              <div className="flex items-start gap-4">
-                                <div className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-[22px] ${activeLibraryAreaUi?.iconSurfaceClassName || 'bg-gradient-to-br from-slate-500 to-slate-700'}`}>
-                                  <img
-                                    src={item.coverImage}
-                                    alt={item.collection.title || item.displayTitle}
-                                    className="h-full w-full object-cover opacity-25 mix-blend-soft-light"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-br from-white/18 via-transparent to-black/12" />
-                                  <div className="absolute left-2.5 top-2.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white/92 text-gray-700 shadow-sm">
-                                    <CardIcon size={18} />
-                                  </div>
+                              <div className="flex items-start gap-3">
+                                {/* Mini book-cover thumbnail */}
+                                <div className="relative h-[72px] w-[52px] shrink-0 overflow-hidden rounded-xl bg-kaboo-primary/10">
+                                  {item.coverImage ? (
+                                    <img
+                                      src={item.coverImage}
+                                      alt={item.collection.title || item.displayTitle}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-kaboo-primary/50">
+                                      <CardIcon size={20} />
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div className="min-w-0 flex-1">
-                                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] ${activeLibraryAreaUi?.badgeClassName || 'bg-slate-100 text-slate-700'}`}>
+                                  <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                                    <span className="inline-flex items-center rounded-full bg-kaboo-primary/10 px-2.5 py-0.5 text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary">
                                       {COLLECTION_ASSET_META[item.asset.category].label}
                                     </span>
                                     {item.asset.lyrics_url && (
-                                      <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-gray-500 ring-1 ring-inset ring-gray-200">
+                                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-bold text-gray-500">
                                         Com letra
                                       </span>
                                     )}
                                   </div>
 
-                                  <h3 className="text-base font-black leading-tight text-gray-900 line-clamp-2">
+                                  <h3 className="text-sm font-black leading-tight text-gray-900 line-clamp-2">
                                     {item.displayTitle}
                                   </h3>
 
                                   {item.displayTitle !== item.collection.title && (
-                                    <p className="mt-1 text-sm font-medium text-gray-500 line-clamp-1">
-                                      Coleção: {item.collection.title}
+                                    <p className="mt-0.5 text-xs font-medium text-gray-500 line-clamp-1">
+                                      {item.collection.title}
                                     </p>
                                   )}
 
                                   {item.previewText && (
-                                    <p className="mt-2 text-sm text-gray-600 line-clamp-2">
+                                    <p className="mt-1 text-xs text-gray-500 line-clamp-2">
                                       {item.previewText}
                                     </p>
                                   )}
                                 </div>
                               </div>
 
-                              <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                              <div className="mt-3 flex items-center justify-between gap-2 border-t border-gray-100 pt-3">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-bold text-gray-500">
                                     {item.levelLabel}
                                   </span>
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-bold text-gray-500">
                                     {item.asset.media_type === 'audio' ? 'Áudio' : item.asset.media_type === 'video' ? 'Vídeo' : 'Documento'}
                                   </span>
                                 </div>
 
-                                <span className="inline-flex items-center gap-1 text-sm font-bold text-kaboo-primary transition-transform group-hover:translate-x-0.5">
+                                <span className="inline-flex items-center gap-1 text-xs font-bold text-kaboo-primary transition-transform group-hover:translate-x-0.5">
                                   Editar
-                                  <Icons.ChevronRight size={16} />
+                                  <Icons.ChevronRight size={14} />
                                 </span>
                               </div>
                             </button>
