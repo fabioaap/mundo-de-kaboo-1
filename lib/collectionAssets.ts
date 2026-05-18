@@ -15,7 +15,7 @@ type CollectionAssetMeta = {
 
 export const COLLECTION_ASSET_META: Record<CollectionAssetCategory, CollectionAssetMeta> = {
     reading: { label: 'Leitura', mediaType: 'document', scope: 'primary' },
-    storytelling: { label: 'Contação da História', mediaType: 'audio', scope: 'primary' },
+    storytelling: { label: 'Áudio', mediaType: 'audio', scope: 'primary' },
     animation: { label: 'Desenho Animado', mediaType: 'video', scope: 'primary' },
     accessible_video: { label: 'Com Libras', mediaType: 'video', scope: 'primary' },
     how_to_play: { label: 'Como Jogar', mediaType: 'video', scope: 'library' },

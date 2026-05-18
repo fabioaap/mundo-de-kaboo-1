@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  getCollectionDisplayCover,
   getCollectionFormatKinds,
   getKitLinkedBookCount,
   getVisiblePrimaryCollectionAssets,
@@ -78,5 +79,23 @@ describe('getCollectionFormatKinds', () => {
         { id: 'audio', category: 'storytelling', media_type: 'audio', title: 'Contação', url: '/audio.mp3', scope: 'primary' },
       ],
     } as any)).toEqual(['reading', 'audio']);
+  });
+});
+
+describe('getCollectionDisplayCover', () => {
+  it('prefers cover_image over kit_cover_image when both are present', () => {
+    expect(getCollectionDisplayCover({
+      collection_type: 'kit',
+      cover_image: 'https://cdn.example.com/cover.jpg',
+      kit_cover_image: 'https://cdn.example.com/kit-cover.jpg',
+    } as any)).toBe('https://cdn.example.com/cover.jpg');
+  });
+
+  it('falls back to kit_cover_image for kits without a primary cover', () => {
+    expect(getCollectionDisplayCover({
+      collection_type: 'kit',
+      cover_image: '',
+      kit_cover_image: 'https://cdn.example.com/kit-cover.jpg',
+    } as any)).toBe('https://cdn.example.com/kit-cover.jpg');
   });
 });

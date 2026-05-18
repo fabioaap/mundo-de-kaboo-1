@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Icons } from '../components/Icons';
 import { placeholderImageUrl } from '../lib/appPaths';
+import { getCollectionDisplayCover } from '../lib/collectionPresentation';
 import { Collection, MediaItemCard, ScreenName } from '../types';
 import { useThemeBackground } from '../hooks/useThemeBackground';
 import { GalaxyBackground } from '../components/GalaxyBackground';
@@ -467,15 +468,15 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   }) => {
     const glyphPaths = direction === 'back'
       ? [
-          'M11.99,5V1l-5,5l5,5V7c3.31,0,6,2.69,6,6s-2.69,6-6,6s-6-2.69-6-6h-2c0,4.42,3.58,8,8,8s8-3.58,8-8S16.41,5,11.99,5z',
-          'M10.89,16h-0.85v-3.26l-1.01,0.31v-0.69l1.77-0.63h0.09V16z',
-          'M15.17,14.24c0,0.32-0.03,0.6-0.1,0.82s-0.17,0.42-0.29,0.57s-0.28,0.26-0.45,0.33s-0.37,0.1-0.59,0.1s-0.41-0.03-0.59-0.1s-0.33-0.18-0.46-0.33s-0.23-0.34-0.3-0.57s-0.11-0.5-0.11-0.82V13.5c0-0.32,0.03-0.6,0.1-0.82s0.17-0.42,0.29-0.57s0.28-0.26,0.45-0.33s0.37-0.1,0.59-0.1s0.41,0.03,0.59,0.1c0.18,0.07,0.33,0.18,0.46,0.33s0.23,0.34,0.3,0.57s0.11,0.5,0.11,0.82V14.24z M14.32,13.38c0-0.19-0.01-0.35-0.04-0.48s-0.07-0.23-0.12-0.31s-0.11-0.14-0.19-0.17s-0.16-0.05-0.25-0.05s-0.18,0.02-0.25,0.05s-0.14,0.09-0.19,0.17s-0.09,0.18-0.12,0.31s-0.04,0.29-0.04,0.48v0.97c0,0.19,0.01,0.35,0.04,0.48s0.07,0.24,0.12,0.32s0.11,0.14,0.19,0.17s0.16,0.05,0.25,0.05s0.18-0.02,0.25-0.05s0.14-0.09,0.19-0.17s0.09-0.19,0.11-0.32s0.04-0.29,0.04-0.48V13.38z',
-        ]
+        'M11.99,5V1l-5,5l5,5V7c3.31,0,6,2.69,6,6s-2.69,6-6,6s-6-2.69-6-6h-2c0,4.42,3.58,8,8,8s8-3.58,8-8S16.41,5,11.99,5z',
+        'M10.89,16h-0.85v-3.26l-1.01,0.31v-0.69l1.77-0.63h0.09V16z',
+        'M15.17,14.24c0,0.32-0.03,0.6-0.1,0.82s-0.17,0.42-0.29,0.57s-0.28,0.26-0.45,0.33s-0.37,0.1-0.59,0.1s-0.41-0.03-0.59-0.1s-0.33-0.18-0.46-0.33s-0.23-0.34-0.3-0.57s-0.11-0.5-0.11-0.82V13.5c0-0.32,0.03-0.6,0.1-0.82s0.17-0.42,0.29-0.57s0.28-0.26,0.45-0.33s0.37-0.1,0.59-0.1s0.41,0.03,0.59,0.1c0.18,0.07,0.33,0.18,0.46,0.33s0.23,0.34,0.3,0.57s0.11,0.5,0.11,0.82V14.24z M14.32,13.38c0-0.19-0.01-0.35-0.04-0.48s-0.07-0.23-0.12-0.31s-0.11-0.14-0.19-0.17s-0.16-0.05-0.25-0.05s-0.18,0.02-0.25,0.05s-0.14,0.09-0.19,0.17s-0.09,0.18-0.12,0.31s-0.04,0.29-0.04,0.48v0.97c0,0.19,0.01,0.35,0.04,0.48s0.07,0.24,0.12,0.32s0.11,0.14,0.19,0.17s0.16,0.05,0.25,0.05s0.18-0.02,0.25-0.05s0.14-0.09,0.19-0.17s0.09-0.19,0.11-0.32s0.04-0.29,0.04-0.48V13.38z',
+      ]
       : [
-          'M18,13c0,3.31-2.69,6-6,6s-6-2.69-6-6s2.69-6,6-6v4l5-5l-5-5v4c-4.42,0-8,3.58-8,8c0,4.42,3.58,8,8,8s8-3.58,8-8H18z',
-          'M10.86,15.94V11.67H10.77L9,12.3v0.69l1.01-0.31v3.26H10.86z',
-          'M12.25,13.44v0.74c0,1.9,1.31,1.82,1.44,1.82c0.14,0,1.44,0.09,1.44-1.82v-0.74c0-1.9-1.31-1.82-1.44-1.82C13.55,11.62,12.25,11.53,12.25,13.44z M14.29,13.32v0.97c0,0.77-0.21,1.03-0.59,1.03c-0.38,0-0.6-0.26-0.6-1.03v-0.97c0-0.75,0.22-1.01,0.59-1.01C14.07,12.3,14.29,12.57,14.29,13.32z',
-        ];
+        'M18,13c0,3.31-2.69,6-6,6s-6-2.69-6-6s2.69-6,6-6v4l5-5l-5-5v4c-4.42,0-8,3.58-8,8c0,4.42,3.58,8,8,8s8-3.58,8-8H18z',
+        'M10.86,15.94V11.67H10.77L9,12.3v0.69l1.01-0.31v3.26H10.86z',
+        'M12.25,13.44v0.74c0,1.9,1.31,1.82,1.44,1.82c0.14,0,1.44,0.09,1.44-1.82v-0.74c0-1.9-1.31-1.82-1.44-1.82C13.55,11.62,12.25,11.53,12.25,13.44z M14.29,13.32v0.97c0,0.77-0.21,1.03-0.59,1.03c-0.38,0-0.6-0.26-0.6-1.03v-0.97c0-0.75,0.22-1.01,0.59-1.01C14.07,12.3,14.29,12.57,14.29,13.32z',
+      ];
 
     const [outlinePath, ...numberPaths] = glyphPaths;
 
@@ -658,13 +659,12 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                 onClick={isOfflineDownloaded ? handleOfflineRemove : handleOfflineDownload}
                 disabled={isOfflineDownloading}
                 aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar áudio para offline'}
-                className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors backdrop-blur-md disabled:cursor-default ${
-                  isOfflineDownloaded
+                className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors backdrop-blur-md disabled:cursor-default ${isOfflineDownloaded
                     ? 'border-red-300/50 bg-red-500/20 text-red-200 hover:bg-red-500/35'
                     : isOfflineDownloading
                       ? 'border-white/30 bg-white/15 text-white/90'
                       : 'border-white/25 bg-black/30 text-white/90 hover:bg-black/45'
-                }`}
+                  }`}
               >
                 {isOfflineDownloading ? (
                   <Icons.RotateCw size={13} className="animate-spin" />
@@ -683,8 +683,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
               onClick={toggleSuggestionsPanel}
               aria-label={showSidebar ? 'Ocultar sugestões' : 'Ver sugestões'}
               className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md ${showSidebar
-                  ? 'border-white/40 bg-white/20'
-                  : 'border-white/25 bg-black/30 hover:bg-black/45'
+                ? 'border-white/40 bg-white/20'
+                : 'border-white/25 bg-black/30 hover:bg-black/45'
                 }`}
             >
               {showSidebar ? 'Ocultar' : 'Sugestões'}
@@ -696,8 +696,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                 onClick={toggleLyricsPanel}
                 aria-label={showLyrics ? 'Ocultar letra' : 'Ver letra'}
                 className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md ${showLyrics
-                    ? 'border-white/40 bg-white/20'
-                    : 'border-white/25 bg-black/30 hover:bg-black/45'
+                  ? 'border-white/40 bg-white/20'
+                  : 'border-white/25 bg-black/30 hover:bg-black/45'
                   }`}
               >
                 {showLyrics ? 'Ocultar' : '♪ Letra'}
@@ -856,7 +856,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
               {/* Album Cover */}
               <div className="absolute inset-4 rounded-full overflow-hidden shadow-inner">
                 <img
-                  src={collection.cover_image || placeholderImageUrl}
+                  src={getCollectionDisplayCover(collection) || placeholderImageUrl}
                   alt={collection.title}
                   className="w-full h-full object-cover"
                 />
@@ -886,8 +886,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                   onChange={handleSeek}
                   onMouseUp={handleSeekEnd}
                   onTouchEnd={handleSeekEnd}
-                className="w-full h-3 bg-white/20 rounded-full appearance-none cursor-pointer"
-                style={{
+                  className="w-full h-3 bg-white/20 rounded-full appearance-none cursor-pointer"
+                  style={{
                     background: `linear-gradient(to right, white ${progressPercent}%, rgba(255,255,255,0.2) ${progressPercent}%)`
                   }}
                 />
@@ -1003,8 +1003,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
         {!isMobile && (
           <div
             className={`flex-shrink-0 overflow-y-auto transition-all duration-300 border-t lg:border-t-0 lg:border-l border-white/10 bg-black/25 backdrop-blur-md ${showSidebar
-                ? 'w-full h-72 lg:h-auto lg:w-80 xl:w-96'
-                : 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none border-0'
+              ? 'w-full h-72 lg:h-auto lg:w-80 xl:w-96'
+              : 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none border-0'
               }`}
             style={{ scrollbarWidth: 'none' } as React.CSSProperties}
           >

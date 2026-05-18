@@ -45,9 +45,9 @@ import {
 } from '../lib/whiteLabelAdminApi';
 
 const MODE_OPTIONS: Array<{ value: HeroParallaxMode; label: string; description: string }> = [
-    { value: 'off', label: 'Off', description: 'Desliga completamente o movimento do hero.' },
-    { value: 'subtle', label: 'Subtle', description: 'Profundidade suave para validação visual inicial.' },
-    { value: 'standard', label: 'Standard', description: 'Profundidade mais rica para a marca.' },
+    { value: 'off', label: 'Desligado', description: 'Desliga completamente o movimento do hero.' },
+    { value: 'subtle', label: 'Suave', description: 'Profundidade leve para validação visual inicial.' },
+    { value: 'standard', label: 'Padrão', description: 'Profundidade mais rica para a marca.' },
 ];
 
 const BRAND_ACCENTS: Record<string, string> = {
@@ -92,6 +92,22 @@ const DEFAULT_BRAND_IDENTITY: WhiteLabelBrandIdentity = {
     home_hero_image_url: '',
 };
 
+const serializeBrandIdentity = (identity: WhiteLabelBrandIdentity) => JSON.stringify({
+    display_name: identity.display_name,
+    logo_url: identity.logo_url,
+    primary_color: identity.primary_color,
+    light_color: identity.light_color,
+    bg_color: identity.bg_color,
+    accent_color: identity.accent_color,
+    font_family: identity.font_family,
+    green_color: identity.green_color,
+    radius_xl: identity.radius_xl,
+    radius_2xl: identity.radius_2xl,
+    radius_3xl: identity.radius_3xl,
+    login_background_url: identity.login_background_url,
+    home_hero_image_url: identity.home_hero_image_url,
+});
+
 export const AdminWhiteLabelScreen: React.FC = () => {
     const [brands, setBrands] = useState<WhiteLabelBrandRow[]>([]);
     const [selectedBrandId, setSelectedBrandId] = useState<string>('');
@@ -105,11 +121,14 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const [rolloutMetrics, setRolloutMetrics] = useState<WhiteLabelRolloutMetrics>({ enabled_flags: 0, total_changes: 0, changes_24h: 0, last_publish_at: null });
     const [alertingConfig, setAlertingConfig] = useState<WhiteLabelAlertingConfig>(DEFAULT_ALERTING_CONFIG);
     const [brandIdentity, setBrandIdentity] = useState<WhiteLabelBrandIdentity>(DEFAULT_BRAND_IDENTITY);
+    const [brandIdentityBaseline, setBrandIdentityBaseline] = useState(() => serializeBrandIdentity(DEFAULT_BRAND_IDENTITY));
     const [activeTab, setActiveTab] = useState<'identidade' | 'operacoes' | 'auditoria'>('identidade');
     const [alertDispatchHistory, setAlertDispatchHistory] = useState<WhiteLabelAlertDispatchEntry[]>([]);
     const [operationalTimeline, setOperationalTimeline] = useState<WhiteLabelOperationalEvent[]>([]);
     const [healthCheck, setHealthCheck] = useState<WhiteLabelHealthCheck | null>(null);
-    const [reason, setReason] = useState('');
+    const [featureReason, setFeatureReason] = useState('');
+    const [rolloutReason, setRolloutReason] = useState('');
+    const [alertingReason, setAlertingReason] = useState('');
     const [contextChangedAt, setContextChangedAt] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -127,6 +146,18 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         () => brands.find((brand) => brand.id === selectedBrandId) ?? null,
         [brands, selectedBrandId],
     );
+    const activeFeatureCount = useMemo(
+        () => Number(menuMusicEnabled) + Number(heroParallaxEnabled) + Number(contentOfflineEnabled),
+        [contentOfflineEnabled, heroParallaxEnabled, menuMusicEnabled],
+    );
+    const isBrandIdentityDirty = useMemo(
+        () => serializeBrandIdentity(brandIdentity) !== brandIdentityBaseline,
+        [brandIdentity, brandIdentityBaseline],
+    );
+    const derivedRolloutMetrics = useMemo(
+        () => ({ ...rolloutMetrics, enabled_flags: activeFeatureCount }),
+        [activeFeatureCount, rolloutMetrics],
+    );
 
     const selectedBrandLabel = selectedBrand?.display_name || selectedBrand?.name || 'Nenhuma marca';
     const selectedBrandAccent = BRAND_ACCENTS[selectedBrand?.slug ?? 'kaboo'] ?? BRAND_ACCENTS.kaboo;
@@ -137,6 +168,11 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         : rolloutConfig.wave === 'group'
             ? 'Grupo'
             : 'Geral';
+    const heroParallaxModeLabel = heroParallaxMode === 'standard'
+        ? 'Padrão'
+        : heroParallaxMode === 'subtle'
+            ? 'Suave'
+            : 'Desligado';
 
     const operationalAlerts = useMemo(() => {
         const alerts: Array<{ level: 'critical' | 'warning'; title: string; description: string }> = [];
@@ -157,7 +193,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             });
         }
 
-        if (rolloutMetrics.enabled_flags === 0) {
+        if (derivedRolloutMetrics.enabled_flags === 0) {
             alerts.push({
                 level: 'warning',
                 title: 'Nenhuma flag ativa',
@@ -166,7 +202,67 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         }
 
         return alerts;
-    }, [alertingConfig.changes_24h_threshold, alertingConfig.notify_on_general_without_publish, rolloutConfig.wave, rolloutMetrics.changes_24h, rolloutMetrics.enabled_flags, rolloutMetrics.last_publish_at]);
+    }, [alertingConfig.changes_24h_threshold, alertingConfig.notify_on_general_without_publish, derivedRolloutMetrics.enabled_flags, rolloutConfig.wave, rolloutMetrics.changes_24h, rolloutMetrics.last_publish_at]);
+
+    const resolvedHealthStatus = useMemo(() => {
+        if (healthCheck?.status === 'critical' || operationalAlerts.some((alert) => alert.level === 'critical')) {
+            return 'critical';
+        }
+
+        if (healthCheck?.status === 'warning' || operationalAlerts.length > 0) {
+            return 'warning';
+        }
+
+        return 'healthy';
+    }, [healthCheck?.status, operationalAlerts]);
+
+    const healthUpdatedAt = contextChangedAt ?? healthCheck?.timestamp ?? null;
+    const healthSummaryCards = useMemo(() => {
+        const enabledFeatureLabels = [
+            menuMusicEnabled ? 'Áudios' : null,
+            heroParallaxMode !== 'off' ? `Parallax ${heroParallaxModeLabel.toLowerCase()}` : null,
+            contentOfflineEnabled ? 'Offline' : null,
+        ].filter(Boolean) as string[];
+
+        return [
+            {
+                title: 'Feature Flags',
+                value: activeFeatureCount === 0 ? 'Nenhuma ativa' : `${activeFeatureCount} ${activeFeatureCount === 1 ? 'flag ativa' : 'flags ativas'}`,
+                description: enabledFeatureLabels.length > 0 ? enabledFeatureLabels.join(' · ') : 'Nenhuma capacidade habilitada nesta marca.',
+                tone: activeFeatureCount === 0 ? 'warning' : 'positive',
+                icon: <Icons.Settings size={14} />,
+            },
+            {
+                title: 'Rollout & Publicação',
+                value: `Rollout ${rolloutLabel}`,
+                description: publicationState.published_at ? `Versão v${publicationState.version} publicada` : 'Aguardando publicação da versão atual.',
+                tone: publicationState.published_at ? 'positive' : rolloutConfig.wave === 'general' ? 'critical' : 'neutral',
+                icon: <Icons.TrendingUp size={14} />,
+            },
+            {
+                title: 'Alertas Externos',
+                value: alertingConfig.enabled ? 'Operação conectada' : 'Desabilitados',
+                description: alertingConfig.enabled
+                    ? alertingConfig.webhook_url
+                        ? `${alertingConfig.channel || 'Canal sem nome'} · ${alertingConfig.last_dispatch_status === 'error' ? 'último dispatch com erro' : alertingConfig.last_dispatch_status === 'success' ? 'último dispatch entregue' : 'aguardando teste'}`
+                        : 'Webhook pendente de configuração.'
+                    : 'Alertas externos desabilitados (normal).',
+                tone: alertingConfig.enabled
+                    ? alertingConfig.webhook_url
+                        ? alertingConfig.last_dispatch_status === 'error' ? 'warning' : 'positive'
+                        : 'warning'
+                    : 'neutral',
+                icon: <Icons.Send size={14} />,
+            },
+            {
+                title: 'Integridade de Métricas',
+                value: `${derivedRolloutMetrics.changes_24h} mudança(s) nas últimas 24h`,
+                description: `${derivedRolloutMetrics.total_changes} alteração(ões) totais monitoradas.`,
+                tone: derivedRolloutMetrics.changes_24h >= alertingConfig.changes_24h_threshold ? 'warning' : 'positive',
+                icon: <Icons.BarChart3 size={14} />,
+            },
+        ];
+    }, [activeFeatureCount, alertingConfig.changes_24h_threshold, alertingConfig.channel, alertingConfig.enabled, alertingConfig.last_dispatch_status, alertingConfig.webhook_url, contentOfflineEnabled, derivedRolloutMetrics.changes_24h, derivedRolloutMetrics.total_changes, heroParallaxMode, heroParallaxModeLabel, menuMusicEnabled, publicationState.published_at, publicationState.version, rolloutConfig.wave, rolloutLabel]);
 
     const operationalAlertPayload = useMemo(() => {
         return {
@@ -175,7 +271,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                 wave: rolloutConfig.wave,
                 last_changed_at: rolloutConfig.last_changed_at,
             },
-            metrics: rolloutMetrics,
+            metrics: derivedRolloutMetrics,
             active_alerts: operationalAlerts,
             destination: {
                 channel: alertingConfig.channel,
@@ -183,20 +279,20 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             },
             generated_at: new Date().toISOString(),
         };
-    }, [alertingConfig.channel, alertingConfig.webhook_url, operationalAlerts, rolloutConfig.last_changed_at, rolloutConfig.wave, rolloutMetrics, selectedBrand]);
+    }, [alertingConfig.channel, alertingConfig.webhook_url, derivedRolloutMetrics, operationalAlerts, rolloutConfig.last_changed_at, rolloutConfig.wave, selectedBrand]);
 
     const activeAlertSignature = useMemo(() => {
         return JSON.stringify({
             brandId: selectedBrandId,
             wave: rolloutConfig.wave,
             metrics: {
-                enabled_flags: rolloutMetrics.enabled_flags,
-                changes_24h: rolloutMetrics.changes_24h,
-                last_publish_at: rolloutMetrics.last_publish_at,
+                enabled_flags: derivedRolloutMetrics.enabled_flags,
+                changes_24h: derivedRolloutMetrics.changes_24h,
+                last_publish_at: derivedRolloutMetrics.last_publish_at,
             },
             alerts: operationalAlerts,
         });
-    }, [operationalAlerts, rolloutConfig.wave, rolloutMetrics.changes_24h, rolloutMetrics.enabled_flags, rolloutMetrics.last_publish_at, selectedBrandId]);
+    }, [derivedRolloutMetrics.changes_24h, derivedRolloutMetrics.enabled_flags, derivedRolloutMetrics.last_publish_at, operationalAlerts, rolloutConfig.wave, selectedBrandId]);
 
     const alertPayloadPreview = useMemo(() => {
         return JSON.stringify(operationalAlertPayload, null, 2);
@@ -210,13 +306,18 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     }, []);
 
     const hydrateBrandFeatures = useCallback(async (brandId: string) => {
+        let loadedIdentity = DEFAULT_BRAND_IDENTITY;
+
         try {
             const identity = await getWhiteLabelBrandIdentity(brandId);
+            loadedIdentity = identity;
             setBrandIdentity(identity);
         } catch (err) {
             console.error('[AdminWhiteLabelScreen] brand identity load error:', err);
             setBrandIdentity(DEFAULT_BRAND_IDENTITY);
         }
+
+        setBrandIdentityBaseline(serializeBrandIdentity(loadedIdentity));
 
         const features = await getWhiteLabelFeatures(brandId, ['menu.music', 'hero.parallax', 'content.offline']);
         setMenuMusicEnabled(features['menu.music']?.enabled ?? true);
@@ -379,8 +480,33 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         };
     }, [activeAlertSignature, alertingConfig.enabled, alertingConfig.last_live_alert_signature, alertingConfig.webhook_url, loading, operationalAlertPayload, operationalAlerts, saving, selectedBrandId]);
 
+    useEffect(() => {
+        if (activeTab !== 'identidade' || !isBrandIdentityDirty) {
+            return;
+        }
+
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = '';
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [activeTab, isBrandIdentityDirty]);
+
     const selectBrand = async (brandId: string) => {
         if (brandId === selectedBrandId || saving) {
+            return;
+        }
+
+        if (
+            activeTab === 'identidade'
+            && isBrandIdentityDirty
+            && typeof window !== 'undefined'
+            && !window.confirm('Você tem alterações não salvas na identidade visual. Deseja descartá-las e trocar de marca?')
+        ) {
             return;
         }
 
@@ -420,7 +546,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                 featureKey,
                 enabled,
                 config,
-                reason: reason.trim() || undefined,
+                reason: featureReason.trim() || undefined,
             });
             await hydrateBrandFeatures(selectedBrandId);
         } catch (err) {
@@ -458,6 +584,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             });
 
             setBrandIdentity(updatedIdentity);
+            setBrandIdentityBaseline(serializeBrandIdentity(updatedIdentity));
 
             const loadedBrands = await listWhiteLabelBrands();
             setBrands(loadedBrands);
@@ -521,7 +648,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                 featureKey: entry.feature_key,
                 enabled: entry.enabled_before,
                 config: entry.config_before ?? {},
-                reason: reason.trim() || `Rollback da auditoria ${entry.id}`,
+                reason: featureReason.trim() || `Rollback da auditoria ${entry.id}`,
             });
             await hydrateBrandFeatures(selectedBrandId);
         } catch (err) {
@@ -534,11 +661,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
     const publishCurrentVersion = async () => {
         if (!selectedBrandId || saving) {
-            return;
-        }
-
-        if (!reason.trim()) {
-            setError('Informe o motivo da publicação para auditoria operacional.');
             return;
         }
 
@@ -563,7 +685,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             return;
         }
 
-        if (!reason.trim()) {
+        if (!rolloutReason.trim()) {
             setError('Informe o motivo da mudança de onda para governança.');
             return;
         }
@@ -579,12 +701,13 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             const nextConfig = await setWhiteLabelRolloutWave({
                 brandId: selectedBrandId,
                 wave,
-                reason: reason.trim(),
+                reason: rolloutReason.trim(),
             });
             setRolloutConfig(nextConfig);
             const metrics = await getWhiteLabelRolloutMetrics(selectedBrandId);
             setRolloutMetrics(metrics);
             const waveLabel = wave === 'pilot' ? 'Piloto' : wave === 'group' ? 'Grupo' : 'Geral';
+            setRolloutReason('');
             showToast(`Rollout alterado para ${waveLabel}!`, 'success');
         } catch (err) {
             setError('Falha ao atualizar a onda de rollout.');
@@ -600,7 +723,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             return;
         }
 
-        if (!reason.trim()) {
+        if (!alertingReason.trim()) {
             setError('Informe o motivo da mudança de alertas externos.');
             return;
         }
@@ -615,7 +738,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                 channel: alertingConfig.channel,
                 changes_24h_threshold: alertingConfig.changes_24h_threshold,
                 notify_on_general_without_publish: alertingConfig.notify_on_general_without_publish,
-                reason: reason.trim(),
+                reason: alertingReason.trim(),
             });
             setAlertingConfig(nextConfig);
             const dispatchHistory = await getWhiteLabelAlertDispatchHistory(selectedBrandId);
@@ -633,7 +756,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             return;
         }
 
-        if (!reason.trim()) {
+        if (!alertingReason.trim()) {
             setError('Informe o motivo para enviar o teste de alerta.');
             return;
         }
@@ -644,7 +767,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             const result = await dispatchWhiteLabelAlertTest({
                 brandId: selectedBrandId,
                 payload: operationalAlertPayload as Record<string, unknown>,
-                reason: reason.trim(),
+                reason: alertingReason.trim(),
             });
             setAlertingConfig(result.config);
             setAlertDispatchHistory(result.history);
@@ -661,7 +784,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             return;
         }
 
-        if (!reason.trim()) {
+        if (!alertingReason.trim()) {
             setError('Informe o motivo para disparar alertas operacionais.');
             return;
         }
@@ -678,7 +801,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                 brandId: selectedBrandId,
                 payload: operationalAlertPayload as Record<string, unknown>,
                 alertSignature: activeAlertSignature,
-                reason: reason.trim(),
+                reason: alertingReason.trim(),
             });
             setAlertingConfig(result.config);
             setAlertDispatchHistory(result.history);
@@ -695,53 +818,68 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             <div className="mx-auto max-w-6xl space-y-5">
                 {/* ─── Health Check ─── */}
                 {healthCheck && (
-                    <section className={`rounded-[28px] border-2 p-5 md:p-6 ${healthCheck.status === 'critical' ? 'border-red-200 bg-red-50' :
-                        healthCheck.status === 'warning' ? 'border-yellow-200 bg-yellow-50' :
-                            'border-green-200 bg-green-50'
-                        }`}>
-                        <div className="flex flex-col gap-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className={`rounded-full p-2 ${healthCheck.status === 'critical' ? 'bg-red-100' :
-                                        healthCheck.status === 'warning' ? 'bg-yellow-100' :
-                                            'bg-green-100'
+                    <section className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-sm">
+                        <div className={`h-1.5 w-full bg-gradient-to-r ${selectedBrandAccent}`} />
+                        <div className="p-5 md:p-6">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className={`flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border ${resolvedHealthStatus === 'critical'
+                                        ? 'border-red-200 bg-red-50'
+                                        : resolvedHealthStatus === 'warning'
+                                            ? 'border-amber-200 bg-amber-50'
+                                            : 'border-emerald-200 bg-emerald-50'
                                         }`}>
-                                        {healthCheck.status === 'critical' ? (
-                                            <Icons.AlertTriangle size={18} className="text-red-600" />
-                                        ) : healthCheck.status === 'warning' ? (
-                                            <Icons.AlertCircle size={18} className="text-yellow-600" />
-                                        ) : (
-                                            <Icons.CheckCircle size={18} className="text-green-600" />
-                                        )}
+                                        <img src={brandPreviewLogo} alt={selectedBrandLabel} className="h-8 w-8 object-contain" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-black tracking-tight text-gray-900">
-                                            {healthCheck.status === 'critical' ? 'Crítico' :
-                                                healthCheck.status === 'warning' ? 'Aviso' :
-                                                    'Saudável'}
-                                        </h3>
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Resumo operacional</p>
+                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                            <h3 className="text-lg font-black tracking-tight text-gray-900">{selectedBrandLabel}</h3>
+                                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${resolvedHealthStatus === 'critical'
+                                                ? 'bg-red-50 text-red-700'
+                                                : resolvedHealthStatus === 'warning'
+                                                    ? 'bg-amber-50 text-amber-700'
+                                                    : 'bg-emerald-50 text-emerald-700'
+                                                }`}>
+                                                {resolvedHealthStatus === 'critical' ? 'Crítico' : resolvedHealthStatus === 'warning' ? 'Atenção' : 'Saudável'}
+                                            </span>
+                                        </div>
+                                        <p className="mt-1 text-sm text-gray-500">Visão rápida das decisões operacionais visíveis nesta marca.</p>
                                     </div>
                                 </div>
-                                <span className="text-xs text-gray-500">
-                                    {new Date(healthCheck.timestamp).toLocaleTimeString('pt-BR')}
-                                </span>
+                                {healthUpdatedAt && (
+                                    <span className="text-xs text-gray-500">Atualizado às {new Date(healthUpdatedAt).toLocaleTimeString('pt-BR')}</span>
+                                )}
                             </div>
-                            <div className="space-y-2">
-                                {healthCheck.checks.map((check) => (
-                                    <div key={check.name} className="flex items-center gap-3 rounded-lg bg-white/60 p-3 text-sm">
-                                        <div>
-                                            {check.status === 'pass' ? (
-                                                <Icons.Check size={16} className="text-green-600" />
-                                            ) : check.status === 'warn' ? (
-                                                <Icons.AlertCircle size={16} className="text-yellow-600" />
-                                            ) : (
-                                                <Icons.X size={16} className="text-red-600" />
-                                            )}
+
+                            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                {healthSummaryCards.map((card) => (
+                                    <div
+                                        key={card.title}
+                                        className={`rounded-2xl border px-4 py-3 ${card.tone === 'critical'
+                                            ? 'border-red-200 bg-red-50'
+                                            : card.tone === 'warning'
+                                                ? 'border-amber-200 bg-amber-50'
+                                                : card.tone === 'positive'
+                                                    ? 'border-emerald-200 bg-emerald-50'
+                                                    : 'border-gray-200 bg-gray-50'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                                            <span className={`${card.tone === 'critical'
+                                                ? 'text-red-600'
+                                                : card.tone === 'warning'
+                                                    ? 'text-amber-600'
+                                                    : card.tone === 'positive'
+                                                        ? 'text-emerald-600'
+                                                        : 'text-gray-500'
+                                                }`}>
+                                                {card.icon}
+                                            </span>
+                                            {card.title}
                                         </div>
-                                        <div className="flex flex-col gap-1">
-                                            <span className="font-bold text-gray-900">{check.name}</span>
-                                            <span className="text-xs text-gray-600">{check.message}</span>
-                                        </div>
+                                        <p className="mt-3 text-base font-black tracking-tight text-gray-900">{card.value}</p>
+                                        <p className="mt-1 text-xs leading-relaxed text-gray-600">{card.description}</p>
                                     </div>
                                 ))}
                             </div>
@@ -781,8 +919,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                         type="button"
                                         onClick={() => selectBrand(brand.id)}
                                         className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${active
-                                            ? 'border-kaboo-primary bg-kaboo-primary text-white shadow-md'
-                                            : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-kaboo-primary/40 hover:bg-gray-100'
+                                            ? 'border-brand-primary bg-brand-primary text-white shadow-md'
+                                            : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-brand-primary/40 hover:bg-gray-100'
                                             }`}
                                         disabled={loading || saving}
                                     >
@@ -813,6 +951,12 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                             </div>
                         )}
                     </div>
+
+                    {contextChangedAt && (
+                        <p className="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-400">
+                            Contexto sincronizado às {new Date(contextChangedAt).toLocaleTimeString('pt-BR')}.
+                        </p>
+                    )}
                 </section>
 
                 {/* ─── Tabs + Content ─── */}
@@ -829,7 +973,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                     type="button"
                                     onClick={() => setActiveTab(tab.key)}
                                     className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold transition-colors ${activeTab === tab.key
-                                        ? 'border-kaboo-primary text-kaboo-primary'
+                                        ? 'border-brand-primary text-brand-primary'
                                         : 'border-transparent text-gray-400 hover:text-gray-600'
                                         }`}
                                 >
@@ -857,7 +1001,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     value={brandIdentity.display_name}
                                                     onChange={(event) => updateBrandIdentityField('display_name', event.target.value)}
                                                     placeholder="Ex.: Central Coruja"
-                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
                                                     disabled={loading || saving}
                                                 />
                                             </div>
@@ -871,7 +1015,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     value={brandIdentity.font_family}
                                                     onChange={(event) => updateBrandIdentityField('font_family', event.target.value)}
                                                     placeholder="Ex.: Nunito, Poppins"
-                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
                                                     disabled={loading || saving}
                                                 />
                                             </div>
@@ -981,7 +1125,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     value={brandIdentity.radius_xl}
                                                     onChange={(event) => updateBrandIdentityField('radius_xl', event.target.value)}
                                                     placeholder="1rem"
-                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
                                                     disabled={loading || saving}
                                                 />
                                             </div>
@@ -995,7 +1139,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     value={brandIdentity.radius_2xl}
                                                     onChange={(event) => updateBrandIdentityField('radius_2xl', event.target.value)}
                                                     placeholder="1.5rem"
-                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
                                                     disabled={loading || saving}
                                                 />
                                             </div>
@@ -1009,7 +1153,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     value={brandIdentity.radius_3xl}
                                                     onChange={(event) => updateBrandIdentityField('radius_3xl', event.target.value)}
                                                     placeholder="2rem"
-                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
                                                     disabled={loading || saving}
                                                 />
                                             </div>
@@ -1017,6 +1161,11 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                     </div>
 
                                     {/* Salvar identidade */}
+                                    {isBrandIdentityDirty && (
+                                        <p className="text-sm font-semibold text-amber-700">
+                                            Você tem alterações não salvas na identidade visual.
+                                        </p>
+                                    )}
                                     <Button
                                         variant="secondary"
                                         onClick={saveBrandIdentity}
@@ -1114,183 +1263,185 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
                         {/* ═══ Tab: Operações ═══ */}
                         {activeTab === 'operacoes' && (
-                            <div className="grid gap-5 lg:grid-cols-2">
-                                {/* Feature Flags */}
+                            <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
                                 <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-5">
-                                    <h3 className="text-lg font-bold text-gray-900">Feature Flags</h3>
-
-                                    {/* Music toggle */}
-                                    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900">Menu: Músicas</p>
-                                                <p className="mt-1 text-sm text-gray-500">
-                                                    Liga ou desliga o item de menu músicas para a marca.
-                                                </p>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                role="switch"
-                                                aria-checked={menuMusicEnabled}
-                                                onClick={() => persistFeature('menu.music', !menuMusicEnabled, {})}
-                                                className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${menuMusicEnabled ? 'bg-kaboo-primary' : 'bg-gray-300'}`}
-                                                disabled={loading || saving || !selectedBrand}
-                                            >
-                                                <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${menuMusicEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
-                                            </button>
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-900">Feature Flags</h3>
+                                            <p className="mt-1 text-sm text-gray-500">Ative capacidades da marca e aplique presets sem duplicar controles.</p>
                                         </div>
+                                        <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-600">
+                                            {activeFeatureCount} ativa(s)
+                                        </span>
                                     </div>
 
-                                    {/* Parallax toggle */}
-                                    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900">Hero Parallax</p>
-                                                <p className="mt-1 text-sm text-gray-500">
-                                                    Efeito parallax do hero para a marca selecionada.
-                                                </p>
+                                    <div className="space-y-3">
+                                        <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900">Menu: Áudios</p>
+                                                    <p className="mt-1 text-sm text-gray-500">Liga ou desliga o item de menu de áudios para a marca.</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-checked={menuMusicEnabled}
+                                                    onClick={() => persistFeature('menu.music', !menuMusicEnabled, {})}
+                                                    className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${menuMusicEnabled ? 'bg-brand-primary' : 'bg-gray-300'}`}
+                                                    disabled={loading || saving || !selectedBrand}
+                                                >
+                                                    <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${menuMusicEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+                                                </button>
                                             </div>
-                                            <button
-                                                type="button"
-                                                role="switch"
-                                                aria-checked={heroParallaxEnabled}
-                                                onClick={() => {
-                                                    const nextEnabled = !heroParallaxEnabled;
-                                                    const nextMode: HeroParallaxMode = nextEnabled ? (heroParallaxMode === 'off' ? 'subtle' : heroParallaxMode) : 'off';
-                                                    persistFeature('hero.parallax', nextEnabled, { mode: nextMode });
-                                                }}
-                                                className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${heroParallaxEnabled ? 'bg-kaboo-primary' : 'bg-gray-300'}`}
-                                                disabled={loading || saving || !selectedBrand}
-                                            >
-                                                <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${heroParallaxEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
-                                            </button>
                                         </div>
-                                    </div>
 
-                                    {/* Parallax mode */}
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-900">Modo do Parallax</p>
-                                        <div className="mt-2 space-y-2">
-                                            {MODE_OPTIONS.map((option) => {
-                                                const isSelected = heroParallaxMode === option.value;
-                                                return (
-                                                    <button
-                                                        key={option.value}
-                                                        type="button"
-                                                        onClick={() => persistFeature('hero.parallax', option.value !== 'off', { mode: option.value })}
-                                                        className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${isSelected
-                                                            ? 'border-kaboo-primary bg-kaboo-primary/[0.05] text-kaboo-primary'
-                                                            : 'border-gray-200 bg-white text-gray-700 hover:border-kaboo-primary/25'
-                                                            }`}
-                                                        disabled={loading || saving || !selectedBrand}
-                                                    >
-                                                        <div className="flex items-start justify-between gap-4">
-                                                            <div>
-                                                                <p className="text-sm font-bold">{option.label}</p>
-                                                                <p className="mt-1 text-xs text-gray-500">{option.description}</p>
+                                        <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900">Hero Parallax</p>
+                                                    <p className="mt-1 text-sm text-gray-500">Escolha a intensidade do movimento do hero para esta marca.</p>
+                                                </div>
+                                                <span className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600">
+                                                    {heroParallaxModeLabel}
+                                                </span>
+                                            </div>
+                                            <div className="mt-3 grid gap-2 md:grid-cols-3">
+                                                {MODE_OPTIONS.map((option) => {
+                                                    const isSelected = heroParallaxMode === option.value;
+                                                    return (
+                                                        <button
+                                                            key={option.value}
+                                                            type="button"
+                                                            onClick={() => persistFeature('hero.parallax', option.value !== 'off', { mode: option.value })}
+                                                            className={`rounded-2xl border px-4 py-3 text-left transition-all ${isSelected
+                                                                ? 'border-brand-primary bg-brand-primary/[0.05] text-brand-primary'
+                                                                : 'border-gray-200 bg-white text-gray-700 hover:border-brand-primary/25'
+                                                                }`}
+                                                            disabled={loading || saving || !selectedBrand}
+                                                        >
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div>
+                                                                    <p className="text-sm font-bold">{option.label}</p>
+                                                                    <p className="mt-1 text-xs text-gray-500">{option.description}</p>
+                                                                </div>
+                                                                {isSelected && <Icons.Check size={16} className="mt-0.5 shrink-0" />}
                                                             </div>
-                                                            {isSelected && <Icons.Check size={16} className="mt-1 shrink-0" />}
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* Offline toggle */}
-                                    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900">Download Offline</p>
-                                                <p className="mt-1 text-sm text-gray-500">
-                                                    Permite que usuários baixem conteúdos para uso sem internet.
-                                                </p>
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
-                                            <button
-                                                type="button"
-                                                role="switch"
-                                                aria-checked={contentOfflineEnabled}
-                                                onClick={() => persistFeature('content.offline', !contentOfflineEnabled, {})}
-                                                className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${contentOfflineEnabled ? 'bg-kaboo-primary' : 'bg-gray-300'}`}
-                                                disabled={loading || saving || !selectedBrand}
-                                            >
-                                                <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${contentOfflineEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
-                                            </button>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900">Download Offline</p>
+                                                    <p className="mt-1 text-sm text-gray-500">Permite que usuários baixem conteúdos para uso sem internet.</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-checked={contentOfflineEnabled}
+                                                    onClick={() => persistFeature('content.offline', !contentOfflineEnabled, {})}
+                                                    className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${contentOfflineEnabled ? 'bg-brand-primary' : 'bg-gray-300'}`}
+                                                    disabled={loading || saving || !selectedBrand}
+                                                >
+                                                    <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${contentOfflineEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* Reason */}
                                     <div>
-                                        <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="flag-reason">
-                                            Motivo da mudança
+                                        <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="feature-reason">
+                                            Contexto da alteração
                                         </label>
                                         <textarea
-                                            id="flag-reason"
-                                            value={reason}
-                                            onChange={(event) => setReason(event.target.value)}
-                                            placeholder="Ex.: Desligar música para piloto da Central Coruja"
-                                            className="min-h-[80px] w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition-colors focus:border-kaboo-primary/40"
+                                            id="feature-reason"
+                                            value={featureReason}
+                                            onChange={(event) => setFeatureReason(event.target.value)}
+                                            placeholder="Opcional. Ex.: piloto sem catálogo de música."
+                                            className="min-h-[88px] w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
                                         />
+                                        <p className="mt-1 text-xs text-gray-400">Quando informado, o contexto acompanha mudanças de feature e presets.</p>
                                     </div>
 
-                                    {/* Presets */}
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="secondary"
-                                            onClick={applyCorujaPreset}
-                                            disabled={loading || saving || selectedBrand?.slug !== 'central-coruja'}
-                                        >
-                                            Preset Coruja
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            onClick={applyKabooBaseline}
-                                            disabled={loading || saving || selectedBrand?.slug !== 'kaboo'}
-                                        >
-                                            Baseline Kaboo
-                                        </Button>
+                                    <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900">Presets rápidos</p>
+                                                <p className="mt-1 text-xs text-gray-500">Atalhos para voltar ao baseline esperado de cada marca.</p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                    variant="secondary"
+                                                    onClick={applyCorujaPreset}
+                                                    disabled={loading || saving || selectedBrand?.slug !== 'central-coruja'}
+                                                >
+                                                    Preset Coruja
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    onClick={applyKabooBaseline}
+                                                    disabled={loading || saving || selectedBrand?.slug !== 'kaboo'}
+                                                >
+                                                    Baseline Kaboo
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Rollout + Publication + Metrics + Alerts */}
                                 <div className="space-y-5">
-                                    {/* Publication */}
                                     <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
-                                        <h3 className="text-lg font-bold text-gray-900">Publicação</h3>
-                                        <div className="mt-3 flex items-center justify-between gap-3">
-                                            <div className="text-sm text-gray-600">
-                                                <p>Versão: <span className="font-bold text-gray-900">v{publicationState.version}</span></p>
-                                                <p className="mt-1">
+                                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                            <div>
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">Publicação</p>
+                                                <h3 className="mt-1 text-lg font-bold text-gray-900">
+                                                    {publicationState.published_at ? `Versão v${publicationState.version} publicada` : 'Versão pronta para publicar'}
+                                                </h3>
+                                                <p className="mt-1 text-sm text-gray-500">
                                                     {publicationState.published_at
                                                         ? `Publicada em ${new Date(publicationState.published_at).toLocaleString('pt-BR')}`
-                                                        : 'Não publicada'}
+                                                        : 'A publicação registra data e versão automaticamente nesta integração.'}
                                                 </p>
                                             </div>
                                             <Button
-                                                variant="secondary"
+                                                variant="primary"
                                                 onClick={publishCurrentVersion}
                                                 disabled={loading || saving || !selectedBrand || !isAdminUser}
                                                 title={!isAdminUser ? 'Apenas administradores podem publicar' : undefined}
+                                                className="min-w-[160px]"
                                             >
-                                                Publicar
+                                                {publicationState.published_at ? 'Publicar nova versão' : 'Publicar agora'}
                                             </Button>
                                         </div>
                                     </div>
 
-                                    {/* Rollout */}
                                     <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                                         <div>
                                             <h3 className="text-lg font-bold text-gray-900">Rollout por Ondas</h3>
                                             <p className="mt-1 text-sm text-gray-500">
-                                                Onda atual: <span className="font-bold uppercase text-gray-900">{rolloutConfig.wave}</span>
-                                                {rolloutConfig.last_changed_at && (
-                                                    <span> · {new Date(rolloutConfig.last_changed_at).toLocaleString('pt-BR')}</span>
-                                                )}
+                                                Escolha a etapa de exposição da marca e registre o motivo da mudança no mesmo bloco.
                                             </p>
                                             {rolloutConfig.last_reason && (
-                                                <p className="mt-1 text-xs text-gray-400">Motivo: {rolloutConfig.last_reason}</p>
+                                                <p className="mt-2 text-xs text-gray-400">Último motivo salvo: {rolloutConfig.last_reason}</p>
                                             )}
                                         </div>
+
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="rollout-reason">
+                                                Motivo da mudança de onda
+                                            </label>
+                                            <textarea
+                                                id="rollout-reason"
+                                                value={rolloutReason}
+                                                onChange={(event) => setRolloutReason(event.target.value)}
+                                                placeholder="Ex.: ampliar rollout após validação do piloto."
+                                                className="min-h-[88px] w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
+                                            />
+                                        </div>
+
                                         <div className="grid gap-2">
                                             {ROLLOUT_WAVES.map((wave) => {
                                                 const active = rolloutConfig.wave === wave.value;
@@ -1301,22 +1452,25 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                         onClick={() => changeRolloutWave(wave.value)}
                                                         disabled={loading || saving || !selectedBrand}
                                                         className={`w-full rounded-2xl border px-3 py-2 text-left transition-colors ${active
-                                                            ? 'border-kaboo-primary bg-kaboo-primary/[0.06]'
-                                                            : 'border-gray-200 bg-white hover:border-kaboo-primary/25'
+                                                            ? 'border-brand-primary bg-brand-primary/[0.06]'
+                                                            : 'border-gray-200 bg-white hover:border-brand-primary/25'
                                                             }`}
                                                     >
                                                         <div className="flex items-center justify-between gap-3">
                                                             <p className="text-sm font-bold text-gray-800">{wave.label}</p>
-                                                            {active && <Icons.Check size={14} className="text-kaboo-primary" />}
+                                                            {active && <Icons.Check size={14} className="text-brand-primary" />}
                                                         </div>
                                                         <p className="mt-1 text-xs text-gray-500">{wave.description}</p>
                                                     </button>
                                                 );
                                             })}
                                         </div>
+
+                                        {rolloutConfig.wave !== 'general' && !publicationState.published_at && (
+                                            <p className="text-xs text-amber-700">Rollout geral só fica disponível depois da publicação da versão atual.</p>
+                                        )}
                                     </div>
 
-                                    {/* Metrics */}
                                     <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
                                         <div className="flex items-center gap-2">
                                             <Icons.BarChart3 size={16} className="text-gray-400" />
@@ -1324,21 +1478,20 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                         </div>
                                         <div className="mt-3 grid grid-cols-3 gap-2">
                                             <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
-                                                <p className="text-lg font-black text-gray-800">{rolloutMetrics.enabled_flags}</p>
+                                                <p className="text-lg font-black text-gray-800">{derivedRolloutMetrics.enabled_flags}</p>
                                                 <p className="text-[11px] text-gray-400">Flags ativas</p>
                                             </div>
                                             <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
-                                                <p className="text-lg font-black text-gray-800">{rolloutMetrics.changes_24h}</p>
+                                                <p className="text-lg font-black text-gray-800">{derivedRolloutMetrics.changes_24h}</p>
                                                 <p className="text-[11px] text-gray-400">Mudanças 24h</p>
                                             </div>
                                             <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
-                                                <p className="text-lg font-black text-gray-800">{rolloutMetrics.total_changes}</p>
+                                                <p className="text-lg font-black text-gray-800">{derivedRolloutMetrics.total_changes}</p>
                                                 <p className="text-[11px] text-gray-400">Total</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Operational Alerts */}
                                     <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
                                         <h3 className="text-lg font-bold text-gray-900">Alertas operacionais</h3>
                                         <div className="mt-3">
@@ -1368,13 +1521,12 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* External Alerting */}
                                     <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                                         <div>
                                             <h3 className="text-lg font-bold text-gray-900">Alertas externos</h3>
-                                            <p className="mt-1 text-sm text-gray-500">Webhook e canal operacional por marca.</p>
+                                            <p className="mt-1 text-sm text-gray-500">Webhook, canal e disparos operacionais por marca.</p>
                                             {alertingConfig.last_reason && (
-                                                <p className="mt-1 text-xs text-gray-400">Último motivo: {alertingConfig.last_reason}</p>
+                                                <p className="mt-2 text-xs text-gray-400">Último motivo salvo: {alertingConfig.last_reason}</p>
                                             )}
                                         </div>
 
@@ -1387,7 +1539,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                 type="checkbox"
                                                 checked={alertingConfig.enabled}
                                                 onChange={(event) => setAlertingConfig((current) => ({ ...current, enabled: event.target.checked }))}
-                                                className="h-4 w-4 accent-kaboo-primary"
+                                                className="h-4 w-4 accent-brand-primary"
                                                 disabled={loading || saving || !selectedBrand}
                                             />
                                         </label>
@@ -1400,7 +1552,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     value={alertingConfig.webhook_url}
                                                     onChange={(event) => setAlertingConfig((current) => ({ ...current, webhook_url: event.target.value }))}
                                                     placeholder="https://hooks.exemplo.com/white-label"
-                                                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-kaboo-primary/40"
+                                                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand-primary/40"
                                                     disabled={loading || saving || !selectedBrand}
                                                 />
                                             </div>
@@ -1412,7 +1564,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                         value={alertingConfig.channel}
                                                         onChange={(event) => setAlertingConfig((current) => ({ ...current, channel: event.target.value }))}
                                                         placeholder="ops-central-coruja"
-                                                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-kaboo-primary/40"
+                                                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand-primary/40"
                                                         disabled={loading || saving || !selectedBrand}
                                                     />
                                                 </div>
@@ -1423,7 +1575,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                         min={1}
                                                         value={alertingConfig.changes_24h_threshold}
                                                         onChange={(event) => setAlertingConfig((current) => ({ ...current, changes_24h_threshold: Number(event.target.value || 1) }))}
-                                                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-kaboo-primary/40"
+                                                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand-primary/40"
                                                         disabled={loading || saving || !selectedBrand}
                                                     />
                                                 </div>
@@ -1435,11 +1587,24 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                 type="checkbox"
                                                 checked={alertingConfig.notify_on_general_without_publish}
                                                 onChange={(event) => setAlertingConfig((current) => ({ ...current, notify_on_general_without_publish: event.target.checked }))}
-                                                className="h-4 w-4 accent-kaboo-primary"
+                                                className="h-4 w-4 accent-brand-primary"
                                                 disabled={loading || saving || !selectedBrand}
                                             />
                                             Notificar rollout geral sem publicação
                                         </label>
+
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="alerting-reason">
+                                                Motivo da ação operacional
+                                            </label>
+                                            <textarea
+                                                id="alerting-reason"
+                                                value={alertingReason}
+                                                onChange={(event) => setAlertingReason(event.target.value)}
+                                                placeholder="Obrigatório para salvar, testar ou disparar alertas."
+                                                className="min-h-[88px] w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
+                                            />
+                                        </div>
 
                                         <div className="flex flex-wrap gap-2">
                                             <Button
@@ -1458,7 +1623,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                 Enviar teste
                                             </Button>
                                             <Button
-                                                variant="secondary"
+                                                variant="primary"
                                                 onClick={sendOperationalAlerts}
                                                 disabled={loading || saving || !selectedBrand || !alertingConfig.enabled || !alertingConfig.webhook_url || operationalAlerts.length === 0}
                                             >
@@ -1523,7 +1688,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                                 type="button"
                                                                 onClick={() => rollbackAuditEntry(entry)}
                                                                 disabled={saving || loading || entry.enabled_before === null}
-                                                                className="inline-flex items-center gap-1.5 rounded-full border border-kaboo-primary/25 px-3 py-1 text-[11px] font-bold text-kaboo-primary transition-colors hover:bg-kaboo-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                className="inline-flex items-center gap-1.5 rounded-full border border-brand-primary/25 px-3 py-1 text-[11px] font-bold text-brand-primary transition-colors hover:bg-brand-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
                                                             >
                                                                 <Icons.RotateCcw size={12} />
                                                                 Reverter

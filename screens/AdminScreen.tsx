@@ -18,7 +18,7 @@ interface AdminScreenProps {
 const MODULE_META: Record<AdminModule, { icon: React.FC<{ className?: string }>; label: string }> = {
     collections: { icon: Icons.Library, label: 'Coleções' },
     videos: { icon: Icons.Video, label: 'Vídeos' },
-    music: { icon: Icons.Headphones, label: 'Músicas' },
+    music: { icon: Icons.Headphones, label: 'Áudios' },
     formations: { icon: Icons.BookOpen, label: 'Formações' },
     materials: { icon: Icons.FileText, label: 'Materiais' },
     users: { icon: Icons.User, label: 'Usuários' },
@@ -73,7 +73,7 @@ const AdminSidebar: React.FC<{
                         className={`
               w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors
               ${isActive
-                                ? 'bg-kaboo-primary/10 text-kaboo-primary border-r-2 border-kaboo-primary'
+                                ? 'bg-brand-primary/10 text-brand-primary border-r-2 border-brand-primary'
                                 : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                             }
               ${collapsed ? 'justify-center' : ''}
@@ -108,7 +108,7 @@ const AdminTabBar: React.FC<{
                         key={mod}
                         onClick={() => onSelect(mod)}
                         className={`shrink-0 flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-3 text-xs font-medium transition-colors border-b-2 ${isActive
-                            ? 'text-kaboo-primary border-kaboo-primary'
+                            ? 'text-brand-primary border-brand-primary'
                             : 'text-gray-500 border-transparent hover:text-gray-700'
                             }`}
                     >

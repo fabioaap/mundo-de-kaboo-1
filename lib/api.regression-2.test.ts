@@ -155,4 +155,39 @@ describe('api collection-backed media hub bridge', () => {
     expect(guideItem?.kind).toBe('training');
     expect(readingItem?.kind).toBe('document');
   });
+
+  it('keeps asset titles and prefers the collection primary cover for collection-backed thumbnails', async () => {
+    stubBrowserStorage();
+    const { api } = await import('./api');
+
+    const initialCollections = await api.getCollections();
+    const targetCollection = initialCollections[0];
+
+    if (!targetCollection) {
+      throw new Error('Expected a seeded collection to validate hub thumbnails');
+    }
+
+    await api.updateCollection(targetCollection.id, {
+      collection_type: 'kit',
+      cover_image: 'https://cdn.example.com/primary-cover.jpg',
+      kit_cover_image: 'https://cdn.example.com/secondary-kit-cover.jpg',
+      collection_assets: [
+        {
+          id: 'bug-thumb-priority-video',
+          category: 'animation',
+          media_type: 'video',
+          title: 'BUG-THUMB Video Principal',
+          url: 'https://cdn.example.com/bug-thumb-video.mp4',
+          scope: 'primary',
+        },
+      ],
+    });
+
+    const videosHub = await api.getMediaHub('videos');
+    const videoCard = findHubCard(videosHub, 'BUG-THUMB Video Principal');
+
+    expect(videoCard?.title).toBe('BUG-THUMB Video Principal');
+    expect(videoCard?.collectionTitle).toBe(targetCollection.title);
+    expect(videoCard?.thumbnailUrl).toBe('https://cdn.example.com/primary-cover.jpg');
+  });
 });

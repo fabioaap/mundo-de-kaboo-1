@@ -70,7 +70,7 @@ import {
   normalizeVoucherCode,
 } from './access';
 import { getActiveGrantsForUser, hasGrantForCollection } from './mockVoucherData';
-import { normalizeSingleKitBookIds } from './collectionPresentation';
+import { getCollectionDisplayCover, normalizeSingleKitBookIds } from './collectionPresentation';
 
 // Cache management for collections
 const COLLECTIONS_CACHE_KEY = 'kaboo_collections_cache';
@@ -82,13 +82,13 @@ let _activeBrandSlugForApi = 'kaboo';
 
 /** Set by App.tsx once per brand slug change. Keeps collection cache isolated per brand. */
 export const setActiveBrandForApi = (slug: string): void => {
-    _activeBrandSlugForApi = slug;
+  _activeBrandSlugForApi = slug;
 };
 
 const getCollectionsCacheKey = (): string =>
-    _activeBrandSlugForApi === 'kaboo'
-        ? COLLECTIONS_CACHE_KEY
-        : `${COLLECTIONS_CACHE_KEY}_${_activeBrandSlugForApi}`;
+  _activeBrandSlugForApi === 'kaboo'
+    ? COLLECTIONS_CACHE_KEY
+    : `${COLLECTIONS_CACHE_KEY}_${_activeBrandSlugForApi}`;
 
 // DEV-only: flag indicating we're running with a mock demo user despite Supabase being configured
 // Persisted in sessionStorage so it survives HMR and page reloads
@@ -434,7 +434,7 @@ const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection,
       : undefined,
     relatedCollection: collection.title,
     collectionId: collection.id,
-    coverImage: collection.kit_cover_image || collection.cover_image || undefined,
+    coverImage: getCollectionDisplayCover(collection) || undefined,
     progress: 0,
     chips: buildCollectionBackedChips(collection, asset),
     ctaLabel: assetType === 'video'

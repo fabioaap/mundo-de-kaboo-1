@@ -261,14 +261,14 @@ test.describe('JN-WL-005 — Navegação entre tabs', () => {
 // JORNADA 6 — Tab Operações: Feature Flags
 // ===========================================================================
 test.describe('JN-WL-006 — Feature Flags', () => {
-    test('toggle de música está visível e funcional', async ({ page }) => {
+    test('toggle de áudios está visível e funcional', async ({ page }) => {
         await adminAtWhiteLabel(page);
         await page.getByRole('button', { name: 'Operações' }).click();
         await expect(page.getByRole('heading', { name: 'Feature Flags' })).toBeVisible({ timeout: 5_000 });
 
-        // Toggle "Menu: Músicas" está presente
-        await expect(page.getByText('Menu: Músicas')).toBeVisible();
-        const toggle = page.getByRole('switch', { name: /Músicas/i }).or(page.locator('button[role="switch"]').first());
+        // Toggle "Menu: Áudios" está presente
+        await expect(page.getByText('Menu: Áudios')).toBeVisible();
+        const toggle = page.getByRole('switch', { name: /Áudios/i }).or(page.locator('button[role="switch"]').first());
         await expect(toggle).toBeVisible();
 
         // Clicar no toggle deve alterar o estado
@@ -430,7 +430,7 @@ test.describe('JN-WL-011 — Preview runtime da marca', () => {
 
         await expect(page.getByRole('heading', { name: 'Bem-vindo à Central Coruja!' })).toBeVisible({ timeout: 10_000 });
         await expect(page.getByText('Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Músicas' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Áudios' })).toHaveCount(0);
         await expect(page.getByText('educacross').first()).toBeVisible();
         await expect(page.getByText('Todos os direitos reservados.').first()).toBeVisible();
         await expect(page.getByText('Mundo de Kaboo © 2025')).toHaveCount(0);

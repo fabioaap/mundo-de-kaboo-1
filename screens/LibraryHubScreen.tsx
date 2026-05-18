@@ -370,6 +370,36 @@ const getMediaCardMetaLabel = (item: LibraryMockItem) => {
   return item.meta;
 };
 
+const getVideoThumbnailBadgeLabel = (item: LibraryMockItem) => {
+  if (item.variant !== 'video' && item.assetType !== 'video') {
+    return '';
+  }
+
+  return 'Vídeo';
+};
+
+const getDistinctVideoSupportingLine = (item: LibraryMockItem) => {
+  const rawValue = (item.secondaryMeta || getMediaCardMetaLabel(item) || '').trim();
+  const cleanedValue = cleanVideoMetaLabel(rawValue);
+  const normalizedValue = normalizeLibraryText(cleanedValue);
+
+  if (!normalizedValue || normalizedValue === 'video') {
+    return '';
+  }
+
+  const normalizedTitle = normalizeLibraryText(item.title);
+  const normalizedCollection = normalizeLibraryText(item.relatedCollection || item.eyebrow || '');
+
+  if (
+    (normalizedTitle && (normalizedTitle.includes(normalizedValue) || normalizedValue.includes(normalizedTitle)))
+    || (normalizedCollection && (normalizedCollection.includes(normalizedValue) || normalizedValue.includes(normalizedCollection)))
+  ) {
+    return '';
+  }
+
+  return cleanedValue;
+};
+
 const getLibraryBadgeIcon = (item: LibraryMockItem) => {
   if (item.variant === 'video') {
     return Icons.Play;
@@ -741,7 +771,11 @@ const HorizontalFilterRail: React.FC<{
 
 const renderItemPreview = (item: LibraryMockItem, featured: boolean = false, corujaTone: boolean = false, compact: boolean = false) => {
   const PreviewIcon = getLibraryBadgeIcon(item);
-  const aspectClassName = featured ? FEATURED_PREVIEW_ASPECT[item.variant] : CARD_PREVIEW_ASPECT[item.variant];
+  const usesVideoFrame = item.variant === 'video' || item.assetType === 'video';
+  const previewRadiusClass = usesVideoFrame ? 'rounded-[12px]' : 'rounded-[1rem]';
+  const aspectClassName = featured
+    ? (usesVideoFrame ? 'aspect-video' : FEATURED_PREVIEW_ASPECT[item.variant])
+    : (usesVideoFrame ? 'aspect-video' : CARD_PREVIEW_ASPECT[item.variant]);
   const hasCover = Boolean(item.coverImage);
   const itemTypeLabel = ITEM_LABELS[item.variant].toUpperCase();
   const isPlayable = item.variant === 'video' || item.variant === 'track';
@@ -789,7 +823,7 @@ const renderItemPreview = (item: LibraryMockItem, featured: boolean = false, cor
 
   return (
     <div
-      className={`relative overflow-hidden rounded-[1rem] ${aspectClassName} border ${hasCover ? 'border-kaboo-primary/8 bg-slate-900' : 'border-kaboo-primary/10 bg-[linear-gradient(180deg,#ffffff,#f7f3f9)]'}`}
+      className={`relative overflow-hidden ${previewRadiusClass} ${aspectClassName} border ${hasCover ? 'border-kaboo-primary/8 bg-slate-900' : 'border-kaboo-primary/10 bg-[linear-gradient(180deg,#ffffff,#f7f3f9)]'}`}
       style={hasCover ? { backgroundImage: `linear-gradient(180deg,rgba(15,23,42,0.06),rgba(15,23,42,0.16)), url(${item.coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
     >
       <div className={`absolute inset-0 ${hasCover ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(15,23,42,0.18))]' : 'bg-[radial-gradient(circle_at_top_left,rgba(93,31,88,0.1),transparent_48%),linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0.02))]'}`} />
@@ -1002,6 +1036,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
     })
     : [];
   const currentFilteredItems = isVideoHub ? sortedVideoItems : sortedCompactItems;
+  const musicGridClassName = 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5';
   const filteredMediaItemIds = React.useMemo(
     () => new Set(currentFilteredItems.map((item) => item.id)),
     [currentFilteredItems],
@@ -1038,7 +1073,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
     : isFormationsHub
       ? (isBaseCompactCatalogEmpty ? 'Nenhum roteiro publicado ainda.' : 'Escolha o roteiro pelo momento da conversa.')
       : `${sortedCompactItems.length} entradas disponíveis para explorar.`;
-  const compactGridClassName = 'md:grid-cols-2';
+  const compactGridClassName = isCorujaLibraryHub ? 'md:grid-cols-2' : 'md:grid-cols-2 xl:grid-cols-3';
   const videoEmptyStateMessage = isBaseVideoCatalogEmpty
     ? getLibraryEmptyStateMessage('videos', brandDisplayName)
     : 'Ajuste a busca ou limpe os filtros para voltar ao acervo completo.';
@@ -1245,11 +1280,19 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
 
   const renderLibraryGridCard = (item: LibraryMockItem, itemIndex: number, cardClassName: string) => {
     if (isVideoHub || isMusicHub) {
+      const usesVideoFrame = item.variant === 'video' || item.assetType === 'video';
+      const isSpotifyAudioCard = isMusicHub && (item.variant === 'track' || item.assetType === 'audio');
+      const previewRadiusClass = usesVideoFrame ? 'rounded-[12px]' : isSpotifyAudioCard ? 'rounded-[10px]' : 'rounded-[1rem]';
       const mediaMetaLabel = getMediaCardMetaLabel(item);
-      const videoProgressPercent = isVideoHub
+      const videoThumbnailBadgeLabel = usesVideoFrame ? getVideoThumbnailBadgeLabel(item) : '';
+      const videoSupportingLine = usesVideoFrame ? getDistinctVideoSupportingLine(item) : '';
+      const audioSupportingLine = isSpotifyAudioCard
+        ? (item.relatedCollection || item.description || item.eyebrow)
+        : (item.relatedCollection || item.eyebrow);
+      const videoProgressPercent = usesVideoFrame
         ? Math.max(0, Math.min(100, Math.round(item.progress ?? 0)))
         : 0;
-      const hasVideoProgress = isVideoHub && videoProgressPercent > 0;
+      const hasVideoProgress = usesVideoFrame && videoProgressPercent > 0;
 
       return (
         <CardContainer
@@ -1259,24 +1302,46 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
           className={cardClassName}
         >
           {isCorujaLibraryHub ? renderItemPreview(item, false, true) : (
-            <div className="relative aspect-square overflow-hidden rounded-[1rem] border border-kaboo-primary/10 bg-slate-100">
+            <div className={`relative overflow-hidden ${previewRadiusClass} border ${isSpotifyAudioCard ? 'border-kaboo-primary/10 bg-[linear-gradient(180deg,#fdf9fe,#f6eff8)]' : 'border-kaboo-primary/10 bg-slate-100'} ${usesVideoFrame ? 'aspect-video' : 'aspect-square'}`}>
               {item.coverImage ? (
                 <img src={item.coverImage} alt={item.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
               ) : (
-                <div className="h-full w-full bg-[radial-gradient(circle_at_top_left,rgba(93,31,88,0.14),transparent_55%),linear-gradient(180deg,#f8f4fa,#f2ebf5)]" />
+                <div className={`h-full w-full ${isSpotifyAudioCard ? 'bg-[radial-gradient(circle_at_top_left,rgba(93,31,88,0.22),transparent_42%),radial-gradient(circle_at_bottom_right,rgba(78,168,222,0.12),transparent_50%),linear-gradient(180deg,#fcf8fd,#f2ebf6)]' : 'bg-[radial-gradient(circle_at_top_left,rgba(93,31,88,0.14),transparent_55%),linear-gradient(180deg,#f8f4fa,#f2ebf5)]'}`} />
               )}
 
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(15,23,42,0.34))]" />
-              <div className="absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/24" />
-              <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/60 text-white opacity-0 scale-95 shadow-lg backdrop-blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:scale-100">
-                  {isVideoHub ? (
-                    <Icons.Play size={18} className="fill-current stroke-none" />
-                  ) : (
+              <div className={`absolute inset-0 ${isSpotifyAudioCard ? 'bg-kaboo-primary/0 transition-colors duration-200 group-hover:bg-kaboo-primary/10' : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(15,23,42,0.34))]'}`} />
+              {!isSpotifyAudioCard && (
+                <div className={`absolute inset-0 transition-colors duration-200 ${usesVideoFrame ? 'bg-kaboo-primary/0 group-hover:bg-kaboo-primary/16' : 'bg-black/0 group-hover:bg-black/24'}`} />
+              )}
+              {usesVideoFrame ? (
+                <>
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <span className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-kaboo-primary text-white opacity-0 scale-95 shadow-[0_16px_30px_rgba(93,31,88,0.32)] backdrop-blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:scale-100">
+                      <Icons.Play size={18} className="fill-current stroke-none" />
+                    </span>
+                  </span>
+                  <span className="pointer-events-none absolute bottom-2 right-2 z-[2] inline-flex items-center rounded-[4px] bg-black/80 px-1.5 py-1 text-[10px] font-black leading-none text-white shadow-sm">
+                    {videoThumbnailBadgeLabel}
+                  </span>
+                </>
+              ) : isSpotifyAudioCard ? (
+                <span className="pointer-events-none absolute bottom-3 right-3 z-[2] inline-flex items-center justify-center">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-kaboo-primary text-white opacity-0 translate-y-2 shadow-[0_14px_26px_rgba(93,31,88,0.28)] transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
                     <Icons.Headphones size={18} className="stroke-[2.2px]" />
-                  )}
+                  </span>
                 </span>
-              </span>
+              ) : (
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/60 text-white opacity-0 scale-95 shadow-lg backdrop-blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:scale-100">
+                    {isVideoHub ? (
+                      <Icons.Play size={18} className="fill-current stroke-none" />
+                    ) : (
+                      <Icons.Headphones size={18} className="stroke-[2.2px]" />
+                    )}
+                  </span>
+                </span>
+              )}
 
               {hasVideoProgress && (
                 <span className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] block h-1 bg-black/25">
@@ -1290,13 +1355,19 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
             </div>
           )}
 
-          <div className="mt-2.5 min-w-0">
-            <h3 className={`line-clamp-2 text-[0.95rem] font-black leading-[1.2] tracking-[-0.02em] ${isCorujaLibraryHub ? 'text-[#FFF4E3]' : 'text-kaboo-primary'}`}>
+          <div className={`min-w-0 ${usesVideoFrame ? 'mt-3 flex min-h-[68px] flex-col' : isSpotifyAudioCard ? 'mt-2.5 flex min-h-[56px] flex-col px-1 pb-1' : 'mt-2.5'}`}>
+            <h3 className={`line-clamp-2 ${usesVideoFrame ? 'text-[14px] font-bold leading-[1.35] tracking-normal' : isSpotifyAudioCard ? 'text-[13px] font-bold leading-[1.35] tracking-[-0.01em]' : 'text-[15px] font-black leading-[1.18] tracking-[-0.02em]'} ${isCorujaLibraryHub ? 'text-[#FFF4E3]' : 'text-kaboo-primary'}`}>
               {item.title}
             </h3>
-            <p className={`mt-1 line-clamp-2 text-[12px] ${isCorujaLibraryHub ? 'text-[#D4DCF0]' : 'text-gray-500'}`}>{item.relatedCollection || item.eyebrow}</p>
-            {mediaMetaLabel && (
-              <p className={`mt-1 line-clamp-1 text-[11px] font-semibold uppercase tracking-[0.13em] ${isCorujaLibraryHub ? 'text-[#FFB347]' : 'text-kaboo-primary/65'}`}>{mediaMetaLabel}</p>
+            {audioSupportingLine && (
+              <p className={`${isSpotifyAudioCard ? 'mt-1 line-clamp-2 text-[12px] leading-4 text-gray-500' : usesVideoFrame ? 'mt-1 line-clamp-1 text-[13px] leading-4' : 'mt-1.5 line-clamp-1 text-[12px]'} ${isCorujaLibraryHub ? 'text-[#D4DCF0]' : 'text-gray-500'}`}>
+                {audioSupportingLine}
+              </p>
+            )}
+            {!isSpotifyAudioCard && (usesVideoFrame ? videoSupportingLine : mediaMetaLabel) && (
+              <p className={`${usesVideoFrame ? 'mt-0.5 line-clamp-1 text-[12px] font-medium leading-4 tracking-normal' : 'mt-1 line-clamp-1 text-[11px] font-semibold uppercase tracking-[0.13em]'} ${isCorujaLibraryHub ? 'text-[#FFB347]' : usesVideoFrame ? 'text-gray-500' : 'text-kaboo-primary/65'}`}>
+                {usesVideoFrame ? videoSupportingLine : mediaMetaLabel}
+              </p>
             )}
           </div>
         </CardContainer>
@@ -1310,11 +1381,77 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
         onOpen={openItem}
         className={cardClassName}
       >
-        <div className="w-20 shrink-0">
-          {renderItemPreview(item, false, isCorujaLibraryHub, true)}
-        </div>
+        {isCorujaLibraryHub ? (
+          <>
+            <div className="w-20 shrink-0">
+              {renderItemPreview(item, false, isCorujaLibraryHub, true)}
+            </div>
 
-        {renderMinimalLibraryCardBody(item, isCorujaLibraryHub)}
+            {renderMinimalLibraryCardBody(item, isCorujaLibraryHub)}
+          </>
+        ) : (
+          (() => {
+            const PreviewIcon = getLibraryBadgeIcon(item);
+            const badgeLabel = getLibraryBadgeLabel(item);
+            const supportingText = getLibrarySupportingText(item);
+            const detailChipLabel = item.variant === 'material'
+              ? (item.assetType === 'audio' ? 'Áudio' : item.assetType === 'video' ? 'Vídeo' : 'Documento')
+              : 'Percurso';
+            const actionLabel = item.variant === 'material' ? 'Abrir' : 'Explorar';
+
+            return (
+              <>
+                <div className="flex items-start gap-4">
+                  <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-xl border border-kaboo-primary/10 bg-[linear-gradient(180deg,#fdf9fe,#f6eff8)] shadow-sm">
+                    {item.coverImage ? (
+                      <img src={item.coverImage} alt={item.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top_left,rgba(93,31,88,0.16),transparent_45%),linear-gradient(180deg,#f8f4fa,#f2ebf5)] text-kaboo-primary/55">
+                        <PreviewIcon size={24} className={item.variant === 'video' ? 'fill-current stroke-none' : 'stroke-[2px]'} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center rounded-full bg-kaboo-primary/[0.08] px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary">
+                        {badgeLabel}
+                      </span>
+                    </div>
+
+                    <h3 className="line-clamp-2 text-[1.02rem] font-black leading-[1.15] tracking-[-0.02em] text-kaboo-primary">
+                      {item.title}
+                    </h3>
+
+                    {supportingText && (
+                      <p className="mt-1.5 line-clamp-2 text-[13px] leading-5 text-gray-500">
+                        {supportingText}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3 border-t border-kaboo-primary/8 pt-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                      {detailChipLabel}
+                    </span>
+                    {item.variant === 'formation' && badgeLabel !== detailChipLabel && (
+                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                        {badgeLabel}
+                      </span>
+                    )}
+                  </div>
+
+                  <span className="inline-flex items-center gap-1 text-sm font-bold text-kaboo-primary transition-transform group-hover:translate-x-0.5">
+                    {actionLabel}
+                    <Icons.ChevronRight size={16} />
+                  </span>
+                </div>
+              </>
+            );
+          })()
+        )}
       </CardContainer>
     );
   };
@@ -1521,8 +1658,8 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                       className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 md:px-4 transition-all active:scale-95 ${isCorujaLibraryHub
                         ? (activeLibraryFilterCount > 0 || showLibraryFilters ? corujaSortActiveClass : corujaSortIdleClass)
                         : activeLibraryFilterCount > 0 || showLibraryFilters
-                        ? 'border-kaboo-primary bg-kaboo-primary text-white shadow-kaboo-primary/20'
-                        : 'border-gray-200 bg-gray-50 text-gray-600 shadow-sm hover:border-kaboo-primary/20 hover:bg-white'}`}
+                          ? 'border-kaboo-primary bg-kaboo-primary text-white shadow-kaboo-primary/20'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 shadow-sm hover:border-kaboo-primary/20 hover:bg-white'}`}
                       title="Refinar busca"
                     >
                       <Icons.Filter size={18} strokeWidth={activeLibraryFilterCount > 0 || showLibraryFilters ? 2.5 : 2} />
@@ -1647,8 +1784,8 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                   ? renderMediaRailBlocks(
                     isCorujaLibraryHub
                       ? corujaMediaCardClass
-                      : 'group rounded-[1.2rem] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
-                    'sm:grid-cols-2 xl:grid-cols-3',
+                      : 'group rounded-[18px] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
+                    'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
                     videoEmptyStateMessage,
                     {
                       compactMode: videoActiveFilter === 'Todos' && sortedVideoItems.length <= 10,
@@ -1657,13 +1794,13 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                   )
                   : (
                     <>
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {sortedVideoItems.map((item, itemIndex) => renderLibraryGridCard(
                           item,
                           itemIndex,
                           isCorujaLibraryHub
                             ? corujaMediaCardClass
-                            : 'group rounded-[1.2rem] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
+                            : 'group rounded-[18px] border border-[#eaddeb] bg-white p-2.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(93,31,88,0.08)] active:scale-[0.995]',
                         ))}
                       </div>
 
@@ -1711,8 +1848,8 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                       className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 md:px-4 transition-all active:scale-95 ${isCorujaLibraryHub
                         ? (activeLibraryFilterCount > 0 || showLibraryFilters ? corujaSortActiveClass : corujaSortIdleClass)
                         : activeLibraryFilterCount > 0 || showLibraryFilters
-                        ? 'border-kaboo-primary bg-kaboo-primary text-white shadow-kaboo-primary/20'
-                        : 'border-gray-200 bg-gray-50 text-gray-600 shadow-sm hover:border-kaboo-primary/20 hover:bg-white'}`}
+                          ? 'border-kaboo-primary bg-kaboo-primary text-white shadow-kaboo-primary/20'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 shadow-sm hover:border-kaboo-primary/20 hover:bg-white'}`}
                       title="Refinar busca"
                     >
                       <Icons.Filter size={18} strokeWidth={activeLibraryFilterCount > 0 || showLibraryFilters ? 2.5 : 2} />
@@ -1804,7 +1941,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                     </h2>
                     {isMusicHub && mediaSourceStatus === 'loading' && (
                       <p className={`mt-1 text-xs font-semibold ${isCorujaLibraryHub ? 'text-white/68' : 'text-kaboo-primary/55'}`}>
-                        Atualizando catálogo de músicas.
+                        Atualizando catálogo de áudios.
                       </p>
                     )}
                     {isMusicHub && mediaSourceStatus === 'fallback' && (
@@ -1837,8 +1974,8 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                   ? renderMediaRailBlocks(
                     isCorujaLibraryHub
                       ? corujaMediaCardClass
-                      : `group rounded-[1.2rem] border border-kaboo-primary/10 p-2.5 shadow-[0_10px_24px_rgba(27,31,35,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(27,31,35,0.08)] active:scale-[0.995] ${screenSurface.card}`,
-                    'sm:grid-cols-2 xl:grid-cols-3',
+                      : 'group rounded-[16px] border border-kaboo-primary/10 bg-white p-2 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-1 hover:border-kaboo-primary/20 hover:shadow-[0_14px_24px_rgba(93,31,88,0.10)] active:scale-[0.995]',
+                    musicGridClassName,
                     musicEmptyStateMessage,
                     {
                       compactMode: compactActiveFilter === 'Todos' && sortedCompactItems.length <= 10,
@@ -1847,13 +1984,13 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                   )
                   : (
                     <>
-                      <div className={`mt-3 grid gap-3 ${isMusicHub ? 'sm:grid-cols-2 xl:grid-cols-3' : compactGridClassName}`}>
+                      <div className={`mt-3 grid gap-3 ${isMusicHub ? musicGridClassName : compactGridClassName}`}>
                         {sortedCompactItems.map((item, itemIndex) => renderLibraryGridCard(
                           item,
                           itemIndex,
                           isCorujaLibraryHub
                             ? (isMusicHub ? corujaMediaCardClass : corujaCompactCardClass)
-                            : `group ${isMusicHub ? 'rounded-[1.2rem] p-2.5' : 'flex items-center gap-3 rounded-[1.2rem] p-3'} border border-kaboo-primary/10 shadow-[0_10px_24px_rgba(27,31,35,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(27,31,35,0.08)] active:scale-[0.995] ${screenSurface.card}`,
+                            : `${isMusicHub ? 'group rounded-[16px] border border-kaboo-primary/10 bg-white p-2 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-1 hover:border-kaboo-primary/20 hover:shadow-[0_14px_24px_rgba(93,31,88,0.10)] active:scale-[0.995]' : `group rounded-[1.6rem] border border-kaboo-primary/10 bg-white p-4 shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:border-kaboo-primary/18 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] ${screenSurface.card}`}`,
                         ))}
                       </div>
 

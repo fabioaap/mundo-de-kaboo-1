@@ -166,7 +166,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     fileInputRef.current.click();
                   }
                 }}
-                className="mt-2 w-full px-3 py-1.5 bg-kaboo-primary/10 text-kaboo-primary rounded-lg font-bold text-sm hover:bg-kaboo-primary/20 transition-colors disabled:opacity-50"
+                className="mt-2 w-full px-3 py-1.5 bg-brand-primary/10 text-brand-primary rounded-lg font-bold text-sm hover:bg-brand-primary/20 transition-colors disabled:opacity-50"
                 disabled={disabled || uploading}
               >
                 Adicionar Imagem
@@ -188,7 +188,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {showAsIcon && value && (
           <div className="mb-3">
             <div
-              className="inline-flex items-center gap-2 px-3 py-2 bg-kaboo-primary/10 text-kaboo-primary rounded-full text-sm font-bold cursor-pointer transition-all duration-300 ease-in-out hover:bg-kaboo-primary/20"
+              className="inline-flex items-center gap-2 px-3 py-2 bg-brand-primary/10 text-brand-primary rounded-full text-sm font-bold cursor-pointer transition-all duration-300 ease-in-out hover:bg-brand-primary/20"
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
               onClick={() => setShowPreview(true)}
@@ -210,7 +210,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   e.stopPropagation();
                   setShowConfirmDelete(true);
                 }}
-                className="hover:bg-kaboo-primary/30 rounded-full p-0.5 transition-colors flex-shrink-0"
+                className="hover:bg-brand-primary/30 rounded-full p-0.5 transition-colors flex-shrink-0"
                 aria-label={`Remover arquivo`}
                 disabled={disabled || uploading}
               >
@@ -227,7 +227,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               type="url"
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              className="flex-1 bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
+              className="flex-1 bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
               placeholder="URL ou faça upload de um arquivo..."
               disabled={disabled || uploading}
             />
@@ -250,12 +250,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <div className="flex items-center gap-2">
             <label
               htmlFor={resolvedInputId}
-              className={`flex items-center gap-2 px-4 py-2 bg-kaboo-primary/10 text-kaboo-primary rounded-xl font-bold cursor-pointer hover:bg-kaboo-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${uploading ? 'opacity-50 cursor-wait' : ''
+              className={`flex items-center gap-2 px-4 py-2 bg-brand-primary/10 text-brand-primary rounded-xl font-bold cursor-pointer hover:bg-brand-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${uploading ? 'opacity-50 cursor-wait' : ''
                 }`}
             >
               {uploading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
                   <span>Enviando...</span>
                 </>
               ) : (

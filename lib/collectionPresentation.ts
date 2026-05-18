@@ -133,10 +133,15 @@ export const getCollectionDisplayCover = (collection?: Partial<Collection> | nul
     return '';
   }
 
+  const primaryCoverImage = normalizeImageUrl(collection.cover_image);
+  if (primaryCoverImage) {
+    return primaryCoverImage;
+  }
+
   const kitCoverImage = normalizeImageUrl(collection.kit_cover_image);
   if (getCollectionType(collection) === 'kit' && kitCoverImage) {
     return kitCoverImage;
   }
 
-  return normalizeImageUrl(collection.cover_image);
+  return '';
 };

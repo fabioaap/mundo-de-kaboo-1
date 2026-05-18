@@ -57,15 +57,15 @@ const SkipTenGlyph: React.FC<{ direction: SkipGlyphDirection; size?: number }> =
 }) => {
   const glyphPaths = direction === 'back'
     ? [
-        'M11.99,5V1l-5,5l5,5V7c3.31,0,6,2.69,6,6s-2.69,6-6,6s-6-2.69-6-6h-2c0,4.42,3.58,8,8,8s8-3.58,8-8S16.41,5,11.99,5z',
-        'M10.89,16h-0.85v-3.26l-1.01,0.31v-0.69l1.77-0.63h0.09V16z',
-        'M15.17,14.24c0,0.32-0.03,0.6-0.1,0.82s-0.17,0.42-0.29,0.57s-0.28,0.26-0.45,0.33s-0.37,0.1-0.59,0.1s-0.41-0.03-0.59-0.1s-0.33-0.18-0.46-0.33s-0.23-0.34-0.3-0.57s-0.11-0.5-0.11-0.82V13.5c0-0.32,0.03-0.6,0.1-0.82s0.17-0.42,0.29-0.57s0.28-0.26,0.45-0.33s0.37-0.1,0.59-0.1s0.41,0.03,0.59,0.1c0.18,0.07,0.33,0.18,0.46,0.33s0.23,0.34,0.3,0.57s0.11,0.5,0.11,0.82V14.24z M14.32,13.38c0-0.19-0.01-0.35-0.04-0.48s-0.07-0.23-0.12-0.31s-0.11-0.14-0.19-0.17s-0.16-0.05-0.25-0.05s-0.18,0.02-0.25,0.05s-0.14,0.09-0.19,0.17s-0.09,0.18-0.12,0.31s-0.04,0.29-0.04,0.48v0.97c0,0.19,0.01,0.35,0.04,0.48s0.07,0.24,0.12,0.32s0.11,0.14,0.19,0.17s0.16,0.05,0.25,0.05s0.18-0.02,0.25-0.05s0.14-0.09,0.19-0.17s0.09-0.19,0.11-0.32s0.04-0.29,0.04-0.48V13.38z',
-      ]
+      'M11.99,5V1l-5,5l5,5V7c3.31,0,6,2.69,6,6s-2.69,6-6,6s-6-2.69-6-6h-2c0,4.42,3.58,8,8,8s8-3.58,8-8S16.41,5,11.99,5z',
+      'M10.89,16h-0.85v-3.26l-1.01,0.31v-0.69l1.77-0.63h0.09V16z',
+      'M15.17,14.24c0,0.32-0.03,0.6-0.1,0.82s-0.17,0.42-0.29,0.57s-0.28,0.26-0.45,0.33s-0.37,0.1-0.59,0.1s-0.41-0.03-0.59-0.1s-0.33-0.18-0.46-0.33s-0.23-0.34-0.3-0.57s-0.11-0.5-0.11-0.82V13.5c0-0.32,0.03-0.6,0.1-0.82s0.17-0.42,0.29-0.57s0.28-0.26,0.45-0.33s0.37-0.1,0.59-0.1s0.41,0.03,0.59,0.1c0.18,0.07,0.33,0.18,0.46,0.33s0.23,0.34,0.3,0.57s0.11,0.5,0.11,0.82V14.24z M14.32,13.38c0-0.19-0.01-0.35-0.04-0.48s-0.07-0.23-0.12-0.31s-0.11-0.14-0.19-0.17s-0.16-0.05-0.25-0.05s-0.18,0.02-0.25,0.05s-0.14,0.09-0.19,0.17s-0.09,0.18-0.12,0.31s-0.04,0.29-0.04,0.48v0.97c0,0.19,0.01,0.35,0.04,0.48s0.07,0.24,0.12,0.32s0.11,0.14,0.19,0.17s0.16,0.05,0.25,0.05s0.18-0.02,0.25-0.05s0.14-0.09,0.19-0.17s0.09-0.19,0.11-0.32s0.04-0.29,0.04-0.48V13.38z',
+    ]
     : [
-        'M18,13c0,3.31-2.69,6-6,6s-6-2.69-6-6s2.69-6,6-6v4l5-5l-5-5v4c-4.42,0-8,3.58-8,8c0,4.42,3.58,8,8,8s8-3.58,8-8H18z',
-        'M10.86,15.94V11.67H10.77L9,12.3v0.69l1.01-0.31v3.26H10.86z',
-        'M12.25,13.44v0.74c0,1.9,1.31,1.82,1.44,1.82c0.14,0,1.44,0.09,1.44-1.82v-0.74c0-1.9-1.31-1.82-1.44-1.82C13.55,11.62,12.25,11.53,12.25,13.44z M14.29,13.32v0.97c0,0.77-0.21,1.03-0.59,1.03c-0.38,0-0.6-0.26-0.6-1.03v-0.97c0-0.75,0.22-1.01,0.59-1.01C14.07,12.3,14.29,12.57,14.29,13.32z',
-      ];
+      'M18,13c0,3.31-2.69,6-6,6s-6-2.69-6-6s2.69-6,6-6v4l5-5l-5-5v4c-4.42,0-8,3.58-8,8c0,4.42,3.58,8,8,8s8-3.58,8-8H18z',
+      'M10.86,15.94V11.67H10.77L9,12.3v0.69l1.01-0.31v3.26H10.86z',
+      'M12.25,13.44v0.74c0,1.9,1.31,1.82,1.44,1.82c0.14,0,1.44,0.09,1.44-1.82v-0.74c0-1.9-1.31-1.82-1.44-1.82C13.55,11.62,12.25,11.53,12.25,13.44z M14.29,13.32v0.97c0,0.77-0.21,1.03-0.59,1.03c-0.38,0-0.6-0.26-0.6-1.03v-0.97c0-0.75,0.22-1.01,0.59-1.01C14.07,12.3,14.29,12.57,14.29,13.32z',
+    ];
 
   const [outlinePath, ...numberPaths] = glyphPaths;
 
@@ -115,7 +115,6 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const [showMobileDetails, setShowMobileDetails] = useState(false);
   const [showMobileUtilitySheet, setShowMobileUtilitySheet] = useState(false);
   const [showDesktopRelated, setShowDesktopRelated] = useState(false);
-  const [isDesktopDescriptionExpanded, setIsDesktopDescriptionExpanded] = useState(false);
   const [isCompactHeightViewport, setIsCompactHeightViewport] = useState(false);
   const [playerState, setPlayerState] = useState<PlayerState>('loading');
 
@@ -851,13 +850,12 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                   }}
                   disabled={isOfflineDownloading}
                   aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar vídeo para offline'}
-                  className={`inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[10px] font-black uppercase tracking-[0.08em] transition-colors disabled:cursor-default ${
-                    isOfflineDownloaded
+                  className={`inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[10px] font-black uppercase tracking-[0.08em] transition-colors disabled:cursor-default ${isOfflineDownloaded
                       ? 'border-red-300/50 bg-red-500/20 text-red-100 hover:bg-red-500/30'
                       : isOfflineDownloading
                         ? 'border-white/30 bg-white/15 text-white/85'
                         : 'border-white/20 bg-white/5 text-white/80 hover:bg-white/10'
-                  }`}
+                    }`}
                 >
                   {isOfflineDownloading ? (
                     <Icons.RotateCw size={14} className="animate-spin" />
@@ -1214,11 +1212,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                         <button
                           type="button"
                           onClick={toggleMobileDetailsPanel}
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-black uppercase tracking-[0.1em] transition-colors ${
-                            showMobileDetails
+                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-black uppercase tracking-[0.1em] transition-colors ${showMobileDetails
                               ? 'border-white/30 bg-white/[0.14] text-white'
                               : 'border-white/14 bg-white/[0.07] text-white/78 hover:bg-white/[0.11]'
-                          }`}
+                            }`}
                         >
                           <Icons.FileText size={14} />
                           Descrição
@@ -1228,11 +1225,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                         <button
                           type="button"
                           onClick={toggleMobileQueuePanel}
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-black uppercase tracking-[0.1em] transition-colors ${
-                            showMobileQueue
+                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-black uppercase tracking-[0.1em] transition-colors ${showMobileQueue
                               ? 'border-white/30 bg-white/[0.14] text-white'
                               : 'border-white/14 bg-white/[0.07] text-white/78 hover:bg-white/[0.11]'
-                          }`}
+                            }`}
                         >
                           <Icons.Video size={14} />
                           Fila
@@ -1618,13 +1614,12 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 }}
                 disabled={isOfflineDownloading}
                 aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar vídeo para offline'}
-                className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors disabled:cursor-default ${
-                  isOfflineDownloaded
+                className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors disabled:cursor-default ${isOfflineDownloaded
                     ? 'border-red-300/50 bg-red-500/20 text-red-200 hover:bg-red-500/35'
                     : isOfflineDownloading
                       ? 'border-white/30 bg-white/15 text-white/90'
                       : 'border-white/25 bg-black/30 text-white/90 hover:bg-black/45'
-                }`}
+                  }`}
               >
                 {isOfflineDownloading ? (
                   <Icons.RotateCw size={13} className="animate-spin" />
@@ -1753,36 +1748,36 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                     <span className="tabular-nums text-white/70">-{formatTime(remainingTime)}</span>
                   </div>
 
-                    <div className="mt-2.5 flex items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2.5 md:gap-3">
-                        <button
-                          onClick={() => skip(-10)}
-                          className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[20px] border border-white/14 bg-black/28 text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_18px_rgba(0,0,0,0.16)] backdrop-blur-md transition-colors hover:bg-black/36"
-                          aria-label="Voltar 10 segundos"
-                          title="Voltar 10s (J)"
-                        >
-                          <SkipTenGlyph direction="back" />
-                        </button>
-                        <button
-                          onClick={(e) => togglePlay(e)}
-                          className="inline-flex h-[56px] min-w-[84px] items-center justify-center rounded-[22px] border border-white/18 bg-white/[0.09] px-5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_12px_22px_rgba(0,0,0,0.14)] backdrop-blur-md transition-colors hover:bg-white/[0.16]"
-                          aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
-                          title="Play/Pause (Espaço ou K)"
-                        >
-                          {isPlaying ? <Icons.Pause size={20} fill="currentColor" /> : <Icons.Play size={20} fill="currentColor" className="ml-0.5" />}
-                        </button>
-                        <button
-                          onClick={() => skip(10)}
-                          className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[20px] border border-white/14 bg-black/28 text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_18px_rgba(0,0,0,0.16)] backdrop-blur-md transition-colors hover:bg-black/36"
-                          aria-label="Avançar 10 segundos"
-                          title="Avançar 10s (L)"
-                        >
-                          <SkipTenGlyph direction="forward" />
-                        </button>
-                        <p className="hidden whitespace-nowrap pl-1 text-[15px] font-black tracking-[-0.03em] text-white/82 sm:block">
-                          <span className="tabular-nums">{formatTime(currentTime)}</span>
-                          <span className="mx-1 text-white/45">/</span>
-                          <span className="tabular-nums">{formatTime(duration)}</span>
+                  <div className="mt-2.5 flex items-center justify-between gap-2.5">
+                    <div className="flex items-center gap-2.5 md:gap-3">
+                      <button
+                        onClick={() => skip(-10)}
+                        className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[20px] border border-white/14 bg-black/28 text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_18px_rgba(0,0,0,0.16)] backdrop-blur-md transition-colors hover:bg-black/36"
+                        aria-label="Voltar 10 segundos"
+                        title="Voltar 10s (J)"
+                      >
+                        <SkipTenGlyph direction="back" />
+                      </button>
+                      <button
+                        onClick={(e) => togglePlay(e)}
+                        className="inline-flex h-[56px] min-w-[84px] items-center justify-center rounded-[22px] border border-white/18 bg-white/[0.09] px-5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_12px_22px_rgba(0,0,0,0.14)] backdrop-blur-md transition-colors hover:bg-white/[0.16]"
+                        aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
+                        title="Play/Pause (Espaço ou K)"
+                      >
+                        {isPlaying ? <Icons.Pause size={20} fill="currentColor" /> : <Icons.Play size={20} fill="currentColor" className="ml-0.5" />}
+                      </button>
+                      <button
+                        onClick={() => skip(10)}
+                        className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[20px] border border-white/14 bg-black/28 text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_18px_rgba(0,0,0,0.16)] backdrop-blur-md transition-colors hover:bg-black/36"
+                        aria-label="Avançar 10 segundos"
+                        title="Avançar 10s (L)"
+                      >
+                        <SkipTenGlyph direction="forward" />
+                      </button>
+                      <p className="hidden whitespace-nowrap pl-1 text-[15px] font-black tracking-[-0.03em] text-white/82 sm:block">
+                        <span className="tabular-nums">{formatTime(currentTime)}</span>
+                        <span className="mx-1 text-white/45">/</span>
+                        <span className="tabular-nums">{formatTime(duration)}</span>
                       </p>
                     </div>
 
@@ -1826,11 +1821,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                         <button
                           type="button"
                           onClick={toggleMobileUtilitySheet}
-                          className={`inline-flex h-9 items-center gap-1 rounded-lg border px-2.5 text-[11px] font-black transition-colors ${
-                            showMobileUtilitySheet
+                          className={`inline-flex h-9 items-center gap-1 rounded-lg border px-2.5 text-[11px] font-black transition-colors ${showMobileUtilitySheet
                               ? 'border-white/35 bg-white/18 text-white'
                               : 'border-white/20 bg-white/8 text-white/85 hover:bg-white/14'
-                          }`}
+                            }`}
                           aria-label={showMobileUtilitySheet ? 'Ocultar controles extras' : 'Mostrar controles extras'}
                         >
                           <Icons.Settings size={15} />
@@ -1875,11 +1869,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                         <button
                           type="button"
                           onClick={toggleMobileDetailsPanel}
-                          className={`flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl border px-2 text-center transition-colors ${
-                            showMobileDetails
+                          className={`flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl border px-2 text-center transition-colors ${showMobileDetails
                               ? 'border-white/35 bg-white/18 text-white'
                               : 'border-white/20 bg-white/8 text-white/85 hover:bg-white/12'
-                          }`}
+                            }`}
                         >
                           <Icons.FileText size={16} />
                           <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Info</span>
@@ -1889,11 +1882,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                         <button
                           type="button"
                           onClick={toggleMobileQueuePanel}
-                          className={`flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl border px-2 text-center transition-colors ${
-                            showMobileQueue
+                          className={`flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-2xl border px-2 text-center transition-colors ${showMobileQueue
                               ? 'border-white/35 bg-white/18 text-white'
                               : 'border-white/20 bg-white/8 text-white/85 hover:bg-white/12'
-                          }`}
+                            }`}
                         >
                           <Icons.Video size={16} />
                           <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Fila</span>
@@ -1964,22 +1956,8 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
               {itemDescription && (
                 <section className="pointer-events-auto mx-auto hidden w-full max-w-[min(100%,980px)] lg:block lg:max-w-none lg:ml-0 lg:mr-[var(--player-dock-right)]">
                   <div className={`${panelChromeClass} p-4`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Descrição</p>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setIsDesktopDescriptionExpanded((prev) => !prev);
-                        }}
-                        aria-label={isDesktopDescriptionExpanded ? 'Recolher descrição' : 'Expandir descrição'}
-                        className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/6 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white/75 transition-colors hover:bg-white/12"
-                      >
-                        {isDesktopDescriptionExpanded ? 'Recolher' : 'Expandir'}
-                        <Icons.ChevronRight size={12} className={`transition-transform ${isDesktopDescriptionExpanded ? 'rotate-90' : ''}`} />
-                      </button>
-                    </div>
-                    <p className={`mt-2 text-sm leading-6 text-white/90 overflow-y-auto pr-1 ${isDesktopDescriptionExpanded ? 'max-h-[180px]' : 'max-h-[68px]'}`}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Descrição</p>
+                    <p className="mt-2 max-h-[68px] overflow-y-auto pr-1 text-sm leading-6 text-white/90">
                       {itemDescription}
                     </p>
                   </div>

@@ -463,7 +463,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
                   }}
                 >
                   <Icons.Grid size={12} />
-                  Coleção viva
+                  Coleção
                 </span>
               </div>
 

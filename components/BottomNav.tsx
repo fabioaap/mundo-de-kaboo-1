@@ -109,7 +109,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
 
   const libraryNavItems: NavItem[] = ([
     { key: 'videos', screen: 'videos', icon: Icons.Video, label: 'Vídeos' },
-    { key: 'music', screen: 'music', icon: Icons.Headphones, label: 'Músicas' },
+    { key: 'music', screen: 'music', icon: Icons.Headphones, label: 'Áudios' },
     { key: 'formations', screen: 'formations', icon: Icons.BookOpen, label: 'Formações' },
     { key: 'materials', screen: 'materials', icon: Icons.FileText, label: 'Materiais' },
   ] as NavItem[]).filter(item => isMenuKeyEnabled(item.key));
@@ -333,32 +333,32 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                           : desktopItemInactiveClass
                         }`}
                     >
-                       {!isCollapsed && isActive && (
-                         isCentralCoruja ? (
-                            <span
-                              className="absolute left-[0.42rem] flex h-5 w-5 items-center justify-center text-[#FFB347] drop-shadow-[0_0_8px_rgba(255,179,71,0.28)]"
-                              style={{ transform: 'translateX(-4px)' }}
-                              aria-hidden="true"
-                            >
-                              <Icons.Feather
-                                size={14}
-                                className="stroke-[2.35px]"
-                                style={{ transform: 'scaleX(-1) rotate(18deg)' }}
-                              />
-                           </span>
-                         ) : (
-                           <span className="absolute left-2 h-5 w-1 rounded-full bg-white/85" aria-hidden="true" />
-                         )
-                       )}
-                       <Icon
-                         size={22}
-                         className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${desktopItemInactiveHoverIconClass}`}
-                       />
-                       {!isCollapsed && (
-                         <span className={`text-sm font-bold ${isActive ? '' : desktopItemInactiveHoverLabelClass}`}>
-                           {item.label}
-                         </span>
-                       )}
+                      {!isCollapsed && isActive && (
+                        isCentralCoruja ? (
+                          <span
+                            className="absolute left-[0.42rem] flex h-5 w-5 items-center justify-center text-[#FFB347] drop-shadow-[0_0_8px_rgba(255,179,71,0.28)]"
+                            style={{ transform: 'translateX(-4px)' }}
+                            aria-hidden="true"
+                          >
+                            <Icons.Feather
+                              size={14}
+                              className="stroke-[2.35px]"
+                              style={{ transform: 'scaleX(-1) rotate(18deg)' }}
+                            />
+                          </span>
+                        ) : (
+                          <span className="absolute left-2 h-5 w-1 rounded-full bg-white/85" aria-hidden="true" />
+                        )
+                      )}
+                      <Icon
+                        size={22}
+                        className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${desktopItemInactiveHoverIconClass}`}
+                      />
+                      {!isCollapsed && (
+                        <span className={`text-sm font-bold ${isActive ? '' : desktopItemInactiveHoverLabelClass}`}>
+                          {item.label}
+                        </span>
+                      )}
                     </button>
                   </div>
                 );
