@@ -1,12 +1,12 @@
 # Documentação de Telas (Screens)
 
-**Atualizado em**: 18/05/2026, 18:00:45
+**Atualizado em**: 18/05/2026, 19:44:07
 
 ## Resumo
 
-- **Total de telas**: 23
+- **Total de telas**: 24
 - **Telas protegidas**: 0
-- **Telas públicas**: 23
+- **Telas públicas**: 24
 
 ## Telas Públicas
 
@@ -28,6 +28,7 @@
 - **LibraryScreen** (`screens/LibraryScreen.tsx`)
 - **LoginScreen** (`screens/LoginScreen.tsx`)
 - **MyDataScreen** (`screens/MyDataScreen.tsx`)
+- **PortalScreen** (`screens/PortalScreen.tsx`)
 - **ProfileScreen** (`screens/ProfileScreen.tsx`)
 - **SearchScreen** (`screens/SearchScreen.tsx`)
 - **SetPasswordScreen** (`screens/SetPasswordScreen.tsx`)
