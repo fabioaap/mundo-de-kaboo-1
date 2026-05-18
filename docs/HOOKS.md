@@ -1,16 +1,48 @@
 # Documentação de React Hooks Customizados
 
-**Atualizado em**: 26/04/2026, 20:49:55
+**Atualizado em**: 18/05/2026, 18:00:45
 
 ## Índice
 
+- [brandSlug](#brandslug)
+- [useBrandConfig](#usebrandconfig)
 - [useDebounce](#usedebounce)
 - [useIsMobile](#useismobile)
+- [useOfflineDownload](#useofflinedownload)
 - [useOrientation](#useorientation)
+- [useParallaxMotion](#useparallaxmotion)
+- [usePrefersReducedMotion](#useprefersreducedmotion)
 - [useRefSize](#userefsize)
 - [useScreenSize](#usescreensize)
 - [useThemeBackground](#usethemebackground)
 - [useToast](#usetoast)
+
+---
+
+## brandSlug
+
+**Arquivo**: `hooks/brandSlug.ts`
+
+**Descrição**: Sem descrição
+
+
+
+**Exports**: `resolveBrandSlugFromPathname`
+
+---
+
+## useBrandConfig
+
+**Arquivo**: `hooks/useBrandConfig.ts`
+
+**Descrição**: /   useBrandConfig — bootstrap único de marca por sessão.  Fluxo: 1. Resolve o brandSlug (VITE_BRAND
+
+
+```
+/   useBrandConfig — bootstrap único de marca por sessão.  Fluxo: 1. Resolve o brandSlug (VITE_BRAND_SLUG > hostname > 'kaboo'). 2. Tenta carregar do cache de sessionStorage (invalidado por versão). 3. Em modo mock / sem Supabase, usa defaults locais. 4. Com Supabase, chama RPC get_brand_bootstrap(slug). 5. Aplica tema via applyTheme e disponibiliza o contrato ao app. /
+```
+
+**Exports**: `BrandMenuItem`, `BrandSettings`, `BrandFeatureState`, `BrandBootstrap`, `BrandConfig`, `buildMockBootstrap`, `invalidateBrandBootstrapCache`, `useBrandConfig`
 
 ---
 
@@ -38,6 +70,21 @@
 
 ---
 
+## useOfflineDownload
+
+**Arquivo**: `hooks/useOfflineDownload.ts`
+
+**Descrição**: /  Per-asset override. null/undefined = inherits collection-level flag. false = disabled even if col
+
+
+```
+/  Per-asset override. null/undefined = inherits collection-level flag. false = disabled even if collection allows. /
+```
+
+**Exports**: `useOfflineDownload`
+
+---
+
 ## useOrientation
 
 **Arquivo**: `hooks/useOrientation.ts`
@@ -47,6 +94,30 @@
 
 
 **Exports**: 
+
+---
+
+## useParallaxMotion
+
+**Arquivo**: `hooks/useParallaxMotion.ts`
+
+**Descrição**: Sem descrição
+
+
+
+**Exports**: `useParallaxMotion`
+
+---
+
+## usePrefersReducedMotion
+
+**Arquivo**: `hooks/usePrefersReducedMotion.ts`
+
+**Descrição**: Sem descrição
+
+
+
+**Exports**: `usePrefersReducedMotion`
 
 ---
 

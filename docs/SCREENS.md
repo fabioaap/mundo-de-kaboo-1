@@ -1,12 +1,12 @@
 # Documentação de Telas (Screens)
 
-**Atualizado em**: 26/04/2026, 20:49:55
+**Atualizado em**: 18/05/2026, 18:00:45
 
 ## Resumo
 
-- **Total de telas**: 22
+- **Total de telas**: 23
 - **Telas protegidas**: 0
-- **Telas públicas**: 22
+- **Telas públicas**: 23
 
 ## Telas Públicas
 
@@ -14,6 +14,7 @@
 - **AdminCharactersScreen** (`screens/AdminCharactersScreen.tsx`)
 - **AdminCollectionsScreen** (`screens/AdminCollectionsScreen.tsx`)
 - **AdminScreen** (`screens/AdminScreen.tsx`)
+- **AdminWhiteLabelScreen** (`screens/AdminWhiteLabelScreen.tsx`)
 - **AudioPlayerScreen** (`screens/AudioPlayerScreen.tsx`)
 - **BookReaderScreen** (`screens/BookReaderScreen.tsx`)
 - **CharactersScreen** (`screens/CharactersScreen.tsx`)

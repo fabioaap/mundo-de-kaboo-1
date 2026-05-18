@@ -1,12 +1,12 @@
 # Changelog - Análise Automática
 
-**Data**: 26/04/2026, 20:49:55
+**Data**: 18/05/2026, 18:00:45
 
 ## Resumo do Projeto
 
-- **Componentes**: 25
-- **Telas**: 22
-- **Hooks**: 7
+- **Componentes**: 26
+- **Telas**: 23
+- **Hooks**: 12
 - **Tipos**: 54
 
 ## Ultimas Mudanças Detectadas
@@ -26,7 +26,7 @@
 - VouchersModule
 
 ### Hooks
-- useOrientation
+- usePrefersReducedMotion
 - useRefSize
 - useScreenSize
 - useThemeBackground

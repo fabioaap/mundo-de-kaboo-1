@@ -1,6 +1,6 @@
 # Documentação de Componentes
 
-**Atualizado em**: 26/04/2026, 20:49:55
+**Atualizado em**: 18/05/2026, 18:00:45
 
 ## Índice
 
@@ -16,6 +16,7 @@
 - [FilePreviewModal](#filepreviewmodal)
 - [FileUpload](#fileupload)
 - [GalaxyBackground](#galaxybackground)
+- [HeroParallaxBackdrop](#heroparallaxbackdrop)
 - [Icons](#icons)
 - [ModalSkeleton](#modalskeleton)
 - [MultipleFileUpload](#multiplefileupload)
@@ -36,6 +37,7 @@
 
 **Arquivo**: `components/BottomNav.tsx`
 
+**Descrição**: /   Conjunto de chaves de menu habilitadas pela configuração de marca. Quando omitido, todos os itens canônicos são exibidos (comportamento padrão). /
 
 
 
@@ -173,6 +175,18 @@
 
 
 **Exports**: `GalaxyBackground`
+
+---
+
+## HeroParallaxBackdrop
+
+**Arquivo**: `components/HeroParallaxBackdrop.tsx`
+
+
+
+
+
+**Exports**: `HeroParallaxBackdrop`
 
 ---
 
