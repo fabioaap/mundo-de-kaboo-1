@@ -12,6 +12,7 @@ import { setMockActiveBrand } from './lib/mockData';
 
 // Screens
 import { LoginScreen } from './screens/LoginScreen';
+import { PortalScreen } from './screens/PortalScreen';
 import { AccessExpiredScreen } from './screens/AccessExpiredScreen';
 import { ForgotPasswordScreen } from './screens/ForgotPasswordScreen';
 import { HomeScreen } from './screens/HomeScreen';
@@ -58,6 +59,7 @@ const PROTECTED_SCREENS: ScreenName[] = [
 
 const PLAYER_SCREENS: ScreenName[] = ['player_audio', 'player_book', 'player_video', 'tools'];
 const HASH_ADDRESSABLE_SCREENS = new Set<ScreenName>([
+  'portal',
   'login',
   'forgot_password',
   'set_password',
@@ -104,6 +106,30 @@ const getNavStateFromHash = (): NavState | null => {
   }
 
   return { currentScreen: hashScreen };
+};
+
+const isPortalEntryPath = (): boolean => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const normalizedPath = window.location.pathname
+    .replace(/\/index\.html$/i, '/')
+    .replace(/\/+$/, '') || '/';
+
+  return normalizedPath === '/';
+};
+
+const getDefaultPublicScreen = (): ScreenName => (isPortalEntryPath() ? 'portal' : 'login');
+
+const getHistoryUrlForScreen = (screen: ScreenName): string => {
+  if (typeof window === 'undefined') {
+    return screen === 'portal' ? '/' : `#${screen}`;
+  }
+
+  return screen === 'portal'
+    ? `${window.location.pathname}${window.location.search}`
+    : `#${screen}`;
 };
 
 // Helper functions for localStorage persistence
@@ -190,21 +216,25 @@ const App: React.FC = () => {
       return hashState;
     }
 
+    if (isPortalEntryPath()) {
+      return { currentScreen: 'portal' };
+    }
+
     const saved = loadNavState();
     if (saved) {
       // Don't restore player screens without collectionId - they'll be handled after session check
       if (PLAYER_SCREENS.includes(saved.currentScreen)) {
         if (!saved.params?.collectionId) {
-          return { currentScreen: 'login' };
+          return { currentScreen: getDefaultPublicScreen() };
         }
       }
       // Don't restore login/forgot_password/set_password screens - let auth check handle it
       if (saved.currentScreen === 'login' || saved.currentScreen === 'forgot_password' || saved.currentScreen === 'set_password') {
-        return { currentScreen: 'login' };
+        return { currentScreen: getDefaultPublicScreen() };
       }
       return saved;
     }
-    return { currentScreen: 'login' };
+    return { currentScreen: getDefaultPublicScreen() };
   });
   const [sessionChecked, setSessionChecked] = useState(false);
   const [accessProfile, setAccessProfile] = useState<UserProfile | null>(() => getCachedProfileSync());
@@ -306,10 +336,10 @@ const App: React.FC = () => {
 
           setNavState((prev) => {
             if (!profile) {
-              if (prev.currentScreen === 'email_confirmation') {
+              if (prev.currentScreen === 'email_confirmation' || prev.currentScreen === 'portal') {
                 return prev;
               }
-              return { currentScreen: 'login' };
+              return { currentScreen: getDefaultPublicScreen() };
             }
 
             if (isAccessBlocked(profile)) {
@@ -374,10 +404,10 @@ const App: React.FC = () => {
         setAccessProfile(null);
         // No session - only preserve email_confirmation, otherwise go to login
         setNavState(prev => {
-          if (prev.currentScreen === 'email_confirmation') {
+          if (prev.currentScreen === 'email_confirmation' || prev.currentScreen === 'portal') {
             return prev;
           }
-          return { currentScreen: 'login' };
+          return { currentScreen: getDefaultPublicScreen() };
         });
       }
       setSessionChecked(true);
@@ -562,7 +592,7 @@ const App: React.FC = () => {
     setNavState(newNavState);
     saveNavState(newNavState);
     // Push history entry so browser Back button works
-    history.pushState({ screen: normalizedScreen, params: normalizedParams }, '', `#${normalizedScreen}`);
+    history.pushState({ screen: normalizedScreen, params: normalizedParams }, '', getHistoryUrlForScreen(normalizedScreen));
     window.scrollTo(0, 0);
   };
 
@@ -578,7 +608,7 @@ const App: React.FC = () => {
         // No state — fallback to login/home
         const fallback: NavState = accessProfile
           ? { currentScreen: 'home' }
-          : { currentScreen: 'login' };
+          : { currentScreen: getDefaultPublicScreen() };
         setNavState(fallback);
         saveNavState(fallback);
       }
@@ -594,7 +624,7 @@ const App: React.FC = () => {
       history.replaceState(
         { screen: seededState.currentScreen, params: seededState.params },
         '',
-        `#${seededState.currentScreen}`
+        getHistoryUrlForScreen(seededState.currentScreen)
       );
     }
 
@@ -657,7 +687,7 @@ const App: React.FC = () => {
         history.replaceState(
           { screen: restoredNavState.currentScreen, params: restoredNavState.params },
           '',
-          `#${restoredNavState.currentScreen}`
+          getHistoryUrlForScreen(restoredNavState.currentScreen)
         );
         window.scrollTo(0, 0);
         return;
@@ -674,7 +704,7 @@ const App: React.FC = () => {
         history.replaceState(
           { screen: restoredNavState.currentScreen, params: restoredNavState.params },
           '',
-          `#${restoredNavState.currentScreen}`
+          getHistoryUrlForScreen(restoredNavState.currentScreen)
         );
         window.scrollTo(0, 0);
         return;
@@ -714,7 +744,7 @@ const App: React.FC = () => {
       history.replaceState(
         { screen: newNavState.currentScreen, params: newNavState.params },
         '',
-        `#${newNavState.currentScreen}`
+        getHistoryUrlForScreen(newNavState.currentScreen)
       );
     }
   };
@@ -746,6 +776,9 @@ const App: React.FC = () => {
     }
 
     switch (navState.currentScreen) {
+      case 'portal':
+        return <PortalScreen />;
+
       case 'login':
         return (
           <LoginScreen

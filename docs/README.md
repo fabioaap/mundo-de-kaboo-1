@@ -53,6 +53,24 @@ chmod +x .githooks/pre-commit
 ### Opção 3: CI/CD (GitHub Actions)
 Workflow automático em `.github/workflows/update-docs.yml` que roda em cada push.
 
+## 🌍 Deploy da Wiki
+
+O app principal continua no GitHub Pages. A wiki Docusaurus deve subir como site separado, apontando para `docs.mundodekaboo.com`.
+
+### Premissas
+
+- Build da wiki: `npm run build` dentro de `docs/`
+- Saída estática: pasta `docs/build`
+- Domínio desejado: `docs.mundodekaboo.com`
+- Deploy separado do app principal, para não competir com o GitHub Pages atual
+
+### Decisão pendente
+
+O provedor final de hospedagem da wiki ainda pode ser definido depois. O importante neste momento é manter o app e a wiki desacoplados: o app continua no fluxo atual e a wiki fica preparada para um host próprio.
+
+- Não é necessário reaproveitar a mesma publicação do app.
+- O endereço do card Wiki no portal já considera esse host separado.
+
 ---
 
 ## 📊 Estrutura de Geração

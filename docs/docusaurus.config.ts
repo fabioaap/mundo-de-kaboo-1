@@ -4,6 +4,9 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
+const docsSiteUrl = process.env.DOCS_SITE_URL ?? 'https://docs.mundodekaboo.com';
+const docsRepoUrl = 'https://github.com/educacrossgit/Mundo-de-Kaboo-V2';
+
 const config: Config = {
   title: 'Mundo de Kaboo',
   tagline: 'Plataforma educacional para professores do Ensino Fundamental',
@@ -13,11 +16,11 @@ const config: Config = {
     v4: true,
   },
 
-  url: 'https://docs.mundodekaboo.com',
+  url: docsSiteUrl,
   baseUrl: '/',
 
-  organizationName: 'fabioeducacross',
-  projectName: 'mundo-de-kaboo',
+  organizationName: 'educacrossgit',
+  projectName: 'Mundo-de-Kaboo-V2',
 
   onBrokenLinks: 'throw',
 
@@ -49,8 +52,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl:
-            'https://github.com/fabioeducacross/mundo-de-kaboo/edit/main/docs/',
+          editUrl: `${docsRepoUrl}/edit/main/docs/`,
         },
         blog: false,
         theme: {
@@ -79,7 +81,7 @@ const config: Config = {
           label: 'Documentação',
         },
         {
-          href: 'https://github.com/fabioeducacross/mundo-de-kaboo',
+          href: docsRepoUrl,
           label: 'GitHub',
           position: 'right',
         },
@@ -111,7 +113,7 @@ const config: Config = {
             { label: 'Contribuindo', to: '/docs/contributing' },
             {
               label: 'GitHub',
-              href: 'https://github.com/fabioeducacross/mundo-de-kaboo',
+              href: docsRepoUrl,
             },
             { label: 'Suporte', href: 'mailto:suporte@mundodekaboo.com' },
           ],

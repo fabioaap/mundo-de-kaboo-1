@@ -376,6 +376,7 @@ export interface AuditLogEntry {
 // ── Screens ───────────────────────────────────────────────
 
 export type ScreenName =
+  | 'portal'
   | 'login'
   | 'forgot_password'
   | 'set_password'
