@@ -102,6 +102,7 @@ const sidebars: SidebarsConfig = {
         'roadmap/backlog-executavel-mini-youtube-spotify',
         'roadmap/consolidado-backlog-reuniao-15abr2026',
         'roadmap/backlog-central-coruja-15abr2026',
+        'roadmap/checklist-go-live-v1-3',
         'roadmap/prd-vouchers-por-conteudo',
         'roadmap/qa-validation-plan-v1.2',
       ],
