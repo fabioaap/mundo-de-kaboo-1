@@ -198,7 +198,7 @@ const bindCollectionAsset = (item: LibraryMockItem): LibraryMockItem => {
 const bindHubAssets = (mock: LibraryHubData): LibraryHubData => {
     return {
         ...mock,
-        featured: bindCollectionAsset(mock.featured),
+        featured: mock.featured ? bindCollectionAsset(mock.featured) : null,
         rails: mock.rails.map((rail) => ({
             ...rail,
             items: rail.items.map(bindCollectionAsset),

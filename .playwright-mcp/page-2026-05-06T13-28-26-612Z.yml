@@ -1,0 +1,165 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "Universo Educacross" [ref=e5] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br
+          - img "Universo Educacross" [ref=e6]
+        - search [ref=e8]:
+          - searchbox "O que voce esta buscando?" [ref=e9]
+          - button "Buscar" [ref=e10] [cursor=pointer]
+        - generic [ref=e11]:
+          - generic [ref=e12]:
+            - link "Atendimento" [ref=e13] [cursor=pointer]:
+              - /url: /contato/
+            - link "Minha conta" [ref=e14] [cursor=pointer]:
+              - /url: /account/login/
+          - link "Carrinho com 0 item(ns)" [ref=e15] [cursor=pointer]:
+            - /url: /comprar/
+            - img [ref=e16]
+            - generic [ref=e20]: Carrinho
+            - generic [ref=e21]: "0"
+      - navigation "Links principais" [ref=e22]:
+        - link "Início" [ref=e23] [cursor=pointer]:
+          - /url: /
+        - link "Produtos" [ref=e25] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/produtos/
+          - text: Produtos
+          - img [ref=e26]
+        - link "Personagens" [ref=e28] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/personagens/
+        - link "Sobre nós" [ref=e29] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/sobre-nos/
+  - generic [ref=e32]:
+    - generic [ref=e33]:
+      - text: Ao navegar neste site você
+      - strong [ref=e34]: aceita o uso de cookies
+      - text: para melhorar sua experiência de compra.
+    - link "Entendi" [ref=e36] [cursor=pointer]:
+      - /url: "#"
+  - generic [ref=e38]:
+    - complementary [ref=e39]:
+      - link "Universo Educacross" [ref=e40] [cursor=pointer]:
+        - /url: https://loja.educabox.com.br
+        - generic [ref=e42]:
+          - generic [ref=e43]: Loja oficial
+          - generic [ref=e44]: Universo Educacross
+      - generic [ref=e45]:
+        - heading "Bem-vindo de volta!" [level=1] [ref=e46]
+        - paragraph [ref=e47]: Faça login para acompanhar pedidos, revisar seus endereços e continuar comprando com mais agilidade.
+        - list [ref=e48]:
+          - listitem [ref=e49]:
+            - generic [ref=e50]: ✓
+            - text: Histórico de pedidos
+          - listitem [ref=e51]:
+            - generic [ref=e52]: ✓
+            - text: Rastreamento em tempo real
+          - listitem [ref=e53]:
+            - generic [ref=e54]: ✓
+            - text: Endereços e dados salvos
+          - listitem [ref=e55]:
+            - generic [ref=e56]: ✓
+            - text: Acesso rápido às próximas compras
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - img [ref=e59]
+          - text: Checkout seguro
+        - generic [ref=e63]:
+          - img [ref=e64]
+          - text: Pedidos em um clique
+    - generic [ref=e66]:
+      - generic [ref=e67]:
+        - link "Entrar" [ref=e68] [cursor=pointer]:
+          - /url: /account/login/
+        - link "Criar conta" [ref=e69] [cursor=pointer]:
+          - /url: /account/register
+      - generic [ref=e70]:
+        - generic [ref=e71]: Acesso
+        - heading "Entre na sua conta" [level=2] [ref=e72]
+        - paragraph [ref=e73]: Use seu e-mail e sua senha para acessar a área do cliente.
+        - generic [ref=e74]:
+          - generic [ref=e75]:
+            - generic [ref=e76]: E-mail
+            - textbox [ref=e77]
+          - generic [ref=e78]:
+            - generic [ref=e79]: Senha
+            - textbox [ref=e80]
+            - generic "Ver senha" [ref=e81] [cursor=pointer]:
+              - img [ref=e83]
+            - link "Esqueceu a senha?" [ref=e86] [cursor=pointer]:
+              - /url: /account/reset
+          - button "Iniciar sessão" [ref=e87] [cursor=pointer]
+        - paragraph [ref=e88]:
+          - text: Não possui uma conta ainda?
+          - link "Criar uma conta" [ref=e89] [cursor=pointer]:
+            - /url: /account/register
+  - link "Fale conosco pelo WhatsApp" [ref=e90] [cursor=pointer]:
+    - /url: https://wa.me/5516992994152
+    - img [ref=e91]
+  - contentinfo [ref=e93]:
+    - generic [ref=e94]:
+      - generic [ref=e95]:
+        - generic [ref=e96]:
+          - link "Universo Educacross" [ref=e98] [cursor=pointer]:
+            - /url: https://loja.educabox.com.br
+            - img "Universo Educacross" [ref=e99]
+          - paragraph [ref=e100]: Leve o universo Educacross para casa ou para a escola.
+          - generic [ref=e101]:
+            - heading "Entre em contato" [level=4] [ref=e102]
+            - generic [ref=e103]:
+              - link "(16) 99299-4152" [ref=e104] [cursor=pointer]:
+                - /url: https://wa.me/5516992994152
+              - link "loja.suporte@educacross.com.br" [ref=e105] [cursor=pointer]:
+                - /url: mailto:loja.suporte@educacross.com.br
+        - generic [ref=e106]:
+          - heading "Loja" [level=4] [ref=e107]
+          - generic [ref=e108]:
+            - link "Todos os produtos" [ref=e109] [cursor=pointer]:
+              - /url: /produtos
+            - link "Personagens" [ref=e110] [cursor=pointer]:
+              - /url: /personagens
+        - generic [ref=e111]:
+          - heading "Institucional" [level=4] [ref=e112]
+          - generic [ref=e113]:
+            - link "Sobre nós" [ref=e114] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/sobre-nos/
+            - link "Contato" [ref=e115] [cursor=pointer]:
+              - /url: /contato/
+            - link "Política de Privacidade" [ref=e116] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/politica-de-privacidade/
+        - generic [ref=e117]:
+          - heading "Ajuda" [level=4] [ref=e118]
+          - generic [ref=e119]:
+            - link "Minha conta" [ref=e120] [cursor=pointer]:
+              - /url: /account
+            - link "Meus pedidos" [ref=e121] [cursor=pointer]:
+              - /url: /account/orders
+            - link "Perguntas frequentes" [ref=e122] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/perguntas-frequentes/
+            - link "Trocas e devoluções" [ref=e123] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/trocas-e-devolucoes/
+      - generic [ref=e124]:
+        - generic [ref=e125]:
+          - img "visa" [ref=e126]
+          - img "mastercard" [ref=e127]
+          - img "amex" [ref=e128]
+          - img "diners" [ref=e129]
+          - img "br_aura" [ref=e130]
+          - img "br_elo" [ref=e131]
+          - img "br_hipercard" [ref=e132]
+          - img "br_discover" [ref=e133]
+          - img "boleto" [ref=e134]
+          - img "payment-method-types_pix" [ref=e135]
+        - img "api_4190" [ref=e137]
+      - generic [ref=e138]:
+        - generic [ref=e139]:
+          - img [ref=e140]
+          - generic [ref=e143]: Empresa brasileira registrada — CNPJ 15.130.060/0001-04 — Educacross Educacao Ltda.
+        - generic [ref=e144]:
+          - img [ref=e145]
+          - generic [ref=e149]: Loja 100% segura — pagamento criptografado e dados protegidos.
+    - generic [ref=e152]:
+      - generic [ref=e154]: Copyright Educacross - 2026. Todos os direitos reservados.
+      - link "Nuvemshop" [ref=e157] [cursor=pointer]:
+        - /url: https://www.nuvemshop.com.br?utm_source=store&utm_medium=referral&utm_campaign=footerSlogan
+        - img "Nuvemshop" [ref=e158]

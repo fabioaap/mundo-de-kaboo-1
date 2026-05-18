@@ -1,14 +1,25 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection, MediaItemCard, ScreenName } from '../types';
+import useIsMobile from '../hooks/useIsMobile';
+import useOrientation from '../hooks/useOrientation';
 import { useThemeBackground } from '../hooks/useThemeBackground';
 import { api } from '../lib/api';
+import {
+  getVideoPlayerLayout,
+  getVideoPlayerSurfaceAction,
+  shouldAutoHideVideoPlayerControls,
+  shouldResetMobileUtilityPanels,
+  shouldRenderInlineNextVideoCard,
+} from '../lib/videoPlayerLandscape';
+import { useOfflineDownload } from '../hooks/useOfflineDownload';
 
 interface VideoPlayerScreenProps {
   collection: Collection;
   mediaItemId?: string;
   assetUrl?: string;
   assetTitle?: string;
+  assetOfflineAvailable?: boolean | null;
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
 }
@@ -41,6 +52,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   mediaItemId,
   assetUrl,
   assetTitle,
+  assetOfflineAvailable,
   onNavigate,
   onBack,
 }) => {
@@ -69,6 +81,15 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const saveInFlightRef = useRef(false);
 
   const themeColor = collection.color_theme || '#5D1F58';
+  const isMobile = useIsMobile();
+  const isLandscape = useOrientation();
+  const isMobilePortrait = isMobile && !isLandscape;
+  const isMobileLandscape = isLandscape && (isMobile || isCompactHeightViewport);
+  const currentPlayerLayout = getVideoPlayerLayout(isMobilePortrait, isMobileLandscape);
+  const previousPlayerContextRef = useRef({
+    layout: currentPlayerLayout,
+    isFullscreen: false,
+  });
   const resolvedVideoUrl = resolvedPlaybackUrl ?? assetUrl ?? collection.video_url;
   const resolvedTitle = resolvedPlaybackTitle ?? assetTitle ?? collection.title;
   const youtubeVideoId = getYouTubeVideoId(resolvedVideoUrl);
@@ -76,6 +97,14 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const youtubeEmbedUrl = youtubeVideoId
     ? `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&playsinline=1&rel=0`
     : null;
+  const {
+    isAvailable: canDownloadOffline,
+    isDownloaded: isOfflineDownloaded,
+    isDownloading: isOfflineDownloading,
+    downloadError: offlineDownloadError,
+    handleDownload: handleOfflineDownload,
+    handleRemove: handleOfflineRemove,
+  } = useOfflineDownload(collection, [resolvedVideoUrl], assetOfflineAvailable);
 
   // Set browser background to black for video player
   useThemeBackground('#000000');
@@ -94,6 +123,19 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
     return () => {
       document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    const checkCompactHeightViewport = () => {
+      setIsCompactHeightViewport(window.innerHeight <= 500 && window.innerWidth <= 960);
+    };
+
+    checkCompactHeightViewport();
+    window.addEventListener('resize', checkCompactHeightViewport);
+
+    return () => {
+      window.removeEventListener('resize', checkCompactHeightViewport);
     };
   }, []);
 
@@ -178,15 +220,71 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     };
   }, [collection.description, mediaItemId]);
 
+  useEffect(() => {
+    setShowMobileQueue(false);
+    setShowMobileDetails(false);
+    setShowMobileUtilitySheet(false);
+  }, [mediaItemId]);
+
+  useEffect(() => {
+    if (!showControls && isMobileLandscape) {
+      setShowMobileQueue(false);
+      setShowMobileDetails(false);
+      setShowMobileUtilitySheet(false);
+    }
+  }, [isMobileLandscape, showControls]);
+
   const resetControlsTimeout = () => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    if (isPlaying) {
+    if (shouldAutoHideVideoPlayerControls(isPlaying, isMobilePortrait)) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
       }, 3000);
     }
   };
+
+  useEffect(() => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+
+    if (!shouldAutoHideVideoPlayerControls(isPlaying, isMobilePortrait)) {
+      return;
+    }
+
+    controlsTimeoutRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 3000);
+
+    return () => {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    };
+  }, [isMobilePortrait, isPlaying]);
+
+  useEffect(() => {
+    const previousContext = previousPlayerContextRef.current;
+
+    if (
+      shouldResetMobileUtilityPanels(
+        previousContext.layout,
+        currentPlayerLayout,
+        previousContext.isFullscreen,
+        isFullscreen
+      )
+    ) {
+      setShowMobileQueue(false);
+      setShowMobileDetails(false);
+      setShowMobileUtilitySheet(false);
+    }
+
+    previousPlayerContextRef.current = {
+      layout: currentPlayerLayout,
+      isFullscreen,
+    };
+  }, [currentPlayerLayout, isFullscreen]);
 
   const maybeSaveProgress = useCallback((force = false) => {
     if (!mediaItemId || saveInFlightRef.current) {
@@ -258,6 +356,35 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       setPlayError('Não foi possível reproduzir o vídeo. Toque novamente para tentar.');
       setIsPlaying(false);
     }
+  };
+
+  const toggleControlsVisibility = (event?: React.MouseEvent) => {
+    event?.stopPropagation();
+
+    if (showControls) {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+
+      setShowControls(false);
+      return;
+    }
+
+    resetControlsTimeout();
+  };
+
+  const handleVideoSurfaceClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    const surfaceAction = getVideoPlayerSurfaceAction(isMobileLandscape, showControls);
+
+    if (surfaceAction !== 'toggle-play') {
+      event.preventDefault();
+      toggleControlsVisibility();
+      return;
+    }
+
+    togglePlay();
   };
 
   const handleTimeUpdate = () => {
@@ -337,14 +464,60 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     if (videoRef.current) videoRef.current.playbackRate = newRate;
   };
 
-  const toggleFullscreen = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen().then(() => setIsFullscreen(true)).catch(err => console.log(err));
-    } else {
-      document.exitFullscreen().then(() => setIsFullscreen(false));
+  const requestLandscapeOrientation = useCallback(async () => {
+    if (!isMobile) {
+      return;
     }
-  };
+
+    const screenOrientation = window.screen.orientation;
+    if (!screenOrientation || typeof screenOrientation.lock !== 'function') {
+      return;
+    }
+
+    try {
+      await screenOrientation.lock('landscape');
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'NotSupportedError') {
+        return;
+      }
+      console.warn('Unable to lock screen orientation to landscape.', error);
+    }
+  }, [isMobile]);
+
+  const releaseScreenOrientation = useCallback(() => {
+    const screenOrientation = window.screen.orientation;
+    if (!screenOrientation || typeof screenOrientation.unlock !== 'function') {
+      return;
+    }
+
+    try {
+      screenOrientation.unlock();
+    } catch (error) {
+      console.warn('Unable to release screen orientation lock.', error);
+    }
+  }, []);
+
+  const toggleFullscreen = useCallback(async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!document.fullscreenElement) {
+      if (!containerRef.current) {
+        return;
+      }
+
+      try {
+        await containerRef.current.requestFullscreen();
+      } catch (error) {
+        console.warn('Unable to enter fullscreen mode.', error);
+      }
+      return;
+    }
+
+    try {
+      await document.exitFullscreen();
+    } catch (error) {
+      console.warn('Unable to exit fullscreen mode.', error);
+    }
+  }, []);
 
   const formatTime = (time: number) => {
     if (isNaN(time)) return "00:00";
@@ -383,6 +556,37 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       collectionId: item.collectionId ?? collection.id,
       mediaItemId: item.id,
       assetTitle: item.title,
+    });
+  };
+
+  const toggleMobileQueuePanel = (event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    resetControlsTimeout();
+    setShowMobileUtilitySheet(true);
+    setShowMobileDetails(false);
+    setShowMobileQueue((prev) => !prev);
+  };
+
+  const toggleMobileDetailsPanel = (event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    resetControlsTimeout();
+    setShowMobileUtilitySheet(true);
+    setShowMobileQueue(false);
+    setShowMobileDetails((prev) => !prev);
+  };
+
+  const toggleMobileUtilitySheet = (event?: React.MouseEvent) => {
+    event?.stopPropagation();
+    resetControlsTimeout();
+    setShowMobileUtilitySheet((prev) => {
+      const next = !prev;
+
+      if (!next) {
+        setShowMobileQueue(false);
+        setShowMobileDetails(false);
+      }
+
+      return next;
     });
   };
 
@@ -440,11 +644,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
       if (key === 'f') {
         event.preventDefault();
-        if (!document.fullscreenElement) {
-          containerRef.current?.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => undefined);
-        } else {
-          document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => undefined);
-        }
+        void toggleFullscreen();
       }
     };
 
@@ -453,7 +653,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleBack, isMuted, isYouTubeSource]);
+  }, [handleBack, isMuted, isYouTubeSource, toggleFullscreen]);
 
   useEffect(() => {
     if (!showControls || !showShortcutsHint) {
@@ -478,7 +678,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       aria-label="Player de vídeo"
       onMouseMove={resetControlsTimeout}
       onTouchStart={resetControlsTimeout}
-      onClick={() => setShowControls(!showControls)}
+      onClick={toggleControlsVisibility}
     >
       {/* Dark overlay to darken background */}
       <div className="absolute inset-0 bg-black/10 z-0" />
@@ -488,7 +688,8 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         <iframe
           src={youtubeEmbedUrl}
           title={resolvedTitle || 'Vídeo do YouTube'}
-          className="w-full h-full"
+          className="h-full w-full"
+          style={mobilePortraitMediaTransform ? { transform: mobilePortraitMediaTransform } : undefined}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           onLoad={() => setIsLoading(false)}
@@ -498,8 +699,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           ref={videoRef}
           src={resolvedVideoUrl}
           className="w-full h-full object-contain"
+          style={mobilePortraitMediaTransform ? { transform: mobilePortraitMediaTransform } : undefined}
           playsInline
-          onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+          onClick={handleVideoSurfaceClick}
           onTimeUpdate={handleTimeUpdate}
           onLoadedData={handleLoadedData}
           onWaiting={() => setIsLoading(true)}
@@ -607,7 +809,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           </button>
         </div>
 
-        {showShortcutsHint && (
+        {showShortcutsHint && !isMobileLandscape && (
           <div className="pointer-events-none absolute right-4 top-16 hidden rounded-xl border border-white/15 bg-black/35 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/75 backdrop-blur-md md:block">
             Espaço/K: play, J/L: 10s, M: mute, F: full, ESC: voltar
           </div>
@@ -616,7 +818,11 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         {!isYouTubeSource && (
           <>
             {/* Center Play Button */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-12" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="absolute left-1/2 top-1/2 flex items-center gap-12"
+              style={{ transform: mobilePortraitCenterTransform }}
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 onClick={() => skip(-10)}
                 className="text-white/70 hover:text-white transition-colors p-4 rounded-full hover:bg-white/10 active:scale-95 hidden md:block"
@@ -817,7 +1023,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         </div>
       </aside>
 
-      <section className={`pointer-events-auto absolute left-4 right-4 z-30 rounded-2xl border border-white/15 bg-black/55 p-3 backdrop-blur-md transition-all duration-300 lg:hidden ${showMobileQueue ? 'bottom-4 max-h-[52vh]' : 'bottom-20 max-h-[72px]'}`} onClick={(event) => event.stopPropagation()}>
+      <section className={`pointer-events-auto absolute left-4 right-4 z-30 rounded-2xl border border-white/15 bg-black/55 p-3 backdrop-blur-md transition-all duration-300 lg:hidden ${isMobileLandscape ? 'opacity-0 pointer-events-none hidden' : showMobileQueue ? 'bottom-4 max-h-[52vh]' : isMobilePortrait ? 'bottom-4 max-h-[112px]' : 'bottom-20 max-h-[72px]'}`} onClick={(event) => event.stopPropagation()}>
         <div className="mb-2 flex items-center justify-between px-0.5">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos</p>
           <button
@@ -831,9 +1037,38 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         </div>
 
         {!showMobileQueue ? (
-          <p className="text-[11px] text-white/70">
-            {relatedItems.length > 0 ? `${relatedItems.length} vídeos na fila` : 'Sem vídeos na fila'}
-          </p>
+          <div className="space-y-2">
+            <p className="text-[11px] text-white/70">
+              {relatedItemsQueueLabel}
+            </p>
+            {isMobilePortrait && leadRelatedItem && (
+              <button
+                type="button"
+                onClick={() => openRelatedItem(leadRelatedItem)}
+                className="flex w-full items-center gap-2.5 rounded-xl border border-white/20 bg-white/8 p-2 text-left transition-colors hover:bg-white/14"
+              >
+                <div
+                  className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/8"
+                  style={leadRelatedItem.thumbnailUrl ? {
+                    backgroundImage: `url(${leadRelatedItem.thumbnailUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  } : undefined}
+                >
+                  <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/65 text-white">
+                    <Icons.Play size={8} className="ml-0.5 fill-current stroke-none" />
+                  </span>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-white/55">Próximo</p>
+                  <p className="mt-0.5 line-clamp-2 text-[12px] font-bold leading-4 text-white">{leadRelatedItem.title}</p>
+                </div>
+
+                <Icons.ChevronRight size={14} className="shrink-0 text-white/70" />
+              </button>
+            )}
+          </div>
         ) : relatedItems.length === 0 ? (
           <p className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
             Sem relacionados para este vídeo.

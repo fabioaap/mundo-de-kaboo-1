@@ -1,0 +1,254 @@
+- generic [ref=e3]:
+  - generic [ref=e45]:
+    - button "Recolher menu" [ref=e46]:
+      - img [ref=e47]
+    - button "Ir para o Início" [ref=e49]:
+      - img "Mundo de Kaboo" [ref=e50]
+    - generic [ref=e51]:
+      - generic [ref=e52]:
+        - paragraph [ref=e53]: Acervo
+        - button "Coleções" [ref=e55]:
+          - img [ref=e57]
+          - generic [ref=e59]: Coleções
+        - button "Livros" [ref=e61]:
+          - img [ref=e62]
+          - generic [ref=e64]: Livros
+      - generic [ref=e65]:
+        - paragraph [ref=e66]: Bibliotecas
+        - button "Vídeos" [ref=e68]:
+          - img [ref=e69]
+          - generic [ref=e72]: Vídeos
+        - button "Músicas" [ref=e74]:
+          - img [ref=e75]
+          - generic [ref=e77]: Músicas
+        - button "Formações" [ref=e79]:
+          - img [ref=e80]
+          - generic [ref=e82]: Formações
+        - button "Materiais" [ref=e84]:
+          - img [ref=e85]
+          - generic [ref=e88]: Materiais
+      - generic [ref=e89]:
+        - paragraph [ref=e90]: Gestão
+        - button "Gerenciar" [ref=e92]:
+          - img [ref=e93]
+          - generic [ref=e96]: Gerenciar
+    - generic [ref=e97]:
+      - button "Abrir perfil" [ref=e99]:
+        - generic [ref=e100]:
+          - generic [ref=e101]: ET
+          - img "Avatar" [ref=e102]
+        - generic [ref=e103]:
+          - paragraph [ref=e104]: Olá, Editor
+          - paragraph [ref=e105]: editor@mundodekaboo.local
+      - generic [ref=e106]:
+        - paragraph [ref=e107]: Mundo de Kaboo © 2025
+        - paragraph [ref=e108]: Versão 2.1
+  - main [ref=e4]:
+    - generic [ref=e193]:
+      - generic [ref=e194]:
+        - button "Voltar" [ref=e195]:
+          - img [ref=e196]
+        - heading "Materiais" [level=1] [ref=e198]
+      - generic [ref=e200]:
+        - generic [ref=e201]:
+          - generic [ref=e202]: Bibliotecas
+          - generic [ref=e203]: /
+          - generic [ref=e204]: Materiais
+        - generic [ref=e206]:
+          - generic [ref=e207]:
+            - generic [ref=e208]:
+              - img [ref=e209]
+              - searchbox "Pesquisar em Materiais" [ref=e212]
+              - generic [ref=e213]: 18 resultados
+            - button "Filtros" [ref=e214]:
+              - img [ref=e215]
+              - generic [ref=e217]: Filtros
+          - generic [ref=e218]:
+            - button "Todos 18" [ref=e219]:
+              - generic [ref=e220]: Todos
+              - generic [ref=e221]: "18"
+            - button "Uso imediato 0" [ref=e222]:
+              - generic [ref=e223]: Uso imediato
+              - generic [ref=e224]: "0"
+            - button "Planejamento 2" [ref=e225]:
+              - generic [ref=e226]: Planejamento
+              - generic [ref=e227]: "2"
+            - button "Convivência 6" [ref=e228]:
+              - generic [ref=e229]: Convivência
+              - generic [ref=e230]: "6"
+            - button "Exploração 1" [ref=e231]:
+              - generic [ref=e232]: Exploração
+              - generic [ref=e233]: "1"
+        - generic [ref=e234]:
+          - generic [ref=e235]:
+            - heading "Documentos para abrir agora." [level=2] [ref=e237]
+            - generic [ref=e238]:
+              - button "Recomendados" [ref=e239]:
+                - img [ref=e240]
+                - text: Recomendados
+              - button "A-Z" [ref=e243]:
+                - img [ref=e244]
+                - text: A-Z
+          - generic [ref=e246]:
+            - button "Leitura Emoções Básicas PDF" [ref=e247] [cursor=pointer]:
+              - img [ref=e252]
+              - generic [ref=e255]:
+                - heading "Leitura" [level=3] [ref=e256]
+                - paragraph [ref=e257]: Emoções Básicas
+                - generic [ref=e259]:
+                  - img [ref=e260]
+                  - text: PDF
+              - img [ref=e264]
+            - button "Leitura Escuta ativa e diálogo PDF" [ref=e268] [cursor=pointer]:
+              - img [ref=e273]
+              - generic [ref=e276]:
+                - heading "Leitura" [level=3] [ref=e277]
+                - paragraph [ref=e278]: Escuta ativa e diálogo
+                - generic [ref=e280]:
+                  - img [ref=e281]
+                  - text: PDF
+              - img [ref=e285]
+            - button "Leitura Autoimagem e identidade PDF" [ref=e289] [cursor=pointer]:
+              - img [ref=e294]
+              - generic [ref=e297]:
+                - heading "Leitura" [level=3] [ref=e298]
+                - paragraph [ref=e299]: Autoimagem e identidade
+                - generic [ref=e301]:
+                  - img [ref=e302]
+                  - text: PDF
+              - img [ref=e306]
+            - button "Leitura Alfabetização emocional por meio da música PDF" [ref=e310] [cursor=pointer]:
+              - img [ref=e315]
+              - generic [ref=e318]:
+                - heading "Leitura" [level=3] [ref=e319]
+                - paragraph [ref=e320]: Alfabetização emocional por meio da música
+                - generic [ref=e322]:
+                  - img [ref=e323]
+                  - text: PDF
+              - img [ref=e327]
+            - button "Leitura Acolhimento, rotina e pertencimento PDF" [ref=e331] [cursor=pointer]:
+              - img [ref=e336]
+              - generic [ref=e339]:
+                - heading "Leitura" [level=3] [ref=e340]
+                - paragraph [ref=e341]: Acolhimento, rotina e pertencimento
+                - generic [ref=e343]:
+                  - img [ref=e344]
+                  - text: PDF
+              - img [ref=e348]
+            - button "Leitura Confiança, emoções, sentimentos e segurança emocional PDF" [ref=e352] [cursor=pointer]:
+              - img [ref=e357]
+              - generic [ref=e360]:
+                - heading "Leitura" [level=3] [ref=e361]
+                - paragraph [ref=e362]: Confiança, emoções, sentimentos e segurança emocional
+                - generic [ref=e364]:
+                  - img [ref=e365]
+                  - text: PDF
+              - img [ref=e369]
+            - button "Leitura Tomada de decisão, empatia e reparação PDF" [ref=e373] [cursor=pointer]:
+              - img [ref=e378]
+              - generic [ref=e381]:
+                - heading "Leitura" [level=3] [ref=e382]
+                - paragraph [ref=e383]: Tomada de decisão, empatia e reparação
+                - generic [ref=e385]:
+                  - img [ref=e386]
+                  - text: PDF
+              - img [ref=e390]
+            - button "Leitura Percepção sensorial e escuta ativa PDF" [ref=e394] [cursor=pointer]:
+              - img [ref=e399]
+              - generic [ref=e402]:
+                - heading "Leitura" [level=3] [ref=e403]
+                - paragraph [ref=e404]: Percepção sensorial e escuta ativa
+                - generic [ref=e406]:
+                  - img [ref=e407]
+                  - text: PDF
+              - img [ref=e411]
+            - button "Leitura Coragem e superação PDF" [ref=e415] [cursor=pointer]:
+              - img [ref=e420]
+              - generic [ref=e423]:
+                - heading "Leitura" [level=3] [ref=e424]
+                - paragraph [ref=e425]: Coragem e superação
+                - generic [ref=e427]:
+                  - img [ref=e428]
+                  - text: PDF
+              - img [ref=e432]
+            - button "Leitura Coragem, enfrentamento do medo e autoconfiança PDF" [ref=e436] [cursor=pointer]:
+              - img [ref=e441]
+              - generic [ref=e444]:
+                - heading "Leitura" [level=3] [ref=e445]
+                - paragraph [ref=e446]: Coragem, enfrentamento do medo e autoconfiança
+                - generic [ref=e448]:
+                  - img [ref=e449]
+                  - text: PDF
+              - img [ref=e453]
+            - button "Leitura Pertencimento e diversidade PDF" [ref=e457] [cursor=pointer]:
+              - img [ref=e462]
+              - generic [ref=e465]:
+                - heading "Leitura" [level=3] [ref=e466]
+                - paragraph [ref=e467]: Pertencimento e diversidade
+                - generic [ref=e469]:
+                  - img [ref=e470]
+                  - text: PDF
+              - img [ref=e474]
+            - button "Leitura Conflitos, respeito e reconciliação PDF" [ref=e478] [cursor=pointer]:
+              - img [ref=e483]
+              - generic [ref=e486]:
+                - heading "Leitura" [level=3] [ref=e487]
+                - paragraph [ref=e488]: Conflitos, respeito e reconciliação
+                - generic [ref=e490]:
+                  - img [ref=e491]
+                  - text: PDF
+              - img [ref=e495]
+            - button "Leitura Nomeação das emoções, expressão verbal e escuta empática PDF" [ref=e499] [cursor=pointer]:
+              - img [ref=e504]
+              - generic [ref=e507]:
+                - heading "Leitura" [level=3] [ref=e508]
+                - paragraph [ref=e509]: Nomeação das emoções, expressão verbal e escuta empática
+                - generic [ref=e511]:
+                  - img [ref=e512]
+                  - text: PDF
+              - img [ref=e516]
+            - button "Leitura Sensibilidade, regulação sensorial e respeito ao silêncio PDF" [ref=e520] [cursor=pointer]:
+              - img [ref=e525]
+              - generic [ref=e528]:
+                - heading "Leitura" [level=3] [ref=e529]
+                - paragraph [ref=e530]: Sensibilidade, regulação sensorial e respeito ao silêncio
+                - generic [ref=e532]:
+                  - img [ref=e533]
+                  - text: PDF
+              - img [ref=e537]
+            - button "Leitura Cooperação, pensamento investigativo e brincadeira simbólica PDF" [ref=e541] [cursor=pointer]:
+              - img [ref=e546]
+              - generic [ref=e549]:
+                - heading "Leitura" [level=3] [ref=e550]
+                - paragraph [ref=e551]: Cooperação, pensamento investigativo e brincadeira simbólica
+                - generic [ref=e553]:
+                  - img [ref=e554]
+                  - text: PDF
+              - img [ref=e558]
+            - button "Leitura Criatividade, erro e recomeço PDF" [ref=e562] [cursor=pointer]:
+              - img [ref=e567]
+              - generic [ref=e570]:
+                - heading "Leitura" [level=3] [ref=e571]
+                - paragraph [ref=e572]: Criatividade, erro e recomeço
+                - generic [ref=e574]:
+                  - img [ref=e575]
+                  - text: PDF
+              - img [ref=e579]
+            - button "Gaio e vento da coragem OK Kaboo e a Carta Misteriosa vídeo" [ref=e583] [cursor=pointer]:
+              - img [ref=e588]
+              - generic [ref=e590]:
+                - heading "Gaio e vento da coragem OK" [level=3] [ref=e591]
+                - paragraph [ref=e592]: Kaboo e a Carta Misteriosa
+                - generic [ref=e594]:
+                  - img [ref=e595]
+                  - text: vídeo
+              - img [ref=e598]
+            - button "QA UI Proof Material 4173 Pertencimento e diversidade PDF" [ref=e600] [cursor=pointer]:
+              - img [ref=e605]
+              - generic [ref=e608]:
+                - heading "QA UI Proof Material 4173" [level=3] [ref=e609]
+                - paragraph [ref=e610]: Pertencimento e diversidade
+                - generic [ref=e612]:
+                  - img [ref=e613]
+                  - text: PDF
+              - img [ref=e617]

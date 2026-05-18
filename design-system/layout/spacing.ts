@@ -1,0 +1,16 @@
+export const layoutSpacing = {
+  bottomNavShell: 'px-3 pt-2 pb-[max(0.625rem,env(safe-area-inset-bottom))]',
+  bottomNavPopover: 'right-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] w-[min(14rem,calc(100vw-1.5rem))] p-3',
+  cardGridGap: 'gap-4 md:gap-5 xl:gap-6',
+  pageHeader: 'px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-3 md:pb-4',
+  pageSectionX: 'px-4 sm:px-6 lg:px-8',
+  pageSection: 'px-4 sm:px-6 lg:px-8 py-[var(--space-page-section-y)] md:py-[var(--space-page-section-y-desktop)]',
+  pageInset: 'px-4 py-3 sm:px-6',
+  detailBody: 'px-4 pt-6 pb-10 sm:px-6 lg:px-8 lg:pt-10 lg:pb-12',
+  modalHeader: 'px-[var(--space-modal-header-x)] py-[var(--space-modal-header-y)]',
+  modalBody: 'px-[var(--space-modal-body)] py-[var(--space-modal-body)]',
+  modalFooter: 'px-[var(--space-modal-footer-x)] py-[var(--space-modal-footer-y)]',
+  authHeader: 'px-4 sm:px-6 pt-[var(--space-auth-header-top)] md:pt-[var(--space-auth-header-top-desktop)] pb-[var(--space-auth-header-bottom)]',
+  authShell: 'px-4 sm:px-6 md:px-[var(--space-auth-shell-desktop)]',
+  authContent: 'px-4 sm:px-6 py-[var(--space-auth-content-y)] md:pb-[var(--space-auth-content-bottom-desktop)]',
+} as const;

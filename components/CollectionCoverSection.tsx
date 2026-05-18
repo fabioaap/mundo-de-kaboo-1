@@ -249,6 +249,14 @@ export const CollectionCoverSection: React.FC<CollectionCoverSectionProps> = ({
         </div>
       )}
 
+      {/* Offline badge — shown when content is downloaded to device */}
+      {isOffline && (
+        <div className="absolute bottom-3 right-3 z-40 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+          <Icons.CheckCircle size={12} className="text-green-400" />
+          <span>Offline</span>
+        </div>
+      )}
+
       {/* Main Cover (Mobile & Desktop) - Full height container */}
       <div className="relative h-full flex flex-col items-center justify-center px-6 py-6 z-30">
         <div
@@ -314,17 +322,7 @@ export const CollectionCoverSection: React.FC<CollectionCoverSectionProps> = ({
               mixBlendMode: 'soft-light',
             }}
           />
-          {/* Offline Badge on Cover */}
-          {isOffline && (
-            <div
-              className="absolute top-3 right-3 bg-kaboo-green text-white p-1.5 rounded-full shadow-md z-10 animate-in zoom-in duration-300"
-              style={{
-                transform: 'translateZ(30px)',
-              }}
-            >
-              <Icons.Download size={14} strokeWidth={3} />
-            </div>
-          )}
+
         </div>
       </div>
     </div>

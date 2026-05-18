@@ -1,0 +1,96 @@
+- main [ref=e4]:
+  - generic [ref=e317]:
+    - generic [ref=e319]:
+      - button "Voltar" [ref=e320]:
+        - img [ref=e321]
+      - heading "Contação da História" [level=1] [ref=e325]
+      - generic [ref=e326]:
+        - button "Baixar áudio para offline" [ref=e327]:
+          - img [ref=e328]
+          - generic [ref=e331]: Baixar offline
+        - button "Ver sugestões" [ref=e332]:
+          - text: Sugestões
+          - img [ref=e333]
+    - generic [ref=e335]:
+      - generic [ref=e336]:
+        - generic [ref=e338] [cursor=pointer]:
+          - img "Kaboo e a Carta Misteriosa" [ref=e345]
+          - generic:
+            - img
+        - generic [ref=e348]:
+          - generic [ref=e349]:
+            - slider [ref=e351] [cursor=pointer]: "0"
+            - generic [ref=e352]:
+              - generic [ref=e353]: 00:00
+              - generic [ref=e354]: 02:46
+          - 'button "Velocidade: 1x" [ref=e356]': 1x
+          - generic [ref=e357]:
+            - button "Retroceder 15 segundos" [ref=e358]:
+              - img [ref=e359]:
+                - generic [ref=e361]: "15"
+            - button "Reproduzir" [ref=e362]:
+              - img [ref=e363]
+            - button "Avançar 15 segundos" [ref=e365]:
+              - img [ref=e366]:
+                - generic [ref=e368]: "15"
+      - generic:
+        - generic:
+          - generic:
+            - paragraph: Catálogo relacionado
+            - heading "Sugestões da biblioteca" [level=2]
+          - button "Contação da História A Cor do Sentir":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Contação da História
+              - paragraph: A Cor do Sentir
+          - button "Contação da História Blado e a Escolha do Dia":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Contação da História
+              - paragraph: Blado e a Escolha do Dia
+          - button "Contação da História Blado e os Sons que Brilham":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Contação da História
+              - paragraph: Blado e os Sons que Brilham
+          - button "Contação da História Gaio e a Hora de Voar Alto":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Contação da História
+              - paragraph: Gaio e a Hora de Voar Alto
+          - button "Contação da História Gaio e o Vento da Coragem":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Contação da História
+              - paragraph: Gaio e o Vento da Coragem
+          - button "Contação da História Kaboo e a Carta Misteriosa":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Contação da História
+              - paragraph: Kaboo e a Carta Misteriosa
+          - button "Contação da História Kaboo e o Espelho das Emoções":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Contação da História
+              - paragraph: Kaboo e o Espelho das Emoções
+          - button "Contação da História Mensageiro e a Canção Certa":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Contação da História
+              - paragraph: Mensageiro e a Canção Certa

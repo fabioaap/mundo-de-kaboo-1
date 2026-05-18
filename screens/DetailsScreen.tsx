@@ -19,6 +19,7 @@ import { formatSegmentLabel, getCharacterBgColor, getCharacterColor, getCharacte
 import { lookupBncc } from '../lib/bnccLookup';
 import { lookupCasel } from '../lib/caselLookup';
 import { COLLECTION_ASSET_META, inferCollectionAssets } from '../lib/collectionAssets';
+import { layoutSpacing } from '../design-system/layout/spacing';
 import {
   getCollectionDisplayCover,
   getCollectionPresentationCopy,
@@ -76,7 +77,7 @@ const CharacterTagButton: React.FC<CharacterTagButtonProps> = ({ character, onCl
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex min-h-12 items-center gap-2 rounded-full border border-gray-200 bg-white px-2.5 py-2 pr-3 text-sm font-bold leading-none text-gray-700 transition-all duration-200 ease-out hover:border-kaboo-primary/25 hover:bg-kaboo-primary/[0.03] active:scale-[0.98]"
+      className="inline-flex min-h-12 items-center gap-2 rounded-full border border-gray-200 bg-white px-2.5 py-2 pr-3 text-sm font-bold leading-none text-gray-700 transition-all duration-200 ease-out hover:border-brand-primary/25 hover:bg-brand-primary/[0.03] active:scale-[0.98]"
     >
       <CharacterAvatar
         name={character}
@@ -413,6 +414,8 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
         collectionId: collection.id,
         assetUrl: asset.url,
         assetTitle: asset.title,
+        lyricsUrl: asset.lyrics_url ?? undefined,
+        assetOfflineAvailable: asset.offline_available ?? undefined,
       });
       return;
     }
@@ -422,6 +425,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
         collectionId: collection.id,
         assetUrl: asset.url,
         assetTitle: asset.title,
+        assetOfflineAvailable: asset.offline_available ?? undefined,
       });
       return;
     }
@@ -529,9 +533,9 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
           <button
             key={asset.id}
             onClick={() => handlePrimaryAssetAction(asset)}
-            className="flex min-h-[104px] flex-col items-start justify-between gap-3 rounded-2xl border border-gray-100 bg-white/90 px-4 py-4 text-left text-gray-800 shadow-sm transition-all duration-200 hover:border-kaboo-primary/20 hover:bg-kaboo-primary/[0.04] active:scale-[0.98]"
+            className="flex min-h-[104px] flex-col items-start justify-between gap-3 rounded-2xl border border-gray-100 bg-white/90 px-4 py-4 text-left text-gray-800 shadow-sm transition-all duration-200 hover:border-brand-primary/20 hover:bg-brand-primary/[0.04] active:scale-[0.98]"
           >
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-kaboo-primary/[0.08] text-kaboo-primary shadow-sm ring-1 ring-kaboo-primary/10">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
               {isReading ? <Icons.BookOpen size={22} /> : isAudio ? <Icons.Headphones size={22} /> : <Icons.Video size={22} />}
             </span>
             <span className="text-sm font-bold leading-tight">{label}</span>
@@ -542,9 +546,9 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
       {hasResources && (
         <button
           onClick={handleShowExtraTools}
-          className="flex min-h-[104px] flex-col items-start justify-between gap-3 rounded-2xl border border-gray-100 bg-white/90 px-4 py-4 text-left text-gray-800 shadow-sm transition-all duration-200 hover:border-kaboo-primary/20 hover:bg-kaboo-primary/[0.04] active:scale-[0.98]"
+          className="flex min-h-[104px] flex-col items-start justify-between gap-3 rounded-2xl border border-gray-100 bg-white/90 px-4 py-4 text-left text-gray-800 shadow-sm transition-all duration-200 hover:border-brand-primary/20 hover:bg-brand-primary/[0.04] active:scale-[0.98]"
         >
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-kaboo-primary/[0.08] text-kaboo-primary shadow-sm ring-1 ring-kaboo-primary/10">
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
             <Icons.Paperclip size={22} />
           </span>
           <span className="text-sm font-bold leading-tight">{presentationCopy.materialsTitle}</span>
@@ -570,7 +574,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
 
       {/* DESKTOP: RIGHT SIDE (Content) / MOBILE: BOTTOM CARD */}
       <div ref={contentScrollRef} className="flex-1 overflow-y-auto z-10 no-scrollbar bg-white rounded-t-[2.5rem] md:rounded-none mt-0 relative shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none md:h-full">
-        <div className="pt-9 px-6 pb-24 md:p-12 md:max-w-4xl md:mx-auto">
+        <div className={layoutSpacing.detailBody}>
 
           {/* Back Button - Show when in Extra Tools view */}
           {showExtraTools && (
@@ -602,15 +606,15 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
               ) : (
                 <div className="space-y-4">
                   {structuredLibraryItems.map((item) => (
-                    <div key={item.id} className="flex flex-col md:flex-row md:items-center p-4 border border-gray-100 rounded-2xl hover:border-kaboo-primary/30 hover:bg-kaboo-primary/5 transition-colors group gap-4">
+                    <div key={item.id} className="flex flex-col md:flex-row md:items-center p-4 border border-gray-100 rounded-2xl hover:border-brand-primary/30 hover:bg-brand-primary/5 transition-colors group gap-4">
                       <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-0 mb-3 md:mb-0 flex-1">
-                        <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 md:mr-4 group-hover:bg-white group-hover:text-kaboo-primary transition-colors flex-shrink-0 self-start md:self-center">
+                        <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 md:mr-4 group-hover:bg-white group-hover:text-brand-primary transition-colors flex-shrink-0 self-start md:self-center">
                           {getFileIcon(item.media_type)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-gray-800 text-sm mb-2 break-words">{item.title}</h4>
                           <div className="flex flex-wrap gap-2 text-[11px] font-bold uppercase text-gray-500">
-                            <span className="bg-kaboo-primary/10 text-kaboo-primary px-2.5 py-1 rounded-full">
+                            <span className="bg-brand-primary/10 text-brand-primary px-2.5 py-1 rounded-full">
                               {COLLECTION_ASSET_META[item.category].label}
                             </span>
                             <span className="bg-gray-100 px-2.5 py-1 rounded-full">
@@ -632,7 +636,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                           onClick={() => {
                             setPreviewFile({ url: item.url, name: item.title, type: item.previewType });
                           }}
-                          className="flex-1 md:flex-none flex items-center justify-center py-2 md:py-0 md:w-10 md:h-10 rounded-full border-2 border-kaboo-primary/20 text-kaboo-primary hover:bg-kaboo-primary hover:text-white transition-all text-sm font-bold"
+                          className="flex-1 md:flex-none flex items-center justify-center py-2 md:py-0 md:w-10 md:h-10 rounded-full border-2 border-brand-primary/20 text-brand-primary hover:bg-brand-primary hover:text-white transition-all text-sm font-bold"
                         >
                           <Icons.Eye size={20} />
                         </button>
@@ -640,7 +644,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 md:flex-none flex items-center justify-center py-2 md:py-0 md:w-10 md:h-10 rounded-full border-2 border-kaboo-primary/20 text-kaboo-primary hover:bg-kaboo-primary hover:text-white transition-all text-sm font-bold"
+                          className="flex-1 md:flex-none flex items-center justify-center py-2 md:py-0 md:w-10 md:h-10 rounded-full border-2 border-brand-primary/20 text-brand-primary hover:bg-brand-primary hover:text-white transition-all text-sm font-bold"
                         >
                           <Icons.Download size={20} />
                         </a>
@@ -669,17 +673,17 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                 <span className={`px-3 py-1 rounded-full border text-xs font-black uppercase tracking-[0.14em] ${collectionTypeMeta.softClassName}`}>
                   {collectionDisplayLabel}
                 </span>
-                <span className="px-3 py-1 rounded-full bg-kaboo-primary/10 text-kaboo-primary text-xs font-bold uppercase tracking-wide">
+                <span className="px-3 py-1 rounded-full bg-brand-primary/10 text-brand-primary text-xs font-bold uppercase tracking-wide">
                   {formatSegmentLabel(collection.level)}
                 </span>
                 {collection.age_grade && collection.age_grade.length > 0 && (
                   <>
-                    <span className="text-kaboo-primary/40 text-xs font-bold">|</span>
+                    <span className="text-brand-primary/40 text-xs font-bold">|</span>
                     {collection.age_grade.map((item, i) => (
                       <button
                         key={i}
                         onClick={() => handleTagClick(item)}
-                        className="px-3 py-1 rounded-full bg-kaboo-primary/10 text-kaboo-primary text-xs font-bold uppercase tracking-wide hover:bg-kaboo-primary/20 transition-colors cursor-pointer"
+                        className="px-3 py-1 rounded-full bg-brand-primary/10 text-brand-primary text-xs font-bold uppercase tracking-wide hover:bg-brand-primary/20 transition-colors cursor-pointer"
                       >
                         {item}
                       </button>
@@ -701,27 +705,30 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
               )}
 
               {!isKit && (primaryReadingAsset || collection.pdf_url) && (
-                <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                <div className="mb-8">
                   <button
+                    type="button"
                     onClick={handleStandaloneReadAction}
-                    className="inline-flex min-h-12 items-center gap-3 rounded-full bg-kaboo-primary px-5 py-3 text-sm font-black uppercase tracking-[0.14em] text-white shadow-lg transition-all duration-200 hover:bg-kaboo-primary/90 active:scale-[0.98]"
+                    aria-label="Ler livro"
+                    className="flex w-[168px] max-w-full min-h-[154px] flex-col items-start justify-between rounded-[30px] border border-brand-primary/10 bg-white px-5 py-4 text-left text-[#1F2940] shadow-[0_12px_24px_rgba(31,41,64,0.10),0_2px_6px_rgba(31,41,64,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(31,41,64,0.14),0_4px_10px_rgba(31,41,64,0.08)] active:translate-y-0 active:scale-[0.985]"
                   >
-                    <Icons.BookOpen size={18} />
-                    <span>Ler livro</span>
+                    <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-brand-primary/15 bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
+                      <Icons.BookOpen size={24} />
+                    </span>
+                    <span className="text-[1.125rem] font-bold leading-none">Ler livro</span>
                   </button>
-                  <p className="text-sm text-gray-500">Abra a leitura deste livro direto por aqui.</p>
                 </div>
               )}
 
               {hasQuickActions && (
                 <div className="hidden md:block mb-8">
-                  <div className="rounded-[28px] border border-kaboo-primary/10 bg-[linear-gradient(135deg,rgba(93,31,88,0.06),rgba(255,255,255,0.98))] p-5 shadow-sm">
+                  <div className="rounded-[28px] border border-brand-primary/10 bg-[linear-gradient(135deg,var(--color-brand-bg),rgba(255,255,255,0.98))] p-5 shadow-sm">
                     <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-kaboo-primary/70">{quickActionsTitle}</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-brand-primary/70">{quickActionsTitle}</p>
                         <p className="mt-1 text-sm text-gray-500">{quickActionsDescription}</p>
                       </div>
-                      <span className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-kaboo-primary shadow-sm ring-1 ring-kaboo-primary/10">
+                      <span className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
                         {visiblePrimaryAssets.length + (hasResources ? 1 : 0)} itens
                       </span>
                     </div>
@@ -766,7 +773,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                             key={linkedBook.id}
                             type="button"
                             onClick={() => onOpenCollection?.(linkedBook)}
-                            className="w-full rounded-2xl border border-white/80 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-kaboo-primary/30 hover:shadow-md active:scale-[0.99]"
+                            className="w-full rounded-2xl border border-white/80 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-brand-primary/30 hover:shadow-md active:scale-[0.99]"
                           >
                             <div className="flex items-center gap-4">
                               <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-black text-amber-800">
@@ -788,7 +795,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                                 </p>
                               </div>
 
-                              <div className="flex flex-shrink-0 items-center gap-2 text-kaboo-primary">
+                              <div className="flex flex-shrink-0 items-center gap-2 text-brand-primary">
                                 <Icons.BookOpen size={18} />
                                 <Icons.ChevronRight size={18} />
                               </div>
@@ -846,6 +853,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                       <span className="text-xs font-bold leading-tight text-center">{presentationCopy.materialsTitle}</span>
                     </button>
                   )}
+
                 </div>
               )}
 
@@ -938,7 +946,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                                   onBlur={closePedagogicalTooltip}
                                   aria-describedby={activePedagogicalTooltip?.id === tooltipId ? tooltipId : undefined}
                                   aria-expanded={activePedagogicalTooltip?.id === tooltipId}
-                                  className="px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-bold border border-green-100 hover:bg-green-100 transition-colors cursor-pointer text-left"
+                                  className="px-3 py-1 rounded-full bg-sky-50 text-sky-700 text-xs font-bold border border-sky-100 hover:bg-sky-100 transition-colors cursor-pointer text-left"
                                 >
                                   {code}
                                 </button>
@@ -1001,7 +1009,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                                   onBlur={closePedagogicalTooltip}
                                   aria-describedby={activePedagogicalTooltip?.id === tooltipId ? tooltipId : undefined}
                                   aria-expanded={activePedagogicalTooltip?.id === tooltipId}
-                                  className="px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-bold border border-orange-100 hover:bg-orange-100 transition-colors cursor-pointer text-left"
+                                  className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100 hover:bg-emerald-100 transition-colors cursor-pointer text-left"
                                 >
                                   {casel}
                                 </button>
@@ -1014,16 +1022,16 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                           <div
                             id={activePedagogicalTooltip.id}
                             role="tooltip"
-                            className="pointer-events-none fixed z-[160] rounded-xl border border-gray-200 bg-white p-3 text-left shadow-2xl shadow-gray-900/10"
+                            className="pointer-events-none fixed z-[160] rounded-xl border border-gray-700 bg-gray-900 p-3 text-left shadow-2xl shadow-black/40"
                             style={activePedagogicalTooltipStyle}
                           >
-                            <p className="break-words text-sm font-bold text-gray-900">{activePedagogicalTooltip.title}</p>
-                            <p className="mt-0.5 break-words text-xs text-gray-500">{activePedagogicalTooltip.subtitle}</p>
-                            <p className="mt-1 break-words text-xs leading-relaxed text-gray-700">{activePedagogicalTooltip.description}</p>
+                            <p className="break-words text-sm font-bold text-white">{activePedagogicalTooltip.title}</p>
+                            <p className="mt-0.5 break-words text-xs text-gray-300">{activePedagogicalTooltip.subtitle}</p>
+                            <p className="mt-1 break-words text-xs leading-relaxed text-gray-200">{activePedagogicalTooltip.description}</p>
                             {activePedagogicalTooltip.skills && activePedagogicalTooltip.skills.length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1.5">
                                 {activePedagogicalTooltip.skills.map((skill) => (
-                                  <span key={skill} className="rounded-full border border-orange-100 bg-orange-50 px-2 py-1 text-[10px] font-bold text-orange-700">
+                                  <span key={skill} className="rounded-full border border-emerald-200/30 bg-emerald-500/15 px-2 py-1 text-[10px] font-bold text-emerald-200">
                                     {skill}
                                   </span>
                                 ))}

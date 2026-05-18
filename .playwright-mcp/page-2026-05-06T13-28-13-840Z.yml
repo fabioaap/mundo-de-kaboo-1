@@ -1,0 +1,36 @@
+- main [ref=e4]:
+  - generic [ref=e8]:
+    - img "Mundo de Kaboo" [ref=e10]
+    - heading "Bem-vindo de volta!" [level=2] [ref=e11]
+    - paragraph [ref=e12]: Entre com seu e-mail e senha para continuar.
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - text: E-mail
+        - generic [ref=e15]:
+          - textbox "E-mail" [active] [ref=e16]:
+            - /placeholder: email@exemplo.com.br
+          - img [ref=e17]
+      - generic [ref=e20]:
+        - text: Senha
+        - generic [ref=e21]:
+          - textbox "Senha" [ref=e22]:
+            - /placeholder: ••••••••
+          - button "Mostrar senha" [ref=e23]:
+            - img [ref=e24]
+      - button "Entrar" [ref=e27]
+    - button "Esqueci minha senha" [ref=e29]
+    - generic [ref=e30]:
+      - generic [ref=e31]:
+        - generic [ref=e32]:
+          - img [ref=e34]
+          - generic [ref=e36]:
+            - paragraph [ref=e37]: Primeiro acesso
+            - paragraph [ref=e38]: Ainda não tem cadastro?
+            - paragraph [ref=e39]: Insira seu voucher de acesso para criar sua conta e liberar a plataforma.
+        - button "Inserir voucher de acesso" [ref=e40]
+      - generic [ref=e41]:
+        - paragraph [ref=e42]: Ainda não tem voucher?
+        - link "Entender como funciona e comprar meu acesso →" [ref=e43] [cursor=pointer]:
+          - /url: https://loja.empatiaeditora.com.br/
+          - text: Entender como funciona e comprar meu acesso
+          - generic [ref=e44]: →

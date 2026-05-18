@@ -1,0 +1,33 @@
+- generic [ref=e5]:
+  - generic [ref=e6]:
+    - img [ref=e14]
+    - region "Barra de ferramentas de ajuda/zoom" [ref=e19]:
+      - toolbar "Barra de ferramentas de ajuda/zoom" [ref=e21]:
+        - button "Ajuda" [ref=e23]:
+          - img
+  - tooltip "Altere seu idioma a qualquer momento no menu de ajuda Fechar" [ref=e24]:
+    - generic [ref=e25]:
+      - generic [ref=e26]: Altere seu idioma a qualquer momento no menu de ajuda
+      - button "Fechar" [ref=e28]:
+        - generic:
+          - img
+  - generic:
+    - group [ref=e30]:
+      - alert [ref=e32]
+      - alert [ref=e34]
+    - region "Gerenciador de consentimento" [ref=e36]:
+      - generic [ref=e37]:
+        - text: Este site usa cookies, tags de pixel e armazenamento local para fins de desempenho, personalização e marketing. Usamos nossos próprios cookies e alguns de terceiros. Somente cookies essenciais são ativados por padrão.
+        - link "Configurações de cookies" [ref=e38]:
+          - /url: /pt-br/consent-preferences/
+      - generic [ref=e39]:
+        - button "Recusar cookies" [ref=e40]:
+          - generic:
+            - generic:
+              - generic: Recusar cookies
+        - button "Aceitar todos os cookies" [ref=e41]:
+          - generic:
+            - generic:
+              - generic: Aceitar todos os cookies
+      - button [ref=e43]:
+        - img [ref=e45]

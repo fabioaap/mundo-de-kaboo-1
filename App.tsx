@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { NavState, ScreenName, Collection, UserProfile } from './types';
-import { api, clearAllUserCache, getCachedProfileSync, isDevMockSession } from './lib/api';
+import { api, clearAllUserCache, getCachedProfileSync, isDevMockSession, setActiveBrandForApi } from './lib/api';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { useThemeBackground } from './hooks/useThemeBackground';
+import { useBrandConfig } from './hooks/useBrandConfig';
 import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
+import { setActiveBrandForCharacters } from './lib/characters';
 import { logger } from './lib/logger';
 import { clearPendingPasswordSetup, hasPendingPasswordSetup, isInvitedAuthUser, markPendingPasswordSetup } from './lib/passwordSetupFlow';
+import { setMockActiveBrand } from './lib/mockData';
 
 // Screens
 import { LoginScreen } from './screens/LoginScreen';
@@ -148,6 +151,37 @@ const loadPreviousState = (): { screen: ScreenName; params?: any } | null => {
   return null;
 };
 
+const DEFAULT_BRAND_PRIMARY_COLOR = '#5D1F58';
+const DEFAULT_FAVICON_URL = '/favicon.ico';
+const DEFAULT_APPLE_TOUCH_ICON_URL = '/apple-touch-icon.png';
+
+const upsertHeadMeta = (name: string, content: string) => {
+  const existingMeta = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+
+  if (existingMeta) {
+    existingMeta.content = content;
+    return;
+  }
+
+  const meta = document.createElement('meta');
+  meta.name = name;
+  meta.content = content;
+  document.head.appendChild(meta);
+};
+
+const replaceHeadLinks = (rel: string, href: string) => {
+  const existingLinks = Array.from(document.querySelectorAll(`link[rel="${rel}"]`)) as HTMLLinkElement[];
+
+  existingLinks.forEach(link => {
+    link.remove();
+  });
+
+  const link = document.createElement('link');
+  link.rel = rel;
+  link.href = href;
+  document.head.appendChild(link);
+};
+
 const App: React.FC = () => {
   // Initialize state from localStorage if available
   const [navState, setNavState] = useState<NavState>(() => {
@@ -183,6 +217,25 @@ const App: React.FC = () => {
   // Store collection theme color for loading screen
   const [loadingCollectionTheme, setLoadingCollectionTheme] = useState<string | null>(null);
 
+  // Brand config — bootstrapada uma vez por sessão; aplica tema e resolve menu flags.
+  const { bootstrap: brandBootstrap, enabledMenuItems } = useBrandConfig();
+  const brandEnabledMenuKeys = new Set(enabledMenuItems.map(item => item.key));
+  const brandSlug = brandBootstrap.brand.slug;
+
+  // Sync brand slug into mock data and API modules so collection storage is isolated per brand.
+  useEffect(() => {
+    setMockActiveBrand(brandSlug);
+    setActiveBrandForApi(brandSlug);
+    setActiveBrandForCharacters(brandSlug);
+  }, [brandSlug]);
+
+  const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
+  const brandLogoUrl = brandBootstrap.settings.logo_url || (brandBootstrap.brand.slug === 'kaboo' ? LOGO_URL : undefined);
+  const brandLoginBackgroundUrl = brandBootstrap.settings.login_background_url || undefined;
+  const brandPrimaryColor = brandBootstrap.settings.primary_color || DEFAULT_BRAND_PRIMARY_COLOR;
+  const brandIconUrl = brandLogoUrl || DEFAULT_FAVICON_URL;
+  const brandAppleTouchIconUrl = brandLogoUrl || DEFAULT_APPLE_TOUCH_ICON_URL;
+
   // Save navState to localStorage whenever it changes
   useEffect(() => {
     saveNavState(navState);
@@ -196,17 +249,23 @@ const App: React.FC = () => {
   // Reset background to default for non-player screens
   // Player screens will set their own background via useThemeBackground hook
   const isPlayerScreen = PLAYER_SCREENS.includes(navState.currentScreen);
+
+  useEffect(() => {
+    document.title = brandDisplayName;
+    upsertHeadMeta('apple-mobile-web-app-title', brandDisplayName);
+    replaceHeadLinks('icon', brandIconUrl);
+    replaceHeadLinks('apple-touch-icon', brandAppleTouchIconUrl);
+  }, [brandAppleTouchIconUrl, brandDisplayName, brandIconUrl]);
+
   useEffect(() => {
     if (!isPlayerScreen) {
       // Reset to default white background for regular screens
       document.documentElement.style.backgroundColor = '#ffffff';
       document.body.style.backgroundColor = '#ffffff';
-      const existingMeta = document.querySelector('meta[name="theme-color"]');
-      if (existingMeta) {
-        existingMeta.remove();
-      }
+      upsertHeadMeta('theme-color', brandPrimaryColor);
+      upsertHeadMeta('msapplication-TileColor', brandPrimaryColor);
     }
-  }, [isPlayerScreen]);
+  }, [brandPrimaryColor, isPlayerScreen]);
 
   // Auth Listener
   useEffect(() => {
@@ -663,7 +722,13 @@ const App: React.FC = () => {
   if (!sessionChecked) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6">
-        <img src={LOGO_URL} alt="Mundo de Kaboo" className="w-32 h-32 object-contain animate-pulse" />
+        {brandLogoUrl ? (
+          <img src={brandLogoUrl} alt={brandDisplayName} className="w-32 h-32 object-contain animate-pulse" />
+        ) : (
+          <div className="rounded-[28px] border border-gray-200 bg-white px-6 py-4 text-center text-lg font-black text-gray-800 shadow-sm animate-pulse">
+            {brandDisplayName}
+          </div>
+        )}
         <div className="w-8 h-8 border-4 border-kaboo-primary/30 border-t-kaboo-primary rounded-full animate-spin" />
       </div>
     );
@@ -682,7 +747,16 @@ const App: React.FC = () => {
 
     switch (navState.currentScreen) {
       case 'login':
-        return <LoginScreen onNavigate={navigate} onAuthSuccess={(profile) => setAccessProfile(profile)} />;
+        return (
+          <LoginScreen
+            onNavigate={navigate}
+            onAuthSuccess={(profile) => setAccessProfile(profile)}
+            brandSlug={brandSlug}
+            brandLogoUrl={brandLogoUrl}
+            brandName={brandDisplayName}
+            backgroundImageUrl={brandLoginBackgroundUrl}
+          />
+        );
 
       case 'access_expired':
         return (
@@ -694,7 +768,15 @@ const App: React.FC = () => {
         );
 
       case 'forgot_password':
-        return <ForgotPasswordScreen onNavigate={navigate} />;
+        return (
+          <ForgotPasswordScreen
+            onNavigate={navigate}
+            brandSlug={brandSlug}
+            brandLogoUrl={brandLogoUrl}
+            brandName={brandDisplayName}
+            backgroundImageUrl={brandLoginBackgroundUrl}
+          />
+        );
 
       case 'set_password':
         return (
@@ -702,11 +784,24 @@ const App: React.FC = () => {
             onNavigate={navigate}
             onPasswordSet={() => navigate('login')}
             linkExpired={navState.params?.linkExpired === true}
+            brandSlug={brandSlug}
+            brandLogoUrl={brandLogoUrl}
+            brandName={brandDisplayName}
+            backgroundImageUrl={brandLoginBackgroundUrl}
           />
         );
 
       case 'email_confirmation':
-        return <EmailConfirmationScreen onNavigate={navigate} params={navState.params} />;
+        return (
+          <EmailConfirmationScreen
+            onNavigate={navigate}
+            params={navState.params}
+            brandSlug={brandSlug}
+            brandLogoUrl={brandLogoUrl}
+            brandName={brandDisplayName}
+            backgroundImageUrl={brandLoginBackgroundUrl}
+          />
+        );
 
       case 'home':
         return <HomeScreen key="home-screen" onNavigate={navigate} params={navState.params} accessProfile={accessProfile} screenName="home" searchMode={Boolean(navState.params?.inlineSearch)} />;
@@ -747,6 +842,8 @@ const App: React.FC = () => {
             mediaItemId={navState.params?.mediaItemId}
             assetUrl={navState.params?.assetUrl}
             assetTitle={navState.params?.assetTitle}
+            lyricsUrl={navState.params?.lyricsUrl}
+            assetOfflineAvailable={navState.params?.assetOfflineAvailable}
             onNavigate={navigate}
             onBack={goBack}
           />
@@ -818,6 +915,7 @@ const App: React.FC = () => {
             mediaItemId={navState.params?.mediaItemId}
             assetUrl={navState.params?.assetUrl}
             assetTitle={navState.params?.assetTitle}
+            assetOfflineAvailable={navState.params?.assetOfflineAvailable}
             onNavigate={navigate}
             onBack={goBack}
           />
@@ -873,15 +971,28 @@ const App: React.FC = () => {
   const showNav = ['home', 'search', 'videos', 'music', 'formations', 'materials', 'support', 'profile', 'my_data', 'admin', 'characters'].includes(navState.currentScreen);
   // Modal opens immediately when collectionId is present, even if collection is still loading
   const isModalOpen = !!navState.params?.collectionId && ['home', 'search'].includes(navState.currentScreen);
+  const mainShellClassName = `relative w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-white overscroll-none md:h-screen`;
+
+
+  const appShellBg = showNav && brandSlug === 'central-coruja' ? 'bg-[#0C1A34]' : 'bg-white';
 
   return (
-    <div className="bg-white min-h-screen w-full flex flex-col md:flex-row overflow-x-hidden">
+    <div className={`flex h-[100dvh] min-h-[100dvh] w-full flex-col overflow-x-hidden md:h-auto md:min-h-screen md:flex-row ${appShellBg}`}>
 
       {showNav && (
-        <BottomNav currentScreen={navState.currentScreen} currentParams={navState.params} onNavigate={navigate} profile={accessProfile} />
+        <BottomNav
+          currentScreen={navState.currentScreen}
+          currentParams={navState.params}
+          onNavigate={navigate}
+          profile={accessProfile}
+          brandSlug={brandSlug}
+          brandLogoUrl={brandLogoUrl}
+          brandName={brandDisplayName}
+          enabledMenuKeys={brandEnabledMenuKeys}
+        />
       )}
 
-      <main className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative h-screen w-full bg-white`}>
+      <main className={mainShellClassName}>
         {renderScreen()}
       </main>
 

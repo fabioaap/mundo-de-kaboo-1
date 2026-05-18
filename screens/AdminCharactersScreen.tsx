@@ -143,6 +143,9 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
     });
   }, [characters, searchFilter, statusFilter]);
 
+  const hasCharacters = characters.length > 0;
+  const hasActiveCharacterFilters = Boolean(searchFilter.trim()) || statusFilter !== 'all';
+
   const resetForm = () => {
     setEditingId(null);
     setShowCreateForm(false);
@@ -402,56 +405,86 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
       ) : (
         <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-6 pt-0">
           <div className="max-w-5xl mx-auto space-y-4">
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="flex-1 relative">
-                <Icons.Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchFilter}
-                  onChange={(event) => setSearchFilter(event.target.value)}
-                  className="w-full h-14 bg-gray-50 border-none rounded-2xl pl-12 pr-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
-                  placeholder="Buscar personagem"
-                />
+            {hasCharacters && (
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex-1 relative">
+                  <Icons.Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchFilter}
+                    onChange={(event) => setSearchFilter(event.target.value)}
+                    className="w-full h-14 bg-gray-50 border-none rounded-2xl pl-12 pr-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
+                    placeholder="Buscar personagem"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 md:w-[280px]">
+                  {([
+                    { id: 'all', label: 'Todos' },
+                    { id: 'active', label: 'Ativos' },
+                    { id: 'inactive', label: 'Inativos' },
+                  ] as const).map((option) => {
+                    const isActive = statusFilter === option.id;
+
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setStatusFilter(option.id)}
+                        className={`h-14 rounded-2xl border font-bold text-sm transition-all active:scale-95 ${isActive
+                          ? 'border-kaboo-primary bg-kaboo-primary/10 text-kaboo-primary'
+                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                          }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <Button variant="primary" onClick={handleStartCreate}>
+                  <span className="inline-flex items-center gap-2">
+                    <Icons.Plus size={18} />
+                    <span>Novo Personagem</span>
+                  </span>
+                </Button>
               </div>
-
-              <div className="grid grid-cols-3 gap-2 md:w-[280px]">
-                {([
-                  { id: 'all', label: 'Todos' },
-                  { id: 'active', label: 'Ativos' },
-                  { id: 'inactive', label: 'Inativos' },
-                ] as const).map((option) => {
-                  const isActive = statusFilter === option.id;
-
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => setStatusFilter(option.id)}
-                      className={`h-14 rounded-2xl border font-bold text-sm transition-all active:scale-95 ${isActive
-                        ? 'border-kaboo-primary bg-kaboo-primary/10 text-kaboo-primary'
-                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                        }`}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <Button variant="primary" onClick={handleStartCreate}>
-                <span className="inline-flex items-center gap-2">
-                  <Icons.Plus size={18} />
-                  <span>Novo Personagem</span>
-                </span>
-              </Button>
-            </div>
+            )}
 
             {filteredCharacters.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center">
-                <Icons.Users size={40} className="mx-auto mb-4 text-gray-300" />
-                <p className="text-gray-600 font-bold">Nenhum personagem encontrado.</p>
-                <p className="text-sm text-gray-500 mt-2">Ajuste os filtros ou cadastre um novo personagem.</p>
-              </div>
+              hasCharacters ? (
+                <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center">
+                  <Icons.Users size={40} className="mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-600 font-bold">Nenhum personagem corresponde aos filtros.</p>
+                  <p className="text-sm text-gray-500 mt-2">Ajuste ou limpe os filtros para continuar.</p>
+                  {hasActiveCharacterFilters && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchFilter('');
+                        setStatusFilter('all');
+                      }}
+                      className="mt-4 text-sm font-bold text-kaboo-primary hover:underline"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center">
+                  <Icons.Users size={40} className="mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-600 font-bold">Nenhum personagem cadastrado.</p>
+                  <p className="text-sm text-gray-500 mt-2">Cadastre o primeiro personagem para começar.</p>
+                  <div className="mt-4 flex justify-center">
+                    <Button variant="primary" onClick={handleStartCreate}>
+                      <span className="inline-flex items-center gap-2">
+                        <Icons.Plus size={18} />
+                        <span>Novo Personagem</span>
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              )
             ) : (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {filteredCharacters.map((character) => {

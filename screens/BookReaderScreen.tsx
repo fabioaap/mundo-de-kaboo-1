@@ -6,6 +6,7 @@ import useOrientation from '../hooks/useOrientation';
 import useIsMobile from '../hooks/useIsMobile';
 import { useThemeBackground } from '../hooks/useThemeBackground';
 import { GalaxyBackground } from '../components/GalaxyBackground';
+import { useOfflineDownload } from '../hooks/useOfflineDownload';
 
 interface BookReaderScreenProps {
   collection: Collection;
@@ -16,7 +17,6 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [forcePortrait, setForcePortrait] = useState(false);
-  const [textMode, setTextMode] = useState(false);
   const flipbookRef = useRef<any>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -24,6 +24,18 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const isLandscape = useOrientation();
   const isMobile = useIsMobile();
   const isMobileLandscape = isMobile && isLandscape;
+  const {
+    isAvailable: canDownloadOffline,
+    isDownloaded: isOfflineDownloaded,
+    isDownloading: isOfflineDownloading,
+    downloadError: offlineDownloadError,
+    handleDownload: handleOfflineDownload,
+    handleRemove: handleOfflineRemove,
+  } = useOfflineDownload(
+    collection,
+    [collection.pdf_url],
+    collection.collection_assets?.find((a) => a.category === 'reading')?.offline_available
+  );
   
   // Set browser background to match theme color
   useThemeBackground(themeColor);
@@ -93,7 +105,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
 
   if (!collection.pdf_url) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-white" style={{ height: '100vh', width: '100vw' }}>
+      <div className="fixed inset-0 z-50 flex flex-col bg-white" style={{ height: '100dvh', width: '100vw' }}>
         <div className="relative z-10 p-6 pt-12">
           <button 
             onClick={onBack}
@@ -127,80 +139,13 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
 
   const rgb = hexToRgb(themeColor);
   const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-
-  // Show orientation overlay if in portrait mode (but not if user chose to continue)
-  if (!isLandscape && !forcePortrait) {
-    return (
-      <div 
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden" 
-        style={{ 
-          height: '100vh', 
-          width: '100vw',
-          backgroundColor: bgColor
-        }}
-      >
-        {/* Galaxy Effect - Only show after book is loaded and not on mobile */}
-        {!isLoading && !isMobile && <GalaxyBackground />}
-        
-        {/* Dark overlay to darken background - Works on both desktop and mobile */}
-        <div className="absolute inset-0 bg-black/20" style={{ zIndex: 1 }} />
-        
-        {/* Back Button */}
-        <button 
-          onClick={onBack}
-          className="absolute top-4 left-4 z-30 w-12 h-12 rounded-full bg-white/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-white/30 transition-all active:scale-95 border border-white/30"
-          aria-label="Voltar"
-        >
-          <Icons.ChevronLeft size={24} strokeWidth={2.5} />
-        </button>
-
-        <div className="text-center p-8 max-w-md mx-auto relative z-10">
-          <style>{`
-            @keyframes rotatePhone {
-              0% {
-                transform: rotate(0deg);
-              }
-              50% {
-                transform: rotate(90deg);
-              }
-              100% {
-                transform: rotate(0deg);
-              }
-            }
-            .phone-rotate-animation {
-              animation: rotatePhone 3s ease-in-out infinite;
-              transform-origin: center center;
-            }
-          `}</style>
-          <div className="mb-6 flex justify-center">
-            <Icons.Smartphone 
-              size={80} 
-              className="text-white/90 phone-rotate-animation" 
-              strokeWidth={2}
-            />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-lg">
-            Gire seu dispositivo
-          </h2>
-          <p className="text-lg text-white/90 mb-6 drop-shadow-md">
-            Para uma melhor experiência de leitura, gire seu dispositivo para o modo horizontal.
-          </p>
-          <button
-            onClick={() => setForcePortrait(true)}
-            className="text-sm text-white/60 underline underline-offset-2 hover:text-white/90 transition-colors mt-2"
-          >
-            Continuar em retrato mesmo assim
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const showOrientationPrompt = !isLandscape && !forcePortrait;
 
   return (
     <div 
       className="fixed inset-0 z-50 flex flex-col overflow-hidden" 
       style={{ 
-        height: '100vh', 
+        height: '100dvh', 
         width: '100vw',
         backgroundColor: bgColor
       }}
@@ -211,8 +156,64 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       {/* Dark overlay to darken background - Works on both desktop and mobile */}
       <div className={`absolute inset-0 ${isMobile ? 'bg-black/20' : 'bg-black/10'}`} style={{ zIndex: 1 }} />
 
+      {showOrientationPrompt && (
+        <div
+          className="absolute inset-0 z-40 flex flex-col items-center justify-center overflow-hidden bg-black/35 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Gire seu dispositivo"
+        >
+          <button 
+            onClick={onBack}
+            className="absolute left-4 top-4 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/20 text-white shadow-xl backdrop-blur-md transition-all hover:bg-white/30 active:scale-95"
+            aria-label="Voltar"
+          >
+            <Icons.ChevronLeft size={24} strokeWidth={2.5} />
+          </button>
+
+          <div className="text-center p-8 max-w-md mx-auto relative z-10">
+            <style>{`
+              @keyframes rotatePhone {
+                0% {
+                  transform: rotate(0deg);
+                }
+                50% {
+                  transform: rotate(90deg);
+                }
+                100% {
+                  transform: rotate(0deg);
+                }
+              }
+              .phone-rotate-animation {
+                animation: rotatePhone 3s ease-in-out infinite;
+                transform-origin: center center;
+              }
+            `}</style>
+            <div className="mb-6 flex justify-center">
+              <Icons.Smartphone 
+                size={80} 
+                className="text-white/90 phone-rotate-animation" 
+                strokeWidth={2}
+              />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-4 drop-shadow-lg">
+              Gire seu dispositivo
+            </h2>
+            <p className="text-lg text-white/90 mb-6 drop-shadow-md">
+              Para uma melhor experiência de leitura, gire seu dispositivo para o modo horizontal.
+            </p>
+            <button
+              onClick={() => setForcePortrait(true)}
+              className="text-sm text-white/60 underline underline-offset-2 hover:text-white/90 transition-colors mt-2"
+            >
+              Continuar em retrato mesmo assim
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header - Hidden on mobile landscape */}
-      {!isMobileLandscape && (
+      {!showOrientationPrompt && !isMobileLandscape && (
         <div className="relative z-20 p-4 flex items-center justify-between flex-shrink-0">
           <button 
             onClick={onBack}
@@ -230,15 +231,31 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             </div>
           </div>
 
-          <div className="w-12">
-            {collection.text_content && (
+          <div className="flex min-w-[104px] items-center justify-end gap-2">
+            {canDownloadOffline && (
               <button
-                onClick={() => setTextMode(prev => !prev)}
-                className={`w-12 h-12 rounded-full backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-95 border border-white/30 ${textMode ? 'bg-white/40 text-white' : 'bg-black/20 text-white hover:bg-black/30'}`}
-                aria-label={textMode ? 'Modo flipbook' : 'Modo texto'}
-                title={textMode ? 'Voltar ao flipbook' : 'Ler em modo texto'}
+                type="button"
+                onClick={isOfflineDownloaded ? handleOfflineRemove : handleOfflineDownload}
+                disabled={isOfflineDownloading}
+                aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar livro para offline'}
+                className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors backdrop-blur-md disabled:cursor-default ${
+                  isOfflineDownloaded
+                    ? 'border-red-300/50 bg-red-500/20 text-red-200 hover:bg-red-500/35'
+                    : isOfflineDownloading
+                      ? 'border-white/30 bg-white/15 text-white/90'
+                      : 'border-white/25 bg-black/30 text-white/90 hover:bg-black/45'
+                }`}
               >
-                <Icons.Type size={20} strokeWidth={2.5} />
+                {isOfflineDownloading ? (
+                  <Icons.RotateCw size={13} className="animate-spin" />
+                ) : isOfflineDownloaded ? (
+                  <Icons.Trash2 size={13} />
+                ) : (
+                  <Icons.Download size={13} />
+                )}
+                <span className="hidden sm:inline">
+                  {isOfflineDownloaded ? 'Remover offline' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
+                </span>
               </button>
             )}
           </div>
@@ -246,7 +263,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       )}
 
       {/* Back button for mobile landscape - Floating top left */}
-      {isMobileLandscape && (
+      {!showOrientationPrompt && isMobileLandscape && (
         <button 
           onClick={onBack}
           className="fixed top-4 left-4 z-30 w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30"
@@ -256,37 +273,49 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
         </button>
       )}
 
-      {/* Text mode toggle for mobile landscape */}
-      {isMobileLandscape && collection.text_content && (
-        <button
-          onClick={() => setTextMode(prev => !prev)}
-          className={`fixed top-4 right-4 z-30 w-12 h-12 rounded-full backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-95 border border-white/30 ${textMode ? 'bg-white/40 text-white' : 'bg-black/20 text-white hover:bg-black/30'}`}
-          aria-label={textMode ? 'Modo flipbook' : 'Modo texto'}
-          title={textMode ? 'Voltar ao flipbook' : 'Ler em modo texto'}
-        >
-          <Icons.Type size={20} strokeWidth={2.5} />
-        </button>
+      {/* Offline button for mobile landscape - Floating top right */}
+      {!showOrientationPrompt && isMobileLandscape && (
+        <div className="fixed top-4 right-4 z-30 flex items-center gap-2">
+          {canDownloadOffline && (
+            <button
+              type="button"
+              onClick={isOfflineDownloaded ? handleOfflineRemove : handleOfflineDownload}
+              disabled={isOfflineDownloading}
+              aria-label={isOfflineDownloaded ? 'Remover download offline' : 'Baixar livro para offline'}
+              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold transition-colors backdrop-blur-md disabled:cursor-default ${
+                isOfflineDownloaded
+                  ? 'border-red-300/50 bg-red-500/20 text-red-200 hover:bg-red-500/35'
+                  : isOfflineDownloading
+                    ? 'border-white/30 bg-white/15 text-white/90'
+                    : 'border-white/25 bg-black/30 text-white/90 hover:bg-black/45'
+              }`}
+            >
+              {isOfflineDownloading ? (
+                <Icons.RotateCw size={13} className="animate-spin" />
+              ) : isOfflineDownloaded ? (
+                <Icons.Trash2 size={13} />
+              ) : (
+                <Icons.Download size={13} />
+              )}
+              <span className="hidden sm:inline">
+                {isOfflineDownloaded ? 'Remover offline' : isOfflineDownloading ? 'Baixando...' : 'Baixar offline'}
+              </span>
+            </button>
+          )}
+        </div>
       )}
 
-      {/* Text Mode View */}
-      {textMode && collection.text_content ? (
-        <div className="flex-1 relative z-10 overflow-auto">
-          <div
-            className="max-w-2xl mx-auto px-6 py-8 text-gray-800 bg-white min-h-full rounded-t-2xl mt-2"
-            role="article"
-            aria-label={`Texto do livro: ${collection.title}`}
-          >
-            <h1 className="text-2xl font-bold mb-6">{collection.title}</h1>
-            {collection.text_content.split('\n\n').map((paragraph, i) => (
-              <p key={i} className="text-base leading-relaxed mb-4">{paragraph}</p>
-            ))}
+      {offlineDownloadError && (
+        <div className="relative z-20 px-4 pb-2">
+          <div className="mx-auto max-w-md rounded-2xl border border-red-300/35 bg-red-500/80 px-4 py-2 text-center text-xs text-white backdrop-blur-md shadow-lg">
+            {offlineDownloadError}
           </div>
         </div>
-      ) : (
-        <>
-          {/* Book Container - Full screen centered for mobile landscape */}
-      <div 
-        className={`${isMobileLandscape ? 'fixed inset-0 flex items-center justify-center z-10' : 'flex-1 relative z-10 overflow-hidden'}`} 
+      )}
+
+      {/* Book Container - Full screen centered for mobile landscape */}
+      <div
+        className={`${isMobileLandscape ? 'fixed inset-0 flex items-center justify-center z-10' : 'flex-1 relative z-10 overflow-hidden'} ${showOrientationPrompt ? 'pointer-events-none opacity-0' : ''}`} 
         style={isMobileLandscape ? { minHeight: 0 } : { minHeight: 0 }}
       >
         {error ? (
@@ -328,7 +357,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       </div>
 
       {/* Navigation Controls */}
-      {isMobileLandscape ? (
+      {!showOrientationPrompt && isMobileLandscape ? (
         <>
           {/* Left Arrow - Center far left corner */}
           <button
@@ -348,7 +377,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             <Icons.ChevronLeft size={28} className="rotate-180" strokeWidth={2.5} />
           </button>
         </>
-      ) : (
+      ) : !showOrientationPrompt ? (
         <div className="relative z-20 pb-6 pt-4 flex items-center justify-center gap-6 flex-shrink-0">
           <button
             onClick={flipPrev}
@@ -373,9 +402,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             <Icons.ChevronLeft size={28} className="rotate-180" strokeWidth={2.5} />
           </button>
         </div>
-      )}
-        </>
-      )}
+      ) : null}
     </div>
   );
 };

@@ -1,0 +1,141 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Recolher menu" [ref=e5]:
+      - img [ref=e6]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Central Coruja" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - paragraph [ref=e12]: Acervo
+        - button "Coleções" [ref=e13]:
+          - img [ref=e15]
+          - generic [ref=e17]: Coleções
+        - button "Livros" [active] [ref=e18]:
+          - img [ref=e19]
+          - generic [ref=e21]: Livros
+      - generic [ref=e22]:
+        - paragraph [ref=e23]: Bibliotecas
+        - button "Vídeos" [ref=e24]:
+          - img [ref=e25]
+          - generic [ref=e28]: Vídeos
+        - button "Músicas" [ref=e29]:
+          - img [ref=e30]
+          - generic [ref=e32]: Músicas
+        - button "Formações" [ref=e33]:
+          - img [ref=e34]
+          - generic [ref=e36]: Formações
+        - button "Materiais" [ref=e37]:
+          - img [ref=e38]
+          - generic [ref=e41]: Materiais
+      - generic [ref=e42]:
+        - paragraph [ref=e43]: Gestão
+        - button "Gerenciar" [ref=e44]:
+          - img [ref=e45]
+          - generic [ref=e48]: Gerenciar
+    - generic [ref=e49]:
+      - button "Abrir perfil" [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53]: DA
+          - img "Avatar" [ref=e54]
+        - generic [ref=e55]:
+          - paragraph [ref=e56]: Olá, Demo
+          - paragraph [ref=e57]: demo@mundodekaboo.local
+      - generic [ref=e58]:
+        - paragraph [ref=e59]: Central Coruja © 2025
+        - paragraph [ref=e60]: Versão 2.1
+  - main [ref=e61]:
+    - generic [ref=e133]:
+      - generic [ref=e135]:
+        - generic [ref=e136]:
+          - paragraph [ref=e137]: Olá, Demo.
+          - heading "Bem-vindo à Central Coruja!" [level=2] [ref=e138]
+          - paragraph [ref=e139]: Histórias, vídeos e experiências de aprendizagem organizados para você começar pela busca e explorar com mais clareza.
+        - generic [ref=e140]:
+          - generic [ref=e141]:
+            - generic:
+              - img
+            - button "Abrir pesquisa" [ref=e142]: Buscar por título, tema, BNCC ou personagem
+            - button "Filtros" [ref=e143]:
+              - img [ref=e144]
+              - generic [ref=e146]: Filtros
+          - generic [ref=e147]:
+            - button "Todos" [ref=e148]:
+              - img [ref=e149]
+              - text: Todos
+            - button "Ed. Infantil" [ref=e151]
+            - button "Fund I" [ref=e152]
+      - generic [ref=e154]:
+        - heading "Todos os Livros" [level=2] [ref=e385]
+        - generic [ref=e159]:
+          - generic [ref=e387] [cursor=pointer]:
+            - generic [ref=e388]:
+              - img "Gaio e a Hora de Voar Alto" [ref=e391]
+              - generic [ref=e393]: Livro
+            - heading "Gaio e a Hora de Voar Alto" [level=3] [ref=e395]
+            - paragraph [ref=e396]: Coragem e superação
+          - generic [ref=e398] [cursor=pointer]:
+            - generic [ref=e399]:
+              - img "Papa e o Plano Furado" [ref=e402]
+              - generic [ref=e404]: Livro
+            - heading "Papa e o Plano Furado" [level=3] [ref=e406]
+            - paragraph [ref=e407]: Criatividade, erro e recomeço
+          - generic [ref=e409] [cursor=pointer]:
+            - generic [ref=e410]:
+              - img "Batatinha e o Espelho da Alegria" [ref=e413]
+              - generic [ref=e415]: Livro
+            - heading "Batatinha e o Espelho da Alegria" [level=3] [ref=e417]
+            - paragraph [ref=e418]: Autoimagem e identidade
+          - generic [ref=e420] [cursor=pointer]:
+            - generic [ref=e421]:
+              - img "Blado e a Caixa dos Sentimentos" [ref=e424]
+              - generic [ref=e426]: Livro
+            - heading "Blado e a Caixa dos Sentimentos" [level=3] [ref=e428]
+            - paragraph [ref=e429]: Confiança, emoções, sentimentos e segurança emocional
+          - generic [ref=e431] [cursor=pointer]:
+            - generic [ref=e432]:
+              - img "Gaio e o Vento da Coragem" [ref=e435]
+              - generic [ref=e437]: Livro
+            - heading "Gaio e o Vento da Coragem" [level=3] [ref=e439]
+            - paragraph [ref=e440]: Coragem, enfrentamento do medo e autoconfiança
+          - generic [ref=e442] [cursor=pointer]:
+            - generic [ref=e443]:
+              - img "Batatinha e o Giro das Emoções" [ref=e446]
+              - generic [ref=e448]: Livro
+            - heading "Batatinha e o Giro das Emoções" [level=3] [ref=e450]
+            - paragraph [ref=e451]: Alfabetização emocional por meio da música
+          - generic [ref=e453] [cursor=pointer]:
+            - generic [ref=e454]:
+              - img "Blado e a Escolha do Dia" [ref=e457]
+              - generic [ref=e459]: Livro
+            - heading "Blado e a Escolha do Dia" [level=3] [ref=e461]
+            - paragraph [ref=e462]: Tomada de decisão, empatia e reparação
+          - generic [ref=e464] [cursor=pointer]:
+            - generic [ref=e465]:
+              - img "Kaboo e o Espelho das Emoções" [ref=e468]
+              - generic [ref=e470]: Livro
+            - heading "Kaboo e o Espelho das Emoções" [level=3] [ref=e472]
+            - paragraph [ref=e473]: Nomeação das emoções, expressão verbal e escuta empática
+          - generic [ref=e475] [cursor=pointer]:
+            - generic [ref=e476]:
+              - img "Batatinha e o Ritmo do Acolhimento" [ref=e479]
+              - generic [ref=e481]: Livro
+            - heading "Batatinha e o Ritmo do Acolhimento" [level=3] [ref=e483]
+            - paragraph [ref=e484]: Acolhimento, rotina e pertencimento
+          - generic [ref=e486] [cursor=pointer]:
+            - generic [ref=e487]:
+              - img "Onde está Gaio?" [ref=e490]
+              - generic [ref=e492]: Livro
+            - heading "Onde está Gaio?" [level=3] [ref=e494]
+            - paragraph [ref=e495]: Cooperação, pensamento investigativo e brincadeira simbólica
+          - generic [ref=e497] [cursor=pointer]:
+            - generic [ref=e498]:
+              - img "Blado e os Sons que Brilham" [ref=e501]
+              - generic [ref=e503]: Livro
+            - heading "Blado e os Sons que Brilham" [level=3] [ref=e505]
+            - paragraph [ref=e506]: Percepção sensorial e escuta ativa
+          - generic [ref=e508] [cursor=pointer]:
+            - generic [ref=e509]:
+              - img "A Cor do Sentir" [ref=e512]
+              - generic [ref=e514]: Livro
+            - heading "A Cor do Sentir" [level=3] [ref=e516]
+            - paragraph [ref=e517]: Emoções Básicas

@@ -5,6 +5,8 @@ import { Toast } from '../components/Toast';
 import { CriticalConfirmationModal } from '../components/CriticalConfirmationModal';
 import { VouchersOnboardingBanner } from '../components/VouchersOnboardingBanner';
 import { useToast } from '../hooks/useToast';
+import { isAdmin } from '../lib/auth';
+import { getCollectionDisplayCover } from '../lib/collectionPresentation';
 import {
     VoucherModel,
     VoucherBatch,
@@ -34,6 +36,10 @@ import {
     MAX_VOUCHER_BATCH_QUANTITY,
 } from '../lib/mockVoucherData';
 import { getMockCollectionsLive } from '../lib/mockData';
+
+const getVoucherCollectionCover = (collection?: { cover_image?: string | null; kit_cover_image?: string | null; collection_type?: 'book' | 'kit' } | null) => {
+    return getCollectionDisplayCover(collection) || collection?.cover_image || '';
+};
 
 /* ── Constants ────────────────────────────────────────── */
 
@@ -124,8 +130,8 @@ const ModelPreview: React.FC<{ model: VoucherModel }> = ({ model }) => {
                 <div className="flex flex-wrap gap-2">
                     {items.map((item) => (
                         <div key={item.id} className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 py-1">
-                            {item.collection?.cover_image && (
-                                <img src={item.collection.cover_image} alt="" className="w-6 h-6 rounded object-cover" />
+                            {getVoucherCollectionCover(item.collection) && (
+                                <img src={getVoucherCollectionCover(item.collection)} alt="" className="w-6 h-6 rounded object-cover" />
                             )}
                             <span className="text-xs text-gray-700 truncate max-w-[120px]">{item.collection?.title || item.collection_id}</span>
                         </div>
@@ -147,6 +153,7 @@ const ModelsListView: React.FC<{
     const [models, setModels] = useState<VoucherModel[]>([]);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<VoucherModelStatus | 'all'>('all');
+    const [isAdminUser, setIsAdminUser] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(() => {
         try {
             return localStorage.getItem(VOUCHERS_ONBOARDING_STORAGE_KEY) === null;
@@ -156,6 +163,7 @@ const ModelsListView: React.FC<{
     });
 
     useEffect(() => { setModels(getVoucherModels()); }, []);
+    useEffect(() => { isAdmin().then(setIsAdminUser); }, []);
 
     const dismissOnboarding = () => {
         try {
@@ -183,14 +191,19 @@ const ModelsListView: React.FC<{
         });
     }, [models, search, statusFilter]);
 
+    const hasModels = models.length > 0;
+    const hasActiveModelFilters = search.trim().length > 0 || statusFilter !== 'all';
+
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-xl font-bold text-gray-800">Modelos de Voucher</h1>
-                <Button onClick={handleCreateNew}>
-                    <Icons.Plus className="w-4 h-4 mr-1" /> Novo modelo
-                </Button>
+                {isAdminUser && (
+                    <Button onClick={handleCreateNew}>
+                        <Icons.Plus className="w-4 h-4 mr-1" /> Novo modelo
+                    </Button>
+                )}
             </div>
 
             {showOnboarding && (
@@ -201,40 +214,55 @@ const ModelsListView: React.FC<{
             )}
 
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-5">
-                <div className="relative flex-1">
-                    <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Buscar modelo..."
-                        aria-label="Buscar modelo"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
-                    />
+            {hasModels && (
+                <div className="flex flex-col sm:flex-row gap-3 mb-5">
+                    <div className="relative flex-1">
+                        <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Buscar modelo..."
+                            aria-label="Buscar modelo"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+                        />
+                    </div>
+                    <select
+                        value={statusFilter}
+                        aria-label="Filtrar por status"
+                        onChange={(e) => setStatusFilter(e.target.value as VoucherModelStatus | 'all')}
+                        className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+                    >
+                        <option value="all">Todos os status</option>
+                        <option value="draft">Rascunho</option>
+                        <option value="active">Ativo</option>
+                        <option value="archived">Arquivado</option>
+                    </select>
                 </div>
-                <select
-                    value={statusFilter}
-                    aria-label="Filtrar por status"
-                    onChange={(e) => setStatusFilter(e.target.value as VoucherModelStatus | 'all')}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
-                >
-                    <option value="all">Todos os status</option>
-                    <option value="draft">Rascunho</option>
-                    <option value="active">Ativo</option>
-                    <option value="archived">Arquivado</option>
-                </select>
-            </div>
+            )}
 
             {/* List */}
             {filtered.length === 0 ? (
                 <div className="text-center py-16 text-gray-400">
                     <Icons.Ticket className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                    <p className="text-sm">{models.length === 0 ? (showOnboarding ? 'Quando você criar seu primeiro modelo, ele aparecerá aqui.' : 'Nenhum modelo criado.') : 'Nenhum resultado encontrado.'}</p>
-                    {models.length === 0 && !showOnboarding && (
-                        <button onClick={handleCreateNew} className="mt-3 text-kaboo-primary text-sm font-medium hover:underline">
-                            Criar o primeiro modelo
-                        </button>
+                    {hasModels ? (
+                        <>
+                            <p className="text-sm">Nenhum modelo corresponde aos filtros.</p>
+                            {hasActiveModelFilters && (
+                                <button onClick={() => { setSearch(''); setStatusFilter('all'); }} className="mt-3 text-brand-primary text-sm font-medium hover:underline">
+                                    Limpar filtros
+                                </button>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <p className="text-sm">{showOnboarding ? 'Quando você criar seu primeiro modelo, ele aparecerá aqui.' : 'Nenhum modelo criado.'}</p>
+                            {!showOnboarding && (
+                                <button onClick={handleCreateNew} className="mt-3 text-brand-primary text-sm font-medium hover:underline">
+                                    Criar o primeiro modelo
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
             ) : (
@@ -246,7 +274,7 @@ const ModelsListView: React.FC<{
                             <button
                                 key={model.id}
                                 onClick={() => onSelectModel(model.id)}
-                                className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-kaboo-primary/40 hover:shadow-sm transition-all"
+                                className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-brand-primary/40 hover:shadow-sm transition-all"
                             >
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1 min-w-0">
@@ -333,7 +361,7 @@ const ModelDetailView: React.FC<{
             {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
 
             {/* Breadcrumb */}
-            <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-kaboo-primary mb-4">
+            <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-primary mb-4">
                 <Icons.ChevronLeft className="w-4 h-4" /> Modelos
             </button>
 
@@ -376,7 +404,7 @@ const ModelDetailView: React.FC<{
                             <button
                                 key={batch.id}
                                 onClick={() => onViewBatch(batch.id)}
-                                className="w-full text-left bg-white border border-gray-200 rounded-lg p-3 hover:border-kaboo-primary/40 transition-all"
+                                className="w-full text-left bg-white border border-gray-200 rounded-lg p-3 hover:border-brand-primary/40 transition-all"
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -499,7 +527,7 @@ const ModelWizard: React.FC<{
     return (
         <div className="p-4 md:p-6 max-w-3xl mx-auto">
             {/* Breadcrumb */}
-            <button onClick={onCancel} className="flex items-center gap-1 text-sm text-gray-500 hover:text-kaboo-primary mb-4">
+            <button onClick={onCancel} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-primary mb-4">
                 <Icons.ChevronLeft className="w-4 h-4" /> Cancelar
             </button>
 
@@ -509,7 +537,7 @@ const ModelWizard: React.FC<{
             {/* Step progress */}
             <div className="flex gap-1 mb-6" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={3} aria-label={`Etapa ${step} de 3`}>
                 {[1, 2, 3].map(s => (
-                    <div key={s} className={`flex-1 h-1 rounded-full ${s <= step ? 'bg-kaboo-primary' : 'bg-gray-200'}`} />
+                    <div key={s} className={`flex-1 h-1 rounded-full ${s <= step ? 'bg-brand-primary' : 'bg-gray-200'}`} />
                 ))}
             </div>
 
@@ -526,7 +554,7 @@ const ModelWizard: React.FC<{
                         <input
                             type="text" value={name} onChange={(e) => setName(e.target.value)}
                             placeholder="Ex: Kit Aventura Kaboo"
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                         />
                     </div>
                     <div>
@@ -534,7 +562,7 @@ const ModelWizard: React.FC<{
                         <textarea
                             value={description} onChange={(e) => setDescription(e.target.value)}
                             rows={2}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30 resize-none"
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30 resize-none"
                         />
                     </div>
                     <div>
@@ -545,7 +573,7 @@ const ModelWizard: React.FC<{
                                     key={pt}
                                     onClick={() => setPackageType(pt)}
                                     className={`flex items-center gap-2 px-3 py-2.5 border rounded-lg text-sm font-medium transition-colors
-                    ${packageType === pt ? 'border-kaboo-primary bg-kaboo-primary/5 text-kaboo-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                    ${packageType === pt ? 'border-brand-primary bg-brand-primary/5 text-brand-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
                                 >
                                     <span>{PACKAGE_LABELS[pt].icon}</span> {PACKAGE_LABELS[pt].label}
                                 </button>
@@ -566,7 +594,7 @@ const ModelWizard: React.FC<{
                                     setDurationMode('preset');
                                     setDurationMonths(Number(e.target.value));
                                 }}
-                                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                             >
                                 {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d} {d === 1 ? 'mês' : 'meses'}</option>)}
                                 <option value="custom">Personalizada</option>
@@ -580,7 +608,7 @@ const ModelWizard: React.FC<{
                                         value={customDurationInput}
                                         onChange={(e) => setCustomDurationInput(e.target.value)}
                                         placeholder="Ex: 18"
-                                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
+                                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                                     />
                                     <p className={`mt-1 text-xs ${durationError ? 'text-red-500' : 'text-gray-400'}`}>
                                         {durationError || `Duração configurada: ${resolvedDurationMonths} meses.`}
@@ -592,7 +620,7 @@ const ModelWizard: React.FC<{
                             <label className="block text-sm font-medium text-gray-700 mb-1">Validade do código</label>
                             <input
                                 type="date" value={redeemBy} onChange={(e) => setRedeemBy(e.target.value)}
-                                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                             />
                             <p className="text-xs text-gray-400 mt-1">Data limite para resgate. Opcional.</p>
                         </div>
@@ -615,13 +643,13 @@ const ModelWizard: React.FC<{
                             <input
                                 type="text" placeholder="Buscar conteúdo..." value={contentSearch}
                                 onChange={(e) => setContentSearch(e.target.value)}
-                                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
+                                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                             />
                         </div>
                         <select
                             value={levelFilter}
                             onChange={(e) => setLevelFilter(e.target.value)}
-                            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
+                            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                         >
                             <option value="all">Todos os segmentos</option>
                             <option value="Educação Infantil">Ed. Infantil</option>
@@ -641,14 +669,14 @@ const ModelWizard: React.FC<{
                                     key={col.id}
                                     onClick={() => toggleItem(col.id)}
                                     className={`flex items-center gap-3 p-2.5 border rounded-lg text-left transition-colors
-                    ${selected ? 'border-kaboo-primary bg-kaboo-primary/5' : 'border-gray-200 hover:border-gray-300'}`}
+                    ${selected ? 'border-brand-primary bg-brand-primary/5' : 'border-gray-200 hover:border-gray-300'}`}
                                 >
-                                    <img src={col.cover_image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                                    <img src={getVoucherCollectionCover(col)} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-800 truncate">{col.title}</p>
                                         <p className="text-xs text-gray-400">{col.level}</p>
                                     </div>
-                                    {selected && <Icons.Check className="w-5 h-5 text-kaboo-primary flex-shrink-0" />}
+                                    {selected && <Icons.Check className="w-5 h-5 text-brand-primary flex-shrink-0" />}
                                 </button>
                             );
                         })}
@@ -685,7 +713,7 @@ const ModelWizard: React.FC<{
                                 const col = collections.find(c => c.id === cid);
                                 return col ? (
                                     <div key={cid} className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 py-1">
-                                        <img src={col.cover_image} alt="" className="w-6 h-6 rounded object-cover" />
+                                        <img src={getVoucherCollectionCover(col)} alt="" className="w-6 h-6 rounded object-cover" />
                                         <span className="text-xs text-gray-700 truncate max-w-[120px]">{col.title}</span>
                                     </div>
                                 ) : null;
@@ -758,7 +786,7 @@ const EmitBatchModal: React.FC<{
                         <input
                             type="text" inputMode="numeric" pattern="[0-9]*" value={quantityInput}
                             onChange={(e) => setQuantityInput(e.target.value)}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                         />
                         <p className={`mt-1 text-xs ${quantityError ? 'text-red-500' : 'text-gray-400'}`}>
                             {quantityError || `Informe um número inteiro entre ${MIN_VOUCHER_BATCH_QUANTITY} e ${MAX_VOUCHER_BATCH_QUANTITY}.`}
@@ -769,7 +797,7 @@ const EmitBatchModal: React.FC<{
                         <input
                             type="text" value={label} onChange={(e) => setLabel(e.target.value)}
                             placeholder="Ex: campanha abril/2026"
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                         />
                     </div>
                 </div>
@@ -829,14 +857,14 @@ const BatchesListView: React.FC<{
                     <input
                         type="text" placeholder="Buscar lote ou modelo..." aria-label="Buscar lote ou modelo" value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
+                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                     />
                 </div>
                 <select
                     value={statusFilter}
                     aria-label="Filtrar lotes por status"
                     onChange={(e) => setStatusFilter(e.target.value as VoucherBatchStatus | 'all')}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                 >
                     <option value="all">Todos os status</option>
                     <option value="generated">Gerado</option>
@@ -851,7 +879,7 @@ const BatchesListView: React.FC<{
                 <div className="text-center py-16 text-gray-400">
                     <p className="text-sm">{batches.length === 0 ? 'Nenhum lote emitido.' : 'Nenhum lote corresponde aos filtros.'}</p>
                     {batches.length > 0 && (search || statusFilter !== 'all') && (
-                        <button onClick={() => { setSearch(''); setStatusFilter('all'); }} className="mt-2 text-xs font-bold text-kaboo-primary hover:underline">Limpar filtros</button>
+                        <button onClick={() => { setSearch(''); setStatusFilter('all'); }} className="mt-2 text-xs font-bold text-brand-primary hover:underline">Limpar filtros</button>
                     )}
                 </div>
             ) : (
@@ -860,7 +888,7 @@ const BatchesListView: React.FC<{
                         <button
                             key={batch.id}
                             onClick={() => onSelectBatch(batch.id)}
-                            className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-kaboo-primary/40 transition-all"
+                            className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-brand-primary/40 transition-all"
                         >
                             <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-2">
@@ -893,7 +921,7 @@ const VOUCHER_STATUS_LABELS: Record<string, string> = {
 };
 
 const VOUCHER_STATUS_CLASSES: Record<string, string> = {
-    active: 'bg-blue-100 text-blue-700',
+    active: 'bg-emerald-100 text-emerald-700',
     redeemed: 'bg-emerald-100 text-emerald-700',
     disabled: 'bg-red-100 text-red-700',
     expired: 'bg-gray-200 text-gray-600',
@@ -986,7 +1014,7 @@ const BatchDetailView: React.FC<{
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
             {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
 
-            <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-kaboo-primary mb-4">
+            <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-primary mb-4">
                 <Icons.ChevronLeft className="w-4 h-4" /> Lotes
             </button>
 
@@ -1006,7 +1034,7 @@ const BatchDetailView: React.FC<{
                 <div className="flex flex-wrap gap-2">
                     {snap.items.map((item, i) => (
                         <div key={i} className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2 py-1">
-                            {item.cover_image && <img src={item.cover_image} alt="" className="w-6 h-6 rounded object-cover" />}
+                            {getVoucherCollectionCover(item) && <img src={getVoucherCollectionCover(item)} alt="" className="w-6 h-6 rounded object-cover" />}
                             <span className="text-xs text-gray-700">{item.title}</span>
                         </div>
                     ))}
@@ -1064,6 +1092,9 @@ const BatchDetailView: React.FC<{
                             <th className="text-left px-3 py-2 font-medium text-gray-500">#</th>
                             <th className="text-left px-3 py-2 font-medium text-gray-500">Código</th>
                             <th className="text-left px-3 py-2 font-medium text-gray-500">Status</th>
+                            <th className="text-left px-3 py-2 font-medium text-gray-500">Consumidor</th>
+                            <th className="text-left px-3 py-2 font-medium text-gray-500">E-mail</th>
+                            <th className="text-left px-3 py-2 font-medium text-gray-500">Resgatado em</th>
                             <th className="text-right px-3 py-2 font-medium text-gray-500">Ações</th>
                         </tr>
                     </thead>
@@ -1078,6 +1109,9 @@ const BatchDetailView: React.FC<{
                                         className={VOUCHER_STATUS_CLASSES[v.status] || 'bg-gray-200 text-gray-600'}
                                     />
                                 </td>
+                                <td className="px-3 py-2 text-gray-700 text-xs">{v.consumed_by_name || '—'}</td>
+                                <td className="px-3 py-2 text-gray-700 text-xs">{v.consumed_by_email || '—'}</td>
+                                <td className="px-3 py-2 text-gray-500 text-xs">{v.consumed_at ? new Date(v.consumed_at).toLocaleString('pt-BR') : '—'}</td>
                                 <td className="px-3 py-2 text-right">
                                     {v.status === 'active' && (
                                         <button
@@ -1157,6 +1191,9 @@ const CodesListView: React.FC = () => {
         });
     }, [codes, search, statusFilter]);
 
+    const hasCodes = codes.length > 0;
+    const hasActiveCodeFilters = search.trim().length > 0 || statusFilter !== 'all';
+
     const selectedCode = selectedCodeId ? codes.find(v => v.id === selectedCodeId) || null : null;
     const selectedBatchInfo = selectedCode?.batch_id
         ? getVoucherBatches().find(b => b.id === selectedCode.batch_id) || null
@@ -1182,82 +1219,111 @@ const CodesListView: React.FC = () => {
 
             <h1 className="text-xl font-bold text-gray-800 mb-6">Códigos</h1>
 
-            <div className="flex flex-col sm:flex-row gap-3 mb-5">
-                <div className="relative flex-1">
-                    <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                        type="text" placeholder="Buscar código..." aria-label="Buscar código" value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
-                    />
+            {hasCodes && (
+                <div className="flex flex-col sm:flex-row gap-3 mb-5">
+                    <div className="relative flex-1">
+                        <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text" placeholder="Buscar código..." aria-label="Buscar código" value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+                        />
+                    </div>
+                    <select
+                        value={statusFilter}
+                        aria-label="Filtrar códigos por status"
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
+                    >
+                        <option value="all">Todos os status</option>
+                        <option value="active">Ativo</option>
+                        <option value="redeemed">Resgatado</option>
+                        <option value="disabled">Desativado</option>
+                        <option value="expired">Expirado</option>
+                    </select>
                 </div>
-                <select
-                    value={statusFilter}
-                    aria-label="Filtrar códigos por status"
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
-                >
-                    <option value="all">Todos os status</option>
-                    <option value="active">Ativo</option>
-                    <option value="redeemed">Resgatado</option>
-                    <option value="disabled">Desativado</option>
-                    <option value="expired">Expirado</option>
-                </select>
-            </div>
+            )}
 
-            <div className="text-xs text-gray-400 mb-3">
-                {filtered.length} códigos · Página {page + 1} de {totalPages}
-            </div>
+            {filtered.length === 0 ? (
+                <div className="text-center py-16 text-gray-400">
+                    <Icons.Ticket className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                    {hasCodes ? (
+                        <>
+                            <p className="text-sm">Nenhum código corresponde aos filtros.</p>
+                            {hasActiveCodeFilters && (
+                                <button onClick={() => { setSearch(''); setStatusFilter('all'); }} className="mt-2 text-xs font-bold text-brand-primary hover:underline">Limpar filtros</button>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <p className="text-sm">Nenhum código gerado.</p>
+                            <p className="mt-2 text-xs text-gray-500">Os códigos aparecerão aqui depois que um lote for emitido.</p>
+                        </>
+                    )}
+                </div>
+            ) : (
+                <>
+                    <div className="text-xs text-gray-400 mb-3">
+                        {filtered.length} códigos · Página {page + 1} de {totalPages}
+                    </div>
 
-            <div className="overflow-x-auto border border-gray-200 rounded-xl">
-                <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="text-left px-3 py-2 font-medium text-gray-500">Código</th>
-                            <th className="text-left px-3 py-2 font-medium text-gray-500">Status</th>
-                            <th className="text-left px-3 py-2 font-medium text-gray-500">Lote</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {paged.map(v => (
-                            <tr
-                                key={v.id}
-                                onClick={() => setSelectedCodeId(v.id)}
-                                className="border-t border-gray-100 cursor-pointer hover:bg-gray-50"
+                    <div className="overflow-x-auto border border-gray-200 rounded-xl">
+                        <table className="w-full text-sm">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="text-left px-3 py-2 font-medium text-gray-500">Código</th>
+                                    <th className="text-left px-3 py-2 font-medium text-gray-500">Status</th>
+                                    <th className="text-left px-3 py-2 font-medium text-gray-500">Lote</th>
+                                    <th className="text-left px-3 py-2 font-medium text-gray-500">Consumidor</th>
+                                    <th className="text-left px-3 py-2 font-medium text-gray-500">E-mail</th>
+                                    <th className="text-left px-3 py-2 font-medium text-gray-500">Resgatado em</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {paged.map(v => (
+                                    <tr
+                                        key={v.id}
+                                        onClick={() => setSelectedCodeId(v.id)}
+                                        className="border-t border-gray-100 cursor-pointer hover:bg-gray-50"
+                                    >
+                                        <td className="px-3 py-2 font-mono text-gray-800">{v.code}</td>
+                                        <td className="px-3 py-2">
+                                            <StatusBadge
+                                                label={VOUCHER_STATUS_LABELS[v.status] || v.status}
+                                                className={VOUCHER_STATUS_CLASSES[v.status] || 'bg-gray-200 text-gray-600'}
+                                            />
+                                        </td>
+                                        <td className="px-3 py-2 text-gray-400 text-xs">{v.batch_id ? `#${v.batch_id.substring(0, 8)}` : '—'}</td>
+                                        <td className="px-3 py-2 text-gray-700 text-xs">{v.consumed_by_name || '—'}</td>
+                                        <td className="px-3 py-2 text-gray-700 text-xs">{v.consumed_by_email || '—'}</td>
+                                        <td className="px-3 py-2 text-gray-500 text-xs">{v.consumed_at ? new Date(v.consumed_at).toLocaleString('pt-BR') : '—'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 mt-4">
+                            <button
+                                onClick={() => setPage(p => Math.max(0, p - 1))}
+                                disabled={page === 0}
+                                className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
                             >
-                                <td className="px-3 py-2 font-mono text-gray-800">{v.code}</td>
-                                <td className="px-3 py-2">
-                                    <StatusBadge
-                                        label={VOUCHER_STATUS_LABELS[v.status] || v.status}
-                                        className={VOUCHER_STATUS_CLASSES[v.status] || 'bg-gray-200 text-gray-600'}
-                                    />
-                                </td>
-                                <td className="px-3 py-2 text-gray-400 text-xs">{v.batch_id ? `#${v.batch_id.substring(0, 8)}` : '—'}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-4">
-                    <button
-                        onClick={() => setPage(p => Math.max(0, p - 1))}
-                        disabled={page === 0}
-                        className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-                    >
-                        ← Anterior
-                    </button>
-                    <span className="text-sm text-gray-500">{page + 1} / {totalPages}</span>
-                    <button
-                        onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                        disabled={page >= totalPages - 1}
-                        className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-                    >
-                        Próxima →
-                    </button>
-                </div>
+                                ← Anterior
+                            </button>
+                            <span className="text-sm text-gray-500">{page + 1} / {totalPages}</span>
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                                disabled={page >= totalPages - 1}
+                                className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+                            >
+                                Próxima →
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
 
             {/* Code detail drawer */}
@@ -1343,7 +1409,7 @@ const CodesListView: React.FC = () => {
                                         <div className="flex flex-wrap gap-1.5">
                                             {selectedBatchInfo.model_snapshot.items.map((item, i) => (
                                                 <div key={i} className="flex items-center gap-1 bg-white border border-gray-200 rounded px-1.5 py-0.5">
-                                                    {item.cover_image && <img src={item.cover_image} alt="" className="w-5 h-5 rounded object-cover" />}
+                                                    {getVoucherCollectionCover(item) && <img src={getVoucherCollectionCover(item)} alt="" className="w-5 h-5 rounded object-cover" />}
                                                     <span className="text-xs text-gray-700">{item.title}</span>
                                                 </div>
                                             ))}
@@ -1442,7 +1508,7 @@ const AuditListView: React.FC = () => {
                     value={entityFilter}
                     aria-label="Filtrar auditoria por entidade"
                     onChange={(e) => { setEntityFilter(e.target.value); setPage(0); }}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-kaboo-primary/30"
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                 >
                     <option value="all">Todas as entidades</option>
                     <option value="voucher_model">Modelos</option>
@@ -1455,7 +1521,7 @@ const AuditListView: React.FC = () => {
                 <div className="text-center py-16 text-gray-400">
                     <p className="text-sm">{entries.length === 0 ? 'Nenhum registro de auditoria.' : 'Nenhum registro corresponde ao filtro.'}</p>
                     {entries.length > 0 && entityFilter !== 'all' && (
-                        <button onClick={() => { setEntityFilter('all'); setPage(0); }} className="mt-2 text-xs font-bold text-kaboo-primary hover:underline">Limpar filtro</button>
+                        <button onClick={() => { setEntityFilter('all'); setPage(0); }} className="mt-2 text-xs font-bold text-brand-primary hover:underline">Limpar filtro</button>
                     )}
                 </div>
             ) : (
@@ -1600,7 +1666,7 @@ export const VouchersModule: React.FC = () => {
                         aria-selected={subView === tab}
                         onClick={() => { setSubView(tab); setSelectedModelId(null); setSelectedBatchId(null); }}
                         className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors
-              ${subView === tab ? 'text-kaboo-primary border-kaboo-primary' : 'text-gray-500 border-transparent hover:text-gray-700'}`}
+              ${subView === tab ? 'text-brand-primary border-brand-primary' : 'text-gray-500 border-transparent hover:text-gray-700'}`}
                     >
                         {tab === 'models' ? 'Modelos' : tab === 'batches' ? 'Lotes' : tab === 'codes' ? 'Códigos' : 'Auditoria'}
                     </button>

@@ -1,16 +1,32 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Icons } from '../components/Icons';
 import { placeholderImageUrl } from '../lib/appPaths';
+import { getCollectionDisplayCover } from '../lib/collectionPresentation';
 import { Collection, MediaItemCard, ScreenName } from '../types';
 import { useThemeBackground } from '../hooks/useThemeBackground';
 import { GalaxyBackground } from '../components/GalaxyBackground';
 import { api } from '../lib/api';
+import { useOfflineDownload } from '../hooks/useOfflineDownload';
+import useIsMobile from '../hooks/useIsMobile';
+import useOrientation from '../hooks/useOrientation';
+import {
+  getAudioPlayerLayout,
+  shouldTreatAudioPlayerAsCompactViewport,
+  shouldUseAudioPlayerMobileLandscapeLayout,
+  shouldResetAudioPlayerPanels,
+} from '../lib/audioPlayerLayout';
+import {
+  AUDIO_PLAYER_SKIP_SECONDS,
+  getAudioPlayerSkipTarget,
+} from '../lib/audioPlayerSkip';
 
 interface AudioPlayerScreenProps {
   collection: Collection;
   mediaItemId?: string;
   assetUrl?: string;
   assetTitle?: string;
+  lyricsUrl?: string;
+  assetOfflineAvailable?: boolean | null;
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
 }
@@ -20,6 +36,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   mediaItemId,
   assetUrl,
   assetTitle,
+  lyricsUrl,
+  assetOfflineAvailable,
   onNavigate,
   onBack,
 }) => {
@@ -31,7 +49,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartTime, setDragStartTime] = useState(0);
   const [dragStartRotation, setDragStartRotation] = useState(0);
-  const [isHoveringCd, setIsHoveringCd] = useState(false);
+
   const [playError, setPlayError] = useState<string | null>(null);
   const [resolvedPlaybackUrl, setResolvedPlaybackUrl] = useState<string | null>(null);
   const [resolvedPlaybackTitle, setResolvedPlaybackTitle] = useState<string | null>(null);
@@ -44,10 +62,28 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const lastSavedPositionRef = useRef(0);
   const saveInFlightRef = useRef(false);
 
+  const isMobile = useIsMobile();
+  const isLandscape = useOrientation();
+  const isMobilePortrait = isMobile && !isLandscape;
+  const isMobileLandscape = shouldUseAudioPlayerMobileLandscapeLayout(
+    isLandscape,
+    isMobile,
+    isCompactHeightViewport
+  );
+  const currentPlayerLayout = getAudioPlayerLayout(isMobilePortrait, isMobileLandscape);
+  const previousPlayerLayoutRef = useRef(currentPlayerLayout);
   const themeColor = collection.color_theme || '#5D1F58';
   const resolvedAudioUrl = resolvedPlaybackUrl ?? assetUrl ?? collection.audio_url;
   const resolvedTitle = resolvedPlaybackTitle ?? assetTitle ?? collection.title;
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
+  const {
+    isAvailable: canDownloadOffline,
+    isDownloaded: isOfflineDownloaded,
+    isDownloading: isOfflineDownloading,
+    downloadError: offlineDownloadError,
+    handleDownload: handleOfflineDownload,
+    handleRemove: handleOfflineRemove,
+  } = useOfflineDownload(collection, [resolvedAudioUrl, lyricsUrl], assetOfflineAvailable);
 
   // Set browser background to match theme color
   useThemeBackground(themeColor);
@@ -67,11 +103,56 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const rgb = hexToRgb(themeColor);
   const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
 
+  // Fetch lyrics text when lyricsUrl changes
+  useEffect(() => {
+    if (!lyricsUrl) {
+      setLyricsText(null);
+      setShowLyrics(false);
+      return;
+    }
+
+    let active = true;
+    setLyricsLoading(true);
+    setLyricsText(null);
+
+    fetch(lyricsUrl)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.text();
+      })
+      .then((text) => {
+        if (active) setLyricsText(text);
+      })
+      .catch(() => {
+        if (active) setLyricsText('Não foi possível carregar a letra.');
+      })
+      .finally(() => {
+        if (active) setLyricsLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [lyricsUrl]);
+
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.playbackRate = playbackRate;
     }
   }, [playbackRate]);
+
+  useEffect(() => {
+    const checkCompactHeightViewport = () => {
+      setIsCompactHeightViewport(
+        shouldTreatAudioPlayerAsCompactViewport(window.innerWidth, window.innerHeight)
+      );
+    };
+
+    checkCompactHeightViewport();
+    window.addEventListener('resize', checkCompactHeightViewport);
+
+    return () => {
+      window.removeEventListener('resize', checkCompactHeightViewport);
+    };
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -149,6 +230,18 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       isActive = false;
     };
   }, [collection.description, mediaItemId]);
+
+  useEffect(() => {
+    const previousLayout = previousPlayerLayoutRef.current;
+
+    if (shouldResetAudioPlayerPanels(previousLayout, currentPlayerLayout)) {
+      setShowSidebar(false);
+      setShowLyrics(false);
+      setShowMobileUtilitySheet(false);
+    }
+
+    previousPlayerLayoutRef.current = currentPlayerLayout;
+  }, [currentPlayerLayout]);
 
   // Reset CD rotation when audio resets to 0 and not playing
   // But don't reset if we're about to play (isPlaying becomes true)
@@ -261,15 +354,31 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   };
 
   const skipForward = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = Math.min(audioRef.current.currentTime + 15, duration);
+    if (!audioRef.current) {
+      return;
     }
+
+    const nextTime = getAudioPlayerSkipTarget(
+      audioRef.current.currentTime,
+      Number.isFinite(audioRef.current.duration) ? audioRef.current.duration : duration,
+      'forward'
+    );
+    audioRef.current.currentTime = nextTime;
+    setCurrentTime(nextTime);
   };
 
   const skipBackward = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = Math.max(audioRef.current.currentTime - 15, 0);
+    if (!audioRef.current) {
+      return;
     }
+
+    const nextTime = getAudioPlayerSkipTarget(
+      audioRef.current.currentTime,
+      Number.isFinite(audioRef.current.duration) ? audioRef.current.duration : duration,
+      'backward'
+    );
+    audioRef.current.currentTime = nextTime;
+    setCurrentTime(nextTime);
   };
 
   const toggleSpeed = () => {
@@ -339,6 +448,36 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
     onBack();
   };
 
+  const toggleSuggestionsPanel = () => {
+    if (isMobile) {
+      setShowMobileUtilitySheet(true);
+    }
+
+    setShowLyrics(false);
+    setShowSidebar((prev) => !prev);
+  };
+
+  const toggleLyricsPanel = () => {
+    if (isMobile) {
+      setShowSidebar(false);
+      setShowMobileUtilitySheet(false);
+    }
+
+    setShowLyrics((prev) => !prev);
+  };
+
+  const toggleMobileUtilityControls = () => {
+    setShowMobileUtilitySheet((prev) => {
+      const next = !prev;
+
+      if (!next) {
+        setShowSidebar(false);
+      }
+
+      return next;
+    });
+  };
+
   const openRelatedTrack = (item: MediaItemCard) => {
     onNavigate('player_audio', {
       collectionId: item.collectionId ?? collection.id,
@@ -346,6 +485,54 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       assetTitle: item.title,
     });
   };
+
+  const mobileHeaderButtonClass = 'h-10 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/28 px-3 text-[11px] font-bold text-white/90 shadow-lg backdrop-blur-md transition-colors hover:bg-black/40';
+  const mobileUtilityActionClass = 'flex min-h-[56px] items-center gap-3 rounded-[22px] border border-white/14 bg-black/26 px-4 text-left text-sm font-semibold text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_22px_rgba(0,0,0,0.18)] backdrop-blur-md transition-colors hover:bg-black/36';
+  const transportButtonHitAreaClass = 'group relative inline-flex h-16 w-16 items-center justify-center rounded-full border border-transparent bg-transparent text-white outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/75';
+  const transportButtonSurfaceClass = 'pointer-events-none flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-black/20 shadow-xl backdrop-blur-md transition-all duration-150 group-hover:scale-[1.08] group-hover:bg-black/30';
+  const playButtonHitAreaClass = 'group relative inline-flex h-20 w-20 items-center justify-center rounded-full border border-transparent bg-transparent text-white outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/75';
+  const playButtonSurfaceClass = 'pointer-events-none flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full border-2 border-white/40 bg-white/20 shadow-2xl backdrop-blur-md transition-all duration-150 group-hover:scale-[1.05] group-hover:bg-white/30';
+
+  const renderRelatedTracksList = (cardClassName: string) => (
+    <>
+      <div className="px-1">
+        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Catálogo relacionado</p>
+        <h2 className="mt-1 text-sm font-black text-white">Sugestões da biblioteca</h2>
+      </div>
+
+      {relatedTracks.length === 0 && (
+        <p className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/75">
+          Sem outras faixas relacionadas no momento.
+        </p>
+      )}
+
+      {relatedTracks.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => openRelatedTrack(item)}
+          className={cardClassName}
+        >
+          <div
+            className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-white/10"
+            style={item.thumbnailUrl ? {
+              backgroundImage: `url(${item.thumbnailUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            } : undefined}
+          >
+            <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/65 text-white">
+              <Icons.Play size={9} className="ml-0.5 fill-current stroke-none" />
+            </span>
+          </div>
+          <div className="min-w-0">
+            <p className="line-clamp-1 text-xs font-bold">{item.title}</p>
+            <p className="text-[11px] text-white/70">{item.collectionTitle ?? 'Kaboo'}</p>
+          </div>
+        </button>
+      ))}
+    </>
+  );
 
   return (
     <div
@@ -380,7 +567,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       )}
 
       {/* Header */}
-      <div className="relative z-20 p-4 flex items-center justify-between flex-shrink-0">
+      <div className={`relative z-20 flex flex-shrink-0 items-center justify-between gap-3 ${isMobile ? 'px-4 py-4' : 'p-4'}`}>
         <button
           onClick={handleBack}
           className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30"
@@ -389,9 +576,9 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
           <Icons.ChevronLeft size={24} strokeWidth={2.5} />
         </button>
 
-        <div className="flex-1 text-center">
-          <div className="inline-block bg-black/20 backdrop-blur-md px-6 py-2 rounded-full shadow-lg border border-white/10">
-            <h1 className="text-sm md:text-base font-bold text-white drop-shadow-sm">
+        <div className="min-w-0 flex-1 text-center">
+          <div className={`inline-flex max-w-full items-center justify-center border border-white/10 bg-black/20 shadow-lg backdrop-blur-md ${isMobile ? 'rounded-[24px] px-4 py-2' : 'rounded-full px-6 py-2'}`}>
+            <h1 className={`${isMobile ? 'line-clamp-2 text-sm' : 'text-sm md:text-base'} font-bold text-white drop-shadow-sm`}>
               {resolvedTitle}
             </h1>
           </div>

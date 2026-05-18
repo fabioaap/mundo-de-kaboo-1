@@ -1,0 +1,20 @@
+<svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="800" y2="800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D97706"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <circle cx="680" cy="120" r="200" fill="white" fill-opacity="0.06"/>
+  <circle cx="100" cy="700" r="140" fill="white" fill-opacity="0.05"/>
+  <!-- star / play icon -->
+  <!-- 5-pointed star -->
+  <polygon points="400,200 448,340 600,340 476,428 524,568 400,480 276,568 324,428 200,340 352,340" fill="white" fill-opacity="0.9"/>
+  <!-- small star -->
+  <polygon points="580,220 592,256 630,256 600,278 612,314 580,292 548,314 560,278 530,256 568,256" fill="white" fill-opacity="0.5"/>
+  <polygon points="200,180 208,204 234,204 214,220 222,244 200,228 178,244 186,220 166,204 192,204" fill="white" fill-opacity="0.4"/>
+  <!-- label -->
+  <rect x="160" y="660" width="480" height="76" rx="16" fill="white" fill-opacity="0.15"/>
+  <text x="400" y="708" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" font-weight="700" fill="white">COMO JOGAR</text>
+</svg>

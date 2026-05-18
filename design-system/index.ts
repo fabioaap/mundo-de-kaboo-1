@@ -33,9 +33,11 @@ export type { ConfirmationModalProps } from './composites/ConfirmationModal'
 export type { CriticalConfirmationModalProps } from './composites/CriticalConfirmationModal'
 
 // ─── Tokens ──────────────────────────────────────────────
-export { colors, radius, font, characterColors } from './tokens'
+export { colors, radius, font, spacing, characterColors } from './tokens'
+export type { SpacingSemanticToken } from './tokens'
 export { themes, applyTheme } from './tokens/themes'
 export type { BrandTheme } from './tokens/themes'
+export { layoutSpacing } from './layout/spacing'
 
 // ─── Utils ───────────────────────────────────────────────
 export { cn } from './utils/cn'

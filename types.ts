@@ -143,6 +143,9 @@ export interface CollectionAsset {
   url: string;
   description?: string | null;
   scope?: 'primary' | 'library';
+  lyrics_url?: string | null;
+  /** Per-asset download flag. null/undefined = inherits collection-level offline_available. */
+  offline_available?: boolean | null;
 }
 
 export interface Collection {
@@ -182,6 +185,7 @@ export interface Collection {
   age_grade?: string[]; // New field: Idade-série
   extra_materials?: string[]; // New field: Materiais Extras (array of file URLs)
   collection_assets?: CollectionAsset[];
+  offline_available?: boolean | null;
 }
 
 export interface CentralMaterial {
@@ -403,7 +407,8 @@ export type AdminModule =
   | 'materials'
   | 'users'
   | 'vouchers'
-  | 'characters';
+  | 'characters'
+  | 'white_label';
 
 export interface NavState {
   currentScreen: ScreenName;

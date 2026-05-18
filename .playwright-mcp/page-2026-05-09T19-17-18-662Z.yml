@@ -1,0 +1,96 @@
+- main [ref=e51]:
+  - dialog "Player de vídeo" [ref=e935]:
+    - generic [ref=e938]:
+      - generic [ref=e939]:
+        - button "Voltar" [ref=e940]:
+          - img [ref=e941]
+        - heading "Desenho Animado" [level=1] [ref=e945]
+        - button "Mostrar relacionados" [ref=e947]:
+          - text: Relacionados
+          - img [ref=e948]
+      - generic [ref=e950]:
+        - button "-10s" [ref=e951]:
+          - generic [ref=e952]:
+            - img [ref=e953]
+            - generic [ref=e955]: "-10s"
+        - button "Pausar" [active] [ref=e998]:
+          - img [ref=e999]
+        - button "+10s" [ref=e959]:
+          - generic [ref=e960]:
+            - img [ref=e961]
+            - generic [ref=e963]: +10s
+      - generic [ref=e966]:
+        - generic [ref=e967]:
+          - generic [ref=e968]: 00:00
+          - slider [ref=e970] [cursor=pointer]: "1"
+          - generic [ref=e971]: "-02:29"
+        - generic [ref=e972]:
+          - generic [ref=e973]:
+            - button "Voltar 10 segundos" [ref=e974]:
+              - img [ref=e975]
+            - button "Pausar" [ref=e1002]:
+              - img [ref=e1003]
+            - button "Avançar 10 segundos" [ref=e980]:
+              - img [ref=e981]
+            - paragraph [ref=e983]: 00:00/02:30
+          - generic [ref=e984]:
+            - button "Ativar/desativar som (M)" [ref=e985]:
+              - img [ref=e986]
+            - slider [ref=e990]: "1"
+            - button "1x" [ref=e991]
+            - button "Tela cheia (F)" [ref=e992]:
+              - img [ref=e993]
+    - complementary:
+      - generic:
+        - paragraph: Próximos vídeos
+        - heading "Relacionados" [level=2]
+      - generic:
+        - button "Gaio e o Vento da Coragem, vídeo da coleção Gaio e o Vento da Coragem":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Gaio e o Vento da Coragem, vídeo da coleção
+            - paragraph: Gaio e o Vento da Coragem
+        - button "Kaboo e a Carta Misteriosa, desenho animado Kaboo e a Carta Misteriosa":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Kaboo e a Carta Misteriosa, desenho animado
+            - paragraph: Kaboo e a Carta Misteriosa
+        - button "Versão com Libras de Kaboo e a Carta Misteriosa Kaboo e a Carta Misteriosa":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Versão com Libras de Kaboo e a Carta Misteriosa
+            - paragraph: Kaboo e a Carta Misteriosa
+        - button "Como jogar com a coleção sem quebrar o ritmo Kaboo e a Carta Misteriosa":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Como jogar com a coleção sem quebrar o ritmo
+            - paragraph: Kaboo e a Carta Misteriosa
+        - button "Kaboo e a Carta Misteriosa, videoaula de apoio Kaboo e a Carta Misteriosa":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Kaboo e a Carta Misteriosa, videoaula de apoio
+            - paragraph: Kaboo e a Carta Misteriosa
+        - button "Gaio e o Vento da Coragem, vídeo da coleção Gaio e o Vento da Coragem":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Gaio e o Vento da Coragem, vídeo da coleção
+            - paragraph: Gaio e o Vento da Coragem
+        - button "Kaboo e a Carta Misteriosa, desenho animado Kaboo e a Carta Misteriosa":
+          - generic:
+            - generic:
+              - img
+          - generic:
+            - paragraph: Kaboo e a Carta Misteriosa, desenho animado
+            - paragraph: Kaboo e a Carta Misteriosa

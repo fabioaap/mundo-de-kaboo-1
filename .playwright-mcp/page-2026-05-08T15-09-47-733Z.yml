@@ -1,0 +1,236 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e4]:
+      - link "Universo Educacross" [ref=e5] [cursor=pointer]:
+        - /url: https://loja.educabox.com.br
+        - img "Universo Educacross" [ref=e6]
+      - search [ref=e8]:
+        - searchbox "Buscar na loja" [ref=e9]
+        - button "Buscar" [ref=e10] [cursor=pointer]
+      - generic [ref=e11]:
+        - link "Carrinho com 0 item(ns)" [ref=e12] [cursor=pointer]:
+          - /url: /comprar/
+          - img [ref=e13]
+          - generic [ref=e17]: "0"
+        - button "Abrir menu" [ref=e18] [cursor=pointer]
+  - generic [ref=e25]:
+    - navigation "Breadcrumb" [ref=e26]:
+      - link "Início" [ref=e27] [cursor=pointer]:
+        - /url: https://loja.educabox.com.br
+        - img [ref=e28]
+        - text: Início
+      - img [ref=e32]
+      - generic [ref=e34]: Trocas e Devoluções
+    - paragraph [ref=e35]: Compra segura
+    - heading "Trocas e Devoluções" [level=1] [ref=e36]
+    - paragraph [ref=e37]: Consulte prazos, condições e o passo a passo para solicitar trocas ou devoluções com tranquilidade.
+  - generic [ref=e40]:
+    - article [ref=e41]:
+      - heading "Política de Trocas, Devoluções e Arrependimento" [level=2] [ref=e42]
+      - paragraph [ref=e43]: A Loja Educacross deseja que sua experiência de compra seja segura, clara e acolhedora. Esta política explica como funcionam os pedidos de troca, devolução, arrependimento, análise de defeitos e atendimento relacionado aos produtos adquiridos em nossa loja online. A Loja Educacross pertence à Educacross Educação Ltda., inscrita no CNPJ 15.130.060/0001-04.
+      - paragraph [ref=e44]:
+        - strong [ref=e45]: Documento
+      - paragraph [ref=e46]: Política de Trocas, Devoluções e Arrependimento
+      - paragraph [ref=e47]:
+        - strong [ref=e48]: Atendimento
+      - paragraph [ref=e49]: Segunda a sexta-feira, das 7h às 19h
+      - heading "Sumário" [level=3] [ref=e50]
+      - list [ref=e51]:
+        - listitem [ref=e52]: Direito de arrependimento
+        - listitem [ref=e53]: Condições para devolução por arrependimento
+        - listitem [ref=e54]: Trocas por preferência pessoal
+        - listitem [ref=e55]: Produto com defeito
+        - listitem [ref=e56]: Produto avariado no transporte
+        - listitem [ref=e57]: Produto enviado incorretamente
+        - listitem [ref=e58]: Situações em que a troca ou devolução pode não ser aceita
+        - listitem [ref=e59]: Reembolso
+        - listitem [ref=e60]: Frete de devolução ou troca
+        - listitem [ref=e61]: Como solicitar troca ou devolução
+        - listitem [ref=e62]: Observação final
+      - heading "1. Direito de arrependimento" [level=3] [ref=e63]
+      - paragraph [ref=e64]: Em compras realizadas pela internet, o consumidor pode desistir da compra em até 7 dias corridos, contados a partir da data de recebimento do produto.
+      - paragraph [ref=e65]: Esse direito está previsto no artigo 49 do Código de Defesa do Consumidor e se aplica às compras feitas fora do estabelecimento comercial, como é o caso das compras online.
+      - paragraph [ref=e66]: "Para solicitar a devolução por arrependimento, entre em contato com nossa equipe pelos canais oficiais:"
+      - list [ref=e67]:
+        - listitem [ref=e68]:
+          - strong [ref=e69]: "WhatsApp:"
+          - link "(16) 99299-4152" [ref=e70] [cursor=pointer]:
+            - /url: https://wa.me/5516992994152
+        - listitem [ref=e71]:
+          - strong [ref=e72]: "E-mail:"
+          - link "loja.suporte@educacross.com.br" [ref=e73] [cursor=pointer]:
+            - /url: mailto:loja.suporte@educacross.com.br
+        - listitem [ref=e74]:
+          - strong [ref=e75]: "Horário de atendimento:"
+          - text: segunda a sexta-feira, das 7h às 19h.
+      - heading "2. Condições para devolução por arrependimento" [level=3] [ref=e76]
+      - paragraph [ref=e77]: "Para que a devolução seja analisada e processada corretamente, o produto deve ser enviado preferencialmente:"
+      - list [ref=e78]:
+        - listitem [ref=e79]: sem sinais de uso;
+        - listitem [ref=e80]: com embalagem original, quando possível;
+        - listitem [ref=e81]: com acessórios, etiquetas, manuais, brindes ou itens complementares, quando houver;
+        - listitem [ref=e82]: acompanhado das informações do pedido.
+      - paragraph [ref=e83]: Caso o produto apresente indícios de uso inadequado, dano causado pelo consumidor, ausência de itens essenciais ou descaracterização do produto, a Loja Educacross poderá realizar análise antes de concluir a devolução.
+      - heading "3. Trocas por preferência pessoal" [level=3] [ref=e84]
+      - paragraph [ref=e85]: A Loja Educacross poderá aceitar solicitações de troca em até 7 dias após a compra, conforme a política comercial vigente e a disponibilidade de estoque.
+      - paragraph [ref=e86]: "São exemplos de troca por preferência pessoal:"
+      - list [ref=e87]:
+        - listitem [ref=e88]: troca por outro produto;
+        - listitem [ref=e89]: troca por outro modelo;
+        - listitem [ref=e90]: troca por outra cor, quando aplicável;
+        - listitem [ref=e91]: troca por escolha inadequada no momento da compra.
+      - paragraph [ref=e92]: A troca dependerá da disponibilidade do produto desejado. Caso o novo item tenha valor diferente, poderá ser necessário ajustar a diferença de preço.
+      - paragraph [ref=e93]: As condições de frete para trocas por preferência pessoal serão informadas pela equipe de atendimento no momento da solicitação.
+      - heading "4. Produto com defeito" [level=3] [ref=e94]
+      - paragraph [ref=e95]: "Caso o produto apresente possível defeito de fabricação, entre em contato com a equipe da Loja Educacross e envie:"
+      - list [ref=e96]:
+        - listitem [ref=e97]: número do pedido;
+        - listitem [ref=e98]: nome completo usado na compra;
+        - listitem [ref=e99]: descrição do problema;
+        - listitem [ref=e100]: fotos ou vídeos que ajudem na análise;
+        - listitem [ref=e101]: foto da embalagem, quando necessário.
+      - paragraph [ref=e102]: Após o recebimento das informações, a equipe avaliará o caso e orientará os próximos passos.
+      - paragraph [ref=e103]: Dependendo da situação, poderá ser realizada substituição do produto, reparo, crédito para nova compra ou reembolso, conforme a legislação aplicável e a disponibilidade do item.
+      - heading "5. Produto avariado no transporte" [level=3] [ref=e104]
+      - paragraph [ref=e105]: Se o produto chegar danificado, com embalagem violada ou com sinais de avaria, recomendamos que o consumidor entre em contato o quanto antes com a Loja Educacross.
+      - paragraph [ref=e106]: Sempre que possível, envie fotos da embalagem antes da abertura, fotos do produto e uma breve descrição do ocorrido.
+      - paragraph [ref=e107]: Após análise, a equipe informará se haverá substituição, reenvio, devolução ou outra solução adequada.
+      - heading "6. Produto enviado incorretamente" [level=3] [ref=e108]
+      - paragraph [ref=e109]: Caso você receba um produto diferente daquele que comprou, entre em contato conosco pelos canais oficiais.
+      - paragraph [ref=e110]: Após confirmação do erro, a Loja Educacross orientará o procedimento de devolução e envio correto, sem custo adicional para o consumidor.
+      - heading "7. Situações em que a troca ou devolução pode não ser aceita" [level=3] [ref=e111]
+      - paragraph [ref=e112]: "A solicitação poderá não ser aceita quando houver:"
+      - list [ref=e113]:
+        - listitem [ref=e114]: produto com sinais de uso inadequado;
+        - listitem [ref=e115]: dano causado por mau uso, queda, lavagem incorreta, armazenamento inadequado ou intervenção externa;
+        - listitem [ref=e116]: ausência de peças, acessórios ou componentes essenciais;
+        - listitem [ref=e117]: solicitação feita fora dos prazos informados;
+        - listitem [ref=e118]: produto personalizado, quando previamente informado no momento da compra;
+        - listitem [ref=e119]: desgaste natural decorrente do uso.
+      - paragraph [ref=e120]: Cada caso será analisado individualmente pela equipe da Loja Educacross.
+      - heading "8. Reembolso" [level=3] [ref=e121]
+      - paragraph [ref=e122]: Quando o reembolso for aplicável, ele será realizado conforme o meio de pagamento utilizado na compra e os prazos dos intermediadores financeiros.
+      - paragraph [ref=e123]: Em compras feitas por cartão de crédito, o estorno poderá aparecer em faturas posteriores, conforme as regras da administradora do cartão.
+      - paragraph [ref=e124]: Em compras feitas por Pix, boleto ou outros meios, a equipe poderá solicitar dados necessários para efetivar o reembolso com segurança.
+      - heading "9. Frete de devolução ou troca" [level=3] [ref=e125]
+      - paragraph [ref=e126]: Nos casos de arrependimento dentro do prazo legal, defeito confirmado, avaria no transporte ou erro no envio, a Loja Educacross orientará o procedimento de devolução conforme a legislação aplicável e as condições logísticas disponíveis.
+      - paragraph [ref=e127]: Nos casos de troca por preferência pessoal, os custos de frete poderão variar conforme a situação e serão informados ao consumidor antes da continuidade do processo.
+      - heading "10. Como solicitar troca ou devolução" [level=3] [ref=e128]
+      - paragraph [ref=e129]: "Para solicitar troca, devolução ou análise de defeito, entre em contato pelos canais oficiais:"
+      - list [ref=e130]:
+        - listitem [ref=e131]:
+          - strong [ref=e132]: "WhatsApp:"
+          - link "(16) 99299-4152" [ref=e133] [cursor=pointer]:
+            - /url: https://wa.me/5516992994152
+        - listitem [ref=e134]:
+          - strong [ref=e135]: "E-mail:"
+          - link "loja.suporte@educacross.com.br" [ref=e136] [cursor=pointer]:
+            - /url: mailto:loja.suporte@educacross.com.br
+        - listitem [ref=e137]:
+          - strong [ref=e138]: "Horário de atendimento:"
+          - text: segunda a sexta-feira, das 7h às 19h.
+      - paragraph [ref=e139]: "Ao entrar em contato, envie:"
+      - list [ref=e140]:
+        - listitem [ref=e141]: número do pedido;
+        - listitem [ref=e142]: nome completo;
+        - listitem [ref=e143]: e-mail cadastrado na compra;
+        - listitem [ref=e144]: motivo da solicitação;
+        - listitem [ref=e145]: fotos ou vídeos, quando houver defeito, avaria ou erro no envio.
+      - heading "11. Observação final" [level=3] [ref=e146]
+      - paragraph [ref=e147]: Esta política poderá ser atualizada a qualquer momento para refletir melhorias operacionais, mudanças legais ou ajustes nos procedimentos da loja.
+      - paragraph [ref=e148]: Recomendamos que o consumidor consulte esta página antes de realizar sua compra.
+      - paragraph [ref=e149]: Esta política foi formatada para leitura digital e impressão. Consulte a versão publicada na loja antes de realizar sua compra.
+    - complementary [ref=e150]:
+      - generic [ref=e151]:
+        - heading "Ajuda relacionada" [level=3] [ref=e152]:
+          - img [ref=e153]
+          - text: Ajuda relacionada
+        - paragraph [ref=e155]: Atalhos rápidos para outras páginas de apoio e atendimento.
+        - navigation "Ajuda relacionada" [ref=e156]:
+          - link "Perguntas Frequentes" [ref=e157] [cursor=pointer]:
+            - /url: /perguntas-frequentes
+            - img [ref=e158]
+            - text: Perguntas Frequentes
+          - link "Política de Privacidade" [ref=e161] [cursor=pointer]:
+            - /url: /politica-de-privacidade
+            - img [ref=e162]
+            - text: Política de Privacidade
+          - link "Contato" [ref=e164] [cursor=pointer]:
+            - /url: /contato
+            - img [ref=e165]
+            - text: Contato
+          - link "Sobre nós" [ref=e167] [cursor=pointer]:
+            - /url: /sobre-nos
+            - img [ref=e168]
+            - text: Sobre nós
+      - generic [ref=e173]:
+        - img [ref=e175]
+        - paragraph [ref=e177]: Precisa de ajuda com uma troca, devolução ou pedido entregue?
+        - link "Falar com a equipe" [ref=e178] [cursor=pointer]:
+          - /url: /contato
+  - link "Fale conosco pelo WhatsApp" [ref=e179] [cursor=pointer]:
+    - /url: https://wa.me/5516992994152
+    - img [ref=e180]
+  - contentinfo [ref=e182]:
+    - generic [ref=e183]:
+      - generic [ref=e184]:
+        - generic [ref=e185]:
+          - link "Universo Educacross" [ref=e187] [cursor=pointer]:
+            - /url: https://loja.educabox.com.br
+            - img "Universo Educacross" [ref=e188]
+          - paragraph [ref=e189]: Leve o universo Educacross para casa ou para a escola.
+          - generic [ref=e190]:
+            - heading "Entre em contato" [level=4] [ref=e191]
+            - generic [ref=e192]:
+              - link "(16) 99299-4152" [ref=e193] [cursor=pointer]:
+                - /url: https://wa.me/5516992994152
+              - link "loja.suporte@educacross.com.br" [ref=e194] [cursor=pointer]:
+                - /url: mailto:loja.suporte@educacross.com.br
+        - generic [ref=e195]:
+          - heading "Loja" [level=4] [ref=e196]
+          - generic [ref=e197]:
+            - link "Todos os produtos" [ref=e198] [cursor=pointer]:
+              - /url: /produtos
+            - link "Personagens" [ref=e199] [cursor=pointer]:
+              - /url: /personagens
+        - generic [ref=e200]:
+          - heading "Institucional" [level=4] [ref=e201]
+          - generic [ref=e202]:
+            - link "Sobre nós" [ref=e203] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/sobre-nos/
+            - link "Contato" [ref=e204] [cursor=pointer]:
+              - /url: /contato/
+            - link "Política de Privacidade" [ref=e205] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/politica-de-privacidade/
+        - generic [ref=e206]:
+          - heading "Ajuda" [level=4] [ref=e207]
+          - generic [ref=e208]:
+            - link "Minha conta" [ref=e209] [cursor=pointer]:
+              - /url: /account
+            - link "Meus pedidos" [ref=e210] [cursor=pointer]:
+              - /url: /account/orders
+            - link "Perguntas frequentes" [ref=e211] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/perguntas-frequentes/
+            - link "Trocas e devoluções" [ref=e212] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/trocas-e-devolucoes/
+      - generic [ref=e213]:
+        - generic [ref=e214]:
+          - img "visa" [ref=e215]
+          - img "mastercard" [ref=e216]
+          - img "amex" [ref=e217]
+          - img "diners" [ref=e218]
+          - img "br_aura" [ref=e219]
+          - img "br_elo" [ref=e220]
+          - img "br_hipercard" [ref=e221]
+          - img "br_discover" [ref=e222]
+          - img "boleto" [ref=e223]
+          - img "payment-method-types_pix" [ref=e224]
+        - img "api_4190" [ref=e226]
+      - generic [ref=e227]:
+        - generic [ref=e228]:
+          - img [ref=e229]
+          - generic [ref=e232]: Empresa brasileira registrada — CNPJ 15.130.060/0001-04 — Educacross Educacao Ltda.
+        - generic [ref=e233]:
+          - img [ref=e234]
+          - generic [ref=e238]: Loja 100% segura — pagamento criptografado e dados protegidos.
+    - generic [ref=e243]: Copyright Educacross - 2026. Todos os direitos reservados.

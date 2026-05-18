@@ -5,6 +5,7 @@ import { Collection, ScreenName, UserProfile, Voucher } from '../types';
 import { PENDING_SIGNUP_VOUCHER_STORAGE_KEY, formatSegmentLabel } from '../constants';
 import { api } from '../lib/api';
 import { formatAccessDate, getProfileAccessStatus } from '../lib/access';
+import { getCollectionDisplayCover } from '../lib/collectionPresentation';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 const getPendingSignupVoucher = (): string => {
@@ -214,15 +215,19 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
                         </p>
                     </div>
                     <div className="px-8 py-6 space-y-3 max-h-60 overflow-y-auto">
-                        {grantedCollections.map(col => (
-                            <div key={col.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl">
-                                <img src={col.cover_image} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold text-gray-800 truncate">{col.title}</p>
-                                    {col.level && <p className="text-xs text-gray-400">{formatSegmentLabel(col.level)}</p>}
+                        {grantedCollections.map(col => {
+                            const displayCoverImage = getCollectionDisplayCover(col) || col.cover_image;
+
+                            return (
+                                <div key={col.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl">
+                                    <img src={displayCoverImage} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-gray-800 truncate">{col.title}</p>
+                                        {col.level && <p className="text-xs text-gray-400">{formatSegmentLabel(col.level)}</p>}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                     <div className="px-8 pb-8 pt-2">
                         <Button

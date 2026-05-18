@@ -1,0 +1,105 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Expandir menu" [ref=e5]:
+      - img [ref=e6]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Mundo de Kaboo" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic: Coleções
+          - button "Coleções" [active] [ref=e13]:
+            - img [ref=e14]
+        - generic [ref=e16]:
+          - generic: Livros
+          - button "Livros" [ref=e17]:
+            - img [ref=e18]
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic: Vídeos
+          - button "Vídeos" [ref=e22]:
+            - img [ref=e23]
+        - generic [ref=e26]:
+          - generic: Músicas
+          - button "Músicas" [ref=e27]:
+            - img [ref=e28]
+        - generic [ref=e30]:
+          - generic: Formações
+          - button "Formações" [ref=e31]:
+            - img [ref=e32]
+        - generic [ref=e34]:
+          - generic: Materiais
+          - button "Materiais" [ref=e35]:
+            - img [ref=e36]
+      - generic [ref=e40]:
+        - generic: Gerenciar
+        - button "Gerenciar" [ref=e41]:
+          - img [ref=e42]
+    - button "Abrir perfil de Editor" [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]: ET
+        - img "Avatar" [ref=e50]
+  - main [ref=e51]:
+    - generic [ref=e2978]:
+      - heading "Coleções" [level=1] [ref=e2981]
+      - generic [ref=e2984]:
+        - generic [ref=e2986]:
+          - paragraph [ref=e2987]: Comece pela busca
+          - paragraph [ref=e2988]: Busque por título, tema, BNCC ou personagem. Refine com filtros e segmentos.
+        - generic [ref=e2989]:
+          - generic [ref=e2990]:
+            - generic:
+              - img
+            - button "Abrir pesquisa" [ref=e2991]: Buscar por título, tema, BNCC ou personagem
+          - button "Filtros" [ref=e2992]:
+            - img [ref=e2993]
+            - generic [ref=e2995]: Filtros
+        - generic [ref=e2996]:
+          - paragraph [ref=e2997]: Explorar por segmento
+          - generic [ref=e2999]:
+            - button "Todos" [ref=e3000]:
+              - img [ref=e3001]
+              - text: Todos
+            - button "Ed. Infantil" [ref=e3003]
+            - button "Fund I" [ref=e3004]
+      - generic [ref=e3006]:
+        - generic [ref=e3007]:
+          - heading "Todas as Coleções" [level=2] [ref=e3009]
+          - generic [ref=e3010]:
+            - button "Idade" [ref=e3011]:
+              - img [ref=e3012]
+              - text: Idade
+            - generic [ref=e3015]: "4"
+            - button "Atualizar coleções" [ref=e3016]:
+              - img [ref=e3017]
+        - generic [ref=e3021]:
+          - generic [ref=e3023] [cursor=pointer]:
+            - generic [ref=e3024]:
+              - img "Kaboo e a Carta Misteriosa" [ref=e3025]
+              - generic [ref=e3026]: Coleção
+              - generic [ref=e3028]: E.F. Anos Iniciais
+            - heading "Kaboo e a Carta Misteriosa" [level=3] [ref=e3029]
+            - paragraph [ref=e3030]: Pertencimento e diversidade
+          - generic [ref=e3032] [cursor=pointer]:
+            - generic [ref=e3033]:
+              - img "Mensageiro e a Canção Certa" [ref=e3034]
+              - generic [ref=e3035]: Coleção
+              - generic [ref=e3037]:
+                - generic [ref=e3038]: Ed. Infantil
+                - generic [ref=e3039]: E.F. Anos Iniciais
+            - heading "Mensageiro e a Canção Certa" [level=3] [ref=e3040]
+            - paragraph [ref=e3041]: Sensibilidade, regulação sensorial e respeito ao silêncio
+          - generic [ref=e3043] [cursor=pointer]:
+            - generic [ref=e3044]:
+              - img "Baratinha e Baratão no Labirinto do Eco" [ref=e3045]
+              - generic [ref=e3046]: Coleção
+              - generic [ref=e3048]: E.F. Anos Iniciais
+            - heading "Baratinha e Baratão no Labirinto do Eco" [level=3] [ref=e3049]
+            - paragraph [ref=e3050]: Escuta ativa e diálogo
+          - generic [ref=e3052] [cursor=pointer]:
+            - generic [ref=e3053]:
+              - img "Kaboo e o Desafio das Cores" [ref=e3054]
+              - generic [ref=e3055]: Coleção
+              - generic [ref=e3057]: E.F. Anos Iniciais
+            - heading "Kaboo e o Desafio das Cores" [level=3] [ref=e3058]
+            - paragraph [ref=e3059]: Conflitos, respeito e reconciliação

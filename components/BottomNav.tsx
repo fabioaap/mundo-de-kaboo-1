@@ -7,12 +7,21 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockSession } from '../lib/api';
 import { getMockCurrentUserRole } from '../lib/mockData';
 import { getMockProfile } from '../lib/mockData';
+import { layoutSpacing } from '../design-system/layout/spacing';
 
 interface BottomNavProps {
   currentScreen: ScreenName;
   onNavigate: (screen: ScreenName, params?: any) => void;
   currentParams?: any;
   profile?: UserProfile | null;
+  brandSlug?: string;
+  brandLogoUrl?: string;
+  brandName?: string;
+  /**
+   * Conjunto de chaves de menu habilitadas pela configuração de marca.
+   * Quando omitido, todos os itens canônicos são exibidos (comportamento padrão).
+   */
+  enabledMenuKeys?: Set<string>;
 }
 
 type NavItem = {
@@ -25,7 +34,15 @@ type NavItem = {
 
 const STORAGE_SIDEBAR_COLLAPSED = 'kaboo_sidebar_collapsed';
 
-export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate, currentParams, profile }) => {
+export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate, currentParams, profile, brandSlug, brandLogoUrl, brandName, enabledMenuKeys }) => {
+  /** Retorna true se a chave de menu deve aparecer. Sem restrição = tudo habilitado. */
+  const isMenuKeyEnabled = (key: string): boolean =>
+    !enabledMenuKeys || enabledMenuKeys.has(key);
+  const isCentralCoruja = brandSlug === 'central-coruja';
+  const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
+  const resolvedBrandName = brandName || 'Mundo de Kaboo';
+  const footerBrandLabel = `${resolvedBrandName} © 2025`;
+
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_SIDEBAR_COLLAPSED);
@@ -76,24 +93,23 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     return currentScreen === item.screen;
   };
 
-  const catalogNavItems: NavItem[] = [
+  const catalogNavItems: NavItem[] = ([
     { key: 'collections', screen: 'home', icon: Icons.Library, label: 'Coleções', params: { collectionGroup: 'kits' } },
     { key: 'books', screen: 'home', icon: Icons.BookOpen, label: 'Livros', params: { collectionGroup: 'books' } },
-  ];
+  ] as NavItem[]).filter(item => isMenuKeyEnabled(item.key));
 
-  const libraryNavItems: NavItem[] = [
+  const libraryNavItems: NavItem[] = ([
     { key: 'videos', screen: 'videos', icon: Icons.Video, label: 'Vídeos' },
-    { key: 'music', screen: 'music', icon: Icons.Headphones, label: 'Músicas' },
+    { key: 'music', screen: 'music', icon: Icons.Headphones, label: 'Áudios' },
     { key: 'formations', screen: 'formations', icon: Icons.BookOpen, label: 'Formações' },
     { key: 'materials', screen: 'materials', icon: Icons.FileText, label: 'Materiais' },
-  ];
-
-  const footerNavItems: NavItem[] = [];
+  ] as NavItem[]).filter(item => isMenuKeyEnabled(item.key));
 
   // Add admin collections item if user has permission
   const adminNavItem: NavItem | null = canEdit
     ? { key: 'admin', screen: 'admin', icon: Icons.Settings, label: 'Gerenciar' }
     : null;
+
 
   const desktopNavSections = [
     { title: 'Acervo', items: catalogNavItems },
@@ -106,7 +122,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     ...libraryNavItems,
     ...(adminNavItem ? [adminNavItem] : []),
     { key: 'profile', screen: 'profile', icon: Icons.User, label: 'Perfil' },
-  ];
+  ].filter((item): item is NavItem => Boolean(item));
 
   return (
     <>
@@ -141,7 +157,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
       {/* DESKTOP SIDEBAR */}
       <div className={`hidden md:flex flex-col h-screen bg-white border-r border-gray-100 shrink-0 z-50 shadow-sm transition-all duration-300 ease-in-out relative ${isCollapsed ? 'w-20' : 'w-64'
         }`}>
-        {/* Toggle Button - Top Border */}
+
+        {/* Toggle Button - always at top, on the right edge of sidebar */}
         <button
           onClick={toggleSidebar}
           className="absolute -right-3 top-4 w-6 h-6 flex items-center justify-center bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200 z-10"
@@ -149,31 +166,42 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
           title={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           {isCollapsed ? (
-            <Icons.ChevronRight size={14} className="text-gray-600" />
+            <Icons.ChevronRight size={desktopToggleIconSize} className={desktopToggleIconClass} />
           ) : (
-            <Icons.ChevronLeft size={14} className="text-gray-600" />
+            <Icons.ChevronLeft size={desktopToggleIconSize} className={desktopToggleIconClass} />
           )}
         </button>
 
         {/* Logo Area - Clickable */}
         <button
           onClick={() => onNavigate('home')}
-          className={`w-full flex justify-center hover:opacity-80 transition-opacity focus:outline-none ${isCollapsed ? 'p-4' : 'p-8'
+          className={`relative z-10 w-full flex justify-center hover:opacity-80 transition-opacity duration-150 focus:outline-none ${isCollapsed ? 'p-4' : 'p-8'
             }`}
           aria-label="Ir para o Início"
           title="Ir para o Início"
         >
           {!isCollapsed && (
-            <img src={LOGO_URL} alt="Kaboo" className="w-32 h-auto" />
+            resolvedBrandLogoUrl ? (
+              <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="w-32 h-auto" />
+            ) : (
+              <div className="px-4 py-3 text-center text-base font-black leading-tight shadow-sm rounded-[28px] border border-gray-200 bg-white text-gray-800">
+                {resolvedBrandName}
+              </div>
+            )
           )}
           {isCollapsed && (
-            <img src={LOGO_URL} alt="Kaboo" className="w-10 h-auto" />
+            resolvedBrandLogoUrl ? (
+              <img src={resolvedBrandLogoUrl} alt={resolvedBrandName} className="w-10 h-auto" />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-black shadow-sm border border-gray-200 bg-white text-gray-800">
+                {resolvedBrandName.charAt(0)}
+              </div>
+            )
           )}
         </button>
 
         {/* Nav Items */}
-        <div className={`flex-1 space-y-4 py-4 transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'
-          }`}>
+        <div className={`relative z-10 flex-1 space-y-4 py-4 transition-[padding] duration-180 ease-out ${desktopSectionPaddingClass}`}>
           {desktopNavSections.map((section, sectionIndex) => (
             <div key={section.title} className={`space-y-2 ${sectionIndex > 0 ? 'pt-4 border-t border-gray-100' : ''}`}>
               {!isCollapsed && (
@@ -205,9 +233,48 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                     {!isCollapsed && (
                       <span className={`text-sm font-bold ${isActive ? '' : 'group-hover:text-gray-800'}`}>
                         {item.label}
-                      </span>
+                        <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+                      </div>
                     )}
-                  </button>
+                    <button
+                      onClick={() => onNavigate(item.screen, item.params)}
+                      aria-label={item.label}
+                      className={`relative w-full flex items-center rounded-[100px] transition-[background-color,color,transform,box-shadow,padding] duration-150 group ${isCollapsed
+                        ? 'justify-center px-[var(--space-drawer-inset)] py-[var(--space-modal-header-y)]'
+                        : 'gap-4 px-[var(--space-page-x)] py-[var(--space-modal-header-y)]'
+                        } ${isActive
+                          ? desktopItemActiveClass
+                          : desktopItemInactiveClass
+                        }`}
+                    >
+                      {!isCollapsed && isActive && (
+                        isCentralCoruja ? (
+                          <span
+                            className="absolute left-[0.42rem] flex h-5 w-5 items-center justify-center text-[#FFB347] drop-shadow-[0_0_8px_rgba(255,179,71,0.28)]"
+                            style={{ transform: 'translateX(-4px)' }}
+                            aria-hidden="true"
+                          >
+                            <Icons.Feather
+                              size={14}
+                              className="stroke-[2.35px]"
+                              style={{ transform: 'scaleX(-1) rotate(18deg)' }}
+                            />
+                          </span>
+                        ) : (
+                          <span className="absolute left-2 h-5 w-1 rounded-full bg-white/85" aria-hidden="true" />
+                        )
+                      )}
+                      <Icon
+                        size={22}
+                        className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${desktopItemInactiveHoverIconClass}`}
+                      />
+                      {!isCollapsed && (
+                        <span className={`text-sm font-bold ${isActive ? '' : desktopItemInactiveHoverLabelClass}`}>
+                          {item.label}
+                        </span>
+                      )}
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -215,35 +282,42 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
         </div>
 
         {/* Footer */}
-        <div className={`border-t border-gray-100 transition-all duration-300 ${isCollapsed ? 'px-2 py-4' : 'px-4 pt-4 pb-6'}`}>
+        <div className={`relative z-10 transition-[padding] duration-180 ease-out border-t ${desktopSectionDividerClass} ${desktopFooterPaddingClass}`}>
           <div className="space-y-2">
             {footerNavItems.map((item) => {
               const isActive = isItemActive(item);
               const Icon = item.icon;
 
               return (
-                <button
-                  key={item.key}
-                  onClick={() => onNavigate(item.screen, item.params)}
-                  aria-label={item.label}
-                  className={`w-full flex items-center rounded-[100px] transition-all duration-200 group ${isCollapsed
-                    ? 'justify-center px-3 py-4'
-                    : 'gap-4 px-6 py-4'
-                    } ${isActive
-                      ? 'bg-kaboo-primary text-white shadow-md shadow-kaboo-primary/20'
-                      : 'bg-transparent text-gray-500 hover:bg-gray-50'
-                    }`}
-                >
-                  <Icon
-                    size={22}
-                    className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px] group-hover:text-kaboo-primary'}
-                  />
-                  {!isCollapsed && (
-                    <span className={`text-sm font-bold ${isActive ? '' : 'group-hover:text-gray-800'}`}>
+                <div key={item.key} className={`relative ${isCollapsed ? 'group/tooltip' : ''}`}>
+                  {isCollapsed && (
+                    <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-bold shadow-lg opacity-0 transition-opacity duration-150 group-hover/tooltip:opacity-100 select-none bg-gray-900 text-white">
                       {item.label}
-                    </span>
+                      <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+                    </div>
                   )}
-                </button>
+                  <button
+                    onClick={() => onNavigate(item.screen, item.params)}
+                    aria-label={item.label}
+                    className={`w-full flex items-center rounded-[100px] transition-[background-color,color,transform,box-shadow,padding] duration-150 group ${isCollapsed
+                      ? 'justify-center px-[var(--space-drawer-inset)] py-[var(--space-modal-header-y)]'
+                      : 'gap-4 px-[var(--space-page-x)] py-[var(--space-modal-header-y)]'
+                      } ${isActive
+                        ? desktopItemActiveClass
+                        : desktopItemInactiveClass
+                      }`}
+                  >
+                    <Icon
+                      size={22}
+                      className={isActive ? 'stroke-[2.5px]' : `stroke-[2px] ${desktopItemInactiveHoverIconClass}`}
+                    />
+                    {!isCollapsed && (
+                      <span className={`text-sm font-bold ${isActive ? '' : desktopItemInactiveHoverLabelClass}`}>
+                        {item.label}
+                      </span>
+                    )}
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -254,14 +328,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                 profile={effectiveProfile}
                 collapsed={isCollapsed}
                 active={isProfileSection}
+                tone={isCentralCoruja ? 'central-coruja' : 'default'}
                 onClick={() => onNavigate('profile')}
               />
             </div>
           )}
 
           {!isCollapsed && (
-            <div className="pt-4 text-center text-xs text-gray-300">
-              <p>Mundo de Kaboo © 2025</p>
+            <div className={`pt-4 text-center text-xs ${desktopFooterTextClass} ${desktopFooterTextOffsetClass}`}>
+              <p>{footerBrandLabel}</p>
               <p className="mt-1">Versão 2.1</p>
             </div>
           )}

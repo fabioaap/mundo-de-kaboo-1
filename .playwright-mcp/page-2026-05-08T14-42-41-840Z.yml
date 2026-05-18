@@ -1,0 +1,93 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Recolher menu" [ref=e5]:
+      - img [ref=e6]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Central Coruja" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - paragraph [ref=e12]: Acervo
+        - button "Coleções" [ref=e13]:
+          - img [ref=e15]
+          - generic [ref=e17]: Coleções
+        - button "Livros" [active] [ref=e18]:
+          - img [ref=e19]
+          - generic [ref=e21]: Livros
+      - generic [ref=e22]:
+        - paragraph [ref=e23]: Bibliotecas
+        - button "Vídeos" [ref=e24]:
+          - img [ref=e25]
+          - generic [ref=e28]: Vídeos
+        - button "Músicas" [ref=e29]:
+          - img [ref=e30]
+          - generic [ref=e32]: Músicas
+        - button "Formações" [ref=e33]:
+          - img [ref=e34]
+          - generic [ref=e36]: Formações
+        - button "Materiais" [ref=e37]:
+          - img [ref=e38]
+          - generic [ref=e41]: Materiais
+      - generic [ref=e42]:
+        - paragraph [ref=e43]: Gestão
+        - button "Gerenciar" [ref=e44]:
+          - img [ref=e45]
+          - generic [ref=e48]: Gerenciar
+    - generic [ref=e49]:
+      - button "Abrir perfil" [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53]: DA
+          - img "Avatar" [ref=e54]
+        - generic [ref=e55]:
+          - paragraph [ref=e56]: Olá, Demo
+          - paragraph [ref=e57]: demo@mundodekaboo.local
+      - generic [ref=e58]:
+        - paragraph [ref=e59]: Central Coruja © 2025
+        - paragraph [ref=e60]: Versão 2.1
+  - main [ref=e61]:
+    - generic [ref=e133]:
+      - generic [ref=e135]:
+        - generic [ref=e136]:
+          - paragraph [ref=e137]: Olá, Demo.
+          - heading "Bem-vindo à Central Coruja!" [level=2] [ref=e138]
+          - paragraph [ref=e139]: Histórias, vídeos e experiências de aprendizagem organizados para você começar pela busca e explorar com mais clareza.
+        - generic [ref=e140]:
+          - generic [ref=e141]:
+            - generic:
+              - img
+            - button "Abrir pesquisa" [ref=e142]: Buscar por título, tema, BNCC ou personagem
+            - button "Filtros" [ref=e143]:
+              - img [ref=e144]
+              - generic [ref=e146]: Filtros
+          - generic [ref=e147]:
+            - button "Todos" [ref=e148]:
+              - img [ref=e149]
+              - text: Todos
+            - button "Ed. Infantil" [ref=e151]
+            - button "Fund I" [ref=e152]
+      - generic [ref=e154]:
+        - heading "Todas as Coleções" [level=2] [ref=e339]
+        - generic [ref=e159]:
+          - generic [ref=e341] [cursor=pointer]:
+            - generic [ref=e342]:
+              - img "Kaboo e a Carta Misteriosa" [ref=e345]
+              - generic [ref=e347]: Coleção
+            - heading "Kaboo e a Carta Misteriosa" [level=3] [ref=e349]
+            - paragraph [ref=e350]: Pertencimento e diversidade
+          - generic [ref=e352] [cursor=pointer]:
+            - generic [ref=e353]:
+              - img "Mensageiro e a Canção Certa" [ref=e356]
+              - generic [ref=e358]: Coleção
+            - heading "Mensageiro e a Canção Certa" [level=3] [ref=e360]
+            - paragraph [ref=e361]: Sensibilidade, regulação sensorial e respeito ao silêncio
+          - generic [ref=e363] [cursor=pointer]:
+            - generic [ref=e364]:
+              - img "Baratinha e Baratão no Labirinto do Eco" [ref=e367]
+              - generic [ref=e369]: Coleção
+            - heading "Baratinha e Baratão no Labirinto do Eco" [level=3] [ref=e371]
+            - paragraph [ref=e372]: Escuta ativa e diálogo
+          - generic [ref=e374] [cursor=pointer]:
+            - generic [ref=e375]:
+              - img "Kaboo e o Desafio das Cores" [ref=e378]
+              - generic [ref=e380]: Coleção
+            - heading "Kaboo e o Desafio das Cores" [level=3] [ref=e382]
+            - paragraph [ref=e383]: Conflitos, respeito e reconciliação

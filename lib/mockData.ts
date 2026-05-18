@@ -69,6 +69,21 @@ const MOCK_BATCH_VOUCHERS_STORAGE_KEY = 'kaboo_mock_batch_vouchers';
 const MOCK_SESSION_STORAGE_KEY = 'kaboo_mock_session_user_id';
 const MOCK_COLLECTIONS_STORAGE_KEY = 'kaboo_mock_collections';
 
+// Active brand slug — set by App.tsx when useBrandConfig resolves.
+// Defaults to 'kaboo' so all non-brand-aware call sites work unchanged.
+let _activeMockBrandSlug = 'kaboo';
+
+/** Called by App.tsx once per brand slug change to isolate data per brand. */
+export const setMockActiveBrand = (slug: string): void => {
+    _activeMockBrandSlug = slug;
+};
+
+/** Returns the brand-specific localStorage key for collections. */
+const getCollectionsStorageKey = (): string =>
+    _activeMockBrandSlug === 'kaboo'
+        ? MOCK_COLLECTIONS_STORAGE_KEY
+        : `${MOCK_COLLECTIONS_STORAGE_KEY}_${_activeMockBrandSlug}`;
+
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const seed = catalogSeed as CatalogSeed;
@@ -124,33 +139,68 @@ const buildProfile = (overrides: Partial<UserProfile>): UserProfile => ({
     access_status: overrides.access_status ?? 'pending_voucher'
 });
 
-const buildAdminDemoUser = (): MockUserAccount => {
-    const id = 'mock-admin';
+const buildUser = (
+    id: string,
+    email: string,
+    password: string,
+    fullName: string,
+    role: UserRole
+): MockUserAccount => {
     const createdAt = new Date().toISOString();
     return {
         id,
-        email: 'demo@mundodekaboo.local',
-        password: '123456',
-        role: 'admin',
+        email,
+        password,
+        role,
         created_at: createdAt,
         invited_at: null,
         confirmed_at: createdAt,
         last_sign_in_at: createdAt,
         profile: buildProfile({
             id,
-            email: 'demo@mundodekaboo.local',
-            full_name: 'Demo Admin',
+            email,
+            full_name: fullName,
             avatar_id: 'Kaboo',
-            role: 'admin',
+            role,
             voucher_id: null,
             access_starts_at: new Date().toISOString(),
-                access_expires_at: null,
+            access_expires_at: null,
             access_status: 'active'
         })
     };
 };
 
-const DEFAULT_MOCK_USERS: MockUserAccount[] = [buildAdminDemoUser()];
+const buildAdminUser = (
+    id: string,
+    email: string,
+    password: string,
+    fullName: string
+): MockUserAccount => buildUser(id, email, password, fullName, 'admin');
+
+const buildAdminDemoUser = (): MockUserAccount => {
+    return buildAdminUser(
+        'mock-admin',
+        'demo@mundodekaboo.local',
+        '123456',
+        'Demo Admin'
+    );
+};
+
+const buildWhiteLabelAdminUser = (): MockUserAccount => {
+    return buildAdminUser(
+        'mock-admin-whitelabel',
+        'admin@mundodekaboo.dev',
+        'Kaboo@2026!',
+        'Admin Mundo de Kaboo'
+    );
+};
+
+const DEFAULT_MOCK_USERS: MockUserAccount[] = [
+    buildAdminDemoUser(),
+    buildWhiteLabelAdminUser(),
+    buildUser('mock-editor', 'editor@mundodekaboo.local', 'editor123', 'Editor Teste', 'editor'),
+    buildUser('mock-viewer', 'viewer@mundodekaboo.local', 'viewer123', 'Viewer Teste', 'viewer'),
+];
 
 const DEFAULT_MOCK_VOUCHERS: Voucher[] = [
     { id: 'voucher-1', code: 'KABOO-1MES-2026', duration_months: 1, status: 'active' },
@@ -204,8 +254,27 @@ const writeStoredUsers = (users: MockUserAccount[]): void => {
     localStorage.setItem(MOCK_USERS_STORAGE_KEY, JSON.stringify(users));
 };
 
+const mergeDefaultUsers = (storedUsers: MockUserAccount[] | null): MockUserAccount[] => {
+    if (!storedUsers) {
+        return DEFAULT_MOCK_USERS;
+    }
+
+    const knownEmails = new Set(storedUsers.map((user) => normalizeEmail(user.email)));
+    const missingDefaults = DEFAULT_MOCK_USERS.filter(
+        (user) => !knownEmails.has(normalizeEmail(user.email))
+    );
+
+    if (missingDefaults.length === 0) {
+        return storedUsers;
+    }
+
+    const mergedUsers = [...storedUsers, ...missingDefaults];
+    writeStoredUsers(mergedUsers);
+    return mergedUsers;
+};
+
 const getLiveUsers = (): MockUserAccount[] => {
-    return readStoredUsers() ?? DEFAULT_MOCK_USERS;
+    return mergeDefaultUsers(readStoredUsers());
 };
 
 const readStoredVouchers = (): Voucher[] | null => {
@@ -804,7 +873,7 @@ export const redeemMockVoucher = (rawCode: string): VoucherRedemptionResult => {
 const readStoredCollections = (): Collection[] | null => {
     if (typeof window === 'undefined') return null;
     try {
-        const stored = localStorage.getItem(MOCK_COLLECTIONS_STORAGE_KEY);
+        const stored = localStorage.getItem(getCollectionsStorageKey());
         return stored ? normalizeCollections(JSON.parse(stored) as Collection[]) : null;
     } catch {
         return null;
@@ -813,7 +882,7 @@ const readStoredCollections = (): Collection[] | null => {
 
 const writeStoredCollections = (collections: Collection[]): void => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(MOCK_COLLECTIONS_STORAGE_KEY, JSON.stringify(normalizeCollections(collections)));
+    localStorage.setItem(getCollectionsStorageKey(), JSON.stringify(normalizeCollections(collections)));
 };
 
 const mergeSeedCollections = (storedCollections: Collection[]): { collections: Collection[]; changed: boolean } => {
@@ -867,7 +936,13 @@ const getLiveCollections = (): Collection[] => {
     const storedCollections = readStoredCollections();
 
     if (!storedCollections) {
-        return MOCK_COLLECTIONS;
+        // Non-kaboo brands start with an empty collection store.
+        return _activeMockBrandSlug === 'kaboo' ? MOCK_COLLECTIONS : [];
+    }
+
+    // Non-kaboo brands don't get Kaboo seed data merged in.
+    if (_activeMockBrandSlug !== 'kaboo') {
+        return storedCollections;
     }
 
     const mergedCollections = mergeSeedCollections(storedCollections);

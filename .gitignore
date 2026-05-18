@@ -32,3 +32,12 @@ docs/build
 
 *storybook.log
 storybook-static
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# gstack / QA tooling artifacts
+.gstack/
+.playwright-mcp/

@@ -1,0 +1,291 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e4]:
+      - link "Universo Educacross" [ref=e5] [cursor=pointer]:
+        - /url: https://loja.educabox.com.br
+        - img "Universo Educacross" [ref=e6]
+      - search [ref=e8]:
+        - searchbox "Buscar na loja" [ref=e9]
+        - button "Buscar" [ref=e10] [cursor=pointer]
+      - generic [ref=e11]:
+        - link "Carrinho com 0 item(ns)" [ref=e12] [cursor=pointer]:
+          - /url: /comprar/
+          - img [ref=e13]
+          - generic [ref=e17]: "0"
+        - button "Abrir menu" [ref=e18] [cursor=pointer]
+  - generic [ref=e24]:
+    - generic [ref=e25]:
+      - text: Este site usa
+      - strong [ref=e26]: cookies
+      - text: para melhorar sua experiência de compra.
+    - link "Entendi" [ref=e28] [cursor=pointer]:
+      - /url: "#"
+  - generic [ref=e29]:
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - generic [ref=e35]: Coleção 2026
+        - heading "Aprender é uma experiência lúdica e afetiva" [level=1] [ref=e36]:
+          - text: Aprender é
+          - emphasis [ref=e37]: uma experiência
+          - text: lúdica e afetiva
+        - paragraph [ref=e38]: Produtos criados para aproximar crianças, famílias e escolas do universo Educacross, com personagens, histórias e materiais que tornam a aprendizagem mais leve, afetiva e significativa.
+        - generic [ref=e39]:
+          - link "Ver coleção" [ref=e40] [cursor=pointer]:
+            - /url: /produtos
+          - link "Conheça o universo Educacross ↗" [ref=e41] [cursor=pointer]:
+            - /url: /sobre-nos
+      - generic [ref=e42]:
+        - img "Universo Educacross" [ref=e44]
+        - img "Familias e personagens Educacross" [ref=e46]
+    - generic [ref=e48]:
+      - generic [ref=e49]: APRENDIZAGEM LÚDICA
+      - generic [ref=e51]: KITS EDUCATIVOS
+      - generic [ref=e53]: DESENVOLVIDO POR EDUCADORES
+      - generic [ref=e55]: PARA TODAS AS IDADES
+      - generic [ref=e57]: PARA ESCOLA E FAMÍLIAS
+      - generic [ref=e59]: CRIATIVIDADE E IMAGINAÇÃO
+      - generic [ref=e61]: APRENDIZAGEM LÚDICA
+      - generic [ref=e63]: KITS EDUCATIVOS
+      - generic [ref=e65]: DESENVOLVIDO POR EDUCADORES
+      - generic [ref=e67]: PARA TODAS AS IDADES
+      - generic [ref=e69]: PARA ESCOLA E FAMÍLIAS
+      - generic [ref=e71]: CRIATIVIDADE E IMAGINAÇÃO
+    - generic [ref=e73]:
+      - generic [ref=e74]:
+        - generic [ref=e76]:
+          - heading "Personagens que transformam a aprendizagem em aventura" [level=2] [ref=e77]
+          - paragraph [ref=e78]: Cada personagem do universo Educacross carrega uma história, uma personalidade e um jeito especial de convidar as crianças a aprenderem com curiosidade, afeto e imaginação.
+        - generic [ref=e81]:
+          - generic "Navegação da seção de personagens" [ref=e82]:
+            - button "Ver personagens anteriores" [disabled]:
+              - img
+            - button "Ver próximos personagens" [ref=e83] [cursor=pointer]:
+              - img [ref=e84]
+          - generic [ref=e86]: 1–4 de 12
+      - generic [ref=e89]:
+        - link "Belinha Belinha Ver coleção ↗" [ref=e90] [cursor=pointer]:
+          - /url: /search/?q=Belinha
+          - img "Belinha" [ref=e92]
+          - generic [ref=e93]:
+            - generic [ref=e94]: Belinha
+            - generic [ref=e95]: Ver coleção ↗
+        - link "Eugênio Eugênio Ver coleção ↗" [ref=e96] [cursor=pointer]:
+          - /url: /search/?q=Eugênio
+          - img "Eugênio" [ref=e98]
+          - generic [ref=e99]:
+            - generic [ref=e100]: Eugênio
+            - generic [ref=e101]: Ver coleção ↗
+        - link "Eve Eve Ver coleção ↗" [ref=e102] [cursor=pointer]:
+          - /url: /search/?q=Eve
+          - img "Eve" [ref=e104]
+          - generic [ref=e105]:
+            - generic [ref=e106]: Eve
+            - generic [ref=e107]: Ver coleção ↗
+        - link "Nitche Nitche Ver coleção ↗" [ref=e108] [cursor=pointer]:
+          - /url: /search/?q=Nitche
+          - img "Nitche" [ref=e110]
+          - generic [ref=e111]:
+            - generic [ref=e112]: Nitche
+            - generic [ref=e113]: Ver coleção ↗
+        - link "Zeca Zeca Ver coleção ↗" [ref=e114] [cursor=pointer]:
+          - /url: /search/?q=Zeca
+          - img "Zeca" [ref=e116]
+          - generic [ref=e117]:
+            - generic [ref=e118]: Zeca
+            - generic [ref=e119]: Ver coleção ↗
+        - link "Chico Chico Ver coleção ↗" [ref=e120] [cursor=pointer]:
+          - /url: /search/?q=Chico
+          - img "Chico" [ref=e122]
+          - generic [ref=e123]:
+            - generic [ref=e124]: Chico
+            - generic [ref=e125]: Ver coleção ↗
+        - link "Júnior Júnior Ver coleção ↗" [ref=e126] [cursor=pointer]:
+          - /url: /search/?q=Júnior
+          - img "Júnior" [ref=e128]
+          - generic [ref=e129]:
+            - generic [ref=e130]: Júnior
+            - generic [ref=e131]: Ver coleção ↗
+        - link "Filó Filó Ver coleção ↗" [ref=e132] [cursor=pointer]:
+          - /url: /search/?q=Filó
+          - img "Filó" [ref=e134]
+          - generic [ref=e135]:
+            - generic [ref=e136]: Filó
+            - generic [ref=e137]: Ver coleção ↗
+        - link "Cacau Cacau Ver coleção ↗" [ref=e138] [cursor=pointer]:
+          - /url: /search/?q=Cacau
+          - img "Cacau" [ref=e140]
+          - generic [ref=e141]:
+            - generic [ref=e142]: Cacau
+            - generic [ref=e143]: Ver coleção ↗
+        - link "Clara Clara Ver coleção ↗" [ref=e144] [cursor=pointer]:
+          - /url: /search/?q=Clara
+          - img "Clara" [ref=e146]
+          - generic [ref=e147]:
+            - generic [ref=e148]: Clara
+            - generic [ref=e149]: Ver coleção ↗
+        - link "Doutor Nocturnus Doutor Nocturnus Ver coleção ↗" [ref=e150] [cursor=pointer]:
+          - /url: /search/?q=Doutor Nocturnus
+          - img "Doutor Nocturnus" [ref=e152]
+          - generic [ref=e153]:
+            - generic [ref=e154]: Doutor Nocturnus
+            - generic [ref=e155]: Ver coleção ↗
+        - link "Mestre Sereno Mestre Sereno Ver coleção ↗" [ref=e156] [cursor=pointer]:
+          - /url: /search/?q=Mestre Sereno
+          - img "Mestre Sereno" [ref=e158]
+          - generic [ref=e159]:
+            - generic [ref=e160]: Mestre Sereno
+            - generic [ref=e161]: Ver coleção ↗
+    - generic [ref=e163]:
+      - heading "Destaques" [level=2] [ref=e166]
+      - generic [ref=e167]:
+        - generic [ref=e168]:
+          - button "Todos" [ref=e169] [cursor=pointer]
+          - button "Outros" [ref=e170] [cursor=pointer]
+        - link "Ver todos ↗" [ref=e171] [cursor=pointer]:
+          - /url: /produtos/
+      - generic [ref=e172]:
+        - link "Destaque Belinha Coruja Pelúcia Ver produto Outros Belinha Coruja Pelúcia R$299,90" [ref=e173] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/produtos/belinha-coruja-pelucia/
+          - generic [ref=e174]:
+            - generic [ref=e175]: Destaque
+            - img "Belinha Coruja Pelúcia" [ref=e176]
+            - generic [ref=e177]: Ver produto
+          - generic [ref=e178]: Outros
+          - generic [ref=e179]: Belinha Coruja Pelúcia
+          - strong [ref=e181]: R$299,90
+        - link "Destaque Impressos - Caderno Moleskine (Belinha) Ver produto Outros Impressos - Caderno Moleskine (Belinha) R$19,90" [ref=e182] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/produtos/impressos-caderno-moleskine-belinha/
+          - generic [ref=e183]:
+            - generic [ref=e184]: Destaque
+            - img "Impressos - Caderno Moleskine (Belinha)" [ref=e185]
+            - generic [ref=e186]: Ver produto
+          - generic [ref=e187]: Outros
+          - generic [ref=e188]: Impressos - Caderno Moleskine (Belinha)
+          - strong [ref=e190]: R$19,90
+        - link "Destaque Impressos - Caderno Moleskine (Clara) Ver produto Outros Impressos - Caderno Moleskine (Clara) R$19,90" [ref=e191] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/produtos/impressos-caderno-moleskine-clara/
+          - generic [ref=e192]:
+            - generic [ref=e193]: Destaque
+            - img "Impressos - Caderno Moleskine (Clara)" [ref=e194]
+            - generic [ref=e195]: Ver produto
+          - generic [ref=e196]: Outros
+          - generic [ref=e197]: Impressos - Caderno Moleskine (Clara)
+          - strong [ref=e199]: R$19,90
+        - link "Destaque Mochila Astronauta Infantil - Cacau Ver produto Outros Mochila Astronauta Infantil - Cacau R$149,90" [ref=e200] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/produtos/mochila-astronauta-infantil-cacau/
+          - generic [ref=e201]:
+            - generic [ref=e202]: Destaque
+            - img "Mochila Astronauta Infantil - Cacau" [ref=e203]
+            - generic [ref=e204]: Ver produto
+          - generic [ref=e205]: Outros
+          - generic [ref=e206]: Mochila Astronauta Infantil - Cacau
+          - strong [ref=e208]: R$149,90
+        - link "Destaque Mochila Astronauta Infantil - Nitche Ver produto Outros Mochila Astronauta Infantil - Nitche R$149,90" [ref=e209] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/produtos/mochila-astronauta-infantil-nit/
+          - generic [ref=e210]:
+            - generic [ref=e211]: Destaque
+            - img "Mochila Astronauta Infantil - Nitche" [ref=e212]
+            - generic [ref=e213]: Ver produto
+          - generic [ref=e214]: Outros
+          - generic [ref=e215]: Mochila Astronauta Infantil - Nitche
+          - strong [ref=e217]: R$149,90
+        - link "Destaque Mochila Astronauta Infantil - Belinha Ver produto Outros Mochila Astronauta Infantil - Belinha R$149,90" [ref=e218] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/produtos/mochila-astronauta-infantil-belinha/
+          - generic [ref=e219]:
+            - generic [ref=e220]: Destaque
+            - img "Mochila Astronauta Infantil - Belinha" [ref=e221]
+            - generic [ref=e222]: Ver produto
+          - generic [ref=e223]: Outros
+          - generic [ref=e224]: Mochila Astronauta Infantil - Belinha
+          - strong [ref=e226]: R$149,90
+    - generic [ref=e228]:
+      - generic [ref=e229]:
+        - paragraph [ref=e230]: Nossa missão
+        - heading "Transformar aprendizagem em experiência." [level=2] [ref=e231]
+        - paragraph [ref=e232]: A Educacross é uma empresa brasileira que une educação, tecnologia, personagens e propósito pedagógico para criar experiências de aprendizagem mais significativas. Com o Educabox, nossos produtos aproximam crianças, famílias e escolas desse universo, levando encanto, imaginação e vínculo afetivo para diferentes momentos da jornada educativa.
+        - link "Conheça nossa história" [ref=e233] [cursor=pointer]:
+          - /url: /sobre-nos
+          - text: Conheça nossa história
+          - img [ref=e234]
+      - generic [ref=e236]:
+        - img "Universo Educacross" [ref=e238]
+        - img "Colecao Educacross" [ref=e240]
+    - generic [ref=e243]:
+      - generic [ref=e244]:
+        - img [ref=e246]
+        - heading "Criado com olhar pedagógico" [level=3] [ref=e249]
+        - paragraph [ref=e250]: Produtos pensados para dialogar com o universo da infância, valorizando imaginação, vínculo e experiências significativas de aprendizagem.
+      - generic [ref=e251]:
+        - img [ref=e253]
+        - heading "Qualidade para o dia a dia" [level=3] [ref=e257]
+        - paragraph [ref=e258]: Itens selecionados para acompanhar crianças, famílias e escolas em diferentes momentos da rotina, com cuidado no acabamento e na experiência de uso.
+      - generic [ref=e259]:
+        - img [ref=e261]
+        - heading "Compra simples e segura" [level=3] [ref=e264]
+        - paragraph [ref=e265]: Uma loja pensada para facilitar sua escolha, com atendimento, formas de pagamento seguras e informações claras sobre cada produto.
+  - link "Fale conosco pelo WhatsApp" [ref=e266] [cursor=pointer]:
+    - /url: https://wa.me/5516992994152
+    - img [ref=e267]
+  - contentinfo [ref=e269]:
+    - generic [ref=e270]:
+      - generic [ref=e271]:
+        - generic [ref=e272]:
+          - link "Universo Educacross" [ref=e274] [cursor=pointer]:
+            - /url: https://loja.educabox.com.br
+            - img "Universo Educacross" [ref=e275]
+          - paragraph [ref=e276]: Leve o universo Educacross para casa ou para a escola.
+          - generic [ref=e277]:
+            - heading "Entre em contato" [level=4] [ref=e278]
+            - generic [ref=e279]:
+              - link "(16) 99299-4152" [ref=e280] [cursor=pointer]:
+                - /url: https://wa.me/5516992994152
+              - link "loja.suporte@educacross.com.br" [ref=e281] [cursor=pointer]:
+                - /url: mailto:loja.suporte@educacross.com.br
+        - generic [ref=e282]:
+          - heading "Loja" [level=4] [ref=e283]
+          - generic [ref=e284]:
+            - link "Todos os produtos" [ref=e285] [cursor=pointer]:
+              - /url: /produtos
+            - link "Personagens" [ref=e286] [cursor=pointer]:
+              - /url: /personagens
+        - generic [ref=e287]:
+          - heading "Institucional" [level=4] [ref=e288]
+          - generic [ref=e289]:
+            - link "Sobre nós" [ref=e290] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/sobre-nos/
+            - link "Contato" [ref=e291] [cursor=pointer]:
+              - /url: /contato/
+            - link "Política de Privacidade" [ref=e292] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/politica-de-privacidade/
+        - generic [ref=e293]:
+          - heading "Ajuda" [level=4] [ref=e294]
+          - generic [ref=e295]:
+            - link "Minha conta" [ref=e296] [cursor=pointer]:
+              - /url: /account
+            - link "Meus pedidos" [ref=e297] [cursor=pointer]:
+              - /url: /account/orders
+            - link "Perguntas frequentes" [ref=e298] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/perguntas-frequentes/
+            - link "Trocas e devoluções" [ref=e299] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/trocas-e-devolucoes/
+      - generic [ref=e300]:
+        - generic [ref=e301]:
+          - img "visa" [ref=e302]
+          - img "mastercard" [ref=e303]
+          - img "amex" [ref=e304]
+          - img "diners" [ref=e305]
+          - img "br_aura" [ref=e306]
+          - img "br_elo" [ref=e307]
+          - img "br_hipercard" [ref=e308]
+          - img "br_discover" [ref=e309]
+          - img "boleto" [ref=e310]
+          - img "payment-method-types_pix" [ref=e311]
+        - img "api_4190" [ref=e313]
+      - generic [ref=e314]:
+        - generic [ref=e315]:
+          - img [ref=e316]
+          - generic [ref=e319]: Empresa brasileira registrada — CNPJ 15.130.060/0001-04 — Educacross Educacao Ltda.
+        - generic [ref=e320]:
+          - img [ref=e321]
+          - generic [ref=e325]: Loja 100% segura — pagamento criptografado e dados protegidos.
+    - generic [ref=e330]: Copyright Educacross - 2026. Todos os direitos reservados.

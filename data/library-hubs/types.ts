@@ -51,6 +51,6 @@ export interface LibraryHubData {
     accentSoftClassName: string;
     quickFilters: string[];
     statCards: LibraryStatCard[];
-    featured: LibraryMockItem;
+    featured: LibraryMockItem | null;
     rails: LibraryRail[];
 }

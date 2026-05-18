@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+﻿import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Icons } from '../components/Icons';
+import { Card3D } from '../components/Card3D';
 import { Character, Collection, CollectionAsset, CollectionAssetCategory, ScreenName, UserAuthStatus, UserProfile, UserRole } from '../types';
 import { api } from '../lib/api';
 import { canEditCollections, isAdmin } from '../lib/auth';
@@ -21,7 +22,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollectionCharacters } from '../lib/characters';
 import { COLLECTION_ASSET_META, inferCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
-import { getCollectionDisplayCover, getCollectionTypeMeta, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
+import { getCollectionDisplayCover, getCollectionType, getCollectionTypeMeta, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
 
 interface AdminCollectionsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -39,6 +40,19 @@ type CollectionFormData = Partial<Collection> & {
 };
 
 type FixedMediaSlotCategory = Exclude<CollectionAssetCategory, 'extra_material'>;
+type LibraryAreaKey = NonNullable<AdminCollectionsScreenProps['initialLibraryArea']>;
+
+type LibraryAssetListItem = {
+  key: string;
+  collection: Collection;
+  asset: CollectionAsset;
+  displayTitle: string;
+  previewText: string | null;
+  coverImage: string;
+  searchText: string;
+  levelLabel: string;
+  iconName: keyof typeof Icons;
+};
 
 type FixedMediaSlot = {
   category: FixedMediaSlotCategory;
@@ -48,7 +62,11 @@ type FixedMediaSlot = {
   allowMetadata?: boolean;
   titlePlaceholder?: string;
   descriptionPlaceholder?: string;
+  urlLabel?: string;
+  urlPlaceholder?: string;
 };
+
+const DEFAULT_COLLECTION_COLOR_THEME = '#5D1F58';
 
 const EMPTY_COLLECTION_FORM_DATA: CollectionFormData = {
   title: '',
@@ -62,7 +80,7 @@ const EMPTY_COLLECTION_FORM_DATA: CollectionFormData = {
   pdf_url: '',
   audio_url: '',
   video_url: '',
-  color_theme: '#5D1F58',
+  color_theme: DEFAULT_COLLECTION_COLOR_THEME,
   synopsis: '',
   theme: '',
   learning_objectives: '',
@@ -73,10 +91,22 @@ const EMPTY_COLLECTION_FORM_DATA: CollectionFormData = {
   age_grade: [],
   extra_materials: [],
   collection_assets: [],
+  offline_available: false,
 };
 
 const createAssetId = (category: CollectionAssetCategory) => {
   return `${category}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+const CATEGORY_COVER_URL: Partial<Record<CollectionAssetCategory, string>> = {
+  storytelling: '/mock/covers/asset-storytelling.svg',
+  animation: '/mock/covers/asset-animation.svg',
+  accessible_video: '/mock/covers/asset-accessible-video.svg',
+  how_to_play: '/mock/covers/asset-how-to-play.svg',
+  video_lesson: '/mock/covers/asset-video-lesson.svg',
+  teacher_guide: '/mock/covers/asset-teacher-guide.svg',
+  extra_material: '/mock/covers/asset-extra-material.svg',
+  reading: '/mock/covers/asset-reading.svg',
 };
 
 const inferAssetMediaTypeFromUrl = (url: string): CollectionAsset['media_type'] => {
@@ -93,6 +123,8 @@ const inferAssetMediaTypeFromUrl = (url: string): CollectionAsset['media_type'] 
   return 'document';
 };
 
+const normalizeThemeColor = (value?: string | null) => value?.trim().toLowerCase() || '';
+
 const normalizeAssetTitle = (url: string, fallback: string) => {
   const fileName = url.split('/').pop() || fallback;
 
@@ -106,6 +138,76 @@ const normalizeAssetTitle = (url: string, fallback: string) => {
 
 const normalizeKitBookIds = (value?: string[] | null): string[] => {
   return normalizeSingleKitBookIds(value);
+};
+
+const normalizeSearchableText = (...values: Array<string | null | undefined>) => {
+  return values
+    .map((value) => (value ?? '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+};
+
+const cleanVideoSupportingCopy = (value?: string | null) => {
+  return (value ?? '').replace(/^(vídeo|video)\s*•\s*/i, '').trim();
+};
+
+const getDistinctVideoPreviewText = (item: LibraryAssetListItem) => {
+  const cleanedValue = cleanVideoSupportingCopy(item.previewText);
+  const normalizedValue = normalizeSearchableText(cleanedValue);
+
+  if (!normalizedValue || normalizedValue === 'video') {
+    return '';
+  }
+
+  const normalizedTitle = normalizeSearchableText(item.displayTitle);
+  const normalizedCollection = normalizeSearchableText(item.collection.title);
+
+  if (
+    (normalizedTitle && (normalizedTitle.includes(normalizedValue) || normalizedValue.includes(normalizedTitle)))
+    || (normalizedCollection && (normalizedCollection.includes(normalizedValue) || normalizedValue.includes(normalizedCollection)))
+  ) {
+    return '';
+  }
+
+  return cleanedValue;
+};
+
+const getCollectionLevelChipLabel = (level?: Collection['level']) => {
+  return level === 'Fundamental I' ? 'E.F. Anos Iniciais' : 'Ed. Infantil';
+};
+
+const getLibraryAssetIcon = (asset: CollectionAsset): keyof typeof Icons => {
+  switch (asset.category) {
+    case 'storytelling':
+      return 'Headphones';
+    case 'animation':
+    case 'accessible_video':
+    case 'how_to_play':
+    case 'video_lesson':
+      return 'Video';
+    case 'reading':
+      return 'BookOpen';
+    case 'teacher_guide':
+    case 'extra_material':
+    default:
+      return 'FileText';
+  }
+};
+
+const getLibraryAssetDisplayTitle = (collection: Collection, asset: CollectionAsset) => {
+  const normalizedTitle = (asset.title || '').trim();
+  const defaultLabel = COLLECTION_ASSET_META[asset.category].label;
+  const shouldUseCollectionTitle = !normalizedTitle
+    || (normalizedTitle === defaultLabel && ['reading', 'storytelling', 'animation', 'accessible_video'].includes(asset.category));
+
+  if (shouldUseCollectionTitle && collection.title?.trim()) {
+    return collection.title.trim();
+  }
+
+  return normalizedTitle || defaultLabel;
 };
 
 const buildCollectionFormData = (collection?: Partial<Collection>): CollectionFormData => {
@@ -128,6 +230,7 @@ const buildCollectionFormData = (collection?: Partial<Collection>): CollectionFo
     age_grade: [...(normalizedCollection.age_grade || [])],
     extra_materials: [...(normalizedCollection.extra_materials || [])],
     collection_assets: [...(normalizedCollection.collection_assets || [])],
+    offline_available: normalizedCollection.offline_available ?? false,
   };
 };
 
@@ -137,18 +240,28 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     label: COLLECTION_ASSET_META.reading.label,
     folder: 'pdfs',
     accept: 'application/pdf',
+    urlLabel: 'Cole o link do arquivo PDF',
+    urlPlaceholder: 'https://...',
   },
   {
     category: 'storytelling',
     label: COLLECTION_ASSET_META.storytelling.label,
     folder: 'audio',
     accept: 'audio/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: A Cor do Sentir',
+    descriptionPlaceholder: 'Descrição opcional desta música ou contação.',
+    urlLabel: 'Cole o link do arquivo de áudio',
+    urlPlaceholder: 'https://...',
   },
   {
     category: 'animation',
     label: COLLECTION_ASSET_META.animation.label,
     folder: 'video',
     accept: 'video/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: Kaboo e a Floresta Encantada',
+    descriptionPlaceholder: 'Descrição opcional do vídeo animado.',
   },
   {
     category: 'accessible_video',
@@ -185,21 +298,64 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     allowMetadata: true,
     titlePlaceholder: 'Ex.: Guia do Professor',
     descriptionPlaceholder: 'Descreva brevemente o conteúdo do guia.',
+    urlLabel: 'Cole o link do arquivo PDF',
+    urlPlaceholder: 'https://...',
   },
 ];
 
-const LIBRARY_AREA_LABEL: Record<NonNullable<AdminCollectionsScreenProps['initialLibraryArea']>, string> = {
+const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
   videos: 'Vídeos',
-  music: 'Músicas',
+  music: 'Áudios',
   formations: 'Formações',
   materials: 'Materiais',
 };
 
-const LIBRARY_AREA_PRIMARY_SLOTS: Record<NonNullable<AdminCollectionsScreenProps['initialLibraryArea']>, FixedMediaSlotCategory[]> = {
-  videos: ['animation', 'accessible_video', 'how_to_play', 'video_lesson'],
+const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, FixedMediaSlotCategory[]> = {
+  // Vídeos: 1 slot por item (animation = o vídeo em si).
+  // accessible_video e how_to_play são variantes dentro do Kit completo (Coleção).
+  videos: ['animation'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
   materials: ['reading'],
+};
+
+const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
+  videos: ['animation'],
+  music: ['storytelling'],
+  formations: ['teacher_guide', 'video_lesson'],
+  materials: ['reading', 'extra_material'],
+};
+
+const LIBRARY_AREA_UI_META: Record<LibraryAreaKey, {
+  icon: keyof typeof Icons;
+  searchPlaceholder: string;
+  emptyMessage: string;
+  createLabel: string;
+}> = {
+  music: {
+    icon: 'Headphones',
+    searchPlaceholder: 'Buscar por áudio, coleção ou tema...',
+    emptyMessage: 'Nenhum áudio corresponde aos filtros.',
+    createLabel: 'Novo áudio',
+  },
+  videos: {
+    icon: 'Video',
+    searchPlaceholder: 'Buscar por vídeo, coleção ou tema...',
+    emptyMessage: 'Nenhum vídeo corresponde aos filtros.',
+    createLabel: 'Novo vídeo',
+  },
+  formations: {
+    icon: 'FileText',
+    searchPlaceholder: 'Buscar por formação, guia ou coleção...',
+    emptyMessage: 'Nenhuma formação corresponde aos filtros.',
+    createLabel: 'Nova formação',
+  },
+  materials: {
+    icon: 'BookOpen',
+    searchPlaceholder: 'Buscar por material, PDF ou coleção...',
+    emptyMessage: 'Nenhum material corresponde aos filtros.',
+    createLabel: 'Novo material',
+  },
 };
 
 // Componente interno para card com efeito 3D
@@ -302,7 +458,7 @@ const Card3DCover: React.FC<{
         )}
         {level && (
           <div
-            className="absolute bottom-2 right-2 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-lg text-[10px] font-bold text-kaboo-primary shadow-sm border border-white/50"
+            className="absolute bottom-2 right-2 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-lg text-[10px] font-bold text-brand-primary shadow-sm border border-white/50"
             style={{
               transform: 'translateZ(30px)',
             }}
@@ -327,7 +483,21 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   // Main tab — driven by initialTab prop (key remount in AdminScreen)
   const mainTab = initialTab || 'collections';
   const isLibraryAreaMode = Boolean(initialLibraryArea);
+  const isCollectionsCatalogMode = !isLibraryAreaMode;
   const defaultCollectionTab: 'identification' | 'media' = isLibraryAreaMode ? 'media' : 'identification';
+  const createCollectionFormDataForCurrentFlow = (collection?: Partial<Collection>): CollectionFormData => {
+    const nextFormData = buildCollectionFormData(collection);
+
+    if (isCollectionsCatalogMode) {
+      return {
+        ...nextFormData,
+        collection_type: 'kit',
+        kit_cover_image: null,
+      };
+    }
+
+    return nextFormData;
+  };
 
   // Collections state
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -376,20 +546,24 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showLevelDropdown, setShowLevelDropdown] = useState(false);
-  const [showFormLevelDropdown, setShowFormLevelDropdown] = useState(false);
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [collectionToDelete, setCollectionToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [openActionsDropdown, setOpenActionsDropdown] = useState<string | null>(null);
-  const [showHeaderActionsDropdown, setShowHeaderActionsDropdown] = useState(false);
-  const headerActionsRef = useRef<HTMLDivElement>(null);
+
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const levelDropdownRef = useRef<HTMLDivElement>(null);
-  const formLevelDropdownRef = useRef<HTMLDivElement>(null);
+
   const actionsDropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const [formData, setFormData] = useState<CollectionFormData>(buildCollectionFormData());
+  const mediaSectionRefs = useRef<Partial<Record<CollectionAssetCategory, HTMLDivElement | null>>>({});
+  const extraMaterialsSectionRef = useRef<HTMLDivElement | null>(null);
+  const [formData, setFormData] = useState<CollectionFormData>(() => createCollectionFormDataForCurrentFlow());
+  const [highlightedAssetId, setHighlightedAssetId] = useState<string | null>(null);
+  const [highlightedAssetCategory, setHighlightedAssetCategory] = useState<CollectionAssetCategory | null>(null);
 
   const activeLibraryAreaLabel = initialLibraryArea ? LIBRARY_AREA_LABEL[initialLibraryArea] : null;
+  const activeLibraryAreaUi = initialLibraryArea ? LIBRARY_AREA_UI_META[initialLibraryArea] : null;
 
   useEffect(() => {
     if (mainTab !== 'collections') {
@@ -400,17 +574,109 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   }, [defaultCollectionTab, mainTab]);
 
   useEffect(() => {
-    if (mainTab !== 'collections' || !initialLibraryArea) {
+    if (activeTab !== 'media' || !editingId || !highlightedAssetCategory) {
       return;
     }
 
-    const emptyFormData = buildCollectionFormData();
-    setEditingId(null);
-    setShowCreateForm(true);
-    setFormData(emptyFormData);
-    setOriginalFormData(emptyFormData);
-    setActiveTab('media');
-  }, [initialLibraryArea, mainTab]);
+    const target = highlightedAssetCategory === 'extra_material'
+      ? extraMaterialsSectionRef.current
+      : mediaSectionRefs.current[highlightedAssetCategory];
+
+    if (!target) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [activeTab, editingId, highlightedAssetCategory, highlightedAssetId]);
+
+  // NOTE: When initialLibraryArea is set (e.g. "Vídeos" sidebar item), we now show a
+  // direct asset list first. Clicking any card opens the owning collection on the
+  // 'media' tab and highlights the selected asset for editing.
+
+  const libraryAssetItems = React.useMemo<LibraryAssetListItem[]>(() => {
+    if (!initialLibraryArea) {
+      return [];
+    }
+
+    const relevantCategories = LIBRARY_AREA_LISTING_CATEGORIES[initialLibraryArea];
+
+    // Categorias primárias (reading, storytelling, animation) existem em TODA
+    // coleção por inferência dos campos legados (pdf_url, audio_url, video_url).
+    // Para que a listagem seja útil, só mostramos assets primários quando a
+    // coleção os declarou explicitamente via collection_assets.
+    const PRIMARY_LEGACY_CATEGORIES: CollectionAssetCategory[] = ['reading', 'storytelling', 'animation'];
+
+    return collections.flatMap((collection) => {
+      const explicitCategories = new Set(
+        (collection.collection_assets ?? [])
+          .filter((a) => a.url?.trim())
+          .map((a) => a.category),
+      );
+
+      return inferCollectionAssets(collection)
+        .filter((asset) => {
+          if (!relevantCategories.includes(asset.category)) return false;
+          // Assets primários inferidos de legado aparecem em todo livro — só
+          // incluir se a coleção os declarou explicitamente.
+          if (PRIMARY_LEGACY_CATEGORIES.includes(asset.category) && !explicitCategories.has(asset.category)) {
+            return false;
+          }
+          return true;
+        })
+        .map((asset) => {
+          const displayTitle = getLibraryAssetDisplayTitle(collection, asset);
+          const collectionCover = getCollectionDisplayCover(collection) || collection.cover_image;
+          const resolvedCover = collectionCover || CATEGORY_COVER_URL[asset.category] || placeholderImageUrl;
+
+          return {
+            key: `${collection.id}:${asset.id}`,
+            collection,
+            asset,
+            displayTitle,
+            previewText: (asset.description || '').trim() || (collection.theme || '').trim() || null,
+            coverImage: resolvedCover,
+            searchText: normalizeSearchableText(
+              displayTitle,
+              asset.title,
+              COLLECTION_ASSET_META[asset.category].label,
+              collection.title,
+              collection.theme,
+              asset.description,
+            ),
+            levelLabel: getCollectionLevelChipLabel(collection.level),
+            iconName: getLibraryAssetIcon(asset),
+          };
+        });
+    });
+  }, [collections, initialLibraryArea]);
+
+  const filteredLibraryAssets = React.useMemo(() => {
+    let filtered = [...libraryAssetItems];
+
+    if (searchFilter.trim()) {
+      const searchLower = normalizeSearchableText(searchFilter);
+      filtered = filtered.filter((item) => item.searchText.includes(searchLower));
+    }
+
+    if (levelFilter !== 'all') {
+      filtered = filtered.filter((item) => item.collection.level === levelFilter);
+    }
+
+    if (sortOrder) {
+      filtered.sort((a, b) => {
+        const titleA = (a.displayTitle || '').toLowerCase();
+        const titleB = (b.displayTitle || '').toLowerCase();
+        const comparison = titleA.localeCompare(titleB, 'pt-BR');
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    return filtered;
+  }, [libraryAssetItems, searchFilter, levelFilter, sortOrder]);
 
   const accessSummary = users.reduce((summary, user) => {
     const status = getProfileAccessStatus(user);
@@ -532,10 +798,24 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         url: trimmedUrl,
         description: currentAsset?.description?.trim() || null,
         scope: meta.scope,
+        lyrics_url: currentAsset?.lyrics_url ?? null,
       });
     }
 
     updateFormWithAssets(nextAssets);
+  };
+
+  const setAssetLyricsUrl = (category: FixedMediaSlotCategory, lyricsUrl: string) => {
+    const currentAsset = getAssetByCategory(category);
+    if (!currentAsset) {
+      return;
+    }
+
+    updateFormWithAssets(
+      formData.collection_assets.map((asset) =>
+        asset.category === category ? { ...asset, lyrics_url: lyricsUrl.trim() || null } : asset
+      )
+    );
   };
 
   const setAssetTitle = (category: FixedMediaSlotCategory, title: string) => {
@@ -564,11 +844,28 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     );
   };
 
+  const setAssetOfflineAvailable = (category: FixedMediaSlotCategory, value: boolean) => {
+    const currentAsset = getAssetByCategory(category);
+    if (!currentAsset) {
+      return;
+    }
+    updateFormWithAssets(
+      formData.collection_assets.map((asset) =>
+        asset.category === category ? { ...asset, offline_available: value } : asset
+      )
+    );
+  };
+
   const removeAsset = (category: FixedMediaSlotCategory) => {
     updateFormWithAssets(formData.collection_assets.filter((asset) => asset.category !== category));
   };
 
   const extraMaterialAssets = formData.collection_assets.filter((asset) => asset.category === 'extra_material');
+  const isExtraMaterialsHighlighted = highlightedAssetCategory === 'extra_material'
+    || (highlightedAssetId ? extraMaterialAssets.some((asset) => asset.id === highlightedAssetId) : false);
+  const highlightedAsset = highlightedAssetId
+    ? formData.collection_assets.find((asset) => asset.id === highlightedAssetId) ?? null
+    : null;
   const availableKitBooks = collections
     .filter((collection) => collection.id !== editingId && getCollectionTypeMeta(collection).type === 'book')
     .sort((firstCollection, secondCollection) => (firstCollection.title || '').localeCompare(secondCollection.title || '', 'pt-BR'));
@@ -595,10 +892,26 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     setFormData((currentFormData) => {
       const currentKitBookIds = normalizeKitBookIds(currentFormData.kit_book_ids);
       const nextKitBookIds = currentKitBookIds.includes(bookId) ? [] : [bookId];
+      const currentSelectedBook = collections.find((collection) => collection.id === currentKitBookIds[0]);
+      const nextSelectedBook = collections.find((collection) => collection.id === nextKitBookIds[0]);
+      const normalizedCurrentColorTheme = normalizeThemeColor(currentFormData.color_theme);
+      const normalizedCurrentSelectedBookTheme = normalizeThemeColor(currentSelectedBook?.color_theme);
+      const normalizedNextSelectedBookTheme = normalizeThemeColor(nextSelectedBook?.color_theme);
+      const shouldSyncThemeFromBook = isCollectionsCatalogMode
+        && Boolean(normalizedNextSelectedBookTheme)
+        && (
+          !normalizedCurrentColorTheme
+          || normalizedCurrentColorTheme === normalizeThemeColor(DEFAULT_COLLECTION_COLOR_THEME)
+          || normalizedCurrentColorTheme === normalizedCurrentSelectedBookTheme
+        );
 
       return {
         ...currentFormData,
         kit_book_ids: nextKitBookIds,
+        color_theme: shouldSyncThemeFromBook
+          ? nextSelectedBook?.color_theme || currentFormData.color_theme
+          : currentFormData.color_theme,
+        kit_cover_image: isCollectionsCatalogMode ? null : currentFormData.kit_cover_image,
       };
     });
   };
@@ -682,12 +995,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       if (levelDropdownRef.current && !levelDropdownRef.current.contains(event.target as Node)) {
         setShowLevelDropdown(false);
       }
-      if (formLevelDropdownRef.current && !formLevelDropdownRef.current.contains(event.target as Node)) {
-        setShowFormLevelDropdown(false);
-      }
-      if (headerActionsRef.current && !headerActionsRef.current.contains(event.target as Node)) {
-        setShowHeaderActionsDropdown(false);
-      }
       if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
         setShowRoleDropdown(false);
       }
@@ -704,14 +1011,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       });
     };
 
-    if (showSortDropdown || showLevelDropdown || showFormLevelDropdown || openActionsDropdown || showHeaderActionsDropdown || showRoleDropdown || editUserRoleDropdownOpen) {
+    if (showSortDropdown || showLevelDropdown || openActionsDropdown || showRoleDropdown || editUserRoleDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showSortDropdown, showLevelDropdown, showFormLevelDropdown, openActionsDropdown, showHeaderActionsDropdown, showRoleDropdown, editUserRoleDropdownOpen]);
+  }, [showSortDropdown, showLevelDropdown, openActionsDropdown, showRoleDropdown, editUserRoleDropdownOpen]);
 
   const checkPermission = async () => {
     setCheckingPermission(true);
@@ -820,6 +1127,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     if (userErrorMsg) setUserErrorMsg(null);
   };
 
+  const handleOpenUserForm = () => {
+    setUserErrorMsg(null);
+    setUserSuccessMsg(null);
+    setShowUserForm(true);
+  };
+
   const handleEditUserOpen = (user: UserProfile) => {
     setEditingUserId(user.id);
     setEditUserFormData({
@@ -896,15 +1209,42 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
   };
 
-  const handleEdit = (collection: Collection) => {
-    const initialData = buildCollectionFormData({
+  const openCollectionEditor = (
+    collection: Collection,
+    options?: { focusCategory?: CollectionAssetCategory; focusAssetId?: string | null }
+  ) => {
+    const initialData = createCollectionFormDataForCurrentFlow({
       ...collection,
       collection_assets: inferCollectionAssets(collection),
     });
+    setShowCreateForm(false);
     setEditingId(collection.id);
     setActiveTab(defaultCollectionTab);
     setFormData(initialData);
     setOriginalFormData(initialData);
+    setHighlightedAssetCategory(options?.focusCategory ?? null);
+    setHighlightedAssetId(options?.focusAssetId ?? null);
+  };
+
+  const handleEdit = (collection: Collection) => {
+    openCollectionEditor(collection);
+  };
+
+  const handleLibraryAssetEdit = (item: LibraryAssetListItem) => {
+    const openAssetEditor = () => {
+      openCollectionEditor(item.collection, {
+        focusCategory: item.asset.category,
+        focusAssetId: item.asset.id,
+      });
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingAction(() => openAssetEditor);
+      setShowUnsavedChangesModal(true);
+      return;
+    }
+
+    openAssetEditor();
   };
 
   const handleDeleteClick = (id: string) => {
@@ -955,10 +1295,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       }
     }
 
-    payload.collection_type = payload.collection_type || 'book';
-    payload.kit_cover_image = payload.collection_type === 'kit'
-      ? payload.kit_cover_image?.trim() || null
-      : null;
+    payload.collection_type = isCollectionsCatalogMode ? 'kit' : payload.collection_type || 'book';
+    payload.color_theme = payload.color_theme?.trim() || DEFAULT_COLLECTION_COLOR_THEME;
+    payload.kit_cover_image = isCollectionsCatalogMode
+      ? null
+      : payload.collection_type === 'kit'
+        ? payload.kit_cover_image?.trim() || null
+        : null;
     payload.kit_book_ids = payload.collection_type === 'kit'
       ? normalizeKitBookIds(payload.kit_book_ids)
       : [];
@@ -993,7 +1336,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
 
     if (success) {
-      setOriginalFormData(buildCollectionFormData(normalizedDataToSave));
+      setOriginalFormData(createCollectionFormDataForCurrentFlow(normalizedDataToSave));
       showToast(editingId ? 'Coleção atualizada com sucesso!' : 'Coleção criada com sucesso!', 'success');
       setEditingId(null);
       setShowCreateForm(false);
@@ -1016,9 +1359,34 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     hasUnsavedChanges,
   }));
 
+  const clearLibraryAssetFocus = () => {
+    setHighlightedAssetId(null);
+    setHighlightedAssetCategory(null);
+  };
+
+  const openCreateForm = () => {
+    const emptyFormData = createCollectionFormDataForCurrentFlow();
+    clearLibraryAssetFocus();
+    setShowCreateForm(true);
+    setActiveTab(defaultCollectionTab);
+    setFormData(emptyFormData);
+    setOriginalFormData(emptyFormData);
+  };
+
+  const handleCreateContent = () => {
+    if (hasUnsavedChanges()) {
+      setPendingAction(() => openCreateForm);
+      setShowUnsavedChangesModal(true);
+      return;
+    }
+
+    openCreateForm();
+  };
+
   const resetForm = () => {
-    setFormData(buildCollectionFormData());
+    setFormData(createCollectionFormDataForCurrentFlow());
     setOriginalFormData(null);
+    clearLibraryAssetFocus();
   };
 
   const handleCancel = () => {
@@ -1072,6 +1440,21 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const getFilteredAndSortedCollections = (): Collection[] => {
     let filtered = [...collections];
 
+    // In the main "Coleções" view (no library area), show only kits — standalone
+    // books (livros avulsos) have their own separate listing scope.
+    if (!initialLibraryArea) {
+      filtered = filtered.filter((c) => getCollectionType(c) === 'kit');
+    }
+
+    // When in library area mode (Vídeos, Áudios, etc.), show only collections
+    // that have at least one asset whose category belongs to that area's slots.
+    if (initialLibraryArea) {
+      const relevantSlots = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
+      filtered = filtered.filter(collection =>
+        collection.collection_assets?.some(asset => relevantSlots.includes(asset.category as FixedMediaSlotCategory))
+      );
+    }
+
     // Apply search filter
     if (searchFilter.trim()) {
       const searchLower = searchFilter.toLowerCase();
@@ -1114,42 +1497,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   return (
     <div className="flex flex-col h-full bg-white pb-24 md:pb-0">
       <PageHeader
-        title="Gerenciar"
+        title={activeLibraryAreaLabel ? activeLibraryAreaLabel : 'Gerenciar'}
         onBack={handleBackClick}
-        rightContent={
-          mainTab === 'collections' && editingId ? (
-            <div className="flex items-center gap-2">
-              <div className="relative" ref={headerActionsRef}>
-                <button
-                  onClick={() => setShowHeaderActionsDropdown(!showHeaderActionsDropdown)}
-                  className="w-10 h-10 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 flex items-center justify-center transition-all active:scale-95"
-                  aria-label="Ações da coleção"
-                >
-                  <Icons.MoreHorizontal size={20} className="text-gray-600" />
-                </button>
-
-                {showHeaderActionsDropdown && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-fade-in-up origin-top-right">
-                    {isAdminUser && (
-                      <button
-                        onClick={() => {
-                          if (editingId) {
-                            handleDeleteClick(editingId);
-                            setShowHeaderActionsDropdown(false);
-                          }
-                        }}
-                        className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl text-red-500 hover:bg-red-50 font-medium"
-                      >
-                        <Icons.Trash2 size={18} />
-                        <span>Excluir Coleção</span>
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : null
-        }
       />
 
       {/* Collections Tab Content */}
@@ -1157,548 +1506,31 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         <>
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="w-8 h-8 border-4 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : editingId || showCreateForm ? (
-            <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-6 pt-0">
-              <div className="max-w-2xl mx-auto">
-                {!isLibraryAreaMode && (
-                  <Tabs
-                    tabs={[
-                      { id: 'identification', label: 'Dados da Coleção' },
-                      { id: 'media', label: 'Arquivos de Mídia' }
-                    ]}
-                    activeTab={activeTab}
-                    onChange={(tabId) => setActiveTab(tabId as any)}
-                  />
-                )}
-
-                <div className="space-y-6">
-                  {/* Tab: Dados da Coleção */}
-                  {!isLibraryAreaMode && activeTab === 'identification' && (
-                    <>
-                      {/* Informações de Identificação Title */}
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">Informações de Identificação</h3>
-                      </div>
-
-                      {/* 1.3. Título */}
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Título *</label>
-                        <input
-                          type="text"
-                          value={formData.title}
-                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                          className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
-                          placeholder="Título da coleção"
-                        />
-                      </div>
-
-
-                      {/* 1.1. Imagem de Capa and 1.2. Cor da Coleção in same row */}
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Formato exibido na vitrine</label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {(['book', 'kit'] as const).map((type) => {
-                            const typeMeta = getCollectionTypeMeta({ collection_type: type });
-                            const isActive = (formData.collection_type || 'book') === type;
-
-                            return (
-                              <button
-                                key={type}
-                                type="button"
-                                onClick={() => setFormData({ ...formData, collection_type: type })}
-                                className={`w-full rounded-2xl border px-4 py-3 text-left transition-all active:scale-[0.99] ${isActive
-                                  ? `${typeMeta.softClassName} shadow-sm`
-                                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                                  }`}
-                              >
-                                <span className="block text-sm font-black uppercase tracking-[0.14em]">{typeMeta.shortLabel}</span>
-                                <span className="block text-xs mt-1 opacity-80">{typeMeta.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <p className="mt-2 text-xs text-gray-500">
-                          Escolha se este item deve aparecer como livro avulso ou kit multimodal. Para kits, você pode enviar uma capa própria de vitrine; sem ela, a interface reaproveita a capa principal.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <FileUpload
-                            label="Imagem de Capa"
-                            value={formData.cover_image || placeholderImageUrl}
-                            onChange={(url) => setFormData({ ...formData, cover_image: url })}
-                            folder="covers"
-                            accept="image/*"
-                            collectionId={editingId || undefined}
-                            hideUrlInput={true}
-                          />
-                        </div>
-
-                        <div>
-                          <ColorPicker
-                            label="Cor da Coleção"
-                            value={formData.color_theme || '#5D1F58'}
-                            onChange={(color) => setFormData({ ...formData, color_theme: color })}
-                          />
-                        </div>
-                      </div>
-
-                      {formData.collection_type === 'kit' && (
-                        <>
-                          <div>
-                            <FileUpload
-                              label="Imagem da Capa do Kit"
-                              value={formData.kit_cover_image || ''}
-                              onChange={(url) => setFormData({ ...formData, kit_cover_image: url || null })}
-                              folder="covers"
-                              accept="image/*"
-                              collectionId={editingId || undefined}
-                              hideUrlInput={true}
-                            />
-                          </div>
-
-                          <div className="rounded-2xl border border-gray-200 p-4 bg-white space-y-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <h4 className="text-sm font-bold text-gray-800">Livro do Kit</h4>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Selecione o livro avulso que faz parte deste kit. Ao escolher outro, ele substitui o vínculo anterior.
-                                </p>
-                              </div>
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-[0.12em] border border-amber-200 whitespace-nowrap">
-                                {selectedKitBookIds.length === 1 ? '1 livro' : '0 livro'}
-                              </span>
-                            </div>
-
-                            {availableKitBooks.length === 0 ? (
-                              <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
-                                Cadastre pelo menos um livro avulso para montar este kit.
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                {availableKitBooks.map((book) => {
-                                  const isSelected = selectedKitBookIds.includes(book.id);
-                                  const displayCoverImage = getCollectionDisplayCover(book) || book.cover_image;
-
-                                  return (
-                                    <button
-                                      key={book.id}
-                                      type="button"
-                                      onClick={() => toggleKitBookSelection(book.id)}
-                                      aria-pressed={isSelected}
-                                      className={`w-full rounded-2xl border px-3 py-3 transition-all active:scale-[0.99] ${isSelected
-                                        ? 'border-kaboo-primary bg-kaboo-primary/5 shadow-sm'
-                                        : 'border-gray-200 bg-white hover:bg-gray-50'
-                                        }`}
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <img
-                                          src={displayCoverImage}
-                                          alt=""
-                                          aria-hidden="true"
-                                          className="w-12 h-12 rounded-xl object-cover border border-gray-200 bg-gray-100 flex-shrink-0"
-                                        />
-
-                                        <div className="min-w-0 flex-1 text-left">
-                                          <p className="text-sm font-bold text-gray-800 line-clamp-1">{book.title}</p>
-                                          <p className="text-xs text-gray-500 line-clamp-1 mt-1">
-                                            {formatSegmentLabel(book.level)}
-                                            {book.theme ? ` • ${book.theme}` : ''}
-                                          </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                          <span className={`w-6 h-6 rounded-full border flex items-center justify-center ${isSelected
-                                            ? 'border-kaboo-primary bg-kaboo-primary text-white'
-                                            : 'border-gray-300 bg-white text-transparent'
-                                            }`}>
-                                            <Icons.Check size={14} />
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      )}
-
-                      {/* 1.10. Personagens */}
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Personagens</label>
-                          <p className="text-xs text-gray-500 mb-3">
-                            Selecione os personagens cadastrados para manter a coleção sincronizada com a vitrine pública.
-                          </p>
-
-                          {selectableCharacters.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
-                              Nenhum personagem cadastrado ainda. Use o módulo Personagens para criar o catálogo.
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {selectableCharacters.map((character) => {
-                                const isSelected = selectedCharacterIds.includes(character.id);
-                                return (
-                                  <button
-                                    key={character.id}
-                                    type="button"
-                                    onClick={() => toggleCharacterSelection(character.id)}
-                                    className={`rounded-2xl border p-3 text-left transition-all active:scale-[0.99] ${isSelected
-                                      ? 'border-kaboo-primary bg-kaboo-primary/5 shadow-sm'
-                                      : 'border-gray-200 bg-white hover:bg-gray-50'
-                                      } ${(character.status || 'active') === 'inactive' ? 'opacity-70' : ''}`}
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <CharacterAvatar
-                                        name={character.name}
-                                        className="h-12 w-12 shrink-0 rounded-2xl"
-                                        imageClassName="absolute inset-0 h-full w-full object-cover"
-                                        initialClassName="absolute inset-0 flex items-center justify-center text-sm font-black text-white/80"
-                                      />
-
-                                      <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
-                                          <span className="truncate text-sm font-bold text-gray-800">{character.name}</span>
-                                          {(character.status || 'active') === 'inactive' && (
-                                            <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-600">
-                                              Inativo
-                                            </span>
-                                          )}
-                                        </div>
-                                        <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                                          {character.description || 'Sem descrição cadastrada.'}
-                                        </p>
-                                      </div>
-
-                                      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-kaboo-primary bg-kaboo-primary text-white' : 'border-gray-300 text-transparent'}`}>
-                                        <Icons.Check size={14} />
-                                      </span>
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-
-                        <TagInput
-                          label="Nomes legados não mapeados"
-                          value={unmappedLegacyCharacters}
-                          onChange={setLegacyCharacterNames}
-                          placeholder="Digite um nome legado e pressione Enter"
-                        />
-                      </div>
-
-                      {/* Separation line */}
-                      <div className="border-t border-gray-200 my-6"></div>
-
-                      {/* Informações Pedagógicas Title */}
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">Informações Pedagógicas</h3>
-                      </div>
-
-                      {/* 1.4. Segmento */}
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
-                        <div className="relative" ref={formLevelDropdownRef}>
-                          <button
-                            onClick={() => setShowFormLevelDropdown(!showFormLevelDropdown)}
-                            className="w-full h-14 bg-white border border-gray-200 rounded-2xl px-4 flex items-center justify-between transition-all active:scale-95 shadow-sm font-bold text-sm text-gray-800 hover:bg-gray-50"
-                          >
-                            <span>{formatSegmentLabel(formData.level)}</span>
-                            <Icons.ChevronDown size={16} className={`transition-transform flex-shrink-0 ${showFormLevelDropdown ? 'rotate-180' : ''}`} />
-                          </button>
-
-                          {showFormLevelDropdown && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 animate-fade-in-up origin-top">
-                              <button
-                                onClick={() => {
-                                  setFormData({ ...formData, level: 'Educação Infantil' });
-                                  setShowFormLevelDropdown(false);
-                                }}
-                                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl ${formData.level === 'Educação Infantil'
-                                  ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
-                                  : 'text-gray-700 hover:bg-gray-50 font-medium'
-                                  }`}
-                              >
-                                <span>Educação Infantil</span>
-                                {formData.level === 'Educação Infantil' && <Icons.Check size={18} className="ml-auto" />}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setFormData({ ...formData, level: 'Fundamental I' });
-                                  setShowFormLevelDropdown(false);
-                                }}
-                                className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${formData.level === 'Fundamental I'
-                                  ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
-                                  : 'text-gray-700 hover:bg-gray-50 font-medium'
-                                  }`}
-                              >
-                                <span>E.F. Anos Iniciais</span>
-                                {formData.level === 'Fundamental I' && <Icons.Check size={18} className="ml-auto" />}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Multissegmentos */}
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Segmentos</label>
-                        <div className="space-y-2">
-                          {AVAILABLE_SEGMENTS.map((seg) => {
-                            const checked = formData.segments?.includes(seg) ?? false;
-                            const isPrimary = formData.primary_segment === seg;
-                            return (
-                              <div key={seg} className="flex items-center gap-3">
-                                <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() => {
-                                      const prev = formData.segments || [];
-                                      let next: string[];
-                                      if (checked) {
-                                        next = prev.filter(s => s !== seg);
-                                        // If removing the primary, pick the first remaining or clear
-                                        if (isPrimary) {
-                                          setFormData({ ...formData, segments: next, primary_segment: next[0] || '' });
-                                          return;
-                                        }
-                                      } else {
-                                        next = [...prev, seg];
-                                        // Auto-set primary if first segment
-                                        if (next.length === 1) {
-                                          setFormData({ ...formData, segments: next, primary_segment: seg });
-                                          return;
-                                        }
-                                      }
-                                      setFormData({ ...formData, segments: next });
-                                    }}
-                                    className="w-4 h-4 rounded border-gray-300 text-kaboo-primary focus:ring-kaboo-primary"
-                                  />
-                                  <span className="text-sm text-gray-800">{seg}</span>
-                                </label>
-                                {checked && (
-                                  <label className="flex items-center gap-1 cursor-pointer text-xs text-gray-500 shrink-0">
-                                    <input
-                                      type="radio"
-                                      name="primary_segment"
-                                      checked={isPrimary}
-                                      onChange={() => setFormData({ ...formData, primary_segment: seg })}
-                                      className="w-3 h-3 text-kaboo-primary focus:ring-kaboo-primary"
-                                    />
-                                    <span className={isPrimary ? 'font-bold text-kaboo-primary' : ''}>Principal</span>
-                                  </label>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Ano Escolar */}
-                      <div>
-                        <TagInput
-                          label="Ano Escolar"
-                          value={formData.age_grade || []}
-                          onChange={(tags) => setFormData({ ...formData, age_grade: tags })}
-                          placeholder="Digite um ano escolar e pressione Enter"
-                        />
-                      </div>
-
-                      {/* 1.6. Sinopse */}
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Sinopse</label>
-                        <textarea
-                          value={formData.synopsis || ''}
-                          onChange={(e) => setFormData({ ...formData, synopsis: e.target.value })}
-                          className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none min-h-[80px]"
-                          placeholder="Sinopse editorial da coleção (opcional)"
-                        />
-                      </div>
-
-                      {/* 1.7. Tema */}
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Tema</label>
-                        <input
-                          type="text"
-                          value={formData.theme}
-                          onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
-                          className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
-                          placeholder="Tema da coleção"
-                        />
-                      </div>
-
-                      {/* 1.7. Objetivos de Aprendizado */}
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Objetivos de Aprendizado</label>
-                        <textarea
-                          value={formData.learning_objectives}
-                          onChange={(e) => setFormData({ ...formData, learning_objectives: e.target.value })}
-                          className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none min-h-[100px]"
-                          placeholder="Objetivos de aprendizado..."
-                        />
-                      </div>
-
-                      {/* 1.8. Habilidades BNCC */}
-                      <div>
-                        <TagInput
-                          label="Habilidades BNCC"
-                          value={formData.bncc_skills || []}
-                          onChange={(tags) => setFormData({ ...formData, bncc_skills: tags })}
-                          placeholder="Digite uma habilidade BNCC e pressione Enter"
-                        />
-                      </div>
-
-                      {/* 1.9. Competências Casel */}
-                      <div>
-                        <TagInput
-                          label="Competências Casel"
-                          value={formData.casel_competencies || []}
-                          onChange={(tags) => setFormData({ ...formData, casel_competencies: tags })}
-                          placeholder="Digite uma competência Casel e pressione Enter"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* Tab: Arquivos de Mídia */}
-                  {activeTab === 'media' && (
-                    <>
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">Arquivos de Mídia</h3>
-                        {activeLibraryAreaLabel && (
-                          <div className="rounded-2xl border border-kaboo-primary/20 bg-kaboo-primary/5 px-4 py-3 text-sm text-kaboo-primary mb-4">
-                            <span className="font-bold">Área de cadastro: {activeLibraryAreaLabel}.</span> Os campos destacados são os mais usados para esta biblioteca.
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-4">
-                        {FIXED_MEDIA_SLOTS.map((slot) => {
-                          const asset = getAssetByCategory(slot.category);
-                          const isPrimaryForArea = Boolean(
-                            initialLibraryArea && LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea].includes(slot.category)
-                          );
-
-                          return (
-                            <div
-                              key={slot.category}
-                              className={`rounded-2xl border p-4 space-y-3 bg-white ${isPrimaryForArea ? 'border-kaboo-primary/35 bg-kaboo-primary/[0.03]' : 'border-gray-200'}`}
-                            >
-                              {isPrimaryForArea && (
-                                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary">Prioritário para {activeLibraryAreaLabel}</p>
-                              )}
-                              <FileUpload
-                                label={slot.label}
-                                value={asset?.url || ''}
-                                onChange={(url) => {
-                                  if (!url) {
-                                    removeAsset(slot.category);
-                                    return;
-                                  }
-
-                                  setAssetUrl(slot.category, url);
-                                }}
-                                folder={slot.folder}
-                                accept={slot.accept}
-                                collectionId={editingId || undefined}
-                                showAsIcon={true}
-                              />
-
-                              <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">
-                                  Ou cole um link (YouTube ou arquivo direto)
-                                </label>
-                                <input
-                                  type="url"
-                                  value={asset?.url || ''}
-                                  onChange={(event) => {
-                                    const nextUrl = event.target.value;
-                                    if (!nextUrl.trim()) {
-                                      removeAsset(slot.category);
-                                      return;
-                                    }
-
-                                    setAssetUrl(slot.category, nextUrl);
-                                  }}
-                                  placeholder="https://www.youtube.com/watch?v=..."
-                                  className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
-                                />
-                              </div>
-
-                              {slot.allowMetadata && (
-                                <div className="grid gap-3 md:grid-cols-2">
-                                  <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Título opcional</label>
-                                    <input
-                                      type="text"
-                                      value={asset?.title || ''}
-                                      onChange={(event) => setAssetTitle(slot.category, event.target.value)}
-                                      disabled={!asset?.url}
-                                      placeholder={slot.titlePlaceholder}
-                                      className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none disabled:opacity-60"
-                                    />
-                                  </div>
-
-                                  <div className="md:col-span-2">
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Descrição opcional</label>
-                                    <textarea
-                                      value={asset?.description || ''}
-                                      onChange={(event) => setAssetDescription(slot.category, event.target.value)}
-                                      disabled={!asset?.url}
-                                      placeholder={slot.descriptionPlaceholder}
-                                      className="w-full min-h-[96px] resize-y bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none disabled:opacity-60"
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-
-                        <div className="rounded-2xl border border-gray-200 p-4 bg-white">
-                          {initialLibraryArea === 'materials' && (
-                            <p className="text-[11px] font-black uppercase tracking-[0.14em] text-kaboo-primary mb-3">Prioritário para Materiais</p>
-                          )}
-                          <MultipleFileUpload
-                            label="Materiais da Coleção"
-                            value={extraMaterialAssets.map((asset) => asset.url)}
-                            onChange={setExtraMaterialUrls}
-                            folder="extras"
-                            accept="*/*"
-                            collectionId={editingId || undefined}
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-4 pt-4 border-t border-gray-200">
-                    <Button variant="secondary" fullWidth onClick={handleCancel} disabled={isSaving}>
-                      Cancelar
-                    </Button>
-                    <Button variant="primary" fullWidth onClick={handleSave} disabled={isSaving}>
-                      {isSaving ? 'Salvando...' : (editingId ? 'Salvar Alterações' : 'Criar Coleção')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-6 pt-0">
               {collections.length === 0 ? (
                 <div className="text-center py-12">
-                  <Icons.BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
-                  <p className="text-gray-500 font-bold">Nenhuma coleção encontrada.</p>
+                  {(() => {
+                    const EmptyIcon = initialLibraryArea ? Icons[activeLibraryAreaUi?.icon || 'BookOpen'] as React.ElementType : Icons.BookOpen;
+                    return <EmptyIcon size={48} className="mx-auto mb-4 text-gray-300" />;
+                  })()}
+                  <p className="text-gray-500 font-bold">
+                    {initialLibraryArea
+                      ? `Nenhum asset publicado em ${activeLibraryAreaLabel?.toLowerCase() || 'esta área'}.`
+                      : 'Nenhuma coleção encontrada.'}
+                  </p>
+                  {!editingId && !showCreateForm && (
+                    <button
+                      type="button"
+                      onClick={handleCreateContent}
+                      className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-brand-primary px-6 text-sm font-bold text-white shadow-sm transition-all hover:bg-opacity-90 active:scale-95"
+                    >
+                      <Icons.Plus size={18} />
+                      <span>{activeLibraryAreaUi?.createLabel || 'Nova Coleção'}</span>
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1712,8 +1544,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           type="text"
                           value={searchFilter}
                           onChange={(e) => setSearchFilter(e.target.value)}
-                          placeholder="Buscar por título ou tema..."
-                          className="w-full bg-gray-100 border-none rounded-2xl pl-12 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all font-medium"
+                          placeholder={activeLibraryAreaUi?.searchPlaceholder || 'Buscar por título ou tema...'}
+                          className="w-full bg-gray-100 border-none rounded-2xl pl-12 pr-4 py-3 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-brand-primary outline-none transition-all font-medium"
                         />
                       </div>
                     </div>
@@ -1723,7 +1555,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       <button
                         onClick={() => setShowLevelDropdown(!showLevelDropdown)}
                         className={`h-11 px-4 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 shadow-sm font-bold text-sm w-full justify-between ${levelFilter !== 'all'
-                          ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
+                          ? 'bg-brand-primary text-white border-brand-primary shadow-brand-primary/20'
                           : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                           }`}
                       >
@@ -1741,7 +1573,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               setShowLevelDropdown(false);
                             }}
                             className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl ${levelFilter === 'all'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              ? 'bg-brand-primary/10 text-brand-primary font-bold'
                               : 'text-gray-700 hover:bg-gray-50 font-medium'
                               }`}
                           >
@@ -1754,7 +1586,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               setShowLevelDropdown(false);
                             }}
                             className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${levelFilter === 'Educação Infantil'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              ? 'bg-brand-primary/10 text-brand-primary font-bold'
                               : 'text-gray-700 hover:bg-gray-50 font-medium'
                               }`}
                           >
@@ -1767,7 +1599,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               setShowLevelDropdown(false);
                             }}
                             className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${levelFilter === 'Fundamental I'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              ? 'bg-brand-primary/10 text-brand-primary font-bold'
                               : 'text-gray-700 hover:bg-gray-50 font-medium'
                               }`}
                           >
@@ -1784,7 +1616,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         <button
                           onClick={() => setShowSortDropdown(!showSortDropdown)}
                           className={`h-11 px-4 rounded-2xl flex items-center gap-2 border transition-all active:scale-95 shadow-sm font-bold text-sm ${sortOrder
-                            ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
+                            ? 'bg-brand-primary text-white border-brand-primary shadow-brand-primary/20'
                             : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                             }`}
                         >
@@ -1807,7 +1639,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         {sortOrder && (
                           <button
                             onClick={() => setSortOrder(null)}
-                            className="h-11 w-11 rounded-2xl flex items-center justify-center border border-kaboo-primary bg-kaboo-primary text-white hover:bg-opacity-90 transition-all active:scale-95 shadow-sm shadow-kaboo-primary/20"
+                            className="h-11 w-11 rounded-2xl flex items-center justify-center border border-brand-primary bg-brand-primary text-white hover:bg-opacity-90 transition-all active:scale-95 shadow-sm shadow-brand-primary/20"
                             title="Remover ordenação"
                           >
                             <Icons.X size={18} />
@@ -1823,7 +1655,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               setShowSortDropdown(false);
                             }}
                             className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl ${sortOrder === 'asc'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              ? 'bg-brand-primary/10 text-brand-primary font-bold'
                               : 'text-gray-700 hover:bg-gray-50 font-medium'
                               }`}
                           >
@@ -1837,7 +1669,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               setShowSortDropdown(false);
                             }}
                             className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${sortOrder === 'desc'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              ? 'bg-brand-primary/10 text-brand-primary font-bold'
                               : 'text-gray-700 hover:bg-gray-50 font-medium'
                               }`}
                           >
@@ -1852,34 +1684,141 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     {/* Botão Nova Coleção */}
                     {!editingId && !showCreateForm && (
                       <button
-                        onClick={() => {
-                          if (hasUnsavedChanges()) {
-                            setPendingAction(() => () => {
-                              const emptyFormData = buildCollectionFormData();
-                              setShowCreateForm(true);
-                              setActiveTab(defaultCollectionTab);
-                              setFormData(emptyFormData);
-                              setOriginalFormData(emptyFormData);
-                            });
-                            setShowUnsavedChangesModal(true);
-                          } else {
-                            const emptyFormData = buildCollectionFormData();
-                            setShowCreateForm(true);
-                            setActiveTab(defaultCollectionTab);
-                            setFormData(emptyFormData);
-                            setOriginalFormData(emptyFormData);
-                          }
-                        }}
-                        className="h-11 px-6 rounded-2xl bg-kaboo-primary text-white flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all active:scale-95 shadow-sm font-bold text-sm whitespace-nowrap"
+                        onClick={handleCreateContent}
+                        className="h-11 px-6 rounded-2xl bg-brand-primary text-white flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all active:scale-95 shadow-sm font-bold text-sm whitespace-nowrap"
                       >
                         <Icons.Plus size={18} />
-                        <span>Nova Coleção</span>
+                        <span>{activeLibraryAreaUi?.createLabel || 'Nova Coleção'}</span>
                       </button>
                     )}
                   </div>
 
-                  {/* Lista de Coleções */}
-                  {getFilteredAndSortedCollections().length === 0 ? (
+                  {/* Lista de conteúdo */}
+                  {initialLibraryArea ? (
+                    filteredLibraryAssets.length === 0 ? (
+                      <div className="text-center py-12">
+                        {(() => {
+                          const EmptyIcon = Icons[activeLibraryAreaUi?.icon || 'BookOpen'] as React.ElementType;
+                          return <EmptyIcon size={48} className="mx-auto mb-4 text-gray-300" />;
+                        })()}
+                        <p className="text-gray-500 font-bold">
+                          {libraryAssetItems.length > 0
+                            ? activeLibraryAreaUi?.emptyMessage || 'Nenhum asset corresponde aos filtros.'
+                            : `Nenhum asset publicado em ${activeLibraryAreaLabel?.toLowerCase() || 'esta área'}.`}
+                        </p>
+                        {libraryAssetItems.length > 0 && (searchFilter || levelFilter !== 'all' || sortOrder) && (
+                          <button
+                            onClick={() => { setSearchFilter(''); setLevelFilter('all'); setSortOrder(null); }}
+                            className="mt-3 text-sm font-bold text-brand-primary hover:underline"
+                          >
+                            Limpar filtros
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className={`grid gap-4 md:gap-5 ${initialLibraryArea === 'music' ? 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}>
+                        {filteredLibraryAssets.map((item) => {
+                          const CardIcon = Icons[item.iconName] as React.ElementType;
+                          const isVideoAssetCard = item.asset.media_type === 'video';
+                          const isAudioAssetCard = item.asset.media_type === 'audio';
+                          const videoPreviewText = isVideoAssetCard ? getDistinctVideoPreviewText(item) : item.previewText;
+
+                          return (
+                            <button
+                              type="button"
+                              key={item.key}
+                              className={`group w-full border bg-white text-left transition-all active:scale-[0.99] ${isVideoAssetCard ? 'rounded-[18px] border-gray-200 p-4 shadow-sm hover:border-brand-primary/20 hover:shadow-md' : isAudioAssetCard ? 'rounded-[16px] border-brand-primary/10 p-3.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] hover:border-brand-primary/20 hover:shadow-[0_14px_24px_rgba(93,31,88,0.10)]' : 'rounded-2xl border-gray-200 p-5 shadow-sm hover:border-brand-primary/20 hover:shadow-md'}`}
+                              onClick={() => handleLibraryAssetEdit(item)}
+                            >
+                              <div className={isVideoAssetCard || isAudioAssetCard ? 'space-y-3' : 'flex items-start gap-4'}>
+                                <div className={`relative overflow-hidden border shadow-sm ${isVideoAssetCard ? 'aspect-video w-full rounded-[12px] border-gray-100 bg-gray-100' : isAudioAssetCard ? 'aspect-square w-full rounded-[10px] border-brand-primary/10 bg-[linear-gradient(180deg,#fdf9fe,#f6eff8)]' : 'h-[88px] w-[88px] shrink-0 rounded-xl border-gray-100 bg-gray-100'}`}>
+                                  {item.coverImage ? (
+                                    <img
+                                      src={item.coverImage}
+                                      alt={item.collection.title || item.displayTitle}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className={`flex h-full w-full items-center justify-center ${isAudioAssetCard ? 'bg-[radial-gradient(circle_at_top_left,rgba(93,31,88,0.22),transparent_42%),radial-gradient(circle_at_bottom_right,rgba(78,168,222,0.12),transparent_50%),linear-gradient(180deg,#fcf8fd,#f2ebf6)] text-brand-primary/60' : 'text-brand-primary/50'}`}>
+                                      <CardIcon size={24} />
+                                    </div>
+                                  )}
+
+                                  {isVideoAssetCard && (
+                                    <>
+                                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                                      <div className="absolute inset-0 bg-brand-primary/0 transition-colors duration-200 group-hover:bg-brand-primary/16" />
+                                      <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                        <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-brand-primary text-white opacity-0 scale-95 shadow-[0_16px_30px_rgba(93,31,88,0.32)] backdrop-blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:scale-100">
+                                          <Icons.Play size={18} className="fill-current stroke-none" />
+                                        </span>
+                                      </span>
+                                      <span className="pointer-events-none absolute bottom-2 right-2 inline-flex items-center rounded-[4px] bg-black/80 px-1.5 py-1 text-[10px] font-black leading-none text-white shadow-sm">
+                                        Vídeo
+                                      </span>
+                                    </>
+                                  )}
+
+                                  {isAudioAssetCard && (
+                                    <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center justify-center">
+                                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-primary text-white opacity-0 translate-y-2 shadow-[0_14px_26px_rgba(93,31,88,0.28)] transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
+                                        <Icons.Headphones size={18} className="stroke-[2.2px]" />
+                                      </span>
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className={`min-w-0 ${isVideoAssetCard ? 'flex min-h-[68px] flex-col' : isAudioAssetCard ? 'flex min-h-[56px] flex-col px-1 pb-1' : 'flex-1'}`}>
+                                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex items-center rounded-full bg-brand-primary/10 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-brand-primary">
+                                      {COLLECTION_ASSET_META[item.asset.category].label}
+                                    </span>
+                                    {item.asset.lyrics_url && (
+                                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-500">
+                                        Com letra
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <h3 className={`text-gray-900 line-clamp-2 ${isVideoAssetCard ? 'text-[14px] font-bold leading-[1.35]' : isAudioAssetCard ? 'text-[13px] font-bold leading-[1.35]' : 'text-base font-black leading-tight'}`}>
+                                    {item.displayTitle}
+                                  </h3>
+
+                                  {item.displayTitle !== item.collection.title && (
+                                    <p className={`font-medium text-gray-500 line-clamp-1 ${isVideoAssetCard ? 'mt-1 text-[13px] leading-4' : isAudioAssetCard ? 'mt-1 text-[12px] leading-4' : 'mt-1 text-sm'}`}>
+                                      {item.collection.title}
+                                    </p>
+                                  )}
+
+                                  {(isVideoAssetCard ? videoPreviewText : item.previewText) && (
+                                    <p className={isVideoAssetCard ? 'mt-0.5 text-[12px] font-medium leading-4 text-gray-500 line-clamp-1' : isAudioAssetCard ? 'mt-0.5 text-[11px] leading-4 text-gray-500 line-clamp-2' : 'mt-1.5 text-sm text-gray-500 line-clamp-2'}>
+                                      {isVideoAssetCard ? videoPreviewText : item.previewText}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                    {item.levelLabel}
+                                  </span>
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                    {item.asset.media_type === 'audio' ? 'Áudio' : item.asset.media_type === 'video' ? 'Vídeo' : 'Documento'}
+                                  </span>
+                                </div>
+
+                                <span className="inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-transform group-hover:translate-x-0.5">
+                                  Editar
+                                  <Icons.ChevronRight size={16} />
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )
+                  ) : getFilteredAndSortedCollections().length === 0 ? (
                     <div className="text-center py-12">
                       <Icons.BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
                       <p className="text-gray-500 font-bold">
@@ -1888,14 +1827,17 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       {collections.length > 0 && (searchFilter || levelFilter !== 'all' || sortOrder) && (
                         <button
                           onClick={() => { setSearchFilter(''); setLevelFilter('all'); setSortOrder(null); }}
-                          className="mt-3 text-sm font-bold text-kaboo-primary hover:underline"
+                          className="mt-3 text-sm font-bold text-brand-primary hover:underline"
                         >
                           Limpar filtros
                         </button>
                       )}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                    <div
+                      className="grid auto-rows-fr gap-4 md:gap-6"
+                      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 24.75rem), 1fr))' }}
+                    >
                       {getFilteredAndSortedCollections().map((collection) => {
                         const actionsButton = (
                           <div
@@ -1952,72 +1894,22 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         );
 
                         return (
-                          <div
-                            key={collection.id}
-                            className="cursor-pointer active:scale-95 transition-transform touch-manipulation"
-                            style={{ touchAction: 'manipulation' }}
-                            onClick={(e) => {
-                              // Não abrir edição se clicar no botão de ações ou dropdown
-                              const target = e.target as HTMLElement;
-                              if (
-                                target.closest('.actions-button') ||
-                                target.closest('.actions-dropdown') ||
-                                target.tagName === 'BUTTON' ||
-                                target.closest('button')
-                              ) {
-                                e.stopPropagation();
-                                return;
-                              }
-                              if (hasUnsavedChanges()) {
-                                setPendingAction(() => () => {
-                                  const initialData = buildCollectionFormData({
-                                    ...collection,
-                                    collection_assets: inferCollectionAssets(collection),
-                                  });
-                                  setEditingId(collection.id);
-                                  setActiveTab(defaultCollectionTab);
-                                  setFormData(initialData);
-                                  setOriginalFormData(initialData);
-                                });
-                                setShowUnsavedChangesModal(true);
-                              } else {
-                                handleEdit(collection);
-                              }
-                            }}
-                          >
-                            {collection.cover_image && (() => {
-                              const collectionTypeMeta = getCollectionTypeMeta(collection);
-                              const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
-
-                              return (
-                                <Card3DCover
-                                  imageUrl={displayCoverImage}
-                                  alt={collection.title}
-                                  level={collection.level}
-                                  collectionTypeLabel={collectionTypeMeta.shortLabel}
-                                  collectionTypeBadgeClassName={collectionTypeMeta.coverClassName}
-                                  actionsButton={actionsButton}
-                                />
-                              );
-                            })()}
-
-                            {collection.title && (
-                              <h3 className="font-bold text-gray-800 text-sm leading-tight mb-1 line-clamp-2 mt-3">
-                                {collection.title}
-                              </h3>
-                            )}
-
-                            <div className="mb-2">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-[0.14em] ${getCollectionTypeMeta(collection).softClassName}`}>
-                                {getCollectionTypeMeta(collection).label}
-                              </span>
+                          <div key={collection.id} className="relative h-full w-full">
+                            <div className="absolute right-4 top-4 z-20">
+                              {actionsButton}
                             </div>
 
-                            {collection.theme && collection.theme.trim() !== '' && (
-                              <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">
-                                {collection.theme}
-                              </p>
-                            )}
+                            <Card3D
+                              collection={collection}
+                              onCollectionClick={() => {
+                                if (hasUnsavedChanges()) {
+                                  setPendingAction(() => () => handleEdit(collection));
+                                  setShowUnsavedChangesModal(true);
+                                } else {
+                                  handleEdit(collection);
+                                }
+                              }}
+                            />
                           </div>
                         );
                       })}
@@ -2027,6 +1919,672 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
               )}
             </div>
           )}
+
+          {/* === FORM DRAWER (always in DOM for CSS slide animation) === */}
+          {/* Backdrop */}
+          <div
+            onClick={handleCancel}
+            className={`fixed inset-0 z-40 transition-all duration-300 ${(editingId || showCreateForm)
+              ? 'bg-black/40 pointer-events-auto'
+              : 'bg-transparent pointer-events-none'
+              }`}
+          />
+
+          {/* Drawer Panel */}
+          <div
+            className={`fixed inset-y-0 right-0 z-50 flex flex-col bg-white shadow-2xl w-full sm:w-[600px] max-w-full transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${(editingId || showCreateForm) ? 'translate-x-0' : 'translate-x-full'
+              }`}
+          >
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+              <div className="min-w-0 flex-1">
+                {activeLibraryAreaLabel && (
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-brand-primary/60 mb-0.5">
+                    {activeLibraryAreaLabel}
+                  </p>
+                )}
+                <h2 className="text-base font-bold text-gray-800 line-clamp-1">
+                  {editingId
+                    ? (formData.title || 'Sem título')
+                    : (activeLibraryAreaUi?.createLabel || 'Nova Coleção')}
+                </h2>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                {isAdminUser && editingId && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteClick(editingId)}
+                    className="w-9 h-9 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all text-red-500"
+                    title="Excluir coleção"
+                  >
+                    <Icons.Trash2 size={16} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all text-gray-600"
+                  aria-label="Fechar"
+                >
+                  <Icons.X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs - only in full collection edit mode */}
+            {!isLibraryAreaMode && (
+              <div className="px-6 pt-4 pb-0 flex-shrink-0">
+                <Tabs
+                  tabs={[
+                    { id: 'identification', label: 'Dados da Coleção' },
+                    { id: 'media', label: 'Arquivos de Mídia' }
+                  ]}
+                  activeTab={activeTab}
+                  onChange={(tabId) => setActiveTab(tabId as any)}
+                />
+              </div>
+            )}
+
+            {/* Scrollable form body */}
+            <div className="flex-1 overflow-y-auto px-6 pb-4 pt-4">
+              <div className="space-y-6">
+                {/* Tab: Dados da Coleção */}
+                {!isLibraryAreaMode && activeTab === 'identification' && (
+                  <>
+                    {/* Informações de Identificação Title */}
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800 mb-4">Informações de Identificação</h3>
+                    </div>
+
+                    {/* 1.3. Título */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Título *</label>
+                      <input
+                        type="text"
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
+                        placeholder="Título da coleção"
+                      />
+                    </div>
+
+
+                    {/* Capa principal e cor base do card */}
+                    <div className="rounded-2xl border border-brand-primary/10 bg-brand-primary/[0.04] p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-bold text-gray-800">Formato na vitrine</p>
+                          <p className="mt-1 text-xs text-gray-500">
+                            A tag Coleção é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme os conteúdos publicados na aba Mídias.
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center rounded-full border border-brand-primary/15 bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-brand-primary shadow-sm">
+                          Coleção
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <FileUpload
+                          label="Capa da coleção"
+                          value={formData.cover_image || placeholderImageUrl}
+                          onChange={(url) => setFormData({ ...formData, cover_image: url })}
+                          folder="covers"
+                          accept="image/*"
+                          collectionId={editingId || undefined}
+                          hideUrlInput={true}
+                        />
+                        <p className="mt-2 text-xs text-gray-500">
+                          Essa imagem vira a thumbnail principal do card da coleção na vitrine.
+                        </p>
+                      </div>
+
+                      <div>
+                        <ColorPicker
+                          label="Cor do card"
+                          value={formData.color_theme || DEFAULT_COLLECTION_COLOR_THEME}
+                          onChange={(color) => setFormData({ ...formData, color_theme: color })}
+                        />
+                        <p className="mt-2 text-xs text-gray-500">
+                          Essa cor organiza o fundo do card. Ao vincular um livro, usamos a paleta dele como ponto de partida e você ajusta só se precisar.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Disponibilidade Offline */}
+                    <div className="rounded-2xl border border-gray-200 p-4 bg-white flex items-start gap-4">
+                      <div className="flex-1">
+                        <h4 className="text-sm font-bold text-gray-800">Disponível offline</h4>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Permite que usuários baixem esta coleção para acesso sem internet.
+                          Funciona apenas com conteúdo hospedado internamente (não YouTube).
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={!!formData.offline_available}
+                        onClick={() => setFormData({ ...formData, offline_available: !formData.offline_available })}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 ${formData.offline_available ? 'bg-brand-primary' : 'bg-gray-200'}`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.offline_available ? 'translate-x-5' : 'translate-x-0'}`}
+                        />
+                      </button>
+                    </div>
+
+                    <div className="rounded-2xl border border-gray-200 p-4 bg-white space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h4 className="text-sm font-bold text-gray-800">Livro da coleção</h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Selecione o livro que faz parte desta coleção. Ao escolher outro, ele substitui o vínculo anterior.
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-[0.12em] border border-amber-200 whitespace-nowrap">
+                          {selectedKitBookIds.length === 1 ? '1 livro' : '0 livro'}
+                        </span>
+                      </div>
+
+                      {availableKitBooks.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
+                          Cadastre pelo menos um livro para montar esta coleção.
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {availableKitBooks.map((book) => {
+                            const isSelected = selectedKitBookIds.includes(book.id);
+                            const displayCoverImage = getCollectionDisplayCover(book) || book.cover_image;
+
+                            return (
+                              <button
+                                key={book.id}
+                                type="button"
+                                onClick={() => toggleKitBookSelection(book.id)}
+                                aria-pressed={isSelected}
+                                className={`w-full rounded-2xl border px-3 py-3 transition-all active:scale-[0.99] ${isSelected
+                                  ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
+                                  : 'border-gray-200 bg-white hover:bg-gray-50'
+                                  }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={displayCoverImage}
+                                    alt=""
+                                    aria-hidden="true"
+                                    className="w-12 h-12 rounded-xl object-cover border border-gray-200 bg-gray-100 flex-shrink-0"
+                                  />
+
+                                  <div className="min-w-0 flex-1 text-left">
+                                    <p className="text-sm font-bold text-gray-800 line-clamp-1">{book.title}</p>
+                                    <p className="text-xs text-gray-500 line-clamp-1 mt-1">
+                                      {formatSegmentLabel(book.level)}
+                                      {book.theme ? ` • ${book.theme}` : ''}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className={`w-6 h-6 rounded-full border flex items-center justify-center ${isSelected
+                                      ? 'border-brand-primary bg-brand-primary text-white'
+                                      : 'border-gray-300 bg-white text-transparent'
+                                      }`}>
+                                      <Icons.Check size={14} />
+                                    </span>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 1.10. Personagens */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Personagens</label>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Selecione os personagens cadastrados para manter a coleção sincronizada com a vitrine pública.
+                        </p>
+
+                        {selectableCharacters.length === 0 ? (
+                          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
+                            Nenhum personagem cadastrado ainda. Use o módulo Personagens para criar o catálogo.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {selectableCharacters.map((character) => {
+                              const isSelected = selectedCharacterIds.includes(character.id);
+                              return (
+                                <button
+                                  key={character.id}
+                                  type="button"
+                                  onClick={() => toggleCharacterSelection(character.id)}
+                                  className={`rounded-2xl border p-3 text-left transition-all active:scale-[0.99] ${isSelected
+                                    ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
+                                    : 'border-gray-200 bg-white hover:bg-gray-50'
+                                    } ${(character.status || 'active') === 'inactive' ? 'opacity-70' : ''}`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <CharacterAvatar
+                                      name={character.name}
+                                      className="h-12 w-12 shrink-0 rounded-2xl"
+                                      imageClassName="absolute inset-0 h-full w-full object-cover"
+                                      initialClassName="absolute inset-0 flex items-center justify-center text-sm font-black text-white/80"
+                                    />
+
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="truncate text-sm font-bold text-gray-800">{character.name}</span>
+                                        {(character.status || 'active') === 'inactive' && (
+                                          <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-600">
+                                            Inativo
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                                        {character.description || 'Sem descrição cadastrada.'}
+                                      </p>
+                                    </div>
+
+                                    <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-brand-primary bg-brand-primary text-white' : 'border-gray-300 text-transparent'}`}>
+                                      <Icons.Check size={14} />
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+
+                    </div>
+
+                    {/* Separation line */}
+                    <div className="border-t border-gray-200 my-6"></div>
+
+                    {/* Informações Pedagógicas Title */}
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800 mb-4">Informações Pedagógicas</h3>
+                    </div>
+
+
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
+                      <div className="space-y-2">
+                        {AVAILABLE_SEGMENTS.map((seg) => {
+                          const checked = formData.segments?.includes(seg) ?? false;
+                          const isPrimary = formData.primary_segment === seg;
+                          return (
+                            <div key={seg} className="flex items-center gap-3">
+                              <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => {
+                                    const prev = formData.segments || [];
+                                    let next: string[];
+                                    if (checked) {
+                                      next = prev.filter(s => s !== seg);
+                                      // If removing the primary, pick the first remaining or clear
+                                      if (isPrimary) {
+                                        const newPrimary = next[0] || '';
+                                        setFormData({
+                                          ...formData,
+                                          segments: next,
+                                          primary_segment: newPrimary,
+                                          level: newPrimary === 'Educação Infantil' ? 'Educação Infantil' : (newPrimary ? 'Fundamental I' : formData.level),
+                                        });
+                                        return;
+                                      }
+                                    } else {
+                                      next = [...prev, seg];
+                                      // Auto-set primary if first segment
+                                      if (next.length === 1) {
+                                        setFormData({
+                                          ...formData,
+                                          segments: next,
+                                          primary_segment: seg,
+                                          level: seg === 'Educação Infantil' ? 'Educação Infantil' : 'Fundamental I',
+                                        });
+                                        return;
+                                      }
+                                    }
+                                    setFormData({ ...formData, segments: next });
+                                  }}
+                                  className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                                />
+                                <span className="text-sm text-gray-800">{seg}</span>
+                              </label>
+                              {checked && (
+                                <label className="flex items-center gap-1 cursor-pointer text-xs text-gray-500 shrink-0">
+                                  <input
+                                    type="radio"
+                                    name="primary_segment"
+                                    checked={isPrimary}
+                                    onChange={() => setFormData({
+                                      ...formData,
+                                      primary_segment: seg,
+                                      level: seg === 'Educação Infantil' ? 'Educação Infantil' : 'Fundamental I',
+                                    })}
+                                    className="w-3 h-3 text-brand-primary focus:ring-brand-primary"
+                                  />
+                                  <span className={isPrimary ? 'font-bold text-brand-primary' : ''}>Principal</span>
+                                </label>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Ano Escolar */}
+                    <div>
+                      <TagInput
+                        label="Ano Escolar"
+                        value={formData.age_grade || []}
+                        onChange={(tags) => setFormData({ ...formData, age_grade: tags })}
+                        placeholder="Digite um ano escolar e pressione Enter"
+                      />
+                    </div>
+
+                    {/* 1.6. Sinopse */}
+                    <div>
+                      <div className="mb-2 flex items-center justify-between">
+                        <label className="block text-sm font-bold text-gray-700">Sinopse</label>
+                        <span className="text-xs text-gray-400">{(formData.synopsis || '').length}/500</span>
+                      </div>
+                      <textarea
+                        value={formData.synopsis || ''}
+                        onChange={(e) => setFormData({ ...formData, synopsis: e.target.value.slice(0, 500) })}
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none min-h-[80px]"
+                        placeholder="Sinopse editorial da coleção (opcional)"
+                        maxLength={500}
+                      />
+                    </div>
+
+                    {/* 1.7. Tema */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Tema</label>
+                      <input
+                        type="text"
+                        value={formData.theme}
+                        onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
+                        placeholder="Tema da coleção"
+                      />
+                    </div>
+
+                    {/* 1.7. Objetivos de Aprendizado */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Objetivos de Aprendizado</label>
+                      <textarea
+                        value={formData.learning_objectives}
+                        onChange={(e) => setFormData({ ...formData, learning_objectives: e.target.value })}
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none min-h-[100px]"
+                        placeholder="Objetivos de aprendizado..."
+                      />
+                    </div>
+
+                    {/* 1.8. Habilidades BNCC */}
+                    <div>
+                      <TagInput
+                        label="Habilidades BNCC"
+                        value={formData.bncc_skills || []}
+                        onChange={(tags) => setFormData({ ...formData, bncc_skills: tags })}
+                        placeholder="Digite uma habilidade BNCC e pressione Enter"
+                      />
+                    </div>
+
+                    {/* 1.9. Competências Casel */}
+                    <div>
+                      <TagInput
+                        label="Competências Casel"
+                        value={formData.casel_competencies || []}
+                        onChange={(tags) => setFormData({ ...formData, casel_competencies: tags })}
+                        placeholder="Digite uma competência Casel e pressione Enter"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Tab: Arquivos de Mídia */}
+                {activeTab === 'media' && (
+                  <>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800 mb-4">
+                        {activeLibraryAreaLabel ? activeLibraryAreaLabel : 'Arquivos de Mídia'}
+                      </h3>
+                      {activeLibraryAreaLabel && editingId && (
+                        <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 mb-4 flex items-center gap-2">
+                          <Icons.BookOpen size={15} className="shrink-0 text-gray-400" />
+                          <span className="truncate">
+                            <span className="text-gray-500">Coleção: </span>
+                            <span className="font-bold text-gray-800">{formData.title || 'Sem título'}</span>
+                          </span>
+                        </div>
+                      )}
+                      {highlightedAssetCategory && (
+                        <div className="rounded-2xl border border-brand-primary/15 bg-white px-4 py-3 text-sm text-gray-700 mb-4 shadow-sm">
+                          <span className="font-bold text-brand-primary">Asset selecionado:</span>{' '}
+                          {highlightedAsset?.title || COLLECTION_ASSET_META[highlightedAssetCategory].label}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Mini-identificação: campos básicos visíveis no modo de área de biblioteca */}
+                      {isLibraryAreaMode && (
+                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-4">
+                          <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Título *</label>
+                            <input
+                              type="text"
+                              value={formData.title}
+                              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                              className="w-full bg-white border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none shadow-sm"
+                              placeholder={
+                                initialLibraryArea === 'music' ? 'Título da música'
+                                  : initialLibraryArea === 'videos' ? 'Título do vídeo'
+                                    : initialLibraryArea === 'formations' ? 'Título da formação'
+                                      : 'Título do material'
+                              }
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 items-start">
+                            <FileUpload
+                              label="Imagem de Capa"
+                              value={formData.cover_image || placeholderImageUrl}
+                              onChange={(url) => setFormData({ ...formData, cover_image: url })}
+                              folder="covers"
+                              accept="image/*"
+                              collectionId={editingId || undefined}
+                              hideUrlInput={true}
+                            />
+                            <div>
+                              <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
+                              <div className="space-y-2">
+                                {(['Educação Infantil', 'Fundamental I'] as const).map((seg) => {
+                                  const isActive = formData.level === seg;
+                                  return (
+                                    <button
+                                      key={seg}
+                                      type="button"
+                                      onClick={() => setFormData({
+                                        ...formData,
+                                        level: seg,
+                                        primary_segment: seg,
+                                        segments: formData.segments?.includes(seg) ? formData.segments : [...(formData.segments || []), seg],
+                                      })}
+                                      className={`w-full rounded-2xl border px-3 py-2.5 text-sm font-bold text-left transition-all active:scale-[0.99] ${isActive
+                                        ? 'border-brand-primary bg-brand-primary/10 text-brand-primary shadow-sm'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                      {formatSegmentLabel(seg)}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {(isLibraryAreaMode
+                        ? FIXED_MEDIA_SLOTS.filter((s) => LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea!].includes(s.category))
+                        : FIXED_MEDIA_SLOTS
+                      ).map((slot) => {
+                        const asset = getAssetByCategory(slot.category);
+                        const isHighlightedSlot = highlightedAssetCategory === slot.category
+                          || (highlightedAssetId ? asset?.id === highlightedAssetId : false);
+
+                        return (
+                          <div
+                            key={slot.category}
+                            ref={(element) => {
+                              mediaSectionRefs.current[slot.category] = element;
+                            }}
+                            className={`rounded-2xl border p-4 space-y-3 bg-white transition-all border-gray-200 ${isHighlightedSlot ? 'ring-2 ring-brand-primary ring-offset-2 shadow-[0_0_0_6px_var(--color-brand-light)]' : ''}`}
+                          >
+                            <FileUpload
+                              label={slot.label}
+                              value={asset?.url || ''}
+                              onChange={(url) => {
+                                if (!url) {
+                                  removeAsset(slot.category);
+                                  return;
+                                }
+
+                                setAssetUrl(slot.category, url);
+                              }}
+                              folder={slot.folder}
+                              accept={slot.accept}
+                              collectionId={editingId || undefined}
+                              showAsIcon={true}
+                            />
+
+                            <div>
+                              <label className="block text-sm font-bold text-gray-700 mb-2">
+                                {slot.urlLabel ?? 'Ou cole um link (YouTube ou arquivo direto)'}
+                              </label>
+                              <input
+                                type="url"
+                                value={asset?.url || ''}
+                                onChange={(event) => {
+                                  const nextUrl = event.target.value;
+                                  if (!nextUrl.trim()) {
+                                    removeAsset(slot.category);
+                                    return;
+                                  }
+
+                                  setAssetUrl(slot.category, nextUrl);
+                                }}
+                                placeholder={slot.urlPlaceholder ?? 'https://www.youtube.com/watch?v=...'}
+                                className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
+                              />
+                            </div>
+
+                            {slot.allowMetadata && (
+                              <div className="grid gap-3 md:grid-cols-2">
+                                <div>
+                                  <label className="block text-sm font-bold text-gray-700 mb-2">Título opcional</label>
+                                  <input
+                                    type="text"
+                                    value={asset?.title || ''}
+                                    onChange={(event) => setAssetTitle(slot.category, event.target.value)}
+                                    disabled={!asset?.url}
+                                    placeholder={slot.titlePlaceholder}
+                                    className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none disabled:opacity-60"
+                                  />
+                                </div>
+
+                                <div className="md:col-span-2">
+                                  <label className="block text-sm font-bold text-gray-700 mb-2">Descrição opcional</label>
+                                  <textarea
+                                    value={asset?.description || ''}
+                                    onChange={(event) => setAssetDescription(slot.category, event.target.value)}
+                                    disabled={!asset?.url}
+                                    placeholder={slot.descriptionPlaceholder}
+                                    className="w-full min-h-[96px] resize-y bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none disabled:opacity-60"
+                                  />
+                                </div>
+
+                                {slot.category === 'storytelling' && (
+                                  <div className="md:col-span-2">
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">
+                                      Letra da música (opcional)
+                                    </label>
+                                    <p className="text-xs text-gray-500 mb-2">Cole o link de um arquivo de texto com a letra (.txt, .md ou URL pública)</p>
+                                    <input
+                                      type="url"
+                                      value={asset?.lyrics_url || ''}
+                                      onChange={(event) => setAssetLyricsUrl(slot.category, event.target.value)}
+                                      disabled={!asset?.url}
+                                      placeholder="https://..."
+                                      className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none disabled:opacity-60"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {/* Offline download toggle — shows only when there is content uploaded */}
+                            {asset?.url && (
+                              <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3 mt-1">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-gray-800">Disponível offline</p>
+                                  <p className="text-xs text-gray-500 mt-0.5">Permite download deste arquivo para uso sem internet. Não funciona com YouTube.</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  role="switch"
+                                  aria-checked={asset.offline_available !== false}
+                                  onClick={() => setAssetOfflineAvailable(slot.category, asset.offline_available === false ? true : false)}
+                                  className={`ml-4 relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 ${asset.offline_available !== false ? 'bg-brand-primary' : 'bg-gray-200'}`}
+                                >
+                                  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${asset.offline_available !== false ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Extra materials: always visible in collection edit mode, only visible in Materiais area mode */}
+                      {(!isLibraryAreaMode || initialLibraryArea === 'materials') && (
+                        <div
+                          ref={extraMaterialsSectionRef}
+                          className={`rounded-2xl border p-4 bg-white transition-all ${isExtraMaterialsHighlighted ? 'border-brand-primary/35 ring-2 ring-brand-primary ring-offset-2 shadow-[0_0_0_6px_var(--color-brand-light)]' : 'border-gray-200'}`}
+                        >
+                          <MultipleFileUpload
+                            label="Materiais da Coleção"
+                            value={extraMaterialAssets.map((asset) => asset.url)}
+                            onChange={setExtraMaterialUrls}
+                            folder="extras"
+                            accept="*/*"
+                            collectionId={editingId || undefined}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+              </div>
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="flex gap-4 px-6 py-4 border-t border-gray-100 flex-shrink-0">
+              <Button variant="secondary" fullWidth onClick={handleCancel} disabled={isSaving}>
+                Cancelar
+              </Button>
+              <Button variant="primary" fullWidth onClick={handleSave} disabled={isSaving}>
+                {isSaving ? 'Salvando...' : (editingId ? 'Salvar Alterações' : 'Criar Coleção')}
+              </Button>
+            </div>
+          </div>
         </>
       )}
 
@@ -2057,7 +2615,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         type="text"
                         value={editUserFormData.full_name}
                         onChange={(e) => { setEditUserFormData({ ...editUserFormData, full_name: e.target.value }); setEditUserErrorMsg(null); }}
-                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-brand-primary outline-none transition-all"
                         placeholder="Nome completo do usuário"
                         required
                       />
@@ -2072,7 +2630,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       <button
                         type="button"
                         onClick={() => setEditUserRoleDropdownOpen(!editUserRoleDropdownOpen)}
-                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 pr-4 flex items-center justify-between text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 pr-4 flex items-center justify-between text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none transition-all"
                       >
                         <span className="text-left">
                           {editUserFormData.role === 'admin' ? 'Administrador' : editUserFormData.role === 'editor' ? 'Editor' : 'Visualizador'}
@@ -2087,7 +2645,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               key={r}
                               type="button"
                               onClick={() => { setEditUserFormData({ ...editUserFormData, role: r }); setEditUserRoleDropdownOpen(false); }}
-                              className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl last:rounded-b-2xl ${editUserFormData.role === r ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold' : 'text-gray-700 hover:bg-gray-50 font-medium'
+                              className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl last:rounded-b-2xl ${editUserFormData.role === r ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700 hover:bg-gray-50 font-medium'
                                 }`}
                             >
                               <span>{r === 'admin' ? 'Administrador' : r === 'editor' ? 'Editor' : 'Visualizador'}</span>
@@ -2167,7 +2725,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           type="text"
                           value={userFormData.full_name}
                           onChange={(e) => { setUserFormData({ ...userFormData, full_name: e.target.value }); clearUserError(); }}
-                          className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                          className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-brand-primary outline-none transition-all"
                           placeholder="Seu nome"
                           required
                         />
@@ -2185,7 +2743,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         type="email"
                         value={userFormData.email}
                         onChange={(e) => { setUserFormData({ ...userFormData, email: e.target.value }); clearUserError(); }}
-                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-brand-primary outline-none transition-all"
                         placeholder="email@exemplo.com.br"
                         required
                       />
@@ -2202,7 +2760,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       <button
                         type="button"
                         onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 pr-4 flex items-center justify-between text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 pr-4 flex items-center justify-between text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none transition-all"
                       >
                         <span className="text-left">
                           {userFormData.role === 'admin' ? 'Administrador' :
@@ -2220,7 +2778,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               setShowRoleDropdown(false);
                             }}
                             className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl ${userFormData.role === 'viewer'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              ? 'bg-brand-primary/10 text-brand-primary font-bold'
                               : 'text-gray-700 hover:bg-gray-50 font-medium'
                               }`}
                           >
@@ -2234,7 +2792,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               setShowRoleDropdown(false);
                             }}
                             className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${userFormData.role === 'editor'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              ? 'bg-brand-primary/10 text-brand-primary font-bold'
                               : 'text-gray-700 hover:bg-gray-50 font-medium'
                               }`}
                           >
@@ -2248,7 +2806,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               setShowRoleDropdown(false);
                             }}
                             className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl ${userFormData.role === 'admin'
-                              ? 'bg-kaboo-primary/10 text-kaboo-primary font-bold'
+                              ? 'bg-brand-primary/10 text-brand-primary font-bold'
                               : 'text-gray-700 hover:bg-gray-50 font-medium'
                               }`}
                           >
@@ -2284,7 +2842,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           setAcceptedTerms(e.target.checked);
                           clearUserError();
                         }}
-                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-300 transition-all checked:border-kaboo-primary checked:bg-kaboo-primary focus:ring-2 focus:ring-kaboo-primary/30 outline-none"
+                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-300 transition-all checked:border-brand-primary checked:bg-brand-primary focus:ring-2 focus:ring-brand-primary/30 outline-none"
                       />
                       <Icons.Check
                         size={14}
@@ -2293,7 +2851,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       />
                     </div>
                     <label htmlFor="terms" className="text-sm text-gray-600 cursor-pointer select-none leading-tight">
-                      Li e concordo com a <button type="button" className="text-kaboo-primary font-bold hover:underline">política de privacidade</button> do Mundo de Kaboo.
+                      Li e concordo com a <button type="button" className="text-brand-primary font-bold hover:underline">política de privacidade</button> do Mundo de Kaboo.
                     </label>
                   </div>
 
@@ -2314,11 +2872,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-6 pt-0">
-              {isAdminUser && (
+              {isAdminUser && users.length > 0 && (
                 <div className="mb-6">
                   <button
-                    onClick={() => { setUserErrorMsg(null); setUserSuccessMsg(null); setShowUserForm(true); }}
-                    className="h-11 px-6 rounded-2xl bg-kaboo-primary text-white flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all active:scale-95 shadow-sm font-bold text-sm"
+                    onClick={handleOpenUserForm}
+                    className="h-11 px-6 rounded-2xl bg-brand-primary text-white flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all active:scale-95 shadow-sm font-bold text-sm"
                   >
                     <Icons.Plus size={18} />
                     <span>Novo Usuário</span>
@@ -2327,12 +2885,22 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
               )}
               {loadingUsers ? (
                 <div className="flex items-center justify-center h-64">
-                  <div className="w-8 h-8 border-4 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : users.length === 0 ? (
                 <div className="text-center py-12">
                   <Icons.User size={48} className="mx-auto mb-4 text-gray-300" />
                   <p className="text-gray-500 font-bold">Nenhum usuário encontrado.</p>
+                  {isAdminUser && (
+                    <button
+                      type="button"
+                      onClick={handleOpenUserForm}
+                      className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-brand-primary px-6 text-sm font-bold text-white shadow-sm transition-all hover:bg-opacity-90 active:scale-95"
+                    >
+                      <Icons.Plus size={18} />
+                      <span>Novo Usuário</span>
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -2406,7 +2974,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 <div className="flex items-center gap-1">
                                   <button
                                     onClick={() => handleEditUserOpen(user)}
-                                    className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-kaboo-primary transition-colors"
+                                    className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-brand-primary transition-colors"
                                     title="Editar usuário"
                                   >
                                     <Icons.Edit size={16} />

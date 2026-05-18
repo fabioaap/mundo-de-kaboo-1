@@ -1,0 +1,13 @@
+- main [ref=e51]:
+  - generic [ref=e277]:
+    - generic [ref=e279]:
+      - button "Voltar" [ref=e280]:
+        - img [ref=e281]
+      - heading "Kaboo e a Carta Misteriosa" [level=1] [ref=e285]
+      - button "Modo texto" [ref=e287]:
+        - img [ref=e288]
+    - generic [ref=e307]:
+      - button "Página anterior" [ref=e308]:
+        - img [ref=e309]
+      - button "Próxima página" [ref=e311]:
+        - img [ref=e312]

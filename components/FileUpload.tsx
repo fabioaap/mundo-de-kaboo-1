@@ -11,12 +11,13 @@ interface FileUploadProps {
   label: string;
   value: string; // Current URL value
   onChange: (url: string) => void;
-  folder: 'covers' | 'characters' | 'pdfs' | 'audio' | 'video';
+  folder: 'covers' | 'characters' | 'pdfs' | 'audio' | 'video' | 'extras';
   accept: string; // File types to accept (e.g., "image/*", "application/pdf")
   collectionId?: string;
   disabled?: boolean;
   hideUrlInput?: boolean; // For cover images, hide URL input
   showAsIcon?: boolean; // Show as file icon instead of URL input
+  inputId?: string;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -28,7 +29,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   collectionId,
   disabled = false,
   hideUrlInput = false,
-  showAsIcon = false
+  showAsIcon = false,
+  inputId,
 }) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +40,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast, showToast, updateToast, hideToast } = useToast();
   const hasPlaceholderImage = isPlaceholderImageUrl(value);
+  const resolvedInputId = inputId || `file-upload-${folder}`;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -113,7 +116,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         accept={accept}
         onChange={handleFileSelect}
         className="hidden"
-        id={`file-upload-${folder}`}
+        id={resolvedInputId}
         disabled={disabled || uploading}
       />
 
@@ -163,7 +166,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     fileInputRef.current.click();
                   }
                 }}
-                className="mt-2 w-full px-3 py-1.5 bg-kaboo-primary/10 text-kaboo-primary rounded-lg font-bold text-sm hover:bg-kaboo-primary/20 transition-colors disabled:opacity-50"
+                className="mt-2 w-full px-3 py-1.5 bg-brand-primary/10 text-brand-primary rounded-lg font-bold text-sm hover:bg-brand-primary/20 transition-colors disabled:opacity-50"
                 disabled={disabled || uploading}
               >
                 Adicionar Imagem
@@ -185,7 +188,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {showAsIcon && value && (
           <div className="mb-3">
             <div
-              className="inline-flex items-center gap-2 px-3 py-2 bg-kaboo-primary/10 text-kaboo-primary rounded-full text-sm font-bold cursor-pointer transition-all duration-300 ease-in-out hover:bg-kaboo-primary/20"
+              className="inline-flex items-center gap-2 px-3 py-2 bg-brand-primary/10 text-brand-primary rounded-full text-sm font-bold cursor-pointer transition-all duration-300 ease-in-out hover:bg-brand-primary/20"
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
               onClick={() => setShowPreview(true)}
@@ -207,7 +210,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   e.stopPropagation();
                   setShowConfirmDelete(true);
                 }}
-                className="hover:bg-kaboo-primary/30 rounded-full p-0.5 transition-colors flex-shrink-0"
+                className="hover:bg-brand-primary/30 rounded-full p-0.5 transition-colors flex-shrink-0"
                 aria-label={`Remover arquivo`}
                 disabled={disabled || uploading}
               >
@@ -224,7 +227,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               type="url"
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              className="flex-1 bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
+              className="flex-1 bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
               placeholder="URL ou faça upload de um arquivo..."
               disabled={disabled || uploading}
             />
@@ -246,13 +249,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {!value && (
           <div className="flex items-center gap-2">
             <label
-              htmlFor={`file-upload-${folder}`}
-              className={`flex items-center gap-2 px-4 py-2 bg-kaboo-primary/10 text-kaboo-primary rounded-xl font-bold cursor-pointer hover:bg-kaboo-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${uploading ? 'opacity-50 cursor-wait' : ''
+              htmlFor={resolvedInputId}
+              className={`flex items-center gap-2 px-4 py-2 bg-brand-primary/10 text-brand-primary rounded-xl font-bold cursor-pointer hover:bg-brand-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${uploading ? 'opacity-50 cursor-wait' : ''
                 }`}
             >
               {uploading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
                   <span>Enviando...</span>
                 </>
               ) : (
@@ -284,6 +287,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           {folder === 'pdfs' && 'Formatos aceitos: PDF (máx. 500MB)'}
           {folder === 'audio' && 'Formatos aceitos: MP3, WAV, OGG (máx. 500MB)'}
           {folder === 'video' && 'Formatos aceitos: MP4, WebM (máx. 500MB)'}
+          {folder === 'extras' && 'Formatos aceitos: JPG, PNG, WebP e SVG (máx. 500MB)'}
         </p>
       </div>
 
@@ -301,7 +305,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         isOpen={showPreview}
         fileUrl={value}
         fileName={extractOriginalFileName(value)}
-        fileType={folder === 'characters' ? 'image' : folder === 'pdfs' ? 'pdf' : folder === 'audio' ? 'audio' : folder === 'video' ? 'video' : 'other'}
+        fileType={isImage ? 'image' : folder === 'pdfs' ? 'pdf' : folder === 'audio' ? 'audio' : folder === 'video' ? 'video' : 'other'}
         onClose={() => setShowPreview(false)}
       />
 

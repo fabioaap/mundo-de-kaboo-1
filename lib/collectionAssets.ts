@@ -15,7 +15,7 @@ type CollectionAssetMeta = {
 
 export const COLLECTION_ASSET_META: Record<CollectionAssetCategory, CollectionAssetMeta> = {
     reading: { label: 'Leitura', mediaType: 'document', scope: 'primary' },
-    storytelling: { label: 'Contação da História', mediaType: 'audio', scope: 'primary' },
+    storytelling: { label: 'Áudio', mediaType: 'audio', scope: 'primary' },
     animation: { label: 'Desenho Animado', mediaType: 'video', scope: 'primary' },
     accessible_video: { label: 'Com Libras', mediaType: 'video', scope: 'primary' },
     how_to_play: { label: 'Como Jogar', mediaType: 'video', scope: 'library' },
@@ -212,6 +212,7 @@ const normalizeAsset = (
         url,
         description: normalizeText(asset.description) || null,
         scope: asset.scope ?? meta.scope,
+        lyrics_url: normalizeText(asset.lyrics_url) || null,
     };
 };
 
@@ -229,6 +230,7 @@ const mergeAssetCandidate = (
             url: candidate.url ?? current?.url,
             description: normalizeText(current?.description) || candidate.description,
             scope: current?.scope ?? candidate.scope,
+            lyrics_url: current?.lyrics_url ?? candidate.lyrics_url,
         },
         fallbackCategory ?? current?.category ?? candidate.category
     );

@@ -2,9 +2,23 @@ import { CHARACTERS as CHARACTER_SEED } from '../data/characters';
 import { Character, Collection } from '../types';
 
 const MOCK_CHARACTERS_STORAGE_KEY = 'kaboo_mock_characters';
+let _activeCharacterBrandSlug = 'kaboo';
 let runtimeCharactersSnapshot: Character[] | null = null;
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+
+export const setActiveBrandForCharacters = (slug: string): void => {
+  _activeCharacterBrandSlug = slug || 'kaboo';
+  runtimeCharactersSnapshot = null;
+};
+
+const getCharactersStorageKey = (): string =>
+  _activeCharacterBrandSlug === 'kaboo'
+    ? MOCK_CHARACTERS_STORAGE_KEY
+    : `${MOCK_CHARACTERS_STORAGE_KEY}_${_activeCharacterBrandSlug}`;
+const isCharacterActive = (character?: Pick<Character, 'status'> | null): boolean => {
+  return (character?.status || 'active') === 'active';
+};
 
 export const normalizeCharacterLookupKey = (value: string): string => {
   return value
@@ -66,6 +80,10 @@ const mergeCharacterRecords = (base: Character, override?: Character): Character
 };
 
 const getSeedCharacters = (): Character[] => {
+  if (_activeCharacterBrandSlug !== 'kaboo') {
+    return [];
+  }
+
   return CHARACTER_SEED.map((character) => normalizeCharacter(character));
 };
 
@@ -75,7 +93,7 @@ const readStoredCharacters = (): Character[] | null => {
   }
 
   try {
-    const stored = localStorage.getItem(MOCK_CHARACTERS_STORAGE_KEY);
+    const stored = localStorage.getItem(getCharactersStorageKey());
     if (!stored) {
       return null;
     }
@@ -88,8 +106,8 @@ const readStoredCharacters = (): Character[] | null => {
 
 const sortCharacters = (characters: Character[]): Character[] => {
   return [...characters].sort((left, right) => {
-    if ((left.status || 'active') !== (right.status || 'active')) {
-      return (left.status || 'active') === 'active' ? -1 : 1;
+    if (isCharacterActive(left) !== isCharacterActive(right)) {
+      return isCharacterActive(left) ? -1 : 1;
     }
 
     return left.name.localeCompare(right.name, 'pt-BR');
@@ -135,7 +153,7 @@ const writeStoredCharacters = (characters: Character[]): void => {
     return;
   }
 
-  localStorage.setItem(MOCK_CHARACTERS_STORAGE_KEY, JSON.stringify(sortCharacters(characters)));
+  localStorage.setItem(getCharactersStorageKey(), JSON.stringify(sortCharacters(characters)));
 };
 
 export const setCharacterRegistrySnapshot = (characters: Character[] | null): void => {
@@ -155,6 +173,17 @@ export const getLiveCharacters = (): Character[] => {
   }
 
   const storedCharacters = readStoredCharacters();
+
+  if (_activeCharacterBrandSlug !== 'kaboo') {
+    const normalizedStoredCharacters = sortCharacters((storedCharacters ?? []).map((character) => normalizeCharacter(character)));
+
+    if (storedCharacters && JSON.stringify(sortCharacters(storedCharacters)) !== JSON.stringify(normalizedStoredCharacters)) {
+      writeStoredCharacters(normalizedStoredCharacters);
+    }
+
+    return normalizedStoredCharacters;
+  }
+
   const mergedCharacters = mergeSeedCharacters(storedCharacters);
 
   if (mergedCharacters.changed) {
@@ -168,7 +197,7 @@ export const getMockCharactersLive = (): Character[] => clone(getLiveCharacters(
 
 export const getAvatarCharacters = (characters: Character[] = getLiveCharacters()): string[] => {
   return sortCharacters(characters)
-    .filter((character) => (character.status || 'active') === 'active')
+    .filter((character) => isCharacterActive(character))
     .map((character) => character.name);
 };
 
@@ -225,9 +254,22 @@ export const resolveCharacterIdsFromNames = (names: string[], characters: Charac
   };
 };
 
-export const resolveCharacterNamesFromIds = (ids: string[], characters: Character[] = getLiveCharacters()): string[] => {
+type ResolveCharacterNamesFromIdsOptions = {
+  includeInactive?: boolean;
+};
+
+export const resolveCharacterNamesFromIds = (
+  ids: string[],
+  characters: Character[] = getLiveCharacters(),
+  options: ResolveCharacterNamesFromIdsOptions = {}
+): string[] => {
+  const includeInactive = options.includeInactive ?? true;
+
   return uniqueStrings(
-    ids.map((id) => getCharacterById(id, characters)?.name).filter(Boolean) as string[]
+    ids
+      .map((id) => getCharacterById(id, characters))
+      .filter((character): character is Character => Boolean(character) && (includeInactive || isCharacterActive(character)))
+      .map((character) => character.name)
   );
 };
 
@@ -240,7 +282,7 @@ export const syncCollectionCharacters = <T extends Partial<Collection>>(
   const resolvedFromNames = resolveCharacterIdsFromNames(currentNames, characters);
   const mergedCharacterIds = uniqueStrings([...currentCharacterIds, ...resolvedFromNames.resolvedIds]);
   const mergedCharacterNames = uniqueStrings([
-    ...resolveCharacterNamesFromIds(mergedCharacterIds, characters),
+    ...resolveCharacterNamesFromIds(mergedCharacterIds, characters, { includeInactive: false }),
     ...resolvedFromNames.unresolvedNames,
   ]);
 

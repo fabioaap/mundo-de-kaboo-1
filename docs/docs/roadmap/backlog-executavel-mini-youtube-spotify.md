@@ -176,6 +176,23 @@ Deixar o domínio pronto para expansão sem abrir experiência completa nesta fa
 
 **Dependências:** P0.1 e P0.3.
 
+### P1.4 — Hardening de proteção de mídia privada
+
+**Como** produto, **quero** endurecer a proteção de vídeo, áudio e documentos com bucket privado, URL assinada curta, entrega segmentada e marca d'água opcional, **para** reduzir vazamento sem depender de multi-DRM pago no MVP.
+
+**Critérios de aceite:**
+
+1. Assets internos deixam de expor URL pública final persistida no frontend.
+2. Playback interno passa a receber URL assinada sob demanda com expiração curta.
+3. Vídeos internos têm trilha planejada de entrega segmentada, preferencialmente HLS ou DASH, com tokens de acesso curtos.
+4. Áudios internos deixam de ser servidos como arquivo público simples, usando proxy autenticado ou URL assinada curta.
+5. PDFs sensíveis têm trilha de marca d'água nominal por usuário ou instituição.
+6. A documentação separa claramente proteção em camadas, URL assinada, watermark e eventual multi-DRM comercial.
+7. A decisão sobre Widevine, FairPlay ou PlayReady fica registrada como opcional para catálogo premium, não como pré-requisito desta fase.
+
+**Dependências:** P0.1, P0.2, P0.5 e P0.7.  
+**Observação:** pendência pós-MVP. Entrar só depois que hubs e players estiverem estáveis.
+
 ---
 
 ## 4. Dependências críticas
@@ -187,6 +204,7 @@ Deixar o domínio pronto para expansão sem abrir experiência completa nesta fa
 5. P0.7 depende do hub de músicas navegável.
 6. P1.1 só faz sentido após ambos os players persistirem progresso.
 7. P1.3 só entra depois que vídeos e músicas estiverem estáveis.
+8. P1.4 só entra depois que a distribuição privada básica estiver funcionando de ponta a ponta.
 
 ---
 
@@ -214,6 +232,13 @@ Foco: consumo completo e robustez mínima.
 5. Usar sobra de capacidade para P1.3.
 
 **Resultado esperado:** Mini YouTube e Mini Spotify privados utilizáveis de ponta a ponta, com progresso, favoritos básicos, observabilidade mínima e backbone pronto para expansão futura.
+
+### Backlog seguinte
+
+Foco: endurecimento de distribuição privada e redução de vazamento.
+
+1. Planejar P1.4 sem travar o backlog principal.
+2. Priorizar URL assinada curta e bucket privado antes de avaliar multi-DRM comercial.
 
 ---
 

@@ -1,0 +1,9 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "prof-013-flue-trilhas-escrita.png" [ref=e4] [cursor=pointer]:
+      - /url: /?f=prof-013-flue-trilhas-escrita.png
+    - link "prof-013-flue-trilhas-fluencia-expandido.png" [ref=e5] [cursor=pointer]:
+      - /url: /?f=prof-013-flue-trilhas-fluencia-expandido.png
+    - link "prof-013-flue-trilhas-fluencia.png" [ref=e6] [cursor=pointer]:
+      - /url: /?f=prof-013-flue-trilhas-fluencia.png
+  - img [ref=e7]

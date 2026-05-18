@@ -1,12 +1,12 @@
 import { LibraryHubData } from './types';
 
 export const musicLibraryMock: LibraryHubData = {
-    title: 'Músicas',
+    title: 'Áudios',
     eyebrow: 'Biblioteca geral',
     badge: 'Escuta com curadoria',
-    heroTitle: 'Músicas com clima, sequência e escuta',
-    description: 'Aqui a biblioteca precisa soar como acervo vivo: poucas entradas fortes, continuidade clara e organização leve por clima, uso e obra relacionada.',
-    supportNote: 'A interface ganha cara própria quando a música aparece como faixa, sequência e atmosfera, não como o mesmo card reaproveitado de outra mídia.',
+    heroTitle: 'Áudios com clima, sequência e escuta',
+    description: 'Aqui a biblioteca de áudios precisa soar como acervo vivo: poucas entradas fortes, continuidade clara e organização leve por clima, uso e obra relacionada.',
+    supportNote: 'A interface ganha cara própria quando o áudio aparece como faixa, sequência e atmosfera, não como o mesmo card reaproveitado de outra mídia.',
     accentClassName: 'from-[#1d5667] via-[#2e7f96] to-[#70E000]',
     accentSoftClassName: 'border-[#cbe5d7] bg-[#f4fcf7] text-[#1d5667]',
     quickFilters: ['Escuta calma', 'Cantiga curta', 'Roda', 'Ligadas a obras'],
@@ -124,7 +124,7 @@ export const musicLibraryMock: LibraryHubData = {
                     variant: 'track',
                     eyebrow: 'Sequência curta',
                     title: 'Canções para começar a escutar devagar',
-                    description: 'Uma mini seleção que ajuda a biblioteca de músicas a parecer montada por alguém do time, não por template.',
+                    description: 'Uma mini seleção que ajuda a biblioteca de áudios a parecer montada por alguém do time, não por template.',
                     meta: '3 faixas • Playlist',
                     secondaryMeta: 'Escuta com calma',
                     relatedCollection: 'Mensageiro e a Canção Certa',

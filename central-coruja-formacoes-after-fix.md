@@ -1,0 +1,81 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Expandir menu" [ref=e5]:
+      - img [ref=e6]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Mundo de Kaboo" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic: Coleções
+          - button "Coleções" [ref=e13]:
+            - img [ref=e14]
+        - generic [ref=e16]:
+          - generic: Livros
+          - button "Livros" [ref=e17]:
+            - img [ref=e18]
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic: Vídeos
+          - button "Vídeos" [ref=e22]:
+            - img [ref=e23]
+        - generic [ref=e26]:
+          - generic: Músicas
+          - button "Músicas" [ref=e27]:
+            - img [ref=e28]
+        - generic [ref=e30]:
+          - generic: Formações
+          - button "Formações" [ref=e31]:
+            - img [ref=e32]
+        - generic [ref=e34]:
+          - generic: Materiais
+          - button "Materiais" [ref=e35]:
+            - img [ref=e36]
+      - generic [ref=e40]:
+        - generic: Gerenciar
+        - button "Gerenciar" [ref=e41]:
+          - img [ref=e42]
+    - button "Abrir perfil de Editor" [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]: ET
+        - img "Avatar" [ref=e50]
+  - main [ref=e51]:
+    - generic [ref=e52]:
+      - generic [ref=e53]:
+        - button "Voltar" [ref=e54]:
+          - img [ref=e55]
+        - heading "Formações" [level=1] [ref=e57]
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - generic [ref=e61]: Bibliotecas
+          - generic [ref=e62]: /
+          - generic [ref=e63]: Formações
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - generic [ref=e67]
+            - button "Filtros" [ref=e73]
+          - generic [ref=e77]:
+            - button "Todos 14" [ref=e96]
+            - button "Acolhimento 5" [ref=e97]
+            - button "Roda 9" [ref=e100]
+            - button "Conflitos 4" [ref=e103]
+            - button "Percurso curto 0" [ref=e106]
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - heading "Escolha o roteiro pelo momento da conversa." [level=2] [ref=e109]
+            - generic [ref=e85]
+          - generic [ref=e110]:
+            - button "Guia do Professor Escuta ativa e diálogo 1 etapa" [ref=e111] [cursor=pointer]
+            - button "Guia do Professor Autoimagem e identidade 1 etapa" [ref=e128] [cursor=pointer]
+            - button "Guia do Professor Alfabetização emocional por meio da música 1 etapa" [ref=e145] [cursor=pointer]
+            - button "Guia do Professor Acolhimento, rotina e pertencimento 1 etapa" [ref=e162] [cursor=pointer]
+            - button "Guia do Professor Confiança, emoções, sentimentos e segurança emocional 1 etapa" [ref=e179] [cursor=pointer]
+            - button "Guia do Professor Percepção sensorial e escuta ativa 1 etapa" [ref=e196] [cursor=pointer]
+            - button "Guia do Professor Coragem e superação 1 etapa" [ref=e213] [cursor=pointer]
+            - button "Guia do Professor Coragem, enfrentamento do medo e autoconfiança 1 etapa" [ref=e230] [cursor=pointer]
+            - button "Guia do Professor Pertencimento e diversidade 1 etapa" [ref=e247] [cursor=pointer]
+            - button "Guia do Professor Conflitos, respeito e reconciliação 1 etapa" [ref=e264] [cursor=pointer]
+            - button "Guia do Professor Nomeação das emoções, expressão verbal e escuta empática 1 etapa" [ref=e281] [cursor=pointer]
+            - button "Guia do Professor Sensibilidade, regulação sensorial e respeito ao silêncio 1 etapa" [ref=e298] [cursor=pointer]
+            - button "Guia do Professor Cooperação, pensamento investigativo e brincadeira simbólica 1 etapa" [ref=e315] [cursor=pointer]
+            - button "Guia do Professor Criatividade, erro e recomeço 1 etapa" [ref=e332] [cursor=pointer]
