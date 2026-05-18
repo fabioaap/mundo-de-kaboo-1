@@ -5,6 +5,8 @@ import { LIBRARY_HUB_MOCKS, LibraryHubKind, LibraryMockItem } from '../data/libr
 import {
   Character,
   Collection,
+  CollectionAsset,
+  CollectionAssetCategory,
   CollectionResource,
   CentralMaterial,
   MediaAccessMode,
@@ -38,7 +40,7 @@ import {
   setCharacterRegistrySnapshot,
   syncCollectionCharacters,
 } from './characters';
-import { syncCollectionWithAssets } from './collectionAssets';
+import { COLLECTION_ASSET_META, syncCollectionWithAssets } from './collectionAssets';
 import { getMockCentralMaterials } from './centralMaterials';
 import {
   createMockUser,
@@ -68,12 +70,25 @@ import {
   normalizeVoucherCode,
 } from './access';
 import { getActiveGrantsForUser, hasGrantForCollection } from './mockVoucherData';
-import { normalizeSingleKitBookIds } from './collectionPresentation';
+import { getCollectionDisplayCover, normalizeSingleKitBookIds } from './collectionPresentation';
 
 // Cache management for collections
 const COLLECTIONS_CACHE_KEY = 'kaboo_collections_cache';
 const PROFILE_CACHE_KEY = 'kaboo_profile_cache';
 const SESSION_KEY = 'kaboo_session_id';
+
+// Active brand slug for cache isolation — set by App.tsx alongside setMockActiveBrand.
+let _activeBrandSlugForApi = 'kaboo';
+
+/** Set by App.tsx once per brand slug change. Keeps collection cache isolated per brand. */
+export const setActiveBrandForApi = (slug: string): void => {
+  _activeBrandSlugForApi = slug;
+};
+
+const getCollectionsCacheKey = (): string =>
+  _activeBrandSlugForApi === 'kaboo'
+    ? COLLECTIONS_CACHE_KEY
+    : `${COLLECTIONS_CACHE_KEY}_${_activeBrandSlugForApi}`;
 
 // DEV-only: flag indicating we're running with a mock demo user despite Supabase being configured
 // Persisted in sessionStorage so it survives HMR and page reloads
@@ -207,7 +222,43 @@ const isMissingRelationError = (error: unknown, relationName: string): boolean =
 
 const mapLibraryHubToMediaHub = (hub: LibraryHubKind): MediaHub => hub;
 
+const COLLECTION_BACKED_HUB_CATEGORIES: Record<MediaHub, CollectionAssetCategory[]> = {
+  videos: ['animation', 'accessible_video', 'how_to_play', 'video_lesson'],
+  music: ['storytelling'],
+  formations: ['teacher_guide', 'video_lesson'],
+  materials: ['reading', 'extra_material'],
+};
+
+const buildCollectionAssetMediaItemId = (hub: MediaHub, collectionId: string, assetId: string): string => {
+  return `collection-asset:${hub}:${collectionId}:${assetId}`;
+};
+
+const parseCollectionAssetMediaItemId = (mediaItemId: string): { hub: MediaHub; collectionId: string; assetId: string } | null => {
+  const match = mediaItemId.match(/^collection-asset:(videos|music|formations|materials):([^:]+):(.+)$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    hub: match[1] as MediaHub,
+    collectionId: match[2],
+    assetId: match[3],
+  };
+};
+
 const mapMockVariantToMediaKind = (item: LibraryMockItem): MediaKind => {
+  if (item.assetType === 'video') {
+    return 'video';
+  }
+
+  if (item.assetType === 'audio') {
+    return 'audio';
+  }
+
+  if (item.assetType === 'pdf') {
+    return item.variant === 'formation' ? 'training' : 'document';
+  }
+
   if (item.variant === 'video') {
     return 'video';
   }
@@ -221,6 +272,203 @@ const mapMockVariantToMediaKind = (item: LibraryMockItem): MediaKind => {
   }
 
   return 'document';
+};
+
+const buildCollectionBackedVariant = (hub: MediaHub, asset: CollectionAsset): LibraryMockItem['variant'] => {
+  if (hub === 'music') {
+    return 'track';
+  }
+
+  if (hub === 'formations') {
+    return 'formation';
+  }
+
+  if (hub === 'materials') {
+    if (asset.media_type === 'video') {
+      return 'video';
+    }
+
+    if (asset.media_type === 'audio') {
+      return 'track';
+    }
+
+    return 'material';
+  }
+
+  return 'video';
+};
+
+const buildCollectionBackedAssetType = (asset: CollectionAsset): LibraryMockItem['assetType'] => {
+  if (asset.media_type === 'video') {
+    return 'video';
+  }
+
+  if (asset.media_type === 'audio') {
+    return 'audio';
+  }
+
+  return 'pdf';
+};
+
+const getCollectionBackedShelfMeta = (hub: MediaHub): { title: string; description: string } => {
+  switch (hub) {
+    case 'videos':
+      return {
+        title: 'Publicados via coleções',
+        description: 'Vídeos disponibilizados diretamente pelo editor de coleções.',
+      };
+    case 'music':
+      return {
+        title: 'Faixas vinculadas às coleções',
+        description: 'Áudios publicados a partir do acervo das coleções.',
+      };
+    case 'formations':
+      return {
+        title: 'Percursos aplicados',
+        description: 'Guias e videoaulas vinculados às coleções publicadas.',
+      };
+    case 'materials':
+      return {
+        title: 'Materiais para abrir agora',
+        description: 'PDFs e apoios extras publicados dentro das coleções.',
+      };
+    default:
+      return {
+        title: 'Catálogo',
+        description: 'Itens publicados nesta biblioteca.',
+      };
+  }
+};
+
+const buildCollectionBackedDescription = (hub: MediaHub, collection: Collection, asset: CollectionAsset): string => {
+  const explicitDescription = asset.description?.trim();
+  if (explicitDescription) {
+    return explicitDescription;
+  }
+
+  const theme = collection.theme?.trim();
+  if (theme) {
+    return theme;
+  }
+
+  switch (hub) {
+    case 'videos':
+      return `Conteúdo em vídeo vinculado à coleção ${collection.title}.`;
+    case 'music':
+      return `Faixa de apoio vinculada à coleção ${collection.title}.`;
+    case 'formations':
+      return asset.media_type === 'video'
+        ? `Videoaula aplicada vinculada à coleção ${collection.title}.`
+        : `Percurso de mediação vinculado à coleção ${collection.title}.`;
+    case 'materials':
+      return `Material de apoio vinculado à coleção ${collection.title}.`;
+    default:
+      return `Conteúdo vinculado à coleção ${collection.title}.`;
+  }
+};
+
+const buildCollectionBackedMeta = (hub: MediaHub, asset: CollectionAsset): string => {
+  const label = COLLECTION_ASSET_META[asset.category]?.label ?? asset.title;
+
+  switch (hub) {
+    case 'videos':
+      return `vídeo • ${label}`;
+    case 'music':
+      return `faixa • ${label}`;
+    case 'formations':
+      return asset.media_type === 'video' ? 'formação • videoaula' : 'formação • guia';
+    case 'materials':
+      if (asset.media_type === 'video') {
+        return 'material • vídeo';
+      }
+
+      if (asset.media_type === 'audio') {
+        return 'material • áudio';
+      }
+
+      return 'PDF • material';
+    default:
+      return label;
+  }
+};
+
+const buildCollectionBackedEyebrow = (hub: MediaHub, asset: CollectionAsset): string => {
+  const label = COLLECTION_ASSET_META[asset.category]?.label ?? asset.title;
+
+  switch (hub) {
+    case 'videos':
+      return label;
+    case 'music':
+      return 'Faixa vinculada';
+    case 'formations':
+      return asset.media_type === 'video' ? 'Videoaula aplicada' : 'Percurso aplicado';
+    case 'materials':
+      return asset.category === 'reading' ? 'Leitura da coleção' : 'Material complementar';
+    default:
+      return label;
+  }
+};
+
+const buildCollectionBackedChips = (collection: Collection, asset: CollectionAsset): string[] => {
+  return Array.from(new Set([
+    COLLECTION_ASSET_META[asset.category]?.label ?? asset.title,
+    collection.level,
+    ...(collection.characters?.slice(0, 1) ?? []),
+  ].filter(Boolean) as string[]));
+};
+
+const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection, asset: CollectionAsset): LibraryMockItem => {
+  const variant = buildCollectionBackedVariant(hub, asset);
+  const assetType = buildCollectionBackedAssetType(asset);
+
+  return {
+    id: buildCollectionAssetMediaItemId(hub, collection.id, asset.id),
+    variant,
+    eyebrow: buildCollectionBackedEyebrow(hub, asset),
+    title: asset.title,
+    description: buildCollectionBackedDescription(hub, collection, asset),
+    meta: buildCollectionBackedMeta(hub, asset),
+    previewSteps: hub === 'formations' ? (asset.category === 'video_lesson' ? 1 : 2) : undefined,
+    secondaryMeta: hub === 'formations'
+      ? (asset.media_type === 'video' ? 'Videoaula aplicada' : 'Guia pedagógico')
+      : undefined,
+    relatedCollection: collection.title,
+    collectionId: collection.id,
+    coverImage: getCollectionDisplayCover(collection) || undefined,
+    progress: 0,
+    chips: buildCollectionBackedChips(collection, asset),
+    ctaLabel: assetType === 'video'
+      ? 'Assistir agora'
+      : assetType === 'audio'
+        ? 'Ouvir agora'
+        : 'Abrir PDF',
+    assetType,
+    assetUrl: asset.url,
+    assetTitle: asset.title,
+  };
+};
+
+const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]): LibraryMockItem[] => {
+  const allowedCategories = COLLECTION_BACKED_HUB_CATEGORIES[hub];
+
+  return collections
+    .flatMap((collection) => (collection.collection_assets ?? [])
+      .filter((asset) => allowedCategories.includes(asset.category))
+      .map((asset) => ({ collection, asset })))
+    .sort((left, right) => {
+      const categoryDiff = allowedCategories.indexOf(left.asset.category) - allowedCategories.indexOf(right.asset.category);
+      if (categoryDiff !== 0) {
+        return categoryDiff;
+      }
+
+      const collectionDiff = left.collection.title.localeCompare(right.collection.title, 'pt-BR');
+      if (collectionDiff !== 0) {
+        return collectionDiff;
+      }
+
+      return left.asset.title.localeCompare(right.asset.title, 'pt-BR');
+    })
+    .map(({ collection, asset }) => buildCollectionBackedLibraryItem(hub, collection, asset));
 };
 
 const mapMockAssetToProvider = (item: LibraryMockItem): MediaProvider => {
@@ -259,9 +507,46 @@ const buildMockMediaItemCard = (hub: MediaHub, item: LibraryMockItem): MediaItem
   badges: item.chips ?? [],
 });
 
+const buildCollectionBackedMediaHubResponse = (hub: MediaHub, collections: Collection[]): MediaHubResponse => {
+  const items = getCollectionBackedItemsForHub(hub, collections);
+  const [heroItem, ...shelfItems] = items;
+  const shelfMeta = getCollectionBackedShelfMeta(hub);
+
+  return {
+    hub,
+    hero: heroItem ? buildMockMediaItemCard(hub, heroItem) : null,
+    shelves: shelfItems.length > 0
+      ? [{
+        id: `${hub}-collection-assets`,
+        hub,
+        type: 'rail',
+        title: shelfMeta.title,
+        description: shelfMeta.description,
+        items: shelfItems.map((item) => buildMockMediaItemCard(hub, item)),
+      }]
+      : [],
+    counts: {
+      total: items.length,
+      favorites: 0,
+      continueWatching: 0,
+    },
+  };
+};
+
+const buildEmptyMediaHubResponse = (hub: MediaHub): MediaHubResponse => ({
+  hub,
+  hero: null,
+  shelves: [],
+  counts: {
+    total: 0,
+    favorites: 0,
+    continueWatching: 0,
+  },
+});
+
 const buildMockMediaHubResponse = (hub: MediaHub): MediaHubResponse => {
   const mock = LIBRARY_HUB_MOCKS[hub as LibraryHubKind];
-  const hero = buildMockMediaItemCard(hub, mock.featured);
+  const hero = mock.featured ? buildMockMediaItemCard(hub, mock.featured) : null;
   const shelves: MediaShelf[] = mock.rails.map((rail) => ({
     id: rail.id,
     hub,
@@ -276,18 +561,55 @@ const buildMockMediaHubResponse = (hub: MediaHub): MediaHubResponse => {
     hero,
     shelves,
     counts: {
-      total: shelves.reduce((accumulator, shelf) => accumulator + shelf.items.length, 0) + 1,
+      total: shelves.reduce((accumulator, shelf) => accumulator + shelf.items.length, 0) + (hero ? 1 : 0),
       favorites: 0,
       continueWatching: 0,
     },
   };
 };
 
-const findMockMediaItem = (mediaItemId: string): { hub: MediaHub; item: LibraryMockItem } | null => {
+const findCollectionBackedMediaItem = (
+  mediaItemId: string,
+  collections: Collection[]
+): { hub: MediaHub; item: LibraryMockItem } | null => {
+  const parsedItemId = parseCollectionAssetMediaItemId(mediaItemId);
+  if (!parsedItemId) {
+    return null;
+  }
+
+  const collection = collections.find((entry) => entry.id === parsedItemId.collectionId);
+  if (!collection) {
+    return null;
+  }
+
+  const asset = (collection.collection_assets ?? []).find((entry) => entry.id === parsedItemId.assetId);
+  if (!asset || !COLLECTION_BACKED_HUB_CATEGORIES[parsedItemId.hub].includes(asset.category)) {
+    return null;
+  }
+
+  return {
+    hub: parsedItemId.hub,
+    item: buildCollectionBackedLibraryItem(parsedItemId.hub, collection, asset),
+  };
+};
+
+const findMockMediaItem = (
+  mediaItemId: string,
+  collections: Collection[] = []
+): { hub: MediaHub; item: LibraryMockItem } | null => {
+  const collectionBackedMatch = findCollectionBackedMediaItem(mediaItemId, collections);
+  if (collectionBackedMatch) {
+    return collectionBackedMatch;
+  }
+
+  if (_activeBrandSlugForApi !== 'kaboo') {
+    return null;
+  }
+
   const hubs = Object.entries(LIBRARY_HUB_MOCKS) as Array<[LibraryHubKind, typeof LIBRARY_HUB_MOCKS[LibraryHubKind]]>;
 
   for (const [hub, mock] of hubs) {
-    if (mock.featured.id === mediaItemId) {
+    if (mock.featured?.id === mediaItemId) {
       return { hub: mapLibraryHubToMediaHub(hub), item: mock.featured };
     }
 
@@ -300,6 +622,89 @@ const findMockMediaItem = (mediaItemId: string): { hub: MediaHub; item: LibraryM
   }
 
   return null;
+};
+
+const getMediaHubCards = (hubResponse: MediaHubResponse): MediaItemCard[] => {
+  const cards = [
+    ...(hubResponse.hero ? [hubResponse.hero] : []),
+    ...hubResponse.shelves.flatMap((shelf) => shelf.items),
+  ];
+
+  return Array.from(new Map(cards.map((card) => [card.id, card])).values());
+};
+
+const getMediaHubResponseCount = (hubResponse: MediaHubResponse): number => {
+  return hubResponse.counts?.total ?? getMediaHubCards(hubResponse).length;
+};
+
+const normalizeMediaCardKeySegment = (value?: string | null): string => {
+  return (value ?? '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+};
+
+const buildMediaCardContentKey = (card: MediaItemCard): string => {
+  const normalizedKind = card.kind === 'training' ? 'document' : card.kind;
+  const collectionKey = normalizeMediaCardKeySegment(card.collectionId ?? card.collectionTitle);
+  const titleKey = normalizeMediaCardKeySegment(card.title);
+
+  return `${collectionKey}::${titleKey}::${normalizedKind}`;
+};
+
+const mergeMediaHubResponses = (primary: MediaHubResponse, secondary: MediaHubResponse): MediaHubResponse => {
+  if (getMediaHubResponseCount(secondary) === 0) {
+    return primary;
+  }
+
+  const existingContentKeys = new Set(getMediaHubCards(primary).map(buildMediaCardContentKey));
+  const secondaryCards = getMediaHubCards(secondary).filter((card) => {
+    const contentKey = buildMediaCardContentKey(card);
+    if (existingContentKeys.has(contentKey)) {
+      return false;
+    }
+
+    existingContentKeys.add(contentKey);
+    return true;
+  });
+
+  if (secondaryCards.length === 0) {
+    return primary;
+  }
+
+  const mergedHero = primary.hero ?? secondary.hero ?? null;
+  const secondaryShelfMeta = getCollectionBackedShelfMeta(primary.hub);
+  const appendedCards = secondaryCards.filter((card) => card.id !== mergedHero?.id);
+  const mergedShelves = appendedCards.length > 0
+    ? [
+      ...primary.shelves,
+      {
+        id: `${primary.hub}-collection-assets-bridge`,
+        hub: primary.hub,
+        type: 'rail' as const,
+        title: secondaryShelfMeta.title,
+        description: secondaryShelfMeta.description,
+        items: appendedCards,
+      },
+    ]
+    : primary.shelves;
+  const mergedResponse: MediaHubResponse = {
+    hub: primary.hub,
+    hero: mergedHero,
+    shelves: mergedShelves,
+    counts: {
+      total: getMediaHubCards({
+        hub: primary.hub,
+        hero: mergedHero,
+        shelves: mergedShelves,
+      }).length,
+      favorites: primary.counts?.favorites ?? 0,
+      continueWatching: primary.counts?.continueWatching ?? 0,
+    },
+  };
+
+  return mergedResponse;
 };
 
 const getMediaItemResolvedUrl = (item: MediaItemRow): string | null => {
@@ -554,7 +959,7 @@ const getSessionId = (): string => {
 // Clear collections cache
 export const clearCollectionsCache = (): void => {
   if (typeof window !== 'undefined') {
-    sessionStorage.removeItem(COLLECTIONS_CACHE_KEY);
+    sessionStorage.removeItem(getCollectionsCacheKey());
   }
 };
 
@@ -571,7 +976,7 @@ export const clearAllUserCache = (): void => {
   if (typeof window !== 'undefined') {
     // Clear sessionStorage caches
     sessionStorage.removeItem(PROFILE_CACHE_KEY);
-    sessionStorage.removeItem(COLLECTIONS_CACHE_KEY);
+    sessionStorage.removeItem(getCollectionsCacheKey());
     sessionStorage.removeItem(SESSION_KEY);
 
     // Clear offline collections list (user-specific)
@@ -591,7 +996,7 @@ const getCachedCollections = (): Collection[] | null => {
   if (typeof window === 'undefined') return null;
 
   try {
-    const cached = sessionStorage.getItem(COLLECTIONS_CACHE_KEY);
+    const cached = sessionStorage.getItem(getCollectionsCacheKey());
     if (!cached) return null;
 
     const parsed = JSON.parse(cached);
@@ -606,7 +1011,7 @@ const getCachedCollections = (): Collection[] | null => {
       return hydratedCollections;
     }
     // If session changed, clear old cache
-    sessionStorage.removeItem(COLLECTIONS_CACHE_KEY);
+    sessionStorage.removeItem(getCollectionsCacheKey());
     return null;
   } catch (error) {
     logger.error('Error reading collections cache:', error);
@@ -726,7 +1131,7 @@ const saveCollectionsCache = (collections: Collection[]): void => {
       sessionId: getSessionId(),
       timestamp: Date.now()
     };
-    sessionStorage.setItem(COLLECTIONS_CACHE_KEY, JSON.stringify(cacheData));
+    sessionStorage.setItem(getCollectionsCacheKey(), JSON.stringify(cacheData));
   } catch (error) {
     logger.error('Error saving collections cache:', error);
   }
@@ -747,8 +1152,11 @@ export const api = {
       };
     }
 
-    // DEV-only: allow demo credentials even when Supabase is configured
-    if (import.meta.env.DEV && isSupabaseConfigured) {
+    // DEV-only: allow the explicit demo credential to bypass Supabase when needed
+    const normalizedEmail = email.trim().toLowerCase();
+    const canUseMockBypass = normalizedEmail === 'demo@mundodekaboo.local';
+
+    if (import.meta.env.DEV && isSupabaseConfigured && canUseMockBypass) {
       const mockResult = signInMockUser(email, password);
       if (mockResult.success && mockResult.profile) {
         logger.warn('DEV: using mock demo user bypass for', email);
@@ -1176,8 +1584,21 @@ export const api = {
   },
 
   async getMediaHub(hub: MediaHub): Promise<MediaHubResponse> {
+    const collections = await this.getCollections();
+    const collectionBackedResponse = buildCollectionBackedMediaHubResponse(hub, collections);
+    const staticFallbackResponse = _activeBrandSlugForApi === 'kaboo'
+      ? buildMockMediaHubResponse(hub)
+      : buildEmptyMediaHubResponse(hub);
+    const preferredFallbackResponse = getMediaHubResponseCount(collectionBackedResponse) > 0
+      ? collectionBackedResponse
+      : staticFallbackResponse;
+
     if (!isSupabaseConfigured || devMockSession || mediaTablesAvailable === false) {
-      return buildMockMediaHubResponse(hub);
+      return preferredFallbackResponse;
+    }
+
+    if (hub === 'formations' || hub === 'materials') {
+      return preferredFallbackResponse;
     }
 
     const { data: items, error: itemsError } = await supabase
@@ -1191,11 +1612,11 @@ export const api = {
     if (itemsError) {
       if (isMissingRelationError(itemsError, 'media_items')) {
         mediaTablesAvailable = false;
-        return buildMockMediaHubResponse(hub);
+        return preferredFallbackResponse;
       }
 
       logger.error('Error fetching media hub items:', itemsError);
-      return buildMockMediaHubResponse(hub);
+      return preferredFallbackResponse;
     }
 
     mediaTablesAvailable = true;
@@ -1277,7 +1698,7 @@ export const api = {
         items: itemRows.map((item) => toMediaItemCard(item, { progressByItemId, favoriteIds })),
       }];
 
-    return {
+    const remoteResponse: MediaHubResponse = {
       hub,
       hero,
       shelves: fallbackShelf,
@@ -1287,29 +1708,42 @@ export const api = {
         continueWatching: Object.values(progressByItemId).filter((entry) => entry.progressPercent > 0 && entry.progressPercent < 100).length,
       },
     };
+
+    const mergedResponse = mergeMediaHubResponses(remoteResponse, collectionBackedResponse);
+    return getMediaHubResponseCount(mergedResponse) > 0 ? mergedResponse : staticFallbackResponse;
   },
 
   async getMediaItem(mediaItemId: string): Promise<MediaItemDetail | null> {
-    if (!isSupabaseConfigured || devMockSession || mediaTablesAvailable === false) {
-      const mockMatch = findMockMediaItem(mediaItemId);
+    const isCollectionBackedItem = Boolean(parseCollectionAssetMediaItemId(mediaItemId));
+    let collections: Collection[] = [];
+
+    if (isCollectionBackedItem || !isSupabaseConfigured || devMockSession || mediaTablesAvailable === false) {
+      collections = await this.getCollections();
+      const mockMatch = findMockMediaItem(mediaItemId, collections);
       if (!mockMatch) {
-        return null;
+        if (!isCollectionBackedItem && (isSupabaseConfigured && !devMockSession && mediaTablesAvailable !== false)) {
+          collections = [];
+        } else {
+          return null;
+        }
       }
 
-      const relatedCollections: MediaRelatedCollection[] = mockMatch.item.collectionId
-        ? [{
-          collectionId: mockMatch.item.collectionId,
-          title: mockMatch.item.relatedCollection ?? mockMatch.item.title,
-          linkType: 'contextual',
-        }]
-        : [];
+      if (mockMatch) {
+        const relatedCollections: MediaRelatedCollection[] = mockMatch.item.collectionId
+          ? [{
+            collectionId: mockMatch.item.collectionId,
+            title: mockMatch.item.relatedCollection ?? mockMatch.item.title,
+            linkType: 'contextual',
+          }]
+          : [];
 
-      return {
-        ...buildMockMediaItemCard(mockMatch.hub, mockMatch.item),
-        accessMode: 'active_subscription',
-        metadata: {},
-        relatedCollections,
-      };
+        return {
+          ...buildMockMediaItemCard(mockMatch.hub, mockMatch.item),
+          accessMode: 'active_subscription',
+          metadata: {},
+          relatedCollections,
+        };
+      }
     }
 
     const { data, error } = await supabase
@@ -1322,7 +1756,27 @@ export const api = {
       if (error && isMissingRelationError(error, 'media_items')) {
         mediaTablesAvailable = false;
       }
-      return null;
+
+      const fallbackCollections = collections.length > 0 ? collections : await this.getCollections();
+      const fallbackMatch = findMockMediaItem(mediaItemId, fallbackCollections);
+      if (!fallbackMatch) {
+        return null;
+      }
+
+      const relatedCollections: MediaRelatedCollection[] = fallbackMatch.item.collectionId
+        ? [{
+          collectionId: fallbackMatch.item.collectionId,
+          title: fallbackMatch.item.relatedCollection ?? fallbackMatch.item.title,
+          linkType: 'contextual',
+        }]
+        : [];
+
+      return {
+        ...buildMockMediaItemCard(fallbackMatch.hub, fallbackMatch.item),
+        accessMode: 'active_subscription',
+        metadata: {},
+        relatedCollections,
+      };
     }
 
     const { data: links } = await supabase
@@ -1355,8 +1809,9 @@ export const api = {
       return null;
     }
 
-    if (!isSupabaseConfigured || devMockSession || mediaTablesAvailable === false) {
-      const mockMatch = findMockMediaItem(mediaItemId);
+    if (parseCollectionAssetMediaItemId(mediaItemId) || !isSupabaseConfigured || devMockSession || mediaTablesAvailable === false) {
+      const collections = await this.getCollections();
+      const mockMatch = findMockMediaItem(mediaItemId, collections);
       if (!mockMatch) {
         return null;
       }
@@ -1658,8 +2113,12 @@ export const api = {
    * Create a new collection (Admin/Editor only)
    */
   async createCollection(collection: Partial<Collection>): Promise<Collection | null> {
-    if (!isSupabaseConfigured) {
-      return mockCreateCollection(collection);
+    if (!isSupabaseConfigured || devMockSession) {
+      const created = mockCreateCollection(collection);
+      if (created) {
+        clearCollectionsCache();
+      }
+      return created;
     }
     const payload = sanitizeCollectionPayload(collection, (await loadRemoteCharacters()) ?? undefined);
     let { data, error } = await supabase
@@ -1692,8 +2151,12 @@ export const api = {
    * Update an existing collection (Admin/Editor only)
    */
   async updateCollection(id: string, updates: Partial<Collection>): Promise<Collection | null> {
-    if (!isSupabaseConfigured) {
-      return mockUpdateCollection(id, updates);
+    if (!isSupabaseConfigured || devMockSession) {
+      const updated = mockUpdateCollection(id, updates);
+      if (updated) {
+        clearCollectionsCache();
+      }
+      return updated;
     }
     const payload = sanitizeCollectionPayload(updates, (await loadRemoteCharacters()) ?? undefined);
     // First, verify the collection exists and we can access it
@@ -1753,8 +2216,12 @@ export const api = {
    * Delete a collection (Admin only) — cascata: resources + storage + collection
    */
   async deleteCollection(id: string): Promise<boolean> {
-    if (!isSupabaseConfigured) {
-      return mockDeleteCollection(id);
+    if (!isSupabaseConfigured || devMockSession) {
+      const deleted = mockDeleteCollection(id);
+      if (deleted) {
+        clearCollectionsCache();
+      }
+      return deleted;
     }
 
     // 1. Buscar todos os recursos associados antes de deletar

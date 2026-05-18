@@ -31,6 +31,10 @@ const StepDots: React.FC<{ current: number; total: number }> = ({ current, total
 interface LoginScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
   onAuthSuccess?: (profile: UserProfile | null) => void | Promise<void>;
+  brandSlug?: string;
+  brandLogoUrl?: string;
+  brandName?: string;
+  backgroundImageUrl?: string;
 }
 
 import backgroundImage from '../assets/images/background-login.jpg';
@@ -84,7 +88,16 @@ const normalizeAuthError = (message: string): { message: string; requiresEmailCo
   return { message: message || 'Ocorreu um erro. Tente novamente.' };
 };
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSuccess }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSuccess, brandSlug, brandLogoUrl, brandName, backgroundImageUrl }) => {
+  const isCentralCoruja = brandSlug === 'central-coruja';
+  const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
+  const resolvedBrandName = brandName || 'Mundo de Kaboo';
+  const resolvedBackgroundImageUrl = backgroundImageUrl || BG_IMAGE;
+  const shellBackgroundStyle = {
+    backgroundImage: `url(${resolvedBackgroundImageUrl})`,
+    backgroundPosition: 'center',
+    backgroundSize: 'cover',
+  };
   const [step, setStep] = useState<LoginStep>('login');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -248,6 +261,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
   };
 
   const isFullScreenMax = step === 'register';
+  const titleClassName = 'text-gray-800';
+  const bodyClassName = 'text-gray-500';
+  const labelClassName = 'text-gray-600';
+  const iconClassName = 'text-gray-400';
+  const inputBaseClassName = 'w-full bg-gray-50 border-none rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all';
 
   // Shared error/success feedback
   const FeedbackArea = (
@@ -294,27 +312,47 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     </div>
   );
 
+  const renderBrandMark = (mode: 'compact' | 'hero' = 'compact') => {
+    if (resolvedBrandLogoUrl) {
+      return (
+        <img
+          src={resolvedBrandLogoUrl}
+          alt={resolvedBrandName}
+          className={mode === 'hero' ? 'h-14 w-auto object-contain' : 'h-12 w-auto object-contain'}
+        />
+      );
+    }
+
+    return (
+      <div
+        className={`inline-flex items-center justify-center text-center font-black leading-none border border-gray-200 bg-white text-gray-800 shadow-sm ${mode === 'hero' ? 'rounded-[28px] px-5 py-3 text-xl' : 'rounded-full px-4 py-2 text-base'}`}
+      >
+        {resolvedBrandName}
+      </div>
+    );
+  };
+
   return (
     <div
-      className="relative flex h-[100dvh] overflow-hidden bg-gray-50 bg-cover bg-center bg-no-repeat p-0 md:items-center md:justify-center md:p-6 lg:p-8"
-      style={{ backgroundImage: `url(${BG_IMAGE})` }}
+      className="relative flex h-[100dvh] overflow-hidden p-0 md:items-center md:justify-center md:p-6 lg:p-8 bg-gray-50 bg-no-repeat"
+      style={shellBackgroundStyle}
     >
       <div className="absolute inset-0 bg-kaboo-primary/20 backdrop-blur-[2px]" />
 
-      <div className={`relative z-10 flex h-[100dvh] w-full flex-col overflow-hidden bg-white transition-all duration-300 md:h-auto md:max-h-[calc(100dvh-3rem)] md:max-w-md md:rounded-3xl md:shadow-2xl lg:max-h-[calc(100dvh-4rem)] ${isFullScreenMax ? 'md:max-w-lg' : ''}`}>
+      <div className={`relative z-10 flex h-[100dvh] w-full flex-col overflow-hidden transition-all duration-300 md:h-auto md:max-h-[calc(100dvh-3rem)] md:max-w-md lg:max-h-[calc(100dvh-4rem)] bg-white md:rounded-3xl md:shadow-2xl ${isFullScreenMax ? 'md:max-w-lg' : ''}`}>
 
         {/* ─── HEADER: back button + centered logo (voucher/register) ─── */}
         {step !== 'login' && (
-          <div className="relative flex shrink-0 items-center justify-center border-b border-gray-100 px-5 py-3">
+          <div className="relative flex shrink-0 items-center justify-center px-5 py-3 border-b border-gray-100">
             <button
               type="button"
               onClick={goBack}
               aria-label="Voltar"
-              className="absolute left-4 w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-600"
+              className="absolute left-4 w-9 h-9 rounded-full flex items-center justify-center transition-colors bg-gray-50 text-gray-600 hover:bg-gray-100"
             >
               <Icons.ChevronLeft size={22} />
             </button>
-            <img src={LOGO_URL} alt="Mundo de Kaboo" className="h-12 w-auto object-contain" />
+            {renderBrandMark('compact')}
           </div>
         )}
 
@@ -322,8 +360,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         {step === 'voucher' && (
           <div className="flex flex-col flex-1 px-6 pt-4 pb-6 animate-in fade-in slide-in-from-right-4 duration-300">
             <StepDots current={1} total={2} />
-            <h2 className="text-xl font-bold text-gray-800 mt-3 mb-1">Qual é o seu voucher?</h2>
-            <p className="text-sm text-gray-500 mb-5">Use o voucher impresso no seu material de acesso</p>
+            <h2 className={`text-xl font-bold mt-3 mb-1 ${titleClassName}`}>Qual é o seu voucher?</h2>
+            <p className={`text-sm mb-5 ${bodyClassName}`}>Use o voucher impresso no seu material de acesso</p>
 
             <div className="space-y-3">
               <div className="relative">
@@ -346,7 +384,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                 <span className="absolute left-4 top-4">
                   {validatedVoucher
                     ? <Icons.Check size={20} className="text-green-500" />
-                    : <Icons.Ticket size={20} className="text-gray-400" />
+                    : <Icons.Ticket size={20} className={iconClassName} />
                   }
                 </span>
               </div>
@@ -384,7 +422,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                   <button
                     type="button"
                     onClick={handleUseAnotherVoucher}
-                    className="w-full text-sm text-gray-400 hover:text-gray-600 py-2 transition-colors"
+                    className="w-full text-sm py-2 transition-colors text-gray-400 hover:text-gray-600"
                   >
                     Usar outro voucher
                   </button>
@@ -401,98 +439,98 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         {/* ─── STEP 2A: REGISTER (novo usuário com código) ─── */}
         {step === 'register' && (
           <div className="flex flex-col flex-1 px-6 pt-4 overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-300">
-            <h2 className="text-xl font-bold text-gray-800 mb-1">Crie sua conta</h2>
-            <p className="text-sm text-gray-500">Preencha seus dados e informe o voucher para liberar o acesso.</p>
+            <h2 className={`text-xl font-bold mb-1 ${titleClassName}`}>Crie sua conta</h2>
+            <p className={`text-sm ${bodyClassName}`}>Preencha seus dados e informe o voucher para liberar o acesso.</p>
 
             <form onSubmit={handleAuth} className="space-y-4 mt-4 pb-8">
               <div className="space-y-2">
-                <label htmlFor="field-voucher-register" className="text-sm font-bold text-gray-600 ml-2">Voucher de acesso</label>
+                <label htmlFor="field-voucher-register" className={`text-sm font-bold ml-2 ${labelClassName}`}>Voucher de acesso</label>
                 <div className="relative">
                   <input
                     id="field-voucher-register"
                     type="text"
                     value={voucherCode}
                     onChange={(e) => handleVoucherCodeChange(e.target.value)}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 outline-none transition-all text-base tracking-widest font-mono uppercase focus:ring-2 focus:ring-kaboo-primary"
+                    className={`${inputBaseClassName} p-4 pl-12 text-base tracking-widest font-mono uppercase`}
                     placeholder="Ex.: KABOO-3MESES-2026"
                     autoComplete="one-time-code"
                     autoCapitalize="characters"
                     autoFocus
                   />
-                  <Icons.Ticket className="absolute left-4 top-4 text-gray-400" size={20} />
+                  <Icons.Ticket className={`absolute left-4 top-4 ${iconClassName}`} size={20} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="field-name" className="text-sm font-bold text-gray-600 ml-2">Nome Completo</label>
+                <label htmlFor="field-name" className={`text-sm font-bold ml-2 ${labelClassName}`}>Nome Completo</label>
                 <div className="relative">
                   <input
                     id="field-name"
                     type="text"
                     value={fullName}
                     onChange={(e) => { setFullName(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pl-12`}
                     placeholder="Seu nome"
                     required
                     minLength={3}
                     autoComplete="name"
                   />
-                  <Icons.User className="absolute left-4 top-4 text-gray-400" size={20} />
+                  <Icons.User className={`absolute left-4 top-4 ${iconClassName}`} size={20} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="field-email-reg" className="text-sm font-bold text-gray-600 ml-2">E-mail</label>
+                <label htmlFor="field-email-reg" className={`text-sm font-bold ml-2 ${labelClassName}`}>E-mail</label>
                 <div className="relative">
                   <input
                     id="field-email-reg"
                     type="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pl-12`}
                     placeholder="email@exemplo.com.br"
                     required
                     autoComplete="email"
                   />
-                  <Icons.Mail className="absolute left-4 top-4 text-gray-400" size={20} />
+                  <Icons.Mail className={`absolute left-4 top-4 ${iconClassName}`} size={20} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="field-password-reg" className="text-sm font-bold text-gray-600 ml-2">Senha</label>
+                <label htmlFor="field-password-reg" className={`text-sm font-bold ml-2 ${labelClassName}`}>Senha</label>
                 <div className="relative">
                   <input
                     id="field-password-reg"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pr-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pr-12`}
                     placeholder="••••••••"
                     required
                     minLength={6}
                     autoComplete="new-password"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-4 top-4 focus:outline-none text-gray-400 hover:text-gray-600">
                     {showPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
                   </button>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="field-confirm-password" className="text-sm font-bold text-gray-600 ml-2">Confirmar Senha</label>
+                <label htmlFor="field-confirm-password" className={`text-sm font-bold ml-2 ${labelClassName}`}>Confirmar Senha</label>
                 <div className="relative">
                   <input
                     id="field-confirm-password"
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => { setConfirmPassword(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pr-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pr-12`}
                     placeholder="••••••••"
                     required
                     minLength={6}
                     autoComplete="new-password"
                   />
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? 'Ocultar confirmação' : 'Mostrar confirmação'} className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none">
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? 'Ocultar confirmação' : 'Mostrar confirmação'} className="absolute right-4 top-4 focus:outline-none text-gray-400 hover:text-gray-600">
                     {showConfirmPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
                   </button>
                 </div>
@@ -505,13 +543,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                     id="terms"
                     checked={acceptedTerms}
                     onChange={(e) => { setAcceptedTerms(e.target.checked); clearError(); }}
-                    className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-300 transition-all checked:border-kaboo-primary checked:bg-kaboo-primary focus:ring-2 focus:ring-kaboo-primary/30 outline-none"
+                    className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 transition-all outline-none border-gray-300 checked:border-kaboo-primary checked:bg-kaboo-primary focus:ring-2 focus:ring-kaboo-primary/30"
                   />
                   <Icons.Check size={14} strokeWidth={4} className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                 </div>
-                <label htmlFor="terms" className="text-sm text-gray-600 cursor-pointer select-none leading-tight">
+                <label htmlFor="terms" className="text-sm cursor-pointer select-none leading-tight text-gray-600">
                   Li e concordo com a{' '}
-                  <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-kaboo-primary font-bold hover:underline">
+                  <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer" className="font-bold hover:underline text-kaboo-primary">
                     política de privacidade
                   </a>{' '}
                   do Mundo de Kaboo.
@@ -535,45 +573,45 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         {step === 'login' && (
           <div className="flex min-h-0 flex-col flex-1 overflow-y-auto no-scrollbar px-6 pt-5 pb-8 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="mb-6 flex justify-center pt-1">
-              <img src={LOGO_URL} alt="Mundo de Kaboo" className="h-14 w-auto object-contain" />
+              {renderBrandMark('hero')}
             </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-1">Bem-vindo de volta!</h2>
-            <p className="text-sm text-gray-500 mb-5">Entre com seu e-mail e senha para continuar.</p>
+            <h2 className={`text-xl font-bold mb-1 ${titleClassName}`}>Bem-vindo de volta!</h2>
+            <p className={`text-sm mb-5 ${bodyClassName}`}>Entre com seu e-mail e senha para continuar.</p>
 
             <form onSubmit={handleAuth} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="field-email" className="text-sm font-bold text-gray-600 ml-2">E-mail</label>
+                <label htmlFor="field-email" className={`text-sm font-bold ml-2 ${labelClassName}`}>E-mail</label>
                 <div className="relative">
                   <input
                     id="field-email"
                     type="email"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pl-12`}
                     placeholder="email@exemplo.com.br"
                     required
                     autoComplete="email"
                     autoFocus
                   />
-                  <Icons.Mail className="absolute left-4 top-4 text-gray-400" size={20} />
+                  <Icons.Mail className={`absolute left-4 top-4 ${iconClassName}`} size={20} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="field-password" className="text-sm font-bold text-gray-600 ml-2">Senha</label>
+                <label htmlFor="field-password" className={`text-sm font-bold ml-2 ${labelClassName}`}>Senha</label>
                 <div className="relative">
                   <input
                     id="field-password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); clearError(); }}
-                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pr-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                    className={`${inputBaseClassName} p-4 pr-12`}
                     placeholder="••••••••"
                     required
                     minLength={6}
                     autoComplete="current-password"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 focus:outline-none">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-4 top-4 focus:outline-none text-gray-400 hover:text-gray-600">
                     {showPassword ? <Icons.EyeOff size={20} /> : <Icons.Eye size={20} />}
                   </button>
                 </div>
@@ -590,21 +628,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
               <button
                 type="button"
                 onClick={() => onNavigate('forgot_password')}
-                className="text-sm font-semibold text-gray-500 hover:text-gray-800 hover:bg-gray-100 py-2 px-3 rounded-lg transition-all duration-200"
+                className="text-sm font-semibold py-2 px-3 rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-800 hover:bg-gray-100"
               >
                 Esqueci minha senha
               </button>
             </div>
 
             <div className="mt-auto space-y-4 pt-8">
-              <div className="rounded-3xl border border-kaboo-primary/15 bg-gradient-to-br from-kaboo-primary/[0.08] via-white to-white p-4 text-left shadow-sm">
+              <div className="rounded-3xl border p-4 text-left shadow-sm border-kaboo-primary/15 bg-gradient-to-br from-kaboo-primary/[0.08] via-white to-white">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-kaboo-primary shadow-sm ring-1 ring-kaboo-primary/10">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm bg-white text-kaboo-primary ring-1 ring-kaboo-primary/10">
                     <Icons.Ticket size={18} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/70">Primeiro acesso</p>
-                    <p className="mt-1 text-base font-bold text-gray-800">Ainda não tem cadastro?</p>
+                    <p className={`mt-1 text-base font-bold ${titleClassName}`}>Ainda não tem cadastro?</p>
                     <p className="mt-1 text-sm leading-5 text-gray-600">Insira seu voucher de acesso para criar sua conta e liberar a plataforma.</p>
                   </div>
                 </div>

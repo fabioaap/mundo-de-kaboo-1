@@ -7,9 +7,15 @@ import { TABS, LOGO_URL, formatSegmentLabel, getCharacterBgColor, getCharacterCo
 import { canAccessCollection, formatAccessDate, getAccessStatusLabel, getDaysUntilAccessExpiry, getProfileAccessStatus } from '../lib/access';
 import { PageHeader } from '../components/PageHeader';
 import { Button, Input } from '../design-system';
+import { layoutSpacing } from '../design-system/layout/spacing';
 import { Card3D } from '../components/Card3D';
 import { CharacterAvatar } from '../components/CharacterAvatar';
 import { CollectionFiltersModal } from '../components/CollectionFiltersModal';
+import { HeroParallaxBackdrop } from '../components/HeroParallaxBackdrop';
+import { useParallaxMotion } from '../hooks/useParallaxMotion';
+import { useBrandConfig } from '../hooks/useBrandConfig';
+import useIsMobile from '../hooks/useIsMobile';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { getCollectionDisplayCover, getCollectionTypeMeta } from '../lib/collectionPresentation';
 import { lookupBncc } from '../lib/bnccLookup';
 // @ts-ignore
@@ -127,17 +133,36 @@ interface GridViewProps {
   collections: (Collection & { progress?: number })[];
   onCollectionClick: (collection: Collection) => void;
   grants: UserContentGrant[];
+  tone?: 'default' | 'central-coruja';
 }
 
-const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, grants }) => {
+const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, grants, tone = 'default' }) => {
+  const isCorujaTone = tone === 'central-coruja';
+  const usesCollectionLayout = !isCorujaTone
+    && collections.length > 0
+    && collections.every((collection) => getCollectionTypeMeta(collection).type === 'kit');
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 auto-rows-fr">
+    <div
+      className={`grid auto-rows-fr ${isCorujaTone
+        ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+          : usesCollectionLayout
+            ? 'grid-cols-1'
+          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} ${layoutSpacing.cardGridGap}`}
+        style={{
+          contain: 'layout style',
+          ...(usesCollectionLayout
+          ? { gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 24.75rem), 1fr))' }
+          : null)
+        }}
+      >
       {collections.map((collection) => (
         <div key={collection.id} className="h-full w-full">
           <Card3D
             collection={collection}
             onCollectionClick={onCollectionClick}
             locked={!canAccessCollection(grants, collection.id)}
+            tone={tone}
           />
         </div>
       ))}
@@ -402,7 +427,7 @@ const BnccPickerSheet: React.FC<BnccPickerSheetProps> = ({
                   aria-pressed={isSelected}
                   className={`w-full rounded-[26px] border p-4 text-left shadow-sm transition-[transform,border-color,box-shadow,background-color] duration-200 ease-out active:scale-[0.99] ${isSelected
                     ? 'border-green-400 bg-[linear-gradient(135deg,rgba(240,253,244,0.96)_0%,rgba(255,255,255,1)_72%)] shadow-[0_18px_34px_rgba(34,197,94,0.12)]'
-                    : 'border-gray-200 bg-white hover:-translate-y-0.5 hover:border-green-200 hover:shadow-[0_16px_28px_rgba(15,23,42,0.07)]'
+                    : 'border-gray-200 bg-white md:hover:-translate-y-0.5 hover:border-green-200 hover:shadow-[0_16px_28px_rgba(15,23,42,0.07)]'
                     }`}
                 >
                   <div className="flex items-start gap-3">
@@ -575,6 +600,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const searchCollectionGroupTitle = currentCollectionGroup === 'books' ? 'Busca em Livros' : 'Busca em Coleções';
   const availableLabelSingular = currentCollectionGroup === 'books' ? 'livro disponível' : 'coleção disponível';
   const availableLabelPlural = currentCollectionGroup === 'books' ? 'livros disponíveis' : 'coleções disponíveis';
+  const { bootstrap: brandBootstrap, slug: brandSlug, isFeatureEnabled } = useBrandConfig();
+  const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
+  const brandLogoUrl = brandBootstrap.settings.logo_url || (brandSlug === 'kaboo' ? LOGO_URL : '');
+  const brandHomeHeroImageUrl = brandBootstrap.settings.home_hero_image_url || '';
   // Initialize collections from cache if available
   const cachedCollections = getCachedCollectionsSync();
   // Initialize profile from cache if available
@@ -652,6 +681,45 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       preloadedAvatarsRef.current.delete(avatarId);
     };
   };
+
+  const isCentralCoruja = brandSlug === 'central-coruja';
+  const isKabooWelcomeLayout = brandSlug === 'kaboo' && !isSearchExperience;
+  const isMobile = useIsMobile();
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const heroParallaxFeature = brandBootstrap.features['hero.parallax'];
+  const heroParallaxModeRaw = heroParallaxFeature?.config?.mode;
+  const heroParallaxMode =
+    heroParallaxModeRaw === 'subtle' || heroParallaxModeRaw === 'standard' || heroParallaxModeRaw === 'off'
+      ? heroParallaxModeRaw
+      : (isFeatureEnabled('hero.parallax') ? 'subtle' : 'off');
+
+  const shouldRenderWhiteLabelParallax =
+    isCentralCoruja &&
+    isFeatureEnabled('hero.parallax') &&
+    !isSearchExperience &&
+    !brandHomeHeroImageUrl;
+  const isCorujaHeroImageLayout = isCentralCoruja && Boolean(brandHomeHeroImageUrl) && !isSearchExperience;
+  const shouldShowDesktopHeader = (!isCentralCoruja && !isKabooWelcomeLayout) || isSearchExperience;
+  const shouldRenderBrandHero = !isSearchExperience && (Boolean(brandHomeHeroImageUrl) || isCentralCoruja || brandSlug === 'kaboo');
+  const isCorujaHomeLayout = isCentralCoruja && !isSearchExperience;
+  const isCorujaPinnedShelfLayout = isCorujaHomeLayout && Boolean(brandHomeHeroImageUrl);
+  const desktopShellPaddingClass = isCorujaPinnedShelfLayout
+    ? 'px-[var(--space-page-x)] md:mx-auto md:w-full md:max-w-6xl md:px-0'
+    : isCentralCoruja
+      ? 'px-[var(--space-page-x)] md:px-[var(--space-page-x)]'
+      : 'px-4 sm:px-6 lg:px-8 xl:mx-auto xl:w-full xl:max-w-[68rem]';
+  const desktopSkeletonHeaderPaddingClass = isCorujaPinnedShelfLayout
+    ? 'hidden md:block shrink-0 md:mx-auto md:w-full md:max-w-6xl md:pt-[var(--space-page-header-top-desktop)] md:pb-[var(--space-page-inset-y)]'
+    : 'hidden md:block shrink-0 px-[var(--space-page-x-desktop)] pt-[var(--space-page-header-top-desktop)] pb-[var(--space-page-inset-y)] xl:mx-auto xl:w-full xl:max-w-[68rem]';
+  const corujaHeroLayerDepths = useMemo(() => (isMobile ? [0.8, 0.36] : [1.4, 0.6]), [isMobile]);
+  const { containerRef: corujaHeroMotionContainerRef, setLayerRef: setCorujaHeroLayerRef } = useParallaxMotion({
+    disabled: !isCorujaHeroImageLayout || prefersReducedMotion,
+    layerDepths: corujaHeroLayerDepths,
+    smoothness: 0.14,
+    scrollInfluence: 0,
+    enablePointerTracking: false,
+    enableScrollTracking: false,
+  });
 
   // Preload avatar image immediately if cached profile exists
   useEffect(() => {
@@ -988,10 +1056,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     return name.trim().split(' ')[0];
   };
 
+  const profileFullName = (profile?.full_name || 'Professor(a)').trim();
+  const profileDisplayFirstName = getFirstName(profileFullName);
+  const profileCompactName = profileFullName.split(/\s+/).slice(0, 2).join(' ');
+  const profileInitials = profileFullName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((segment) => segment.charAt(0).toUpperCase())
+    .join('') || 'EC';
+  const profileRoleLabel = profile?.role ? capitalizeFirst(profile.role) : 'Conta';
+  const profileAvatarUrl = profile?.avatar_id ? getCharacterImageUrl(profile.avatar_id) : '';
+
+
   const groupedCollections = useMemo(
     () => collections.filter((collection) => matchesCollectionGroup(collection, currentCollectionGroup)),
     [collections, currentCollectionGroup]
   );
+  const kabooHeroTitle = currentCollectionGroup === 'books'
+    ? 'Bem-vindo à biblioteca do Kaboo!'
+    : 'Bem-vindo ao Mundo de Kaboo!';
+  const kabooHeroDescription = currentCollectionGroup === 'books'
+    ? 'Escolha leituras com começo, meio e continuidade. Busque por título, personagem ou BNCC e transforme a descoberta em trilha guiada.'
+    : 'Explore coleções vivas com leitura, áudio e vídeo no mesmo lugar. Comece pela busca e encontre a combinação certa para o seu momento de aprendizagem.';
 
   const availableOptions = useMemo(() => {
     const opts = {
@@ -1288,7 +1375,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const hasRefinedDiscovery = hasSearchQuery || activeFilterCount > 0 || activeTab !== 'all';
   const hasFilterOnlySelection = activeFilterCount > 0 && !hasSearchQuery;
   const showSearchOverlayPanel = hasSearchQuery;
-  const showInlineFilterTrigger = activeFilterCount === 0;
 
   const animationKey = `${activeTab}-${JSON.stringify(activeFilters)}`;
 
@@ -1349,7 +1435,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     }
 
     return (
-      <div className="px-6 md:px-8 mb-4 shrink-0">
+      <div className={`${desktopShellPaddingClass} mb-4 shrink-0`}>
         <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-3 md:px-5 md:py-4">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 shrink-0 text-amber-700">
@@ -1387,6 +1473,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     <CollectionFiltersModal
       availableOptions={availableOptions}
       activeFilters={activeFilters}
+      tone={isCentralCoruja ? 'central-coruja' : 'default'}
       onToggleFilter={toggleFilter}
       onClear={clearFilterSelections}
       onClose={() => setShowFilters(false)}
@@ -1402,18 +1489,268 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     />
   );
 
+  const renderSegmentTabs = (tone: 'hero' | 'default' | 'kaboo-hero' = 'default') => (
+    <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
+      {TABS.map((tab) => {
+        const isActive = activeTab === tab.id;
+        const activeClass = tone === 'hero'
+          ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]'
+          : tone === 'kaboo-hero'
+            ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-[0_14px_30px_rgba(93,31,88,0.28)]'
+            : 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20';
+        const inactiveClass = tone === 'hero'
+          ? 'bg-white/8 text-white/82 border-white/12 hover:bg-white/14'
+          : tone === 'kaboo-hero'
+            ? 'bg-white/78 text-gray-600 border-white/70 hover:bg-white'
+            : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100';
+
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2.5 text-sm font-bold transition-all active:scale-95 md:py-2 ${isActive ? activeClass : inactiveClass}`}
+          >
+            {tab.id === 'all' && <Icons.Grid size={14} />}
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const renderDiscoveryControlPanel = (tone: 'hero' | 'default' | 'kaboo-hero' = 'default') => {
+    const isHeroTone = tone === 'hero';
+    const isKabooHeroTone = tone === 'kaboo-hero';
+    const panelClass = isHeroTone
+      ? 'rounded-[30px] border border-white/12 bg-[linear-gradient(180deg,rgba(4,27,36,0.84)_0%,rgba(4,27,36,0.72)_100%)] p-4 text-white shadow-[0_28px_60px_rgba(0,0,0,0.26)] backdrop-blur-xl md:p-5'
+      : isKabooHeroTone
+        ? 'rounded-[28px] border border-white/70 bg-white/72 p-4 shadow-[0_28px_60px_rgba(93,31,88,0.12)] backdrop-blur-xl md:px-5 md:py-4'
+        : 'rounded-[28px] border border-gray-200 bg-white p-4 shadow-[0_20px_45px_rgba(15,23,42,0.08)] md:px-5 md:py-4';
+    const eyebrowClass = isHeroTone ? 'text-[#FFD58A]' : 'text-kaboo-primary';
+    const bodyClass = isHeroTone ? 'text-white/78' : isKabooHeroTone ? 'text-slate-600' : 'text-gray-500';
+    const dividerClass = isHeroTone ? 'border-white/12' : isKabooHeroTone ? 'border-white/70' : 'border-gray-100';
+    const searchSurfaceClass = isHeroTone
+      ? 'border-white/60 bg-white text-gray-700 shadow-[0_18px_36px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60'
+      : isKabooHeroTone
+        ? 'border-white/85 bg-white/95 text-gray-500 shadow-[0_14px_30px_rgba(93,31,88,0.08)] hover:border-kaboo-primary/24'
+        : 'border-gray-200 bg-white text-gray-500 shadow-sm hover:border-kaboo-primary/20';
+    const closeButtonClass = isHeroTone
+      ? 'border-white/15 bg-white/10 text-white/82 hover:bg-white/14 hover:text-white'
+      : isKabooHeroTone
+        ? 'border-white/70 bg-white/82 text-gray-500 hover:border-kaboo-primary/20 hover:text-kaboo-primary'
+        : 'border-gray-200 bg-white text-gray-500 hover:border-kaboo-primary/20 hover:text-kaboo-primary';
+    const filterButtonClass = activeFilterCount > 0
+      ? isHeroTone
+        ? 'border-[#7A2A98] bg-[#5D1E76] text-white shadow-[0_14px_30px_rgba(93,30,118,0.32)]'
+        : isKabooHeroTone
+          ? 'border-kaboo-primary bg-kaboo-primary text-white shadow-[0_14px_30px_rgba(93,31,88,0.22)]'
+          : 'border-kaboo-primary bg-kaboo-primary text-white shadow-sm'
+      : isHeroTone
+        ? 'border-white/12 bg-white/10 text-white/88 hover:bg-white/14'
+        : isKabooHeroTone
+          ? 'border-white/70 bg-white/84 text-gray-700 hover:border-kaboo-primary/20 hover:bg-white'
+          : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-kaboo-primary/20 hover:bg-white';
+
+    return (
+      <div className={panelClass}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+              <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${eyebrowClass}`}>
+                {isSearchExperience ? searchCollectionGroupTitle : 'Comece pela busca'}
+              </p>
+              <p className={`mt-1 text-sm leading-relaxed md:mt-0.5 md:text-[13px] ${bodyClass}`}>
+                {isSearchExperience
+                  ? 'Busque por texto e refine o acervo com filtros e segmentos.'
+                  : 'Busque por título, tema, BNCC ou personagem. Refine com filtros e segmentos.'}
+              </p>
+            </div>
+
+          {isSearchExperience && (
+            <button
+              type="button"
+              onClick={closeInlineSearch}
+              className={`inline-flex h-10 shrink-0 items-center justify-center rounded-full border px-3 transition-colors ${closeButtonClass}`}
+              aria-label="Fechar busca"
+              title="Fechar busca"
+            >
+              <Icons.X size={16} />
+              <span className="ml-2 hidden text-sm font-bold md:inline">Fechar</span>
+            </button>
+          )}
+        </div>
+
+        <div className={`mt-3 flex flex-col gap-3 md:mt-2.5 md:gap-2.5 ${isHeroTone ? '' : 'sm:flex-row sm:items-center'}`}>
+          <div className="relative min-w-0 flex-1">
+            <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+              <Icons.Search size={18} />
+            </div>
+
+            <Input
+                ref={searchInputRef}
+                aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
+                placeholder="Título, BNCC, personagem, competência..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className={`h-14 rounded-[26px] pl-11 pr-12 md:h-12 md:rounded-[24px] ${searchSurfaceClass}`}
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition-colors hover:text-gray-700"
+                  title="Limpar busca"
+                >
+                  <Icons.X size={16} />
+                </button>
+              )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => openFilterDrawer()}
+            className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-[20px] border px-4 text-sm font-bold transition-all active:scale-95 sm:h-12 sm:min-w-[136px] ${filterButtonClass}`}
+            title="Refinar busca"
+          >
+            <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
+            <span>Filtros</span>
+            {activeFilterCount > 0 && (
+              <span className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-black ${isHeroTone ? 'bg-white/18 text-white' : 'bg-white/20 text-white'}`}>
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        <div className={`mt-3 border-t pt-3 ${dividerClass}`}>
+          <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isHeroTone ? 'text-white/52' : 'text-gray-400'}`}>
+            Explorar por segmento
+          </p>
+          <div className="mt-2.5 md:mt-2">
+            {renderSegmentTabs(isHeroTone ? 'hero' : isKabooHeroTone ? 'kaboo-hero' : 'default')}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderImmersiveHeroControls = (tone: 'coruja' | 'kaboo' = 'coruja') => {
+    const isKabooTone = tone === 'kaboo';
+    const searchInputClass = isKabooTone
+      ? 'h-14 rounded-[28px] pl-11 pr-24 md:pr-72 bg-white border border-gray-200 hover:border-kaboo-primary/24 focus:border-kaboo-primary shadow-sm'
+      : 'h-14 rounded-[28px] pl-11 shadow-sm bg-white/92 border-transparent hover:border-transparent focus:border-kaboo-primary pr-24 md:pr-72';
+    const passiveFilterClass = isKabooTone
+      ? 'bg-white text-kaboo-primary border-gray-200 shadow-sm hover:border-kaboo-primary/24'
+      : 'bg-white/95 text-[#0C1A34] border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60';
+    const passiveTabClass = isKabooTone
+      ? 'bg-white text-kaboo-primary border-gray-200 hover:bg-gray-50 hover:border-kaboo-primary/24'
+      : 'bg-white/95 text-[#0C1A34] border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white';
+
+    return (
+      <div className="space-y-3 md:space-y-4">
+        <div className="relative z-10 w-full md:max-w-[48%]">
+          <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+            <Icons.Search size={18} />
+          </div>
+          <Input
+            ref={searchInputRef}
+            aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
+            placeholder="Título, BNCC, personagem, competência..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className={searchInputClass}
+          />
+          <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/90 backdrop-blur-sm text-gray-500 transition-colors hover:text-gray-700"
+                title="Limpar busca"
+              >
+                <Icons.X size={16} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => openFilterDrawer()}
+              className={`flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)] inline-flex' : `${passiveFilterClass} inline-flex`}`}
+              title="Refinar busca"
+            >
+              <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
+              <span className="hidden md:inline text-sm font-bold">Filtros</span>
+              {activeFilterCount > 0 && (
+                <span className="min-w-5 h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center bg-white/20 text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            {isSearchExperience && (
+              <button
+                type="button"
+                onClick={closeInlineSearch}
+                className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 backdrop-blur-sm px-3 text-gray-500 transition-colors hover:text-gray-700"
+                title="Fechar busca"
+              >
+                <Icons.X size={16} />
+                <span className="text-sm font-bold">Fechar</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {!isSearchExperience && (
+          <div className="relative z-20 flex gap-3 overflow-x-auto no-scrollbar pb-1 md:max-w-[48%]">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? 'bg-[#5D1E76] text-white border-[#7A2A98]' : passiveTabClass}`}
+                >
+                  {tab.id === 'all' && <Icons.Grid size={14} />}
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderKabooWelcomeHero = () => (
+    <div className="relative space-y-3 pb-4 pt-3 md:space-y-4 md:pb-6 md:pt-5">
+      <div className="max-w-2xl">
+        <p className="text-sm font-bold text-kaboo-primary/72">Olá, {profileDisplayFirstName}.</p>
+        <h2 className="mt-2 text-[1.95rem] font-black leading-[1.04] tracking-[-0.03em] text-kaboo-primary md:text-[2.3rem]">
+          {kabooHeroTitle}
+        </h2>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600 md:text-[15px]">
+          {kabooHeroDescription}
+        </p>
+      </div>
+
+      {renderImmersiveHeroControls('kaboo')}
+    </div>
+  );
+
+  const renderCorujaHeroControls = () => renderImmersiveHeroControls('coruja');
+
   // Skeleton loader component
   const HomeScreenSkeleton = () => (
     <div className="flex flex-col min-h-full bg-white pb-24 md:pb-0 relative">
       <div className="flex flex-col">
 
         {/* MOBILE HEADER SKELETON */}
-        <div className="md:hidden px-6 py-4 flex justify-center items-center shrink-0 bg-white z-30 border-b border-gray-50">
+        <div className={`md:hidden flex justify-center items-center shrink-0 bg-white z-30 border-b border-gray-50 ${layoutSpacing.pageInset}`}>
           <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>
         </div>
 
         {/* DESKTOP HEADER SKELETON */}
-        <div className="hidden md:block shrink-0 px-8 pt-6 pb-4">
+        <div className={desktopSkeletonHeaderPaddingClass}>
           <div className="flex justify-between items-center">
             <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
             <div className="flex items-center gap-4">
@@ -1424,7 +1761,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
 
         {/* TABS AND FILTERS SKELETON */}
-        <div className="px-6 md:px-8 mb-4 mt-2 flex items-center justify-between gap-4 shrink-0">
+        <div className={`${desktopShellPaddingClass} mb-4 mt-2 flex items-center justify-between gap-4 shrink-0`}>
           <div className="flex gap-3 flex-1">
             <div className="h-10 w-24 bg-gray-200 rounded-full animate-pulse"></div>
             <div className="h-10 w-32 bg-gray-200 rounded-full animate-pulse"></div>
@@ -1434,7 +1771,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
 
         {/* CONTENT AREA SKELETON */}
-        <div className="px-6 md:px-8 pt-2 md:pt-6 pb-6">
+          <div className={`${desktopShellPaddingClass} pt-2 md:pt-[var(--space-page-header-top-desktop)] pb-[var(--space-page-section-y)] md:pb-[var(--space-page-section-y-desktop)]`}>
           {/* TITLE AND COUNT SKELETON */}
           <div className="flex justify-between items-end pb-4 border-b border-gray-100">
             <div className="h-7 w-48 bg-gray-200 rounded animate-pulse"></div>
@@ -1446,10 +1783,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           {/* GRID SKELETON */}
           <div className="mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
+            <div className={`grid ${currentCollectionGroup === 'kits' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} ${layoutSpacing.cardGridGap}`}>
               {[...Array(12)].map((_, i) => (
                 <div key={i} className="w-full animate-pulse">
-                  <div className="mb-3 rounded-lg overflow-hidden relative bg-gray-200 aspect-square"></div>
+                  <div className={`mb-3 overflow-hidden relative bg-gray-200 ${currentCollectionGroup === 'kits' ? 'rounded-[30px] aspect-[1.7/1]' : 'rounded-lg aspect-square'}`}></div>
                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                   <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                 </div>
@@ -1466,185 +1803,198 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-white pb-24 md:pb-0 relative">
-      <div className="flex flex-col">
+    <div
+      className={`flex flex-col min-h-full pb-24 md:pb-0 relative ${isCorujaHomeLayout ? 'bg-[#041b24]' : 'bg-white'}`}
+      style={isCorujaHomeLayout
+        ? {
+          backgroundImage:
+            'radial-gradient(circle at 18% 12%, rgba(49,104,116,0.28) 0%, transparent 28%), radial-gradient(circle at 82% 0%, rgba(93,30,118,0.26) 0%, transparent 24%), linear-gradient(180deg, #082B37 0%, #062733 38%, #041B24 100%)',
+        }
+        : undefined}
+    >
+      {/* Coruja hero: fixed background image behind the upper fold */}
+      {isCentralCoruja && brandHomeHeroImageUrl && (
+        <div
+          className="fixed inset-x-0 top-0 h-[520px] md:h-[860px] z-0 pointer-events-none overflow-hidden"
+          aria-hidden="true"
+        >
+          <div
+            className="absolute inset-[-4%]"
+            style={{
+              transform: 'scale(1.06)',
+              transformOrigin: isMobile ? 'center top' : '72% top',
+            }}
+          >
+            <div
+              ref={setCorujaHeroLayerRef(0)}
+              className="absolute inset-0 will-change-transform"
+              style={{
+                backgroundImage: `url(${isMobile ? '/coruja-hero-mobile.webp' : brandHomeHeroImageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: isMobile ? 'center top' : 'right 20%',
+                backgroundRepeat: 'no-repeat',
+                filter: 'saturate(1.08) brightness(1.02)',
+              }}
+            />
+            {/* 10% dark overlay for improved element readability */}
+            <div className="absolute inset-0 bg-[rgba(4,27,36,0.10)]" />
+          </div>
+          <div
+            ref={setCorujaHeroLayerRef(1)}
+            className="absolute inset-0"
+            style={{
+              backgroundImage: isMobile
+                ? 'radial-gradient(circle at 82% 14%, rgba(255,214,120,0.16) 0%, transparent 26%), linear-gradient(180deg, rgba(4,27,36,0.06) 0%, rgba(4,27,36,0.18) 18%, rgba(4,27,36,0.34) 38%, rgba(4,27,36,0.50) 58%, rgba(4,27,36,0.68) 78%, rgba(4,27,36,0.82) 92%, #041b24 100%)'
+                : 'radial-gradient(circle at 72% 24%, rgba(255,214,120,0.18) 0%, rgba(255,214,120,0.08) 14%, transparent 30%), linear-gradient(90deg, rgba(4,27,36,0.78) 0%, rgba(4,27,36,0.42) 24%, rgba(4,27,36,0.12) 46%, rgba(4,27,36,0.18) 100%), linear-gradient(180deg, rgba(4,27,36,0.08) 0%, rgba(4,27,36,0.16) 18%, rgba(4,27,36,0.28) 38%, rgba(4,27,36,0.44) 56%, rgba(4,27,36,0.62) 74%, rgba(4,27,36,0.80) 88%, rgba(4,27,36,0.92) 100%)',
+            }}
+          />
+        </div>
+      )}
+
+      <div className={`flex flex-col ${isCentralCoruja && brandHomeHeroImageUrl ? 'relative z-10' : ''}`}>
 
         <>
           {/* MOBILE HEADER: Fixed background color, reduced padding, no top margin */}
-          <div className="md:hidden px-6 py-4 flex justify-center items-center shrink-0 bg-white z-30 transition-all border-b border-gray-50">
+          <div className={`md:hidden flex justify-center items-center shrink-0 z-30 transition-all border-b ${layoutSpacing.pageInset} ${isCentralCoruja ? 'bg-[#082B37] border-white/10' : 'bg-white border-gray-50'}`}>
             <button onClick={() => onNavigate('home', baseHomeParams)} aria-label="Ir para a home" className="flex items-center justify-center">
-              <img src={LOGO_URL} alt="KABOO" className="h-10 w-auto object-contain" />
+              {brandLogoUrl ? (
+                <img src={brandLogoUrl} alt={brandDisplayName} className="h-10 w-auto object-contain" />
+              ) : (
+                <div className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-black text-gray-800 shadow-sm">
+                  {brandDisplayName}
+                </div>
+              )}
             </button>
           </div>
 
-          <div className="hidden md:block shrink-0">
-            <PageHeader
-              title={collectionGroupTitle}
-              className="!pb-4"
-            />
-          </div>
+          {shouldShowDesktopHeader && (
+            <div className="hidden shrink-0 md:block">
+              <PageHeader
+                title={collectionGroupTitle}
+                className="!pb-4"
+              />
+            </div>
+          )}
         </>
 
         <AccessStatusBanner />
 
-        <div className={`px-6 md:px-8 relative z-0 shrink-0 ${isSearchExperience ? 'pb-4 pt-3 space-y-3' : 'mb-4 mt-2 space-y-3'}`}>
-          {isSearchExperience && (
-            <div className="flex items-start justify-between gap-3 rounded-[24px] border border-kaboo-primary/10 bg-kaboo-primary/[0.03] px-4 py-3 animate-fade-in-up md:hidden">
-              <div className="min-w-0">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary">{searchCollectionGroupTitle}</p>
-                <p className="mt-1 text-sm text-gray-500">Pesquise por texto e use os filtros para explorar personagem, CASEL, BNCC ou idade-série.</p>
-              </div>
-              <button
-                type="button"
-                onClick={closeInlineSearch}
-                className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full border border-kaboo-primary/15 bg-white text-kaboo-primary transition-colors hover:bg-kaboo-primary/5"
-                aria-label="Fechar busca"
-              >
-                <Icons.X size={16} />
-              </button>
-            </div>
+        <div ref={corujaHeroMotionContainerRef} className={`${desktopShellPaddingClass} relative z-0 shrink-0 ${isSearchExperience ? 'pb-4 pt-3 space-y-3' : isCorujaHomeLayout ? 'pb-5 pt-4 md:pb-6 md:pt-6 space-y-4' : isKabooWelcomeLayout ? 'pb-4 pt-3 md:pb-5 md:pt-5 space-y-4' : 'mb-4 mt-2 space-y-3'}`}>
+          {shouldRenderWhiteLabelParallax && (
+            <HeroParallaxBackdrop
+              enabled
+              brandId={isCentralCoruja ? 'central-coruja' : 'kaboo'}
+              mode={heroParallaxMode}
+            />
           )}
 
-          {isSearchExperience && (
-            <div className="hidden md:flex items-center justify-between gap-4 text-sm text-gray-500 animate-fade-in-up">
-              <p>Pesquise por texto e abra os filtros para refinar por personagem, CASEL, BNCC ou idade-série.</p>
-            </div>
-          )}
-
-          <div className="relative w-full">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10">
-              <Icons.Search size={18} />
-            </div>
-
-            {isSearchExperience ? (
-              <>
-                <Input
-                  ref={searchInputRef}
-                  aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
-                  placeholder="Título, BNCC, personagem, competência..."
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  className={`h-14 rounded-[28px] pl-11 shadow-sm border-transparent bg-white/90 hover:border-transparent focus:border-kaboo-primary ${showInlineFilterTrigger ? 'pr-24 md:pr-72' : 'pr-24 md:pr-40'}`}
-                />
-
-                <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
-                  {searchTerm && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchTerm('')}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition-colors hover:text-gray-600"
-                      title="Limpar busca"
-                    >
-                      <Icons.X size={16} />
-                    </button>
-                  )}
-
-                  {showInlineFilterTrigger && (
-                    <button
-                      type="button"
-                      onClick={() => openFilterDrawer()}
-                      className="inline-flex h-10 items-center gap-2 rounded-[20px] border border-gray-200 bg-white px-3 md:px-4 transition-all active:scale-95 shadow-sm text-gray-600 hover:border-kaboo-primary/20"
-                      title="Refinar busca"
-                    >
-                      <Icons.Filter size={18} strokeWidth={2} />
-                      <span className="hidden md:inline text-sm font-bold">Filtros</span>
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={closeInlineSearch}
-                    className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-gray-200 bg-white px-3 text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
-                    title="Fechar busca"
-                  >
-                    <Icons.X size={16} />
-                    <span className="text-sm font-bold">Fechar</span>
-                  </button>
+          {/* Central Coruja with hero image: content floats over parallax background */}
+          {isCentralCoruja && brandHomeHeroImageUrl ? (
+            <div className="relative space-y-3 pt-[108px] pb-4 md:pt-8 md:pb-6 md:space-y-4">
+              {shouldRenderBrandHero && (
+                <div className="max-w-xl md:max-w-[54%]">
+                  <p className="text-sm font-bold text-white/78">Olá, {profileDisplayFirstName}.</p>
+                  <h2 className="mt-2 text-[1.95rem] font-black leading-[1.04] tracking-[-0.03em] text-[#FFB347] drop-shadow-[0_12px_28px_rgba(0,0,0,0.28)] md:text-[2.3rem]">
+                    Bem-vindo à {brandDisplayName}!
+                  </h2>
+                  <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/76 md:text-[15px]">
+                    Histórias, vídeos e experiências de aprendizagem organizados para você começar pela busca e explorar com mais clareza.
+                  </p>
                 </div>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onNavigate('home', { ...baseHomeParams, inlineSearch: true, focusSearch: true, searchNonce: Date.now() })}
-                className="w-full h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-16 md:pr-28 shadow-sm hover:border-kaboo-primary/20 text-left text-gray-400 font-medium"
-                aria-label="Abrir pesquisa"
-              >
-                Buscar por título, tema, BNCC ou personagem
-              </button>
-            )}
+              )}
 
-            {!isSearchExperience && (
-              <button
-                type="button"
-                onClick={() => openFilterDrawer()}
-                className={`absolute right-2 top-1/2 -translate-y-1/2 h-10 px-3 md:px-4 rounded-[20px] flex items-center gap-2 border transition-all active:scale-95 shadow-sm ${activeFilterCount > 0
-                  ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-kaboo-primary/20'
-                  : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-white hover:border-kaboo-primary/20'
-                  }`}
-                title="Refinar busca"
-              >
-                <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
-                <span className="hidden md:inline text-sm font-bold">Filtros</span>
-                {activeFilterCount > 0 && (
-                  <span className={`min-w-5 h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center ${activeFilterCount > 0 ? 'bg-white/20 text-white' : 'bg-kaboo-primary/10 text-kaboo-primary'}`}>
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
-            )}
-          </div>
+              {renderCorujaHeroControls()}
+            </div>
+          ) : (
+            <div className="relative z-10 space-y-3">
+              {isCentralCoruja ? (
+                <>
+                  {shouldRenderBrandHero && (
+                    <section
+                      className="relative overflow-hidden rounded-[30px] border border-white/18 p-5 text-white shadow-[0_28px_60px_rgba(0,0,0,0.28)] md:p-6"
+                      style={{
+                        backgroundImage: 'radial-gradient(ellipse 44% 58% at 88% 18%, rgba(242,211,102,0.22) 0%, transparent 42%), radial-gradient(circle at 78% 22%, rgba(93,30,118,0.52) 0%, transparent 38%), radial-gradient(circle at 18% 85%, rgba(234,154,59,0.18) 0%, transparent 30%), linear-gradient(135deg, #102A3D 0%, #12384A 30%, #0B3343 56%, #0C1A34 100%)',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        fontFamily: brandBootstrap.settings.font_family || undefined,
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_24%,rgba(255,229,150,0.14),transparent_18%),radial-gradient(circle_at_84%_18%,rgba(234,154,59,0.16),transparent_24%),linear-gradient(180deg,rgba(5,11,20,0.04),rgba(5,11,20,0.28))]" />
+                      <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} aria-hidden="true" />
+                      <div className="relative z-10 max-w-2xl">
+                        <p className="text-sm font-bold text-white/78">Olá, {profileDisplayFirstName}.</p>
+                        <h2 className="mt-2 text-[1.95rem] font-black leading-[1.04] tracking-[-0.03em] text-[#FFB347] md:text-[2.2rem]">
+                          Bem-vindo à {brandDisplayName}!
+                        </h2>
+                        <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/76 md:text-[15px]">
+                          Histórias, vídeos e experiências de aprendizagem organizados para você começar pela busca e explorar com mais clareza.
+                        </p>
+                      </div>
+                    </section>
+                  )}
 
-          {!isSearchExperience && (
-            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-              {TABS.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive
-                      ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20'
-                      : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100'
-                      }`}
-                  >
-                    {tab.id === 'all' && <Icons.Grid size={14} />}
-                    {tab.label}
-                  </button>
-                );
-              })}
+                  {renderCorujaHeroControls()}
+                </>
+              ) : (
+                <>
+                  {shouldRenderBrandHero && (
+                    renderKabooWelcomeHero()
+                  )}
+
+                  {isSearchExperience && (
+                    <div className="flex items-start justify-between gap-3 rounded-[24px] border border-kaboo-primary/10 bg-kaboo-primary/[0.03] px-4 py-3 animate-fade-in-up md:hidden">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary">{searchCollectionGroupTitle}</p>
+                        <p className="mt-1 text-sm text-gray-500">Pesquise por texto e use os filtros para explorar personagem, CASEL, BNCC ou idade-série.</p>
+                      </div>
+                      <button type="button" onClick={closeInlineSearch} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-kaboo-primary/15 bg-white text-kaboo-primary transition-colors hover:bg-kaboo-primary/5" aria-label="Fechar busca">
+                        <Icons.X size={16} />
+                      </button>
+                    </div>
+                  )}
+
+                  {isSearchExperience && (
+                    <div className="hidden animate-fade-in-up items-center justify-between gap-4 text-sm text-gray-500 md:flex">
+                      <p>Pesquise por texto e abra os filtros para refinar por personagem, CASEL, BNCC ou idade-série.</p>
+                    </div>
+                  )}
+
+                  {!isKabooWelcomeLayout && renderDiscoveryControlPanel('default')}
+                </>
+              )}
             </div>
           )}
         </div>
 
         {(activeFilterCount > 0 || (!isSearchExperience && hasSearchQuery)) && (
-          <div className="px-6 md:px-8 mb-4 flex gap-2 flex-wrap animate-fade-in-up shrink-0">
+          <div className={`${desktopShellPaddingClass} mb-4 flex gap-2 flex-wrap animate-fade-in-up shrink-0`}>
             {!isSearchExperience && hasSearchQuery && (
-              <span onClick={() => setSearchTerm('')} className="cursor-pointer px-3 py-1 rounded-full bg-kaboo-primary/10 text-kaboo-primary text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
+              <span onClick={() => setSearchTerm('')} className="cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group bg-kaboo-primary/10 text-kaboo-primary hover:bg-red-50 hover:text-red-500">
                 Busca: {searchTerm.trim()} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             )}
             {activeFilters.characters.map(f => (
-              <span key={f} onClick={() => toggleFilter('characters', f)} className="cursor-pointer px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
+              <span key={f} onClick={() => toggleFilter('characters', f)} className="cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500">
                 {f} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             ))}
             {activeFilters.bncc.map(f => (
-              <span key={f} onClick={() => toggleFilter('bncc', f)} className="cursor-pointer px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
+              <span key={f} onClick={() => toggleFilter('bncc', f)} className="cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group bg-green-50 text-green-700 hover:bg-red-50 hover:text-red-500">
                 {f} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             ))}
             {activeFilters.casel.map(f => (
-              <span key={f} onClick={() => toggleFilter('casel', f)} className="cursor-pointer px-3 py-1 rounded-full bg-orange-50 text-orange-700 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
+              <span key={f} onClick={() => toggleFilter('casel', f)} className="cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group bg-orange-50 text-orange-700 hover:bg-red-50 hover:text-red-500">
                 {f} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             ))}
             {activeFilters.age.map(f => (
-              <span key={f} onClick={() => toggleFilter('age', f)} className="cursor-pointer px-3 py-1 rounded-full bg-teal-50 text-teal-700 text-xs font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-500 transition-colors group">
+              <span key={f} onClick={() => toggleFilter('age', f)} className="cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group bg-teal-50 text-teal-700 hover:bg-red-50 hover:text-red-500">
                 {f} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             ))}
             {!isSearchExperience && (
-              <button onClick={resetDiscovery} className="text-xs font-bold text-kaboo-primary hover:underline ml-1">
+              <button onClick={resetDiscovery} className="ml-1 text-xs font-bold text-kaboo-primary hover:underline">
                 Limpar tudo
               </button>
             )}
@@ -1653,8 +2003,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
         {!isSearchExperience && inProgressCollections.length > 0 && !hasRefinedDiscovery && (
           <div className="mb-4 shrink-0">
-            <h2 className="px-6 md:px-8 text-xl font-bold text-gray-800 mb-4">Continue onde parou</h2>
-            <div className="flex gap-4 overflow-x-auto px-6 md:px-8 pb-6 no-scrollbar snap-x snap-mandatory">
+            <h2 className={`${desktopShellPaddingClass} text-xl font-bold mb-4 text-gray-800`}>Continue onde parou</h2>
+            <div className={`flex gap-4 overflow-x-auto ${desktopShellPaddingClass} pb-6 no-scrollbar snap-x snap-mandatory`}>
               {inProgressCollections.map((c) => {
                 const progress = userProgress[c.id] || 0;
                 const collectionTypeMeta = getCollectionTypeMeta(c);
@@ -1663,7 +2013,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   <div
                     key={c.id}
                     onClick={() => handleCollectionClick(c)}
-                    className="flex-shrink-0 w-64 bg-white rounded-2xl shadow-lg shadow-gray-100/50 p-3 border border-gray-50 snap-center cursor-pointer active:scale-95 transition-transform hover:border-kaboo-primary/30"
+                    className="flex-shrink-0 w-64 rounded-2xl p-3 snap-center cursor-pointer active:scale-95 transition-transform bg-white shadow-lg shadow-gray-100/50 border border-gray-50 hover:border-kaboo-primary/30"
                   >
                     <div className="flex gap-4">
                       <div className="relative flex-shrink-0">
@@ -1679,7 +2029,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     </div>
                     <div className="mt-3 px-1">
                       <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-kaboo-primary rounded-full" style={{ width: `${progress}%` }} />
+                         <div className="h-full rounded-full bg-kaboo-primary" style={{ width: `${progress}%` }} />
                       </div>
                     </div>
                   </div>
@@ -1689,20 +2039,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
           </div>
         )}
 
-        <div className="px-6 md:px-8 pt-2 md:pt-6 pb-6 relative">
-          {isSearchExperience ? (
+        <div className={`${desktopShellPaddingClass} relative ${isCorujaHeroImageLayout ? '-mt-3 md:-mt-6 pb-10' : 'pt-2 md:pt-6 pb-8'}`}>
+          <div
+            className={`relative ${isCorujaHeroImageLayout ? 'z-10 pt-2 md:pt-3' : ''}`}
+          >
+            {isSearchExperience ? (
             hasFilterOnlySelection ? (
               <>
                 <div className="flex justify-between items-end pb-4 border-b border-gray-100">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-kaboo-primary mb-1">Filtros aplicados</p>
+                      <p className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-kaboo-primary">Filtros aplicados</p>
                     <h2 className="text-xl font-bold text-gray-800">{filteredCollectionGroupTitle}</h2>
                     <p className="text-sm text-gray-500 mt-1">{filteredCollections.length} {filteredCollections.length === 1 ? availableLabelSingular : availableLabelPlural}</p>
                   </div>
                   <button
                     type="button"
                     onClick={resetDiscovery}
-                    className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
+                     className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
                   >
                     Limpar
                   </button>
@@ -1715,6 +2068,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       collections={filteredCollections}
                       onCollectionClick={handleCollectionClick}
                       grants={contentGrants}
+                      tone="default"
                     />
                   </div>
                 ) : (
@@ -1728,7 +2082,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     </p>
                     <button
                       onClick={resetDiscovery}
-                      className="px-6 py-3 bg-kaboo-primary/10 text-kaboo-primary rounded-xl font-bold hover:bg-kaboo-primary/20 transition-colors"
+                      className="px-6 py-3 rounded-xl font-bold transition-colors bg-kaboo-primary/10 text-kaboo-primary hover:bg-kaboo-primary/20"
                     >
                       Limpar filtros
                     </button>
@@ -1755,6 +2109,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       collections={searchBackdropCollections}
                       onCollectionClick={handleCollectionClick}
                       grants={contentGrants}
+                      tone="default"
                     />
                   </div>
                 </div>
@@ -1780,7 +2135,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                         <button
                           type="button"
                           onClick={resetDiscovery}
-                          className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
+                           className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
                         >
                           Limpar
                         </button>
@@ -1808,78 +2163,86 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             )
           ) : (
             <>
-              <div className="flex justify-between items-end pb-4 border-b border-gray-100">
+              <div className={`flex justify-between items-end pb-4 ${isCorujaHomeLayout ? 'border-b border-white/14' : 'border-b border-gray-100'}`}>
                 <div>
                   {hasSearchQuery && (
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-kaboo-primary mb-1">Busca ativa</p>
+                    <p className={`mb-1 text-xs font-bold uppercase tracking-[0.14em] ${isCorujaHomeLayout ? 'text-[#FFB347]' : 'text-kaboo-primary'}`}>Busca ativa</p>
                   )}
-                  <h2 className="text-xl font-bold text-gray-800">
+                  <h2 className={`text-xl font-bold ${isCorujaHomeLayout ? 'text-[#FFB347]' : 'text-gray-800'}`}>
                     {hasSearchQuery ? 'Resultados da busca' :
                       activeTab === 'all' && activeFilterCount === 0 ? allCollectionGroupTitle :
                         activeFilterCount > 0 ? filteredCollectionGroupTitle :
                           activeTab === 'fund1' ? 'Ed. Infantil' : 'E.F. Anos Iniciais'}
                   </h2>
                   {hasSearchQuery && (
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-1">Pesquisando por “{searchTerm.trim()}”</p>
+                    <p className={`text-sm mt-1 line-clamp-1 ${isCorujaHomeLayout ? 'text-white/70' : 'text-gray-500'}`}>Pesquisando por “{searchTerm.trim()}”</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setSortByAge(prev => !prev)}
-                    className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${sortByAge
-                      ? 'bg-kaboo-primary text-white shadow-sm'
-                      : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                      }`}
-                    title="Ordenar por faixa etária"
-                  >
-                    <Icons.ArrowUpDown size={12} />
-                    Idade
-                  </button>
-                  <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
-                    {filteredCollections.length}
-                  </span>
-                  <button
-                    onClick={handleRefresh}
-                    disabled={isRefreshing || loading}
-                    className="w-7 h-7 rounded-lg bg-gray-50 hover:bg-gray-100 active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Atualizar coleções"
-                  >
-                    <Icons.RotateCw
-                      size={14}
-                      className={`text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`}
-                    />
-                  </button>
-                </div>
+                {!isCorujaHomeLayout && (
+                  <div className="flex items-center gap-1.5 rounded-full border border-gray-200/80 bg-white/90 px-2 py-1 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+                    <button
+                      onClick={() => setSortByAge(prev => !prev)}
+                      className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${sortByAge
+                        ? isCorujaHomeLayout
+                          ? 'bg-[#5D1E76] text-white shadow-[0_10px_22px_rgba(93,30,118,0.3)]'
+                          : 'bg-kaboo-primary text-white shadow-sm'
+                        : isCorujaHomeLayout
+                          ? 'bg-white/10 text-white/80 hover:bg-white/14'
+                          : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                        }`}
+                      title="Ordenar por faixa etária"
+                    >
+                      <Icons.ArrowUpDown size={12} />
+                      Idade
+                    </button>
+                    <span className={`inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full px-2 text-[11px] font-black ${isCorujaHomeLayout ? 'text-white/70 bg-white/10' : 'text-gray-400 bg-gray-50'}`}>
+                      {filteredCollections.length}
+                    </span>
+                    <button
+                      onClick={handleRefresh}
+                      disabled={isRefreshing || loading}
+                      className={`h-8 w-8 rounded-full active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed ${isCorujaHomeLayout ? 'bg-white/10 hover:bg-white/14' : 'bg-gray-50 hover:bg-gray-100'}`}
+                      title="Atualizar coleções"
+                    >
+                      <Icons.RotateCw
+                        size={14}
+                        className={`${isCorujaHomeLayout ? 'text-white/80' : 'text-gray-600'} ${isRefreshing ? 'animate-spin' : ''}`}
+                      />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {filteredCollections.length > 0 ? (
-                <div className="mt-6">
+                <div className="relative z-10 mt-6">
                   <GridView
                     key={animationKey}
                     collections={filteredCollections}
                     onCollectionClick={handleCollectionClick}
                     grants={contentGrants}
+                    tone={isCentralCoruja ? 'central-coruja' : 'default'}
                   />
                 </div>
               ) : (
                 <div className="py-20 text-center flex flex-col items-center">
-                  <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4">
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${isCorujaHomeLayout ? 'bg-white/10 text-white/55' : 'bg-gray-50 text-gray-300'}`}>
                     <Icons.Search size={32} />
                   </div>
-                  <h3 className="text-gray-800 font-bold mb-2">Nenhum item encontrado</h3>
-                  <p className="text-gray-400 text-sm mb-6 max-w-xs mx-auto">
+                  <h3 className={`font-bold mb-2 ${isCorujaHomeLayout ? 'text-white' : 'text-gray-800'}`}>Nenhum item encontrado</h3>
+                  <p className={`text-sm mb-6 max-w-xs mx-auto ${isCorujaHomeLayout ? 'text-white/65' : 'text-gray-400'}`}>
                     Não encontramos resultados para a combinação atual de busca e filtros.
                   </p>
                   <button
                     onClick={resetDiscovery}
-                    className="px-6 py-3 bg-kaboo-primary/10 text-kaboo-primary rounded-xl font-bold hover:bg-kaboo-primary/20 transition-colors"
+                    className={`px-6 py-3 rounded-xl font-bold transition-colors ${isCorujaHomeLayout ? 'bg-white/10 text-[#FFB347] hover:bg-white/14' : 'bg-kaboo-primary/10 text-kaboo-primary hover:bg-kaboo-primary/20'}`}
                   >
                     Limpar busca e filtros
                   </button>
                 </div>
               )}
             </>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -1928,7 +2291,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           <div className={`bg-white rounded-3xl p-8 w-full max-w-sm text-center relative z-[80] shadow-2xl transform transition-all duration-300 ease-in-out ${isClosingWelcome ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}>
             <div className="mb-6 flex justify-center">
-              <img src={LOGO_URL} alt="Mundo de Kaboo" className="w-40 h-auto" />
+              <img src={brandLogoUrl} alt={brandDisplayName} className="w-40 h-auto" />
             </div>
             <h2 className="text-2xl font-black text-kaboo-primary mb-2">
               Olá, {getFirstName(profile?.full_name || '')}!

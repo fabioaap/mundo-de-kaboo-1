@@ -1,11 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from '../components/Icons';
 import { AdminModule, ScreenName } from '../types';
 import useIsMobile from '../hooks/useIsMobile';
+import { isAdmin } from '../lib/auth';
 
 // Re-export the legacy admin screen so existing code keeps working
 import { AdminCollectionsScreen, AdminCollectionsHandle } from './AdminCollectionsScreen';
 import { AdminCharactersHandle, AdminCharactersScreen } from './AdminCharactersScreen';
+import { AdminWhiteLabelScreen } from './AdminWhiteLabelScreen';
 import { VouchersModule } from './VouchersModule';
 
 interface AdminScreenProps {
@@ -16,15 +18,17 @@ interface AdminScreenProps {
 const MODULE_META: Record<AdminModule, { icon: React.FC<{ className?: string }>; label: string }> = {
     collections: { icon: Icons.Library, label: 'Coleções' },
     videos: { icon: Icons.Video, label: 'Vídeos' },
-    music: { icon: Icons.Headphones, label: 'Músicas' },
+    music: { icon: Icons.Headphones, label: 'Áudios' },
     formations: { icon: Icons.BookOpen, label: 'Formações' },
     materials: { icon: Icons.FileText, label: 'Materiais' },
     users: { icon: Icons.User, label: 'Usuários' },
     vouchers: { icon: Icons.Ticket, label: 'Vouchers' },
     characters: { icon: Icons.Users, label: 'Personagens' },
+    white_label: { icon: Icons.Settings, label: 'White Label' },
 };
 
-const MODULES: AdminModule[] = ['collections', 'videos', 'music', 'formations', 'materials', 'users', 'characters', 'vouchers'];
+const ALL_MODULES: AdminModule[] = ['collections', 'videos', 'music', 'formations', 'materials', 'users', 'characters', 'vouchers', 'white_label'];
+const EDITOR_MODULES: AdminModule[] = ['collections', 'videos', 'music', 'formations', 'materials', 'characters'];
 
 const COLLECTION_SCREEN_MODULES: AdminModule[] = ['collections', 'users', 'videos', 'music', 'formations', 'materials'];
 
@@ -32,10 +36,11 @@ const COLLECTION_SCREEN_MODULES: AdminModule[] = ['collections', 'users', 'video
 
 const AdminSidebar: React.FC<{
     active: AdminModule;
+    modules: AdminModule[];
     onSelect: (m: AdminModule) => void;
     collapsed: boolean;
     onToggle: () => void;
-}> = ({ active, onSelect, collapsed, onToggle }) => (
+}> = ({ active, modules, onSelect, collapsed, onToggle }) => (
     <aside
         className={`
       bg-gray-50 border-r border-gray-200 flex flex-col
@@ -57,7 +62,7 @@ const AdminSidebar: React.FC<{
 
         {/* Module links */}
         <nav className="flex-1 py-2 space-y-0.5">
-            {MODULES.map((mod) => {
+            {modules.map((mod) => {
                 const meta = MODULE_META[mod];
                 const isActive = active === mod;
                 const Icon = meta.icon;
@@ -68,7 +73,7 @@ const AdminSidebar: React.FC<{
                         className={`
               w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors
               ${isActive
-                                ? 'bg-kaboo-primary/10 text-kaboo-primary border-r-2 border-kaboo-primary'
+                                ? 'bg-brand-primary/10 text-brand-primary border-r-2 border-brand-primary'
                                 : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                             }
               ${collapsed ? 'justify-center' : ''}
@@ -89,30 +94,30 @@ const AdminSidebar: React.FC<{
 
 const AdminTabBar: React.FC<{
     active: AdminModule;
+    modules: AdminModule[];
     onSelect: (m: AdminModule) => void;
-}> = ({ active, onSelect }) => (
-    <div className="flex border-b border-gray-200 bg-gray-50 px-2">
-        {MODULES.map((mod) => {
-            const meta = MODULE_META[mod];
-            const isActive = active === mod;
-            const Icon = meta.icon;
-            return (
-                <button
-                    key={mod}
-                    onClick={() => onSelect(mod)}
-                    className={`
-            flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors border-b-2
-            ${isActive
-                            ? 'text-kaboo-primary border-kaboo-primary'
+}> = ({ active, modules, onSelect }) => (
+    <div className="overflow-x-auto border-b border-gray-200 bg-gray-50 px-4 no-scrollbar">
+        <div className="flex min-w-max gap-1">
+            {modules.map((mod) => {
+                const meta = MODULE_META[mod];
+                const isActive = active === mod;
+                const Icon = meta.icon;
+                return (
+                    <button
+                        key={mod}
+                        onClick={() => onSelect(mod)}
+                        className={`shrink-0 flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-3 text-xs font-medium transition-colors border-b-2 ${isActive
+                            ? 'text-brand-primary border-brand-primary'
                             : 'text-gray-500 border-transparent hover:text-gray-700'
-                        }
-          `}
-                >
-                    <Icon className="w-4 h-4" />
-                    <span>{meta.label}</span>
-                </button>
-            );
-        })}
+                            }`}
+                    >
+                        <Icon className="w-4 h-4" />
+                        <span>{meta.label}</span>
+                    </button>
+                );
+            })}
+        </div>
     </div>
 );
 
@@ -122,8 +127,15 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) 
     const isMobile = useIsMobile();
     const [activeModule, setActiveModule] = useState<AdminModule>('collections');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [isAdminUser, setIsAdminUser] = useState(false);
     const collectionsRef = useRef<AdminCollectionsHandle>(null);
     const charactersRef = useRef<AdminCharactersHandle>(null);
+
+    useEffect(() => {
+        isAdmin().then(setIsAdminUser);
+    }, []);
+
+    const visibleModules = isAdminUser ? ALL_MODULES : EDITOR_MODULES;
 
     const handleModuleSelect = (mod: AdminModule) => {
         // Guard: check for unsaved changes before leaving collections/users module
@@ -169,6 +181,8 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) 
                 return <VouchersModule />;
             case 'characters':
                 return <AdminCharactersScreen ref={charactersRef} onNavigate={onNavigate} onBack={onBack} />;
+            case 'white_label':
+                return <AdminWhiteLabelScreen />;
             default:
                 return null;
         }
@@ -178,13 +192,14 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) 
         <div className="flex flex-col h-full">
             {isMobile ? (
                 <>
-                    <AdminTabBar active={activeModule} onSelect={handleModuleSelect} />
+                    <AdminTabBar active={activeModule} modules={visibleModules} onSelect={handleModuleSelect} />
                     <div className="flex-1 overflow-y-auto">{renderModule()}</div>
                 </>
             ) : (
                 <div className="flex h-full">
                     <AdminSidebar
                         active={activeModule}
+                        modules={visibleModules}
                         onSelect={handleModuleSelect}
                         collapsed={sidebarCollapsed}
                         onToggle={() => setSidebarCollapsed((c) => !c)}

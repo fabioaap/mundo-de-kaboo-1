@@ -18,6 +18,15 @@ window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
 });
 
+// Register Service Worker for offline media interception
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err) => {
+      console.warn('Service Worker registration failed:', err);
+    });
+  });
+}
+
 const root = createRoot(container);
 root.render(
   <React.StrictMode>

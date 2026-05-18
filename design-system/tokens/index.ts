@@ -24,6 +24,9 @@ export const font = {
   sans: ['Nunito', 'ui-rounded', 'system-ui', 'sans-serif'],
 } as const
 
+export { spacing } from './spacing'
+export type { SpacingSemanticToken } from './spacing'
+
 // Paleta de personagens (para uso em avatares e cards)
 export const characterColors = [
   { bg: 'bg-orange-100', text: 'text-orange-700', name: 'Baratão'    },

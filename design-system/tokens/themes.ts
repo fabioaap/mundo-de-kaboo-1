@@ -1,3 +1,5 @@
+import { spacing, type SpacingSemanticToken } from './spacing'
+
 // Temas white-label — cada tema sobrescreve as variáveis CSS brand-*
 // Para aplicar um tema, chame applyTheme(theme) ou use o atributo data-brand="id" no HTML
 
@@ -12,7 +14,23 @@ export interface BrandTheme {
     green: string    // cor de sucesso / progresso
   }
   font?: string      // família tipográfica (opcional, padrão: Nunito)
+  tokens?: {
+    radius?: {
+      xl?: string
+      '2xl'?: string
+      '3xl'?: string
+    }
+    spacing?: Partial<Record<SpacingSemanticToken, string>>
+  }
 }
+
+const DEFAULT_FONT_FAMILY = "'Nunito', ui-rounded, system-ui, sans-serif"
+const DEFAULT_RADIUS_TOKENS = {
+  xl: '1rem',
+  '2xl': '1.5rem',
+  '3xl': '2rem',
+} as const
+const DEFAULT_SPACING_TOKENS = spacing.semantic
 
 // ─── Temas de exemplo ──────────────────────────────────────
 export const themes: Record<string, BrandTheme> = {
@@ -24,6 +42,18 @@ export const themes: Record<string, BrandTheme> = {
       light: '#883E82',
       bg: '#F9F5F9',
       accent: '#4EA8DE',
+      green: '#70E000',
+    },
+  },
+
+  'central-coruja': {
+    id: 'central-coruja',
+    name: 'Central Coruja',
+    colors: {
+      primary: '#0C1A34',   // navy escuro (Frame 3)
+      light: '#5D1E76',     // roxo profundo (Frame 4)
+      bg: '#F5F7FA',        // fundo neutro branco-azulado (sem lavanda)
+      accent: '#F5A623',    // laranja dourado vibrante (Frame 5)
       green: '#70E000',
     },
   },
@@ -67,12 +97,33 @@ export const themes: Record<string, BrandTheme> = {
 
 // ─── Aplicador de tema ─────────────────────────────────────
 export function applyTheme(theme: BrandTheme, root: HTMLElement = document.documentElement): void {
-  const { colors, font } = theme
+  const { colors, font, tokens } = theme
+  const radius = tokens?.radius
+  const brandSpacing =
+    theme.id in spacing.brands
+      ? spacing.brands[theme.id as keyof typeof spacing.brands]
+      : undefined
+  const resolvedSpacing = {
+    ...DEFAULT_SPACING_TOKENS,
+    ...brandSpacing,
+    ...tokens?.spacing,
+  }
+  root.style.setProperty('--color-kaboo-primary', colors.primary)
+  root.style.setProperty('--color-kaboo-light', colors.light)
+  root.style.setProperty('--color-kaboo-bg', colors.bg)
+  root.style.setProperty('--color-kaboo-accent', colors.accent)
+  root.style.setProperty('--color-kaboo-green', colors.green)
   root.style.setProperty('--color-brand-primary', colors.primary)
   root.style.setProperty('--color-brand-light', colors.light)
   root.style.setProperty('--color-brand-bg', colors.bg)
   root.style.setProperty('--color-brand-accent', colors.accent)
   root.style.setProperty('--color-brand-green', colors.green)
-  if (font) root.style.setProperty('--font-family-sans', font)
+  root.style.setProperty('--font-family-sans', font ?? DEFAULT_FONT_FAMILY)
+  root.style.setProperty('--radius-xl', radius?.xl ?? DEFAULT_RADIUS_TOKENS.xl)
+  root.style.setProperty('--radius-2xl', radius?.['2xl'] ?? DEFAULT_RADIUS_TOKENS['2xl'])
+  root.style.setProperty('--radius-3xl', radius?.['3xl'] ?? DEFAULT_RADIUS_TOKENS['3xl'])
+  Object.entries(resolvedSpacing).forEach(([token, value]) => {
+    root.style.setProperty(`--space-${token}`, value)
+  })
   root.setAttribute('data-brand', theme.id)
 }

@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { getCharacterImageUrl, getCharacterColor, getCharacterBgColor } from '../constants';
 import { getAvatarCharacters } from '../lib/characters';
+import { layoutSpacing } from '../design-system/layout/spacing';
 
 interface MyDataScreenProps {
     onBack: () => void;
@@ -204,7 +205,7 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
             {/* Standard Header */}
             <PageHeader title="Meus Dados" onBack={onBack} />
 
-            <div className="flex-1 overflow-y-auto px-6 py-6 md:px-8 max-w-3xl">
+            <div className={`flex-1 overflow-y-auto ${layoutSpacing.pageSection} max-w-3xl`}>
                 <form onSubmit={handleSave} className="space-y-6">
 
                     {/* Avatar Section */}
@@ -353,7 +354,7 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                     <div className="relative w-full md:w-[600px] h-[70vh] md:h-auto md:max-h-[80vh] bg-white rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-10 duration-300">
 
                         {/* Modal Header */}
-                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <div className={`${layoutSpacing.modalHeader} border-b border-gray-100 flex items-center justify-between`}>
                             <h2 className="text-lg font-bold text-gray-800">Escolha um Personagem</h2>
                             <button onClick={() => setIsAvatarModalOpen(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
                                 <Icons.X size={16} />
@@ -361,7 +362,7 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                         </div>
 
                         {/* Grid */}
-                        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-3 md:grid-cols-4 gap-4">
+                        <div className={`flex-1 overflow-y-auto ${layoutSpacing.modalBody} grid grid-cols-3 md:grid-cols-4 ${layoutSpacing.cardGridGap}`}>
 
                             {/* Default Option (Initials) */}
                             <button

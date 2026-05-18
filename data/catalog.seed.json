@@ -61,6 +61,7 @@
             ],
             "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/784b3238-0916-4922-af3c-8627d74cc16c/1768192341842-heqozuo-EFAI1_Livro_Kaboo_e_a_Carta_Misteriosa_app_compres",
             "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/784b3238-0916-4922-af3c-8627d74cc16c/1769708145715-6jwjx6e-08_Kaboo_e_a_carta_misteriosa_OK.WAV",
+            "offline_available": true,
             "extra_materials": [
                 "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/784b3238-0916-4922-af3c-8627d74cc16c/1771619357711-x4phiuh-Guia_do_Professor_-_Kaboo_e_a_Carta_Misteriosa.pdf"
             ],
@@ -155,6 +156,18 @@
             "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/c6334710-6117-426f-995c-07be8d87d872/1769477855454-zibkmtu-06_O_mensageiro_e_a_can__o_certa_ok.WAV",
             "extra_materials": [
                 "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/extras/c6334710-6117-426f-995c-07be8d87d872/1771619379928-bj8hhqu-Guia_do_Professor_-_Mensageiro_e_a_Can__o_Certa.pd"
+            ],
+            "collection_assets": [
+                {
+                    "id": "mensageiro-storytelling",
+                    "category": "storytelling",
+                    "media_type": "audio",
+                    "title": "Contação da História",
+                    "url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/c6334710-6117-426f-995c-07be8d87d872/1769477855454-zibkmtu-06_O_mensageiro_e_a_can__o_certa_ok.WAV",
+                    "lyrics_url": "/mock/lyrics/mensageiro-e-a-cancao-certa.txt",
+                    "description": "Faixa principal com letra publicada para validar a jornada de escuta acompanhada no Kaboo.",
+                    "scope": "primary"
+                }
             ],
             "text_content": "Capítulo 1 — O silêncio da manhã\n\nO sol ainda não tinha nascido quando Mensageiro abriu os olhos. O mundo estava em silêncio, mas não era um silêncio vazio. Era cheio de sons pequeninos: o vento nas folhas, o rio ao longe, o coração batendo devagar.\n\n\"Hoje eu vou encontrar a canção certa\", disse Mensageiro para si mesmo.\n\nEle sabia que em algum lugar, escondida entre os sons do mundo, havia uma canção especial. Uma canção que só podia ser ouvida por quem soubesse escutar de verdade.\n\nCapítulo 2 — Sons por toda parte\n\nMensageiro caminhou pela Vila dos Amigos. Cada um de seus amigos fazia um som diferente.\n\nBatatinha cantarolava enquanto pulava. \"Lá lá lá!\"\n\nBlado batucava nos troncos das árvores. \"Tum tum tum!\"\n\nPapa assobiava melodias que inventava na hora. \"Fiu fiu fiu!\"\n\nGaio tentava imitar todos ao mesmo tempo, criando uma confusão sonora. \"Lá tum fiu... ai, não deu certo!\"\n\nMensageiro riu. \"Cada um tem o seu som. Será que a canção certa é quando todos os sons se encontram?\"\n\nCapítulo 3 — A canção de todos\n\nNo fim da tarde, Mensageiro reuniu os amigos na clareira. \"Vamos tentar algo\", propôs. \"Cada um faz o seu som, mas devagar, escutando o do outro.\"\n\nBatatinha começou suave. Blado entrou no ritmo. Papa acrescentou seu assobio. Gaio, desta vez, esperou o momento certo e completou a harmonia.\n\nA canção que surgiu era simples, mas era perfeita. Não era de nenhum deles sozinho, era de todos juntos.\n\n\"É essa!\", exclamou Mensageiro, com lágrimas nos olhos. \"A canção certa é a que a gente faz quando escuta com o coração.\"\n\nFim."
         },

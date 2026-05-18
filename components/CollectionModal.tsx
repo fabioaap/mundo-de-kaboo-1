@@ -150,7 +150,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-100" />
 
       {/* Modal Content */}
-      <div className="relative w-full max-w-6xl h-[90vh] md:h-[95vh] bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-100 flex flex-col">
+      <div className="relative w-full max-w-6xl h-[90dvh] max-h-[90dvh] md:h-[95dvh] md:max-h-[95dvh] bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-100 flex flex-col">
         {/* Close Button - Always visible on all screen sizes */}
         <button
           onClick={onClose}
