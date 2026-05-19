@@ -114,7 +114,8 @@ jobs:
           if ! final_url="$(curl -fsSL -o smoke-body.html -D smoke-headers.txt -L -w '%{url_effective}' "${access_headers[@]}" "${request_url}")"; then
             if grep -qi 'cf-access\|cloudflare' smoke-headers.txt 2>/dev/null; then
               if [[ ${#access_headers[@]} -eq 0 ]]; then
-                echo "::error::Custom domain is protected by Cloudflare Access. Configure CLOUDFLARE_ACCESS_CLIENT_ID and CLOUDFLARE_ACCESS_CLIENT_SECRET GitHub secrets for the smoke-check job."
+                echo "::warning::Custom domain is protected by Cloudflare Access and no service token secrets are configured. Redirect validation passed; skipping app shell validation."
+                exit 0
               else
                 echo "::error::Cloudflare Access rejected the configured service token during smoke-check."
               fi
@@ -135,7 +136,8 @@ jobs:
 
           if grep -qi 'Cloudflare Access' smoke-body.html || grep -qi 'cdn-cgi/access' smoke-body.html; then
             if [[ ${#access_headers[@]} -eq 0 ]]; then
-              echo "::error::Custom domain is protected by Cloudflare Access. Configure CLOUDFLARE_ACCESS_CLIENT_ID and CLOUDFLARE_ACCESS_CLIENT_SECRET GitHub secrets for the smoke-check job."
+              echo "::warning::Custom domain is protected by Cloudflare Access and no service token secrets are configured. Redirect validation passed; skipping app shell validation."
+              exit 0
             else
               echo "::error::Cloudflare Access service token did not bypass the custom domain."
             fi
