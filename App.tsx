@@ -481,15 +481,14 @@ const App: React.FC = () => {
         setAccessProfile(null);
 
         setNavState(prev => {
-          // Preserve email_confirmation screen even when signed out
-          if (prev.currentScreen === 'email_confirmation') {
+          // Preserve public entry screens when the auth layer emits SIGNED_OUT on root.
+          if (prev.currentScreen === 'email_confirmation' || prev.currentScreen === 'portal') {
             return prev;
           }
-          // Clear saved state on logout (except email_confirmation)
+          // Clear saved state on logout before falling back to the public entry screen.
           localStorage.removeItem(STORAGE_NAV_STATE);
           localStorage.removeItem(STORAGE_PREVIOUS_STATE);
-          // Redirect to login for all other screens when signed out
-          return { currentScreen: 'login' };
+          return { currentScreen: getDefaultPublicScreen() };
         });
       }
     });
