@@ -4,6 +4,7 @@ import { api, clearAllUserCache, getCachedProfileSync, isDevMockSession, setActi
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { useThemeBackground } from './hooks/useThemeBackground';
 import { useBrandConfig } from './hooks/useBrandConfig';
+import { resolveBrandSlugFromPathname } from './hooks/brandSlug';
 import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
 import { setActiveBrandForCharacters } from './lib/characters';
 import { logger } from './lib/logger';
@@ -117,7 +118,13 @@ const isPortalEntryPath = (): boolean => {
     .replace(/\/index\.html$/i, '/')
     .replace(/\/+$/, '') || '/';
 
-  return normalizedPath === '/';
+  if (normalizedPath === '/') {
+    return true;
+  }
+
+  const pathSegments = normalizedPath.split('/').filter(Boolean);
+
+  return pathSegments.length === 1 && !resolveBrandSlugFromPathname(normalizedPath);
 };
 
 const getDefaultPublicScreen = (): ScreenName => (isPortalEntryPath() ? 'portal' : 'login');

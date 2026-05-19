@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
       
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
@@ -59,7 +60,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add docs/ INFRAESTRUTURA.md
           git commit -m "docs: auto-update documentation [bot]"
-          git push
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
       
       - name: 💬 Comment on PR
         if: github.event_name == 'pull_request' && steps.verify-changed-files.outputs.changed == 'true'

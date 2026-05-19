@@ -50,6 +50,8 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -57,3 +59,43 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  smoke-check:
+    needs: deploy
+    runs-on: ubuntu-latest
+    env:
+      PAGES_EXPECTED_HOST: mundodekaboo.educacross.dev
+      PAGES_EXPECTED_TITLE: Mundo de Kaboo
+      PAGES_GITHUB_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+      PAGES_DEPLOY_URL: ${{ needs.deploy.outputs.page_url }}
+    steps:
+      - name: Smoke check deployed site
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          request_url="${PAGES_GITHUB_URL}"
+          echo "Checking ${request_url}"
+          echo "Deploy reported URL: ${PAGES_DEPLOY_URL}"
+
+          final_url="$(curl -fsSL -o smoke-body.html -D smoke-headers.txt -L -w '%{url_effective}' "${request_url}")"
+          final_host="$(printf '%s' "${final_url}" | sed -E 's#https?://([^/]+)/?.*#\1#')"
+
+          echo "Final URL: ${final_url}"
+
+          if [[ "${final_host}" != "${PAGES_EXPECTED_HOST}" ]]; then
+            echo "::error::GitHub Pages resolved to unexpected host ${final_host}. Expected ${PAGES_EXPECTED_HOST}."
+            exit 1
+          fi
+
+          if grep -qi 'Cloudflare Access' smoke-body.html || grep -qi 'cdn-cgi/access' smoke-body.html; then
+            echo "::error::Custom domain is still protected by Cloudflare Access."
+            exit 1
+          fi
+
+          if ! grep -qi "<title>${PAGES_EXPECTED_TITLE}</title>" smoke-body.html; then
+            echo "::error::Published HTML does not match the Mundo de Kaboo app shell."
+            exit 1
+          fi
+
+          echo "Smoke check passed for ${final_url}"
