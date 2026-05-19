@@ -392,7 +392,7 @@ SELECT
         {"key":"collections","label":"Coleções","route":"home","enabled":true,"order":10},
         {"key":"books","label":"Livros","route":"home","enabled":true,"order":20},
         {"key":"videos","label":"Vídeos","route":"videos","enabled":true,"order":30},
-        {"key":"music","label":"Músicas","route":"music","enabled":true,"order":40},
+        {"key":"music","label":"Áudios","route":"music","enabled":true,"order":40},
         {"key":"formations","label":"Formações","route":"formations","enabled":true,"order":50},
         {"key":"materials","label":"Materiais","route":"materials","enabled":true,"order":60}
     ]'::jsonb,
@@ -413,7 +413,7 @@ SELECT
         {"key":"collections","label":"Coleções","route":"home","enabled":true,"order":10},
         {"key":"books","label":"Livros","route":"home","enabled":true,"order":20},
         {"key":"videos","label":"Vídeos","route":"videos","enabled":true,"order":30},
-        {"key":"music","label":"Músicas","route":"music","enabled":false,"order":40},
+        {"key":"music","label":"Áudios","route":"music","enabled":true,"order":40},
         {"key":"formations","label":"Formações","route":"formations","enabled":true,"order":50},
         {"key":"materials","label":"Materiais","route":"materials","enabled":true,"order":60}
     ]'::jsonb,
@@ -427,35 +427,12 @@ VALUES
     ('menu.collections',  'Exibe a seção Coleções na nav',     true),
     ('menu.books',        'Exibe a seção Livros na nav',        true),
     ('menu.videos',       'Exibe a seção Vídeos na nav',        true),
-    ('menu.music',        'Exibe a seção Músicas na nav',       true),
+    ('menu.music',        'Exibe a seção Áudios na nav',        true),
     ('menu.formations',   'Exibe a seção Formações na nav',     true),
     ('menu.materials',    'Exibe a seção Materiais na nav',     true),
     ('hero.parallax',     'Ativa hero parallax na Home',        false),
     ('module.characters', 'Exibe a tela de personagens',        true),
     ('module.vouchers',   'Exibe módulo de vouchers no admin',  true)
 ON CONFLICT (key) DO NOTHING;
-
--- Override Central Coruja: desabilita músicas, ativa parallax.
-INSERT INTO public.brand_feature_overrides (brand_id, feature_flag_id, enabled, config)
-SELECT
-    b.id,
-    ff.id,
-    false,
-    '{}'
-FROM public.brands b
-JOIN public.feature_flags ff ON ff.key = 'menu.music'
-WHERE b.slug = 'central-coruja'
-ON CONFLICT (brand_id, feature_flag_id) DO NOTHING;
-
-INSERT INTO public.brand_feature_overrides (brand_id, feature_flag_id, enabled, config)
-SELECT
-    b.id,
-    ff.id,
-    true,
-    '{"mode":"subtle"}'
-FROM public.brands b
-JOIN public.feature_flags ff ON ff.key = 'hero.parallax'
-WHERE b.slug = 'central-coruja'
-ON CONFLICT (brand_id, feature_flag_id) DO NOTHING;
 
 COMMIT;

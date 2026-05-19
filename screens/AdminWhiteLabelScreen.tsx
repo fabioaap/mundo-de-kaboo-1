@@ -611,8 +611,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         }
 
         try {
-            await persistFeature('menu.music', false, {});
-            await persistFeature('hero.parallax', true, { mode: 'subtle' });
+            await persistFeature('menu.music', true, {});
+            await persistFeature('hero.parallax', false, { mode: 'off' });
             await persistFeature('content.offline', false, {});
             showToast('Preset Central Coruja aplicado com sucesso!', 'success');
         } catch (err) {

@@ -430,7 +430,7 @@ test.describe('JN-WL-011 — Preview runtime da marca', () => {
 
         await expect(page.getByRole('heading', { name: 'Bem-vindo à Central Coruja!' })).toBeVisible({ timeout: 10_000 });
         await expect(page.getByText('Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Áudios' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Áudios' })).toBeVisible();
         await expect(page.getByText('educacross').first()).toBeVisible();
         await expect(page.getByText('Todos os direitos reservados.').first()).toBeVisible();
         await expect(page.getByText('Mundo de Kaboo © 2025')).toHaveCount(0);
