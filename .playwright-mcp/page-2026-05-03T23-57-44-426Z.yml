@@ -1,0 +1,120 @@
+- generic [ref=e5]:
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e41]:
+        - application "Figma Design e 1 item selecionado" [active] [ref=e49]
+        - status [ref=e50]: O suporte para leitor de tela no quadro está desativado no momento. Para ativá-lo nas configurações de acessibilidade, pressione Ctrl+K, digite configurações de acessibilidade e pressione Enter. Para ver os shortcuts de teclado disponíveis, digite Ctrl+Shift+Ponto de interrogação .
+        - generic:
+          - generic:
+            - generic:
+              - region "Comentários na tela de trabalho":
+                - button "Criar novo comentário"
+        - generic:
+          - region "Barra lateral à esquerda":
+            - generic [ref=e51]:
+              - button "Menu principal" [ref=e52]:
+                - img [ref=e53]
+              - button "Expandir a UI para o arquivo chamado White Label Central Coruja" [ref=e55]:
+                - generic:
+                  - generic:
+                    - generic:
+                      - button "White Label Central Coruja, nome do arquivo": White Label Central Coruja
+                      - generic: Nome do arquivo
+                - generic:
+                  - generic:
+                    - status
+                - generic:
+                  - img
+        - generic [ref=e58]:
+          - button "Ferramentas colaborativas" [ref=e62]:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - generic:
+                      - generic:
+                        - img
+            - img [ref=e65]
+          - button "2%, opções de zoom e visualização" [ref=e143]:
+            - generic [ref=e70]:
+              - generic [ref=e71]: 2%
+              - img [ref=e73]
+          - generic [ref=e76]:
+            - generic [ref=e77]:
+              - button "Apresentar" [ref=e78]:
+                - generic:
+                  - img
+              - button "Visualização de protótipo" [ref=e79]:
+                - generic:
+                  - img
+            - button "Compartilhar" [ref=e81]:
+              - generic:
+                - generic:
+                  - generic: Compartilhar
+      - generic:
+        - generic:
+          - generic:
+            - region "Barra de ferramentas do aplicativo":
+              - generic [ref=e82]:
+                - toolbar "Editor" [ref=e84]:
+                  - generic [ref=e86]:
+                    - generic:
+                      - generic [ref=e89]:
+                        - generic [ref=e90]:
+                          - button "Mover" [ref=e91]:
+                            - img
+                          - button "Ferramenta manual" [pressed] [ref=e92]:
+                            - img
+                          - button "Comentário" [ref=e93]:
+                            - img
+                        - group "Quadro" [ref=e95]:
+                          - button "Quadro" [ref=e96]:
+                            - img
+                          - button "Ferramentas de região" [ref=e97]:
+                            - generic:
+                              - img
+                        - group "Retângulo" [ref=e98]:
+                          - button "Retângulo" [ref=e99]:
+                            - img
+                          - button "Ferramentas de formas" [ref=e100]:
+                            - generic:
+                              - img
+                        - group "Caneta" [ref=e101]:
+                          - button "Caneta" [ref=e102]:
+                            - img
+                          - button "Ferramentas de criação" [ref=e103]:
+                            - generic:
+                              - img
+                        - button "Texto" [ref=e104]:
+                          - img
+                        - button "Ações" [ref=e105]:
+                          - img
+                      - text: Solicitação enviada
+                  - generic [ref=e110]:
+                    - checkbox "Dev Mode" [ref=e112]
+                    - img [ref=e114]
+                - generic [ref=e116]:
+                  - generic [ref=e117]: Cadastre-se para comentar, editar, inspecionar e outras ações.
+                  - generic [ref=e118]:
+                    - button "Crie sua conta" [ref=e119]:
+                      - generic:
+                        - generic:
+                          - generic: Crie sua conta
+                    - button "Continuar com o Google" [ref=e122]:
+                      - generic:
+                        - generic:
+                          - img
+                        - generic: Continuar
+    - region "Barra de ferramentas de ajuda/zoom" [ref=e27]:
+      - toolbar "Barra de ferramentas de ajuda/zoom" [ref=e29]:
+        - button "Ajuda" [ref=e31]:
+          - img
+  - generic:
+    - status
+    - group [ref=e131]:
+      - alert [ref=e133]
+      - alert [ref=e135]
+    - region "Gerenciar cookies ou desativar" [ref=e137]:
+      - link "Gerenciar cookies ou desativar" [ref=e138]:
+        - /url: /pt-br/consent-preferences/

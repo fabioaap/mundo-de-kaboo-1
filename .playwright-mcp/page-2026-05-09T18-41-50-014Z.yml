@@ -1,0 +1,184 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Expandir menu" [ref=e5]:
+      - img [ref=e6]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Mundo de Kaboo" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic: Coleções
+          - button "Coleções" [ref=e13]:
+            - img [ref=e14]
+        - generic [ref=e16]:
+          - generic: Livros
+          - button "Livros" [ref=e17]:
+            - img [ref=e18]
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic: Vídeos
+          - button "Vídeos" [ref=e22]:
+            - img [ref=e23]
+        - generic [ref=e26]:
+          - generic: Músicas
+          - button "Músicas" [ref=e27]:
+            - img [ref=e28]
+        - generic [ref=e30]:
+          - generic: Formações
+          - button "Formações" [ref=e31]:
+            - img [ref=e32]
+        - generic [ref=e34]:
+          - generic: Materiais
+          - button "Materiais" [ref=e35]:
+            - img [ref=e36]
+      - generic [ref=e40]:
+        - generic: Gerenciar
+        - button "Gerenciar" [ref=e41]:
+          - img [ref=e42]
+    - button "Abrir perfil de Editor" [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]: ET
+        - img "Avatar" [ref=e50]
+  - main [ref=e51]:
+    - generic [ref=e4352]:
+      - heading "Coleções" [level=1] [ref=e4355]
+      - generic [ref=e4358]:
+        - generic [ref=e4360]:
+          - paragraph [ref=e4361]: Comece pela busca
+          - paragraph [ref=e4362]: Busque por título, tema, BNCC ou personagem. Refine com filtros e segmentos.
+        - generic [ref=e4363]:
+          - generic [ref=e4364]:
+            - generic:
+              - img
+            - button "Abrir pesquisa" [ref=e4511]: Buscar por título, tema, BNCC ou personagem
+          - button "Filtros" [ref=e4366]:
+            - img [ref=e4367]
+            - generic [ref=e4369]: Filtros
+        - generic [ref=e4370]:
+          - paragraph [ref=e4371]: Explorar por segmento
+          - generic [ref=e4373]:
+            - button "Todos" [ref=e4374]:
+              - img [ref=e4375]
+              - text: Todos
+            - button "Ed. Infantil" [ref=e4377]
+            - button "Fund I" [ref=e4378]
+      - generic [ref=e4512]:
+        - generic [ref=e4513] [cursor=pointer]:
+          - text: "Busca: QA Personagem Sprint 2"
+          - img [ref=e4514]
+        - button "Limpar tudo" [ref=e4517]
+      - generic [ref=e4380]:
+        - generic [ref=e4381]:
+          - generic [ref=e4382]:
+            - paragraph [ref=e4518]: Busca ativa
+            - heading "Resultados da busca" [level=2] [ref=e4519]
+            - paragraph [ref=e4520]: Pesquisando por “QA Personagem Sprint 2”
+          - generic [ref=e4384]:
+            - button "Idade" [ref=e4521]:
+              - img [ref=e4522]
+              - text: Idade
+            - generic [ref=e4525]: "1"
+            - button "Atualizar coleções" [ref=e4526]:
+              - img [ref=e4527]
+        - generic [ref=e4532] [cursor=pointer]:
+          - generic [ref=e4533]:
+            - img "Kaboo e a Carta Misteriosa" [ref=e4534]
+            - generic [ref=e4535]: Coleção
+            - generic [ref=e4537]: E.F. Anos Iniciais
+          - heading "Kaboo e a Carta Misteriosa" [level=3] [ref=e4538]
+          - paragraph [ref=e4539]: Pertencimento e diversidade
+  - generic [ref=e4542]:
+    - button "Fechar" [ref=e4543]:
+      - img [ref=e4544]
+    - generic [ref=e4549]:
+      - generic [ref=e4554]:
+        - img "Kaboo e a Carta Misteriosa" [ref=e4555]
+        - generic [ref=e4556]: Coleção
+      - generic [ref=e4558]:
+        - generic [ref=e4559]:
+          - generic [ref=e4560]: Coleção
+          - generic [ref=e4561]: E.F. Anos Iniciais
+          - generic [ref=e4562]: "|"
+          - button "1º ano" [ref=e4563] [cursor=pointer]
+          - button "2º ano" [ref=e4564] [cursor=pointer]
+          - button "3º ano" [ref=e4565] [cursor=pointer]
+        - heading "Kaboo e a Carta Misteriosa" [level=1] [ref=e4566]
+        - paragraph [ref=e4567]: Coleção com livro, mídia e materiais de apoio reunidos na mesma experiência.
+        - paragraph [ref=e4568]: Uma aventura encantadora sobre amizade e coragem no mundo de Kaboo, onde uma carta misteriosa revela que a diversidade é a maior força de todas.
+        - generic [ref=e4570]:
+          - generic [ref=e4571]:
+            - generic [ref=e4572]:
+              - paragraph [ref=e4573]: Itens dessa coleção
+              - paragraph [ref=e4574]: Abra o livro e os principais materiais sem perder o contexto desta coleção.
+            - generic [ref=e4575]: 5 itens
+          - generic [ref=e4576]:
+            - button "Livro" [ref=e4577]:
+              - img [ref=e4579]
+              - generic [ref=e4581]: Livro
+            - button "Contação da História" [ref=e4582]:
+              - img [ref=e4584]
+              - generic [ref=e4586]: Contação da História
+            - button "Desenho Animado" [ref=e4587]:
+              - img [ref=e4589]
+              - generic [ref=e4592]: Desenho Animado
+            - button "Com Libras" [ref=e4593]:
+              - img [ref=e4595]
+              - generic [ref=e4598]: Com Libras
+            - button "Materiais da Coleção" [ref=e4599]:
+              - img [ref=e4601]
+              - generic [ref=e4603]: Materiais da Coleção
+        - generic [ref=e4604]:
+          - heading "Informações Pedagógicas" [level=3] [ref=e4605]:
+            - img [ref=e4606]
+            - text: Informações Pedagógicas
+          - generic [ref=e4608]:
+            - generic [ref=e4609]:
+              - heading "Tema" [level=4] [ref=e4610]
+              - paragraph [ref=e4611]: Pertencimento e diversidade
+            - generic [ref=e4612]:
+              - heading "Objetivo de Aprendizagem" [level=4] [ref=e4613]
+              - paragraph [ref=e4614]: Convidar ao pertencimento e à descoberta de que a diversidade é força. A história mostra que pertencer significa escutar, valorizar e respeitar as diferenças; a amizade protege, permitindo compartilhar histórias, brincar, rir e chorar juntos.
+            - generic [ref=e4615]:
+              - heading "Personagens Centrais" [level=4] [ref=e4616]
+              - generic [ref=e4617]:
+                - button "Kaboo Kaboo" [ref=e4618]:
+                  - img "Kaboo" [ref=e4621]
+                  - generic [ref=e4622]: Kaboo
+                - button "Batatinha Batatinha" [ref=e4623]:
+                  - img "Batatinha" [ref=e4626]
+                  - generic [ref=e4627]: Batatinha
+                - button "Blado Blado" [ref=e4628]:
+                  - img "Blado" [ref=e4631]
+                  - generic [ref=e4632]: Blado
+                - button "Papa Papa" [ref=e4633]:
+                  - img "Papa" [ref=e4636]
+                  - generic [ref=e4637]: Papa
+                - button "Gaio Gaio" [ref=e4638]:
+                  - img "Gaio" [ref=e4641]
+                  - generic [ref=e4642]: Gaio
+                - button "Dr. Ratazana Dr. Ratazana" [ref=e4643]:
+                  - img "Dr. Ratazana" [ref=e4646]
+                  - generic [ref=e4647]: Dr. Ratazana
+                - button "Q QA Personagem Sprint 2" [ref=e4648]:
+                  - generic [ref=e4651]: Q
+                  - generic [ref=e4652]: QA Personagem Sprint 2
+            - generic [ref=e4653]:
+              - heading "Habilidades da BNCC" [level=4] [ref=e4654]
+              - generic [ref=e4655]:
+                - button "EF15LP01" [ref=e4657] [cursor=pointer]
+                - button "EF15LP03" [ref=e4659] [cursor=pointer]
+                - button "EF15LP04" [ref=e4661] [cursor=pointer]
+                - button "EF15LP09" [ref=e4663] [cursor=pointer]
+                - button "EF15LP10" [ref=e4665] [cursor=pointer]
+                - button "EF15LP18" [ref=e4667] [cursor=pointer]
+                - button "EF01LP02" [ref=e4669] [cursor=pointer]
+                - button "EF01LP12" [ref=e4671] [cursor=pointer]
+                - button "EF02LP13" [ref=e4673] [cursor=pointer]
+                - button "EF02LP16" [ref=e4675] [cursor=pointer]
+                - button "EF01ER01" [ref=e4677] [cursor=pointer]
+                - button "EF01HI08" [ref=e4679] [cursor=pointer]
+            - generic [ref=e4680]:
+              - heading "Competências CASEL" [level=4] [ref=e4681]
+              - generic [ref=e4682]:
+                - button "Habilidades de Relacionamento" [ref=e4684] [cursor=pointer]
+                - button "Consciência Social" [ref=e4686] [cursor=pointer]

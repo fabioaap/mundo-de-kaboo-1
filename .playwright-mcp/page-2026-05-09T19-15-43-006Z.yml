@@ -1,0 +1,85 @@
+- main [ref=e51]:
+  - generic [ref=e586]:
+    - generic [ref=e588]:
+      - button "Voltar" [ref=e589]:
+        - img [ref=e590]
+      - heading "Contação da História" [level=1] [ref=e594]
+      - button "Ver sugestões" [ref=e595]:
+        - text: Sugestões
+        - img [ref=e596]
+    - generic [ref=e598]:
+      - generic [ref=e599]:
+        - generic [ref=e601] [cursor=pointer]:
+          - img "Kaboo e a Carta Misteriosa" [ref=e608]
+          - generic:
+            - img
+        - generic [ref=e611]:
+          - generic [ref=e612]:
+            - slider [ref=e614] [cursor=pointer]: "0"
+            - generic [ref=e615]:
+              - generic [ref=e616]: 00:00
+              - generic [ref=e617]: 02:46
+          - 'button "Velocidade: 1x" [ref=e619]': 1x
+          - generic [ref=e620]:
+            - button "Retroceder 15 segundos" [ref=e621]:
+              - img [ref=e632]:
+                - generic [ref=e634]: "15"
+            - button "Pausar" [active] [ref=e635]:
+              - img [ref=e636]
+            - button "Avançar 15 segundos" [ref=e628]:
+              - img [ref=e639]:
+                - generic [ref=e641]: "15"
+      - generic:
+        - generic:
+          - generic:
+            - paragraph: Catálogo relacionado
+            - heading "Sugestões da biblioteca" [level=2]
+          - button "Mensageiro e a Canção Certa, faixa de acolhimento Mensageiro e a Canção Certa":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Mensageiro e a Canção Certa, faixa de acolhimento
+              - paragraph: Mensageiro e a Canção Certa
+          - button "Carta Misteriosa, escuta de coragem Kaboo e a Carta Misteriosa":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Carta Misteriosa, escuta de coragem
+              - paragraph: Kaboo e a Carta Misteriosa
+          - button "Gaio e a Hora de Voar Alto, respirar antes da conversa Gaio e a Hora de Voar Alto":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Gaio e a Hora de Voar Alto, respirar antes da conversa
+              - paragraph: Gaio e a Hora de Voar Alto
+          - button "Labirinto do Eco, batida para ouvir o outro Baratinha e Baratão no Labirinto do Eco":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Labirinto do Eco, batida para ouvir o outro
+              - paragraph: Baratinha e Baratão no Labirinto do Eco
+          - button "Desafio das Cores, trilha para reparar o clima Kaboo e o Desafio das Cores":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Desafio das Cores, trilha para reparar o clima
+              - paragraph: Kaboo e o Desafio das Cores
+          - button "Canções para começar a escutar devagar Mensageiro e a Canção Certa":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Canções para começar a escutar devagar
+              - paragraph: Mensageiro e a Canção Certa
+          - button "Kaboo, canção para abrir a conversa em grupo Kaboo e a Carta Misteriosa":
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - paragraph: Kaboo, canção para abrir a conversa em grupo
+              - paragraph: Kaboo e a Carta Misteriosa

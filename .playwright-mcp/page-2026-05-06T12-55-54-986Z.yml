@@ -1,0 +1,250 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - generic [ref=e7] [cursor=pointer]: menu
+    - link "Educacross" [ref=e9] [cursor=pointer]:
+      - /url: /
+      - img "Educacross" [ref=e10]
+    - list [ref=e12]:
+      - listitem [ref=e13]:
+        - button "Isabela Cross Professor avatar" [ref=e14] [cursor=pointer]:
+          - paragraph [ref=e16]:
+            - generic [ref=e17]: Isabela Cross
+            - generic [ref=e18]: Professor
+          - img "avatar" [ref=e20]
+  - generic [ref=e21]:
+    - complementary [ref=e22]:
+      - navigation [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: Painel Inicial
+          - link "home Painel Inicial" [ref=e26] [cursor=pointer]:
+            - /url: /professor
+            - generic [ref=e27]: home
+            - generic [ref=e28]: Painel Inicial
+        - generic [ref=e29]:
+          - generic [ref=e30]: Missões da Escola
+          - link "add_circle Criar Missão" [ref=e31] [cursor=pointer]:
+            - /url: /professor/missoes/criar
+            - generic [ref=e32]: add_circle
+            - generic [ref=e33]: Criar Missão
+          - link "mountain_flag Missões" [ref=e34] [cursor=pointer]:
+            - /url: /professor/missoes
+            - generic [ref=e35]: mountain_flag
+            - generic [ref=e36]: Missões
+        - generic [ref=e37]:
+          - generic [ref=e38]: Relatórios Gerais
+          - link "pie_chart Relatório de Evidências" [ref=e39] [cursor=pointer]:
+            - /url: /professor/relatorios/evidencias
+            - generic [ref=e40]: pie_chart
+            - generic [ref=e41]: Relatório de Evidências
+          - link "graph_5 Habilidades" [ref=e42] [cursor=pointer]:
+            - /url: /professor/relatorios/habilidades
+            - generic [ref=e43]: graph_5
+            - generic [ref=e44]: Habilidades
+          - link "person_play Acesso dos Alunos" [ref=e45] [cursor=pointer]:
+            - /url: /professor/relatorios/acesso-alunos
+            - generic [ref=e46]: person_play
+            - generic [ref=e47]: Acesso dos Alunos
+          - link "calendar_month Calendário" [ref=e48] [cursor=pointer]:
+            - /url: /professor/calendario
+            - generic [ref=e49]: calendar_month
+            - generic [ref=e50]: Calendário
+        - generic [ref=e51]:
+          - generic [ref=e52]: Explorar Jogos
+          - link "videogame_asset Configuração" [ref=e53] [cursor=pointer]:
+            - /url: /professor/explorar-jogos/configuracao
+            - generic [ref=e54]: videogame_asset
+            - generic [ref=e55]: Configuração
+          - link "emoji_events Ranking de Conquistas" [ref=e56] [cursor=pointer]:
+            - /url: /professor/jogos/ranking
+            - generic [ref=e57]: emoji_events
+            - generic [ref=e58]: Ranking de Conquistas
+        - generic [ref=e59]:
+          - generic [ref=e60]: Gestão (Escola / Turmas)
+          - link "group Turmas" [ref=e61] [cursor=pointer]:
+            - /url: /professor/turmas
+            - generic [ref=e62]: group
+            - generic [ref=e63]: Turmas
+          - link "folder_shared Grupos" [ref=e64] [cursor=pointer]:
+            - /url: /professor/grupos
+            - generic [ref=e65]: folder_shared
+            - generic [ref=e66]: Grupos
+          - link "sentiment_satisfied Alunos" [ref=e67] [cursor=pointer]:
+            - /url: /professor/alunos
+            - generic [ref=e68]: sentiment_satisfied
+            - generic [ref=e69]: Alunos
+        - generic [ref=e70]:
+          - generic [ref=e71]: Programas / Sistemas (Atalhos)
+          - link "school Alfabetiza Manaus" [ref=e72] [cursor=pointer]:
+            - /url: /professor/programas/alfabetiza-manaus
+            - generic [ref=e73]: school
+            - generic [ref=e74]: Alfabetiza Manaus
+          - link "school Letrar+JP" [ref=e75] [cursor=pointer]:
+            - /url: /professor/programas/letrar
+            - generic [ref=e76]: school
+            - generic [ref=e77]: Letrar+JP
+          - link "school Super Ensino João Pessoa" [ref=e78] [cursor=pointer]:
+            - /url: /professor/programas/super-ensino-jp
+            - generic [ref=e79]: school
+            - generic [ref=e80]: Super Ensino João Pessoa
+          - link "school Super Ensino Manaus" [ref=e81] [cursor=pointer]:
+            - /url: /professor/programas/super-ensino-manaus
+            - generic [ref=e82]: school
+            - generic [ref=e83]: Super Ensino Manaus
+          - link "school High Five" [ref=e84] [cursor=pointer]:
+            - /url: /professor/programas/high-five
+            - generic [ref=e85]: school
+            - generic [ref=e86]: High Five
+        - generic [ref=e87]:
+          - generic [ref=e88]: Avaliações
+          - link "checkbook Fases da Escrita" [ref=e89] [cursor=pointer]:
+            - /url: /professor/avaliacoes/fases-escrita
+            - generic [ref=e90]: checkbook
+            - generic [ref=e91]: Fases da Escrita
+          - link "record_voice_over FLUE" [ref=e92] [cursor=pointer]:
+            - /url: /professor/avaliacoes/flue
+            - generic [ref=e93]: record_voice_over
+            - generic [ref=e94]: FLUE
+          - link "assignment Avaliação Digital" [ref=e95] [cursor=pointer]:
+            - /url: /professor/avaliacoes/digital
+            - generic [ref=e96]: assignment
+            - generic [ref=e97]: Avaliação Digital
+        - generic [ref=e98]:
+          - generic [ref=e99]: Expedições
+          - link "airplane_ticket Expedição Leitura" [ref=e100] [cursor=pointer]:
+            - /url: /professor/expedicao-leitura
+            - generic [ref=e101]: airplane_ticket
+            - generic [ref=e102]: Expedição Leitura
+        - generic [ref=e103]:
+          - generic [ref=e104]: Eventos
+          - link "emoji_events Olimpíadas" [ref=e105] [cursor=pointer]:
+            - /url: /professor/eventos/olimpiadas
+            - generic [ref=e106]: emoji_events
+            - generic [ref=e107]: Olimpíadas
+          - link "bolt Educacross Extreme" [ref=e108] [cursor=pointer]:
+            - /url: /professor/eventos/extreme
+            - generic [ref=e109]: bolt
+            - generic [ref=e110]: Educacross Extreme
+        - generic [ref=e111]:
+          - generic [ref=e112]: Formação e Apoio
+          - link "folder_open Ajudas e Materiais" [ref=e113] [cursor=pointer]:
+            - /url: /professor/ajudas-materiais
+            - generic [ref=e114]: folder_open
+            - generic [ref=e115]: Ajudas e Materiais
+          - button "account_balance Academia Educacross" [ref=e116] [cursor=pointer]:
+            - generic [ref=e117]: account_balance
+            - generic [ref=e118]: Academia Educacross
+        - generic [ref=e119]:
+          - generic [ref=e120]: Educateca
+          - link "auto_stories Educateca" [ref=e121] [cursor=pointer]:
+            - /url: /professor/educateca
+            - generic [ref=e122]: auto_stories
+            - generic [ref=e123]: Educateca
+    - main [ref=e125]:
+      - generic [ref=e126]:
+        - generic [ref=e127]:
+          - generic [ref=e128]:
+            - generic [ref=e131] [cursor=pointer]:
+              - generic [ref=e132]:
+                - generic [ref=e133]: Turma 2A
+                - generic [ref=e134]: 2º Ano
+              - generic [ref=e135]: expand_more
+            - generic [ref=e136]:
+              - generic [ref=e137]: school
+              - generic [ref=e138]: ESCOLA EDUCACROSS DEVS
+          - list [ref=e139]:
+            - listitem [ref=e140]:
+              - link "Início" [ref=e141] [cursor=pointer]:
+                - /url: /
+                - img [ref=e142]
+            - listitem [ref=e145]:
+              - text: /
+              - link "Avaliações" [ref=e146] [cursor=pointer]:
+                - /url: /professor/avaliacoes/flue
+            - listitem [ref=e147]:
+              - text: /
+              - link "FLUE" [ref=e148] [cursor=pointer]:
+                - /url: /professor/avaliacoes/flue
+            - listitem [ref=e149]: / Alunos
+        - generic [ref=e150]:
+          - generic [ref=e151]: lightbulb
+          - generic [ref=e152]:
+            - strong [ref=e153]: "Saiba mais:"
+            - link "entenda os indicadores deste relatório, clicando aqui." [ref=e154] [cursor=pointer]:
+              - /url: "#"
+        - generic [ref=e157]:
+          - generic [ref=e158]:
+            - generic [ref=e159]: book_6
+            - generic [ref=e160]: FLUE — 1º Bimestre
+            - generic [ref=e161]: 2º Ano
+            - generic [ref=e162]: Finalizada
+          - generic [ref=e163]: Turma 2A
+        - generic [ref=e164]:
+          - generic [ref=e166]:
+            - generic [ref=e167] [cursor=pointer]: Resultados
+            - generic [ref=e168] [cursor=pointer]: Trilhas de fluência
+            - generic [ref=e169] [cursor=pointer]: Trilhas de escrita
+          - generic [ref=e465]:
+            - generic [ref=e467]:
+              - heading "Trilhas de fluência" [level=5] [ref=e468]
+              - paragraph [ref=e469]: Cada grupo representa um nível de proficiência. Expanda para ver os alunos e suas métricas.
+            - generic [ref=e470]:
+              - generic [ref=e471]:
+                - generic [ref=e472] [cursor=pointer]:
+                  - generic [ref=e473]:
+                    - generic [ref=e474]:
+                      - generic [ref=e475]: Grupo 1
+                      - generic [ref=e476]: Abaixo do Básico
+                    - generic [ref=e477]: "Trilha: Fluência de base e decodificação · 1 alunos"
+                  - generic [ref=e478]:
+                    - button "visibility" [ref=e479]:
+                      - generic [ref=e480]: visibility
+                    - button "pie_chart" [ref=e481]:
+                      - generic [ref=e482]: pie_chart
+                  - button "expand_more" [ref=e483]:
+                    - generic [ref=e484]: expand_more
+                - text:    
+              - generic [ref=e485]:
+                - generic [ref=e486] [cursor=pointer]:
+                  - generic [ref=e487]:
+                    - generic [ref=e488]:
+                      - generic [ref=e489]: Grupo 2
+                      - generic [ref=e490]: Básico
+                    - generic [ref=e491]: "Trilha: Ritmo e autonomia de leitura · 2 alunos"
+                  - generic [ref=e492]:
+                    - button "visibility" [ref=e493]:
+                      - generic [ref=e494]: visibility
+                    - button "pie_chart" [ref=e495]:
+                      - generic [ref=e496]: pie_chart
+                  - button "expand_more" [ref=e497]:
+                    - generic [ref=e498]: expand_more
+                - text:        
+              - generic [ref=e499]:
+                - generic [ref=e500] [cursor=pointer]:
+                  - generic [ref=e501]:
+                    - generic [ref=e502]:
+                      - generic [ref=e503]: Grupo 3
+                      - generic [ref=e504]: Proficiente
+                    - generic [ref=e505]: "Trilha: Consolidação de leitura expressiva · 4 alunos"
+                  - generic [ref=e506]:
+                    - button "visibility" [ref=e507]:
+                      - generic [ref=e508]: visibility
+                    - button "pie_chart" [ref=e509]:
+                      - generic [ref=e510]: pie_chart
+                  - button "expand_more" [ref=e511]:
+                    - generic [ref=e512]: expand_more
+                - text:                
+              - generic [ref=e513]:
+                - generic [ref=e514] [cursor=pointer]:
+                  - generic [ref=e515]:
+                    - generic [ref=e516]:
+                      - generic [ref=e517]: Grupo 4
+                      - generic [ref=e518]: Avançado
+                    - generic [ref=e519]: "Trilha: Leitura avançada e ampliação de repertório · 3 alunos"
+                  - generic [ref=e520]:
+                    - button "visibility" [ref=e521]:
+                      - generic [ref=e522]: visibility
+                    - button "pie_chart" [ref=e523]:
+                      - generic [ref=e524]: pie_chart
+                  - button "expand_more" [ref=e525]:
+                    - generic [ref=e526]: expand_more
+                - text:            

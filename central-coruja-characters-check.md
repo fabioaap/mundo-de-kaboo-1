@@ -1,0 +1,55 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Expandir menu" [ref=e5]:
+      - img [ref=e6]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Central Coruja" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic: Coleções
+          - button "Coleções" [ref=e13]
+        - generic [ref=e16]:
+          - generic: Livros
+          - button "Livros" [ref=e17]
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic: Vídeos
+          - button "Vídeos" [ref=e22]
+        - generic [ref=e26]:
+          - generic: Músicas
+          - button "Músicas" [ref=e27]
+        - generic [ref=e30]:
+          - generic: Formações
+          - button "Formações" [ref=e31]
+        - generic [ref=e34]:
+          - generic: Materiais
+          - button "Materiais" [ref=e35]
+      - generic [ref=e40]:
+        - generic: Gerenciar
+        - button "Gerenciar" [ref=e41]:
+          - img [ref=e42]
+    - button "Abrir perfil de Editor" [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]: ET
+        - img "Avatar" [ref=e50]
+  - main [ref=e51]:
+    - generic [ref=e53]:
+      - complementary [ref=e54]:
+        - generic [ref=e55]:
+          - generic [ref=e56]: Administração
+          - button "Recolher menu" [ref=e57]
+        - navigation [ref=e60]:
+          - button "Coleções" [ref=e61]
+          - button "Vídeos" [ref=e65]
+          - button "Músicas" [ref=e70]
+          - button "Formações" [ref=e74]
+          - button "Materiais" [ref=e78]
+          - button "Personagens" [active] [ref=e83]
+      - generic [ref=e102]:
+        - generic [ref=e103]:
+          - button "Voltar" [ref=e104]
+          - heading "Gerenciar" [level=1] [ref=e107]
+        - generic [ref=e109]:
+          - generic [ref=e110]
+          - generic [ref=e124]

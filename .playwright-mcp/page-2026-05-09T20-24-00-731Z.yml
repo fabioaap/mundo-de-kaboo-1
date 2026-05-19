@@ -1,0 +1,77 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Expandir menu" [ref=e5]:
+      - img [ref=e6]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Central Coruja" [ref=e95]
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic: Coleções
+          - button "Coleções" [ref=e12]:
+            - img [ref=e13]
+        - generic [ref=e15]:
+          - generic: Livros
+          - button "Livros" [ref=e16]:
+            - img [ref=e17]
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic: Vídeos
+          - button "Vídeos" [ref=e21]:
+            - img [ref=e22]
+        - generic [ref=e25]:
+          - generic: Músicas
+          - button "Músicas" [ref=e26]:
+            - img [ref=e27]
+        - generic [ref=e29]:
+          - generic: Formações
+          - button "Formações" [ref=e30]:
+            - img [ref=e31]
+        - generic [ref=e33]:
+          - generic: Materiais
+          - button "Materiais" [ref=e34]:
+            - img [ref=e35]
+      - generic [ref=e39]:
+        - generic: Gerenciar
+        - button "Gerenciar" [ref=e40]:
+          - img [ref=e41]
+    - button "Abrir perfil de Editor" [ref=e46]:
+      - generic [ref=e47]:
+        - generic [ref=e48]: ET
+        - img "Avatar" [ref=e49]
+  - main [ref=e50]:
+    - generic [ref=e51]:
+      - generic [ref=e52]:
+        - button "Voltar" [ref=e53]:
+          - img [ref=e54]
+        - heading "Formações" [level=1] [ref=e56]
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - generic [ref=e60]: Bibliotecas
+          - generic [ref=e61]: /
+          - generic [ref=e62]: Formações
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - generic [ref=e66]:
+              - img [ref=e67]
+              - searchbox "Pesquisar em Formações" [ref=e70]
+              - generic [ref=e71]: 0 resultados
+            - button "Filtros" [ref=e72]:
+              - img [ref=e73]
+              - generic [ref=e75]: Filtros
+          - button "Todos 0" [ref=e77]:
+            - generic [ref=e78]: Todos
+            - generic [ref=e79]: "0"
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - heading "Nenhum roteiro publicado ainda." [level=2] [ref=e83]
+            - generic [ref=e84]:
+              - button "Recomendados" [ref=e85]:
+                - img [ref=e86]
+                - text: Recomendados
+              - button "A-Z" [ref=e89]:
+                - img [ref=e90]
+                - text: A-Z
+          - generic [ref=e92]:
+            - paragraph [ref=e93]: Nenhum resultado
+            - paragraph [ref=e94]: Publique guias e formacoes nas colecoes de Central Coruja para começar esta biblioteca.

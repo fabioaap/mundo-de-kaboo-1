@@ -1,0 +1,66 @@
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - button "Coleções" [ref=e6]:
+      - img [ref=e8]
+      - generic [ref=e10]: Coleções
+    - button "Livros" [ref=e11]:
+      - img [ref=e13]
+      - generic [ref=e15]: Livros
+    - button "Vídeos" [ref=e16]:
+      - img [ref=e18]
+      - generic [ref=e21]: Vídeos
+    - button "Músicas" [ref=e22]:
+      - img [ref=e24]
+      - generic [ref=e26]: Músicas
+    - button "Abrir mais opções" [ref=e27]:
+      - img [ref=e29]
+      - generic [ref=e33]: Mais
+  - main [ref=e34]:
+    - generic [ref=e36]:
+      - button "Ir para a home" [ref=e38]:
+        - img "Central Coruja" [ref=e39]
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - paragraph [ref=e43]: Olá, Demo.
+          - heading "Bem-vindo à Central Coruja!" [level=2] [ref=e44]
+          - paragraph [ref=e45]: Histórias, vídeos e experiências de aprendizagem organizados para você começar pela busca e explorar com mais clareza.
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - generic:
+              - img
+            - button "Abrir pesquisa" [ref=e48]: Buscar por título, tema, BNCC ou personagem
+            - button "Refinar busca" [ref=e49]:
+              - img [ref=e50]
+          - generic [ref=e52]:
+            - button "Todos" [ref=e53]:
+              - img [ref=e54]
+              - text: Todos
+            - button "Ed. Infantil" [ref=e56]
+            - button "Fund I" [ref=e57]
+      - generic [ref=e59]:
+        - heading "Todas as Coleções" [level=2] [ref=e62]
+        - generic [ref=e64]:
+          - generic [ref=e66] [cursor=pointer]:
+            - generic [ref=e67]:
+              - img "Kaboo e a Carta Misteriosa" [ref=e70]
+              - generic [ref=e72]: Coleção
+            - heading "Kaboo e a Carta Misteriosa" [level=3] [ref=e74]
+            - paragraph [ref=e75]: Pertencimento e diversidade
+          - generic [ref=e77] [cursor=pointer]:
+            - generic [ref=e78]:
+              - img "Mensageiro e a Canção Certa" [ref=e81]
+              - generic [ref=e83]: Coleção
+            - heading "Mensageiro e a Canção Certa" [level=3] [ref=e85]
+            - paragraph [ref=e86]: Sensibilidade, regulação sensorial e respeito ao silêncio
+          - generic [ref=e88] [cursor=pointer]:
+            - generic [ref=e89]:
+              - img "Baratinha e Baratão no Labirinto do Eco" [ref=e92]
+              - generic [ref=e94]: Coleção
+            - heading "Baratinha e Baratão no Labirinto do Eco" [level=3] [ref=e96]
+            - paragraph [ref=e97]: Escuta ativa e diálogo
+          - generic [ref=e99] [cursor=pointer]:
+            - generic [ref=e100]:
+              - img "Kaboo e o Desafio das Cores" [ref=e103]
+              - generic [ref=e105]: Coleção
+            - heading "Kaboo e o Desafio das Cores" [level=3] [ref=e107]
+            - paragraph [ref=e108]: Conflitos, respeito e reconciliação

@@ -1,0 +1,197 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Expandir menu" [ref=e5]:
+      - img [ref=e6]
+    - button "Ir para o Início" [ref=e8]:
+      - img "Mundo de Kaboo" [ref=e9]
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic: Coleções
+          - button "Coleções" [ref=e13]:
+            - img [ref=e14]
+        - generic [ref=e16]:
+          - generic: Livros
+          - button "Livros" [ref=e17]:
+            - img [ref=e18]
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic: Vídeos
+          - button "Vídeos" [ref=e22]:
+            - img [ref=e23]
+        - generic [ref=e26]:
+          - generic: Músicas
+          - button "Músicas" [ref=e27]:
+            - img [ref=e28]
+        - generic [ref=e30]:
+          - generic: Formações
+          - button "Formações" [ref=e31]:
+            - img [ref=e32]
+        - generic [ref=e34]:
+          - generic: Materiais
+          - button "Materiais" [ref=e35]:
+            - img [ref=e36]
+      - generic [ref=e40]:
+        - generic: Gerenciar
+        - button "Gerenciar" [ref=e41]:
+          - img [ref=e42]
+    - button "Abrir perfil de Editor" [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]: ET
+        - img "Avatar" [ref=e50]
+  - main [ref=e51]:
+    - generic [ref=e53]:
+      - heading "Coleções" [level=1] [ref=e56]
+      - generic [ref=e59]:
+        - generic [ref=e61]:
+          - paragraph [ref=e62]: Comece pela busca
+          - paragraph [ref=e63]: Busque por título, tema, BNCC ou personagem. Refine com filtros e segmentos.
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - generic:
+              - img
+            - button "Abrir pesquisa" [ref=e66]: Buscar por título, tema, BNCC ou personagem
+          - button "Filtros" [ref=e67]:
+            - img [ref=e68]
+            - generic [ref=e70]: Filtros
+        - generic [ref=e71]:
+          - paragraph [ref=e72]: Explorar por segmento
+          - generic [ref=e74]:
+            - button "Todos" [ref=e75]:
+              - img [ref=e76]
+              - text: Todos
+            - button "Ed. Infantil" [ref=e78]
+            - button "Fund I" [ref=e79]
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - heading "Todas as Coleções" [level=2] [ref=e84]
+          - generic [ref=e85]:
+            - button "Idade" [ref=e86]:
+              - img [ref=e87]
+              - text: Idade
+            - generic [ref=e90]: "4"
+            - button "Atualizar coleções" [ref=e91]:
+              - img [ref=e92]
+        - generic [ref=e96]:
+          - generic [ref=e98] [cursor=pointer]:
+            - generic [ref=e99]:
+              - img "Kaboo e a Carta Misteriosa" [ref=e100]
+              - generic [ref=e101]: Coleção
+              - generic [ref=e103]: E.F. Anos Iniciais
+            - heading "Kaboo e a Carta Misteriosa" [level=3] [ref=e104]
+            - paragraph [ref=e105]: Pertencimento e diversidade
+          - generic [ref=e107] [cursor=pointer]:
+            - generic [ref=e108]:
+              - img "Mensageiro e a Canção Certa" [ref=e109]
+              - generic [ref=e110]: Coleção
+              - generic [ref=e112]:
+                - generic [ref=e113]: Ed. Infantil
+                - generic [ref=e114]: E.F. Anos Iniciais
+            - heading "Mensageiro e a Canção Certa" [level=3] [ref=e115]
+            - paragraph [ref=e116]: Sensibilidade, regulação sensorial e respeito ao silêncio
+          - generic [ref=e118] [cursor=pointer]:
+            - generic [ref=e119]:
+              - img "Baratinha e Baratão no Labirinto do Eco" [ref=e120]
+              - generic [ref=e121]: Coleção
+              - generic [ref=e123]: E.F. Anos Iniciais
+            - heading "Baratinha e Baratão no Labirinto do Eco" [level=3] [ref=e124]
+            - paragraph [ref=e125]: Escuta ativa e diálogo
+          - generic [ref=e127] [cursor=pointer]:
+            - generic [ref=e128]:
+              - img "Kaboo e o Desafio das Cores" [ref=e129]
+              - generic [ref=e130]: Coleção
+              - generic [ref=e132]: E.F. Anos Iniciais
+            - heading "Kaboo e o Desafio das Cores" [level=3] [ref=e133]
+            - paragraph [ref=e134]: Conflitos, respeito e reconciliação
+  - generic [ref=e137]:
+    - button "Fechar" [ref=e138]:
+      - img [ref=e139]
+    - generic [ref=e144]:
+      - generic [ref=e149]:
+        - img "Kaboo e a Carta Misteriosa" [ref=e150]
+        - generic [ref=e151]: Coleção
+      - generic [ref=e153]:
+        - generic [ref=e154]:
+          - generic [ref=e155]: Coleção
+          - generic [ref=e156]: E.F. Anos Iniciais
+          - generic [ref=e157]: "|"
+          - button "1º ano" [ref=e158] [cursor=pointer]
+          - button "2º ano" [ref=e159] [cursor=pointer]
+          - button "3º ano" [ref=e160] [cursor=pointer]
+        - heading "Kaboo e a Carta Misteriosa" [level=1] [ref=e161]
+        - paragraph [ref=e162]: Coleção com livro, mídia e materiais de apoio reunidos na mesma experiência.
+        - paragraph [ref=e163]: Uma aventura encantadora sobre amizade e coragem no mundo de Kaboo, onde uma carta misteriosa revela que a diversidade é a maior força de todas.
+        - generic [ref=e165]:
+          - generic [ref=e166]:
+            - generic [ref=e167]:
+              - paragraph [ref=e168]: Itens dessa coleção
+              - paragraph [ref=e169]: Abra o livro e os principais materiais sem perder o contexto desta coleção.
+            - generic [ref=e170]: 5 itens
+          - generic [ref=e171]:
+            - button "Livro" [ref=e172]:
+              - img [ref=e174]
+              - generic [ref=e176]: Livro
+            - button "Contação da História" [ref=e177]:
+              - img [ref=e179]
+              - generic [ref=e181]: Contação da História
+            - button "Desenho Animado" [ref=e182]:
+              - img [ref=e184]
+              - generic [ref=e187]: Desenho Animado
+            - button "Com Libras" [ref=e188]:
+              - img [ref=e190]
+              - generic [ref=e193]: Com Libras
+            - button "Materiais da Coleção" [ref=e194]:
+              - img [ref=e196]
+              - generic [ref=e198]: Materiais da Coleção
+        - generic [ref=e199]:
+          - heading "Informações Pedagógicas" [level=3] [ref=e200]:
+            - img [ref=e201]
+            - text: Informações Pedagógicas
+          - generic [ref=e203]:
+            - generic [ref=e204]:
+              - heading "Tema" [level=4] [ref=e205]
+              - paragraph [ref=e206]: Pertencimento e diversidade
+            - generic [ref=e207]:
+              - heading "Objetivo de Aprendizagem" [level=4] [ref=e208]
+              - paragraph [ref=e209]: Convidar ao pertencimento e à descoberta de que a diversidade é força. A história mostra que pertencer significa escutar, valorizar e respeitar as diferenças; a amizade protege, permitindo compartilhar histórias, brincar, rir e chorar juntos.
+            - generic [ref=e210]:
+              - heading "Personagens Centrais" [level=4] [ref=e211]
+              - generic [ref=e212]:
+                - button "Kaboo Kaboo" [ref=e213]:
+                  - img "Kaboo" [ref=e216]
+                  - generic [ref=e217]: Kaboo
+                - button "Batatinha Batatinha" [ref=e218]:
+                  - img "Batatinha" [ref=e221]
+                  - generic [ref=e222]: Batatinha
+                - button "Blado Blado" [ref=e223]:
+                  - img "Blado" [ref=e226]
+                  - generic [ref=e227]: Blado
+                - button "Papa Papa" [ref=e228]:
+                  - img "Papa" [ref=e231]
+                  - generic [ref=e232]: Papa
+                - button "Gaio Gaio" [ref=e233]:
+                  - img "Gaio" [ref=e236]
+                  - generic [ref=e237]: Gaio
+                - button "Dr. Ratazana Dr. Ratazana" [ref=e238]:
+                  - img "Dr. Ratazana" [ref=e241]
+                  - generic [ref=e242]: Dr. Ratazana
+            - generic [ref=e243]:
+              - heading "Habilidades da BNCC" [level=4] [ref=e244]
+              - generic [ref=e245]:
+                - button "EF15LP01" [ref=e247] [cursor=pointer]
+                - button "EF15LP03" [ref=e249] [cursor=pointer]
+                - button "EF15LP04" [ref=e251] [cursor=pointer]
+                - button "EF15LP09" [ref=e253] [cursor=pointer]
+                - button "EF15LP10" [ref=e255] [cursor=pointer]
+                - button "EF15LP18" [ref=e257] [cursor=pointer]
+                - button "EF01LP02" [ref=e259] [cursor=pointer]
+                - button "EF01LP12" [ref=e261] [cursor=pointer]
+                - button "EF02LP13" [ref=e263] [cursor=pointer]
+                - button "EF02LP16" [ref=e265] [cursor=pointer]
+                - button "EF01ER01" [ref=e267] [cursor=pointer]
+                - button "EF01HI08" [ref=e269] [cursor=pointer]
+            - generic [ref=e270]:
+              - heading "Competências CASEL" [level=4] [ref=e271]
+              - generic [ref=e272]:
+                - button "Habilidades de Relacionamento" [ref=e274] [cursor=pointer]
+                - button "Consciência Social" [ref=e276] [cursor=pointer]

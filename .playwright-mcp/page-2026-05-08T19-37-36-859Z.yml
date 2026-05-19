@@ -1,0 +1,206 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "Universo Educacross" [ref=e5] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br
+          - img "Universo Educacross" [ref=e6]
+        - search [ref=e8]:
+          - searchbox "Buscar na loja" [ref=e9]
+          - button "Buscar" [ref=e10] [cursor=pointer]
+        - generic [ref=e11]:
+          - generic [ref=e12]:
+            - link "Atendimento" [ref=e13] [cursor=pointer]:
+              - /url: /contato/
+            - link "Minha conta" [ref=e14] [cursor=pointer]:
+              - /url: /account/login/
+          - link "Carrinho com 0 item(ns)" [ref=e15] [cursor=pointer]:
+            - /url: /comprar/
+            - img [ref=e16]
+            - generic [ref=e20]: Carrinho
+            - generic [ref=e21]: "0"
+      - navigation "Links principais" [ref=e22]:
+        - link "Início" [ref=e23] [cursor=pointer]:
+          - /url: /
+        - link "Produtos" [ref=e25] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/produtos/
+          - text: Produtos
+          - img [ref=e26]
+        - link "Personagens" [ref=e28] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/personagens/
+        - link "Sobre nós" [ref=e29] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/sobre-nos/
+  - generic [ref=e32]:
+    - generic [ref=e33]:
+      - text: Este site usa
+      - strong [ref=e34]: cookies
+      - text: para melhorar sua experiência de compra.
+    - link "Entendi" [ref=e36] [cursor=pointer]:
+      - /url: "#"
+  - navigation "Navegação estrutural" [ref=e37]:
+    - generic [ref=e38]:
+      - link "Início" [ref=e39] [cursor=pointer]:
+        - /url: https://loja.educabox.com.br
+        - img [ref=e40]
+        - text: Início
+      - img [ref=e44]
+      - link "Produtos" [ref=e46] [cursor=pointer]:
+        - /url: /produtos/
+      - img [ref=e48]
+      - generic [ref=e50]: Caneta Esferográfica com Touch (Preta)
+  - generic [ref=e51]:
+    - region "Galeria de imagens" [ref=e52]:
+      - img "Caneta Esferográfica com Touch (Preta)" [ref=e54]
+    - generic [ref=e55]:
+      - generic [ref=e56]:
+        - generic [ref=e57]: Universo Educacross
+        - link "Caneta" [ref=e59] [cursor=pointer]:
+          - /url: /produtos/
+      - heading "Caneta Esferográfica com Touch (Preta)" [level=1] [ref=e60]
+      - paragraph [ref=e61]: Uma caneta da curadoria Educacross para acompanhar a rotina com mais personalidade.
+      - link "Explorar caneta" [ref=e63] [cursor=pointer]:
+        - /url: /produtos/
+        - img [ref=e64]
+        - text: Explorar caneta
+      - generic [ref=e66]:
+        - generic [ref=e68]: R$9,90
+        - paragraph [ref=e69]:
+          - text: ou
+          - strong [ref=e70]: 3× sem juros
+          - text: de
+          - strong [ref=e71]: R$3,30
+      - separator [ref=e72]
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - paragraph [ref=e75]: Quantidade
+          - generic [ref=e76]:
+            - generic [ref=e77]:
+              - button "Diminuir quantidade" [ref=e78] [cursor=pointer]:
+                - img [ref=e79]
+              - spinbutton "Quantidade" [ref=e80]: "1"
+              - button "Aumentar quantidade" [ref=e81] [cursor=pointer]:
+                - img [ref=e82]
+            - generic [ref=e83]:
+              - img [ref=e84]
+              - text: Em estoque
+        - generic [ref=e86]:
+          - button "Adicionar ao carrinho" [ref=e87] [cursor=pointer]:
+            - img [ref=e88]
+            - text: Adicionar ao carrinho
+          - button "Comprar agora" [ref=e92] [cursor=pointer]
+      - list "Benefícios da compra" [ref=e93]:
+        - listitem [ref=e94]:
+          - img [ref=e96]
+          - generic [ref=e101]:
+            - strong [ref=e102]: Frete
+            - generic [ref=e103]: Frete grátis acima de R$199
+        - listitem [ref=e104]:
+          - img [ref=e106]
+          - generic [ref=e109]:
+            - strong [ref=e110]: Troca fácil
+            - generic [ref=e111]: 30 dias para troca
+        - listitem [ref=e112]:
+          - img [ref=e114]
+          - generic [ref=e116]:
+            - strong [ref=e117]: Segurança
+            - generic [ref=e118]: Pagamento 100% seguro
+      - generic [ref=e119]:
+        - generic [ref=e120]:
+          - img [ref=e121]
+          - generic [ref=e126]: Calcular prazo e frete
+        - generic [ref=e127]:
+          - generic [ref=e128]:
+            - textbox "CEP para calcular frete" [ref=e129]:
+              - /placeholder: Informe seu CEP
+            - button "Calcular frete" [ref=e130] [cursor=pointer]: Calcular
+          - link "Não sei meu CEP" [ref=e131] [cursor=pointer]:
+            - /url: http://www.buscacep.correios.com.br/sistemas/buscacep/
+  - generic [ref=e133]:
+    - generic [ref=e134]:
+      - generic [ref=e135]: Guia rápido
+      - heading "Tudo o que você precisa saber antes de finalizar" [level=2] [ref=e136]
+      - paragraph [ref=e137]: Descrição, especificações e avaliações reunidas em um único bloco, no mesmo tom editorial do restante da loja.
+    - tablist "Informações do produto" [ref=e138]:
+      - tab "Descrição" [selected] [ref=e139] [cursor=pointer]
+      - tab "Especificações" [ref=e140] [cursor=pointer]
+    - tabpanel "Descrição" [ref=e141]:
+      - paragraph [ref=e143]: A caneta é um item funcional para escrita no dia a dia, ideal para uso escolar, profissional ou pessoal. Com design temático e proposta prática, ela une utilidade e identidade visual em um acessório simples e indispensável.
+  - generic [ref=e145]:
+    - heading "Produtos similares" [level=2] [ref=e147]
+    - listitem [ref=e152]:
+      - link "Ver Caneta Esferográfica com Touch (Branca)" [ref=e153] [cursor=pointer]:
+        - /url: https://loja.educabox.com.br/produtos/canetaesferografica-com-touch-branca/
+        - img "Caneta Esferográfica com Touch (Branca)" [ref=e154]
+        - generic [ref=e155]: Ver produto
+      - generic [ref=e156]:
+        - link "Caneta Esferográfica com Touch (Branca)" [ref=e157] [cursor=pointer]:
+          - /url: https://loja.educabox.com.br/produtos/canetaesferografica-com-touch-branca/
+        - paragraph [ref=e158]: Tipo · Caneta
+        - paragraph [ref=e159]:
+          - strong [ref=e160]: R$9,90
+  - link "Fale conosco pelo WhatsApp" [ref=e161] [cursor=pointer]:
+    - /url: https://wa.me/5516992994152
+    - img [ref=e162]
+  - contentinfo [ref=e164]:
+    - generic [ref=e165]:
+      - generic [ref=e166]:
+        - generic [ref=e167]:
+          - link "Universo Educacross" [ref=e169] [cursor=pointer]:
+            - /url: https://loja.educabox.com.br
+            - img "Universo Educacross" [ref=e170]
+          - paragraph [ref=e171]: Leve o universo Educacross para casa ou para a escola.
+          - generic [ref=e172]:
+            - heading "Entre em contato" [level=4] [ref=e173]
+            - generic [ref=e174]:
+              - link "(16) 99299-4152" [ref=e175] [cursor=pointer]:
+                - /url: https://wa.me/5516992994152
+              - link "loja.suporte@educacross.com.br" [ref=e176] [cursor=pointer]:
+                - /url: mailto:loja.suporte@educacross.com.br
+        - generic [ref=e177]:
+          - heading "Loja" [level=4] [ref=e178]
+          - generic [ref=e179]:
+            - link "Todos os produtos" [ref=e180] [cursor=pointer]:
+              - /url: /produtos
+            - link "Personagens" [ref=e181] [cursor=pointer]:
+              - /url: /personagens
+        - generic [ref=e182]:
+          - heading "Institucional" [level=4] [ref=e183]
+          - generic [ref=e184]:
+            - link "Sobre nós" [ref=e185] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/sobre-nos/
+            - link "Contato" [ref=e186] [cursor=pointer]:
+              - /url: /contato/
+            - link "Política de Privacidade" [ref=e187] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/politica-de-privacidade/
+        - generic [ref=e188]:
+          - heading "Ajuda" [level=4] [ref=e189]
+          - generic [ref=e190]:
+            - link "Minha conta" [ref=e191] [cursor=pointer]:
+              - /url: /account
+            - link "Meus pedidos" [ref=e192] [cursor=pointer]:
+              - /url: /account/orders
+            - link "Perguntas frequentes" [ref=e193] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/perguntas-frequentes/
+            - link "Trocas e devoluções" [ref=e194] [cursor=pointer]:
+              - /url: https://loja.educabox.com.br/trocas-e-devolucoes/
+      - generic [ref=e195]:
+        - generic [ref=e196]:
+          - img "visa" [ref=e197]
+          - img "mastercard" [ref=e198]
+          - img "amex" [ref=e199]
+          - img "diners" [ref=e200]
+          - img "br_aura" [ref=e201]
+          - img "br_elo" [ref=e202]
+          - img "br_hipercard" [ref=e203]
+          - img "br_discover" [ref=e204]
+          - img "boleto" [ref=e205]
+          - img "payment-method-types_pix" [ref=e206]
+        - img "api_4190" [ref=e208]
+      - generic [ref=e209]:
+        - generic [ref=e210]:
+          - img [ref=e211]
+          - generic [ref=e214]: Empresa brasileira registrada — CNPJ 15.130.060/0001-04 — Educacross Educacao Ltda.
+        - generic [ref=e215]:
+          - img [ref=e216]
+          - generic [ref=e220]: Loja 100% segura — pagamento criptografado e dados protegidos.
+    - generic [ref=e225]: Copyright Educacross - 2026. Todos os direitos reservados.
