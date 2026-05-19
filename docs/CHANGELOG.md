@@ -1,12 +1,12 @@
 # Changelog - Análise Automática
 
-**Data**: 18/05/2026, 19:44:07
+**Data**: 19/05/2026, 13:37:58
 
 ## Resumo do Projeto
 
 - **Componentes**: 26
 - **Telas**: 24
-- **Hooks**: 12
+- **Hooks**: 13
 - **Tipos**: 54
 
 ## Ultimas Mudanças Detectadas

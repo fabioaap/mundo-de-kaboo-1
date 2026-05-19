@@ -1,10 +1,11 @@
 # Documentação de React Hooks Customizados
 
-**Atualizado em**: 18/05/2026, 19:44:07
+**Atualizado em**: 19/05/2026, 13:37:58
 
 ## Índice
 
 - [brandSlug](#brandslug)
+- [useBrandConfig.test](#usebrandconfig.test)
 - [useBrandConfig](#usebrandconfig)
 - [useDebounce](#usedebounce)
 - [useIsMobile](#useismobile)
@@ -28,6 +29,18 @@
 
 
 **Exports**: `resolveBrandSlugFromPathname`
+
+---
+
+## useBrandConfig.test
+
+**Arquivo**: `hooks/useBrandConfig.test.ts`
+
+**Descrição**: Sem descrição
+
+
+
+**Exports**: 
 
 ---
 
