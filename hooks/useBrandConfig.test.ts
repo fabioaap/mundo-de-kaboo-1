@@ -1,5 +1,5 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { resolveBrandSlugFromPathname } from './brandSlug';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { resolveBrandSlugFromPathname, resolveBrandSlugFromSearch } from './brandSlug';
 
 const createStorageMock = (): Storage => {
     const store = new Map<string, string>();
@@ -25,6 +25,20 @@ beforeAll(() => {
     vi.stubGlobal('localStorage', createStorageMock());
 });
 
+beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    vi.stubGlobal('window', {
+        location: {
+            search: '',
+            pathname: '/',
+            hostname: 'mundodekaboo.educacross.dev',
+        },
+        localStorage,
+        sessionStorage,
+    } as unknown as Window & typeof globalThis);
+});
+
 describe('resolveBrandSlugFromPathname', () => {
     it('returns central-coruja for coruja preview paths', () => {
         expect(resolveBrandSlugFromPathname('/coruja-lab/')).toBe('central-coruja');
@@ -37,6 +51,57 @@ describe('resolveBrandSlugFromPathname', () => {
         expect(resolveBrandSlugFromPathname('/')).toBeNull();
         expect(resolveBrandSlugFromPathname('/kaboo/')).toBeNull();
         expect(resolveBrandSlugFromPathname('/admin/white-label')).toBeNull();
+    });
+});
+
+describe('resolveBrandSlugFromSearch', () => {
+    it('returns supported brands from query parameters', () => {
+        expect(resolveBrandSlugFromSearch('?brand=central-coruja')).toBe('central-coruja');
+        expect(resolveBrandSlugFromSearch('?brand=kaboo')).toBe('kaboo');
+    });
+
+    it('returns null for unsupported query parameters', () => {
+        expect(resolveBrandSlugFromSearch('?brand=outro')).toBeNull();
+        expect(resolveBrandSlugFromSearch('')).toBeNull();
+    });
+});
+
+describe('resolveBrandSlug', () => {
+    it('prefers an explicit brand query over persisted white-label preview', async () => {
+        localStorage.setItem('kaboo:white-label-preview-settings', JSON.stringify({
+            activeBrandId: 'central-coruja',
+            previewEnabled: true,
+            brands: {
+                kaboo: {
+                    id: 'kaboo',
+                    name: 'Mundo de Kaboo',
+                    description: 'Experiência padrão da marca Kaboo.',
+                    heroParallaxEnabled: false,
+                    heroParallaxMode: 'off',
+                },
+                'central-coruja': {
+                    id: 'central-coruja',
+                    name: 'Central Coruja',
+                    description: 'Preview visual do white label da Central Coruja.',
+                    heroParallaxEnabled: false,
+                    heroParallaxMode: 'off',
+                },
+            },
+        }));
+
+        vi.stubGlobal('window', {
+            location: {
+                search: '?brand=kaboo',
+                pathname: '/',
+                hostname: 'mundodekaboo.educacross.dev',
+            },
+            localStorage,
+            sessionStorage,
+        } as unknown as Window & typeof globalThis);
+
+        const { resolveBrandSlug } = await import('./useBrandConfig');
+
+        expect(resolveBrandSlug()).toBe('kaboo');
     });
 });
 

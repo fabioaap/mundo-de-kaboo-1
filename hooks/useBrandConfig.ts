@@ -13,7 +13,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { isDevMockSession } from '../lib/api';
 import { applyTheme, themes, BrandTheme } from '../design-system/tokens/themes';
 import { getWhiteLabelPreviewSettings, subscribeToWhiteLabelPreviewSettings } from '../lib/whiteLabelPreview';
-import { resolveBrandSlugFromPathname } from './brandSlug';
+import { resolveBrandSlugFromPathname, resolveBrandSlugFromSearch } from './brandSlug';
 import {
     extractBrandDesignTokens,
     extractBrandVisualIdentity,
@@ -134,6 +134,13 @@ const MOCK_BRAND_OVERRIDES: Record<string, Partial<BrandBootstrap>> = {
 
 /** Resolve o slug da marca a partir de env > hostname > fallback. */
 function resolveBrandSlug(): string {
+    if (typeof window !== 'undefined') {
+        const fromSearch = resolveBrandSlugFromSearch(window.location.search);
+        if (fromSearch) {
+            return fromSearch;
+        }
+    }
+
     const previewSettings = getWhiteLabelPreviewSettings();
     if (previewSettings.previewEnabled) {
         return previewSettings.activeBrandId;

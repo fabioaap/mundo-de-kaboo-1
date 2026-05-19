@@ -1,6 +1,6 @@
 # Documentação de React Hooks Customizados
 
-**Atualizado em**: 19/05/2026, 15:41:02
+**Atualizado em**: 19/05/2026, 16:04:18
 
 ## Índice
 
@@ -28,7 +28,7 @@
 
 
 
-**Exports**: `resolveBrandSlugFromPathname`
+**Exports**: `resolveBrandSlugFromSearch`, `resolveBrandSlugFromPathname`
 
 ---
 

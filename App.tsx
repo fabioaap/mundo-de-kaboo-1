@@ -129,13 +129,25 @@ const isPortalEntryPath = (): boolean => {
 
 const getDefaultPublicScreen = (): ScreenName => (isPortalEntryPath() ? 'portal' : 'login');
 
+const getPortalEntrySearch = (): string => {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  params.delete('brand');
+
+  const nextSearch = params.toString();
+  return nextSearch ? `?${nextSearch}` : '';
+};
+
 const getHistoryUrlForScreen = (screen: ScreenName): string => {
   if (typeof window === 'undefined') {
     return screen === 'portal' ? '/' : `#${screen}`;
   }
 
   return screen === 'portal'
-    ? `${window.location.pathname}${window.location.search}`
+    ? `${window.location.pathname}${getPortalEntrySearch()}`
     : `#${screen}`;
 };
 

@@ -2,7 +2,6 @@ import React from 'react';
 import { Icons } from '../components/Icons';
 import { LOGO_URL } from '../constants';
 import { buildAppUrl } from '../lib/appPaths';
-import { setActiveWhiteLabelBrand } from '../lib/whiteLabelPreview';
 
 type PortalDestination = 'kaboo' | 'central-coruja' | 'wiki';
 
@@ -20,8 +19,8 @@ const getWikiUrl = (): string => {
 };
 
 const routeToBrandLogin = (brandId: 'kaboo' | 'central-coruja') => {
-    setActiveWhiteLabelBrand(brandId);
-    window.location.assign(buildAppUrl('#login'));
+    const brandSearch = new URLSearchParams({ brand: brandId }).toString();
+    window.location.assign(buildAppUrl(`?${brandSearch}#login`));
 };
 
 const routeToWiki = () => {
