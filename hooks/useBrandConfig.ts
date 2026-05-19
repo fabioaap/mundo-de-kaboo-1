@@ -79,6 +79,7 @@ export interface BrandConfig {
 
 const CACHE_KEY = 'kaboo:brand_bootstrap_cache';
 const BRAND_BOOTSTRAP_REFRESH_EVENT = 'kaboo:brand-bootstrap-refresh';
+const CENTRAL_CORUJA_DEFAULT_HERO_IMAGE_URL = '/coruja-hero-banner-v2.webp';
 
 const DEFAULT_MENU: BrandMenuItem[] = [
     { key: 'collections', label: 'Coleções', route: 'home', enabled: true, order: 10 },
@@ -241,9 +242,17 @@ function applyMockOverrideToSettings(settings: BrandSettings, override: MockBran
 }
 
 function normalizeBootstrap(bootstrap: BrandBootstrap): BrandBootstrap {
+    const normalizedSettings = normalizeBrandSettings(bootstrap.settings);
+    const nextSettings = bootstrap.brand.slug === 'central-coruja' && !normalizedSettings.home_hero_image_url
+        ? {
+            ...normalizedSettings,
+            home_hero_image_url: CENTRAL_CORUJA_DEFAULT_HERO_IMAGE_URL,
+        }
+        : normalizedSettings;
+
     return {
         ...bootstrap,
-        settings: normalizeBrandSettings(bootstrap.settings),
+        settings: nextSettings,
     };
 }
 
