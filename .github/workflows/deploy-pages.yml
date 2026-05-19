@@ -68,17 +68,62 @@ jobs:
       PAGES_EXPECTED_TITLE: Mundo de Kaboo
       PAGES_GITHUB_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
       PAGES_DEPLOY_URL: ${{ needs.deploy.outputs.page_url }}
+      CLOUDFLARE_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_ID }}
+      CLOUDFLARE_ACCESS_CLIENT_SECRET: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_SECRET }}
     steps:
       - name: Smoke check deployed site
         shell: bash
         run: |
           set -euo pipefail
 
-          request_url="${PAGES_GITHUB_URL}"
-          echo "Checking ${request_url}"
+          echo "Checking ${PAGES_GITHUB_URL}"
           echo "Deploy reported URL: ${PAGES_DEPLOY_URL}"
 
-          final_url="$(curl -fsSL -o smoke-body.html -D smoke-headers.txt -L -w '%{url_effective}' "${request_url}")"
+          if [[ -n "${CLOUDFLARE_ACCESS_CLIENT_ID}" || -n "${CLOUDFLARE_ACCESS_CLIENT_SECRET}" ]]; then
+            if [[ -z "${CLOUDFLARE_ACCESS_CLIENT_ID}" || -z "${CLOUDFLARE_ACCESS_CLIENT_SECRET}" ]]; then
+              echo "::error::Configure both CLOUDFLARE_ACCESS_CLIENT_ID and CLOUDFLARE_ACCESS_CLIENT_SECRET GitHub secrets, or remove both."
+              exit 1
+            fi
+
+            access_headers=(
+              -H "CF-Access-Client-Id: ${CLOUDFLARE_ACCESS_CLIENT_ID}"
+              -H "CF-Access-Client-Secret: ${CLOUDFLARE_ACCESS_CLIENT_SECRET}"
+            )
+            echo "Cloudflare Access service token detected for smoke-check."
+          else
+            access_headers=()
+          fi
+
+          github_redirect_url="$(curl -fsSI "${PAGES_GITHUB_URL}" | tr -d '\r' | awk 'tolower($1)=="location:" {print $2}' | tail -n1)"
+
+          if [[ -z "${github_redirect_url}" ]]; then
+            echo "::error::GitHub Pages did not redirect the github.io URL to the custom domain."
+            exit 1
+          fi
+
+          redirect_host="$(printf '%s' "${github_redirect_url}" | sed -E 's#https?://([^/]+)/?.*#\1#')"
+          request_url="$(printf '%s' "${github_redirect_url}" | sed -E 's#^http://#https://#')"
+
+          echo "Custom domain redirect: ${github_redirect_url}"
+
+          if [[ "${redirect_host}" != "${PAGES_EXPECTED_HOST}" ]]; then
+            echo "::error::GitHub Pages resolved to unexpected host ${redirect_host}. Expected ${PAGES_EXPECTED_HOST}."
+            exit 1
+          fi
+
+          if ! final_url="$(curl -fsSL -o smoke-body.html -D smoke-headers.txt -L -w '%{url_effective}' "${access_headers[@]}" "${request_url}")"; then
+            if grep -qi 'cf-access\|cloudflare' smoke-headers.txt 2>/dev/null; then
+              if [[ ${#access_headers[@]} -eq 0 ]]; then
+                echo "::error::Custom domain is protected by Cloudflare Access. Configure CLOUDFLARE_ACCESS_CLIENT_ID and CLOUDFLARE_ACCESS_CLIENT_SECRET GitHub secrets for the smoke-check job."
+              else
+                echo "::error::Cloudflare Access rejected the configured service token during smoke-check."
+              fi
+            else
+              echo "::error::Smoke check request failed before the app shell could be validated."
+            fi
+            exit 1
+          fi
+
           final_host="$(printf '%s' "${final_url}" | sed -E 's#https?://([^/]+)/?.*#\1#')"
 
           echo "Final URL: ${final_url}"
@@ -89,7 +134,11 @@ jobs:
           fi
 
           if grep -qi 'Cloudflare Access' smoke-body.html || grep -qi 'cdn-cgi/access' smoke-body.html; then
-            echo "::error::Custom domain is still protected by Cloudflare Access."
+            if [[ ${#access_headers[@]} -eq 0 ]]; then
+              echo "::error::Custom domain is protected by Cloudflare Access. Configure CLOUDFLARE_ACCESS_CLIENT_ID and CLOUDFLARE_ACCESS_CLIENT_SECRET GitHub secrets for the smoke-check job."
+            else
+              echo "::error::Cloudflare Access service token did not bypass the custom domain."
+            fi
             exit 1
           fi
 
