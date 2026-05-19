@@ -405,10 +405,10 @@ INSERT INTO public.brand_settings (brand_id, display_name, primary_color, light_
 SELECT
     b.id,
     'Central Coruja',
-    '#1B5E20',
-    '#388E3C',
-    '#F1F8E9',
-    '#F9A825',
+    '#0C1A34',
+    '#5D1E76',
+    '#F8F4FF',
+    '#EA9A3B',
     '[
         {"key":"collections","label":"Coleções","route":"home","enabled":true,"order":10},
         {"key":"books","label":"Livros","route":"home","enabled":true,"order":20},
