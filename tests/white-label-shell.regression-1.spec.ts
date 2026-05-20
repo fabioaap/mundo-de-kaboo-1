@@ -63,8 +63,8 @@ test.describe('REG-WL-SHELL-001 — Metadados do shell acompanham a marca ativa'
         await expect(page.getByText(/Contexto alterado.*Mundo de Kaboo/i)).toBeVisible({ timeout: 5_000 });
         await expectBrandShell(page, {
             title: 'Mundo de Kaboo',
-            heading: 'Coleções',
-            headingLevel: 1,
+            heading: 'Bem-vindo ao Mundo de Kaboo!',
+            headingLevel: 2,
             themeColor: '#5d1f58',
         });
     });

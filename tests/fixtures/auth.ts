@@ -9,6 +9,12 @@ export const TEST_USERS = {
 };
 
 const MOCK_USERS_STORAGE_KEY = 'kaboo_mock_users';
+const MOCK_SESSION_STORAGE_KEY = 'kaboo_mock_session_user_id';
+const DEV_MOCK_SESSION_KEY = 'kaboo_dev_mock_session';
+const PROFILE_CACHE_KEY = 'kaboo_profile_cache';
+const SESSION_STORAGE_KEY = 'kaboo_session_id';
+const ADMIN_SESSION_ID = 'session_e2e_shared_admin';
+const ADMIN_USER_ID = 'mock-admin';
 
 function buildMockUsers(now: string, futureDate: string) {
     return [
@@ -37,16 +43,44 @@ export async function setupAdminSession(page: Page): Promise<void> {
     const now = new Date().toISOString();
     const futureDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
     const users = buildMockUsers(now, futureDate);
+    const profile = users[0].profile;
 
-    await page.goto('/');
-    await page.locator('#field-email').waitFor({ state: 'visible', timeout: 15_000 });
-    await page.evaluate(
-        ({ key, usersJson }) => { localStorage.setItem(key, usersJson); },
-        { key: MOCK_USERS_STORAGE_KEY, usersJson: JSON.stringify(users) },
+    await page.addInitScript(
+        ({
+            sessionId,
+            sessionStorageKey,
+            devMockSessionKey,
+            mockSessionStorageKey,
+            mockUsersStorageKey,
+            profileCacheKey,
+            userId,
+            usersJson,
+            profileCacheJson,
+        }) => {
+            window.sessionStorage.setItem(sessionStorageKey, sessionId);
+            window.sessionStorage.setItem(devMockSessionKey, '1');
+            window.sessionStorage.setItem(mockSessionStorageKey, userId);
+            window.localStorage.setItem(mockSessionStorageKey, userId);
+            window.localStorage.setItem(mockUsersStorageKey, usersJson);
+            window.sessionStorage.setItem(profileCacheKey, profileCacheJson);
+        },
+        {
+            sessionId: ADMIN_SESSION_ID,
+            sessionStorageKey: SESSION_STORAGE_KEY,
+            devMockSessionKey: DEV_MOCK_SESSION_KEY,
+            mockSessionStorageKey: MOCK_SESSION_STORAGE_KEY,
+            mockUsersStorageKey: MOCK_USERS_STORAGE_KEY,
+            profileCacheKey: PROFILE_CACHE_KEY,
+            userId: ADMIN_USER_ID,
+            usersJson: JSON.stringify(users),
+            profileCacheJson: JSON.stringify({
+                profile,
+                userId: ADMIN_USER_ID,
+                sessionId: ADMIN_SESSION_ID,
+                timestamp: Date.now(),
+            }),
+        },
     );
-    await page.reload();
-    await page.locator('#field-email').waitFor({ state: 'visible', timeout: 15_000 });
-    await page.locator('#field-email').fill(TEST_USERS.admin.email);
-    await page.locator('#field-password').fill(TEST_USERS.admin.password);
-    await page.getByRole('button', { name: 'Entrar' }).click();
+
+    await page.goto('/#home');
 }
