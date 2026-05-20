@@ -2220,7 +2220,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     collections={filteredCollections}
                     onCollectionClick={handleCollectionClick}
                     grants={contentGrants}
-                    tone={isCentralCoruja ? 'central-coruja' : 'default'}
+                    tone="default"
                   />
                 </div>
               ) : (
