@@ -4,7 +4,17 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
-const docsSiteUrl = process.env.DOCS_SITE_URL ?? 'https://docs.mundodekaboo.com';
+const normalizeBaseUrl = (baseUrl: string): string => {
+  if (!baseUrl || baseUrl === '.' || baseUrl === './') {
+    return '/';
+  }
+
+  const withLeadingSlash = baseUrl.startsWith('/') ? baseUrl : `/${baseUrl}`;
+  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
+};
+
+const docsSiteUrl = process.env.DOCS_SITE_URL ?? 'http://localhost:4200';
+const docsBaseUrl = normalizeBaseUrl(process.env.DOCS_BASE_URL ?? '/');
 const docsRepoUrl = 'https://github.com/educacrossgit/Mundo-de-Kaboo-V2';
 
 const config: Config = {
@@ -17,7 +27,7 @@ const config: Config = {
   },
 
   url: docsSiteUrl,
-  baseUrl: '/',
+  baseUrl: docsBaseUrl,
 
   organizationName: 'educacrossgit',
   projectName: 'Mundo-de-Kaboo-V2',

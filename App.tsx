@@ -13,6 +13,7 @@ import { useBrandConfig } from './hooks/useBrandConfig';
 import { resolveBrandSlugFromPathname } from './hooks/brandSlug';
 import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
 import { setActiveBrandForCharacters } from './lib/characters';
+import { getAccessibleNavState, PROTECTED_SCREENS } from './lib/navigationAccess';
 import { logger } from './lib/logger';
 import { clearPendingPasswordSetup, hasPendingPasswordSetup, isInvitedAuthUser, markPendingPasswordSetup } from './lib/passwordSetupFlow';
 import { setMockActiveBrand } from './lib/mockData';
@@ -46,23 +47,6 @@ import { LOGO_URL } from './constants';
 // Storage keys
 const STORAGE_NAV_STATE = 'kaboo_nav_state';
 const STORAGE_PREVIOUS_STATE = 'kaboo_previous_state';
-
-const PROTECTED_SCREENS: ScreenName[] = [
-  'home',
-  'search',
-  'videos',
-  'music',
-  'formations',
-  'materials',
-  'profile',
-  'my_data',
-  'player_book',
-  'player_audio',
-  'player_video',
-  'tools',
-  'support',
-  'admin',
-];
 
 const PLAYER_SCREENS: ScreenName[] = ['player_audio', 'player_book', 'player_video', 'tools'];
 const HASH_ADDRESSABLE_SCREENS = new Set<ScreenName>([
@@ -164,6 +148,19 @@ const getHistoryUrlForScreen = (screen: ScreenName): string => {
   return screen === 'portal'
     ? `${window.location.pathname}${getPortalEntrySearch()}`
     : `#${screen}`;
+};
+
+const isHistoryUrlSynced = (screen: ScreenName): boolean => {
+  if (typeof window === 'undefined') {
+    return true;
+  }
+
+  if (screen === 'portal') {
+    return window.location.hash === ''
+      && `${window.location.pathname}${window.location.search}` === getHistoryUrlForScreen(screen);
+  }
+
+  return window.location.hash === getHistoryUrlForScreen(screen);
 };
 
 // Helper functions for localStorage persistence
@@ -299,6 +296,13 @@ const App: React.FC = () => {
   const brandPrimaryColor = brandBootstrap.settings.primary_color || DEFAULT_BRAND_PRIMARY_COLOR;
   const brandIconUrl = brandLogoUrl || DEFAULT_FAVICON_URL;
   const brandAppleTouchIconUrl = brandLogoUrl || DEFAULT_APPLE_TOUCH_ICON_URL;
+  const getAccessibleStateForSession = (state: NavState): NavState =>
+    sessionChecked
+      ? getAccessibleNavState(state, Boolean(accessProfile), getDefaultPublicScreen())
+      : state;
+  const resolvedNavState = sessionChecked
+    ? getAccessibleStateForSession(navState)
+    : navState;
 
   // Save navState to localStorage whenever it changes
   useEffect(() => {
@@ -683,13 +687,28 @@ const App: React.FC = () => {
         return;
       }
 
+      const nextState = getAccessibleStateForSession(hashState);
+
       setNavState((prev) => {
-        if (prev.currentScreen === hashState.currentScreen && prev.params === undefined) {
+        if (
+          prev.currentScreen === nextState.currentScreen
+          && prev.params === undefined
+          && isHistoryUrlSynced(nextState.currentScreen)
+        ) {
           return prev;
         }
 
-        saveNavState(hashState);
-        return hashState;
+        saveNavState(nextState);
+        history.replaceState(
+          { screen: nextState.currentScreen, params: nextState.params },
+          '',
+          getHistoryUrlForScreen(nextState.currentScreen)
+        );
+        if (prev.currentScreen === nextState.currentScreen && prev.params === undefined) {
+          return prev;
+        }
+
+        return nextState;
       });
       window.scrollTo(0, 0);
     };
@@ -697,7 +716,7 @@ const App: React.FC = () => {
     window.addEventListener('hashchange', handleHashChange);
 
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [accessProfile, sessionChecked]);
 
   useEffect(() => {
     const hashState = getNavStateFromHash();
@@ -705,24 +724,59 @@ const App: React.FC = () => {
       return;
     }
 
-    if (navState.currentScreen === hashState.currentScreen && navState.params === undefined) {
+    const nextState = getAccessibleStateForSession(hashState);
+
+    if (
+      navState.currentScreen === nextState.currentScreen
+      && navState.params === undefined
+      && isHistoryUrlSynced(nextState.currentScreen)
+    ) {
       return;
     }
 
     setNavState((prev) => {
-      if (prev.currentScreen === hashState.currentScreen && prev.params === undefined) {
+      if (
+        prev.currentScreen === nextState.currentScreen
+        && prev.params === undefined
+        && isHistoryUrlSynced(nextState.currentScreen)
+      ) {
         return prev;
       }
 
-      saveNavState(hashState);
+      saveNavState(nextState);
       history.replaceState(
-        { screen: hashState.currentScreen, params: hashState.params },
+        { screen: nextState.currentScreen, params: nextState.params },
         '',
-        getHistoryUrlForScreen(hashState.currentScreen)
+        getHistoryUrlForScreen(nextState.currentScreen)
       );
-      return hashState;
+      if (prev.currentScreen === nextState.currentScreen && prev.params === undefined) {
+        return prev;
+      }
+
+      return nextState;
     });
-  }, [navState.currentScreen, navState.params]);
+  }, [accessProfile, navState.currentScreen, navState.params, sessionChecked]);
+
+  useEffect(() => {
+    if (!sessionChecked) {
+      return;
+    }
+
+    if (resolvedNavState.currentScreen === navState.currentScreen && isHistoryUrlSynced(resolvedNavState.currentScreen)) {
+      return;
+    }
+
+    saveNavState(resolvedNavState);
+    history.replaceState(
+      { screen: resolvedNavState.currentScreen, params: resolvedNavState.params },
+      '',
+      getHistoryUrlForScreen(resolvedNavState.currentScreen)
+    );
+
+    if (resolvedNavState.currentScreen !== navState.currentScreen) {
+      setNavState(resolvedNavState);
+    }
+  }, [sessionChecked, resolvedNavState.currentScreen, resolvedNavState.params, navState.currentScreen]);
 
   const goBack = () => {
     if (PLAYER_SCREENS.includes(navState.currentScreen)) {
@@ -833,8 +887,11 @@ const App: React.FC = () => {
     );
   }
 
+  const currentScreen = resolvedNavState.currentScreen;
+  const currentParams = resolvedNavState.params;
+
   const renderScreen = () => {
-    if (PROTECTED_SCREENS.includes(navState.currentScreen) && accessProfile && isAccessBlocked(accessProfile)) {
+    if (PROTECTED_SCREENS.includes(currentScreen) && accessProfile && isAccessBlocked(accessProfile)) {
       return (
         <AccessExpiredScreen
           profile={accessProfile}
@@ -844,7 +901,7 @@ const App: React.FC = () => {
       );
     }
 
-    switch (navState.currentScreen) {
+    switch (currentScreen) {
       case 'portal':
         return <PortalScreen />;
 
@@ -885,7 +942,7 @@ const App: React.FC = () => {
           <SetPasswordScreen
             onNavigate={navigate}
             onPasswordSet={() => navigate('login')}
-            linkExpired={navState.params?.linkExpired === true}
+            linkExpired={currentParams?.linkExpired === true}
             brandSlug={brandSlug}
             brandLogoUrl={brandLogoUrl}
             brandName={brandDisplayName}
@@ -897,7 +954,7 @@ const App: React.FC = () => {
         return (
           <EmailConfirmationScreen
             onNavigate={navigate}
-            params={navState.params}
+            params={currentParams}
             brandSlug={brandSlug}
             brandLogoUrl={brandLogoUrl}
             brandName={brandDisplayName}
@@ -906,10 +963,10 @@ const App: React.FC = () => {
         );
 
       case 'home':
-        return <HomeScreen key="home-screen" onNavigate={navigate} params={navState.params} accessProfile={accessProfile} screenName="home" searchMode={Boolean(navState.params?.inlineSearch)} />;
+        return <HomeScreen key="home-screen" onNavigate={navigate} params={currentParams} accessProfile={accessProfile} screenName="home" searchMode={Boolean(currentParams?.inlineSearch)} />;
 
       case 'search':
-        return <HomeScreen key="search-home-screen" onNavigate={navigate} params={navState.params} accessProfile={accessProfile} screenName="home" searchMode />;
+        return <HomeScreen key="search-home-screen" onNavigate={navigate} params={currentParams} accessProfile={accessProfile} screenName="home" searchMode />;
 
       case 'videos':
         return <LibraryHubScreen screen="videos" onNavigate={navigate} />;
@@ -941,11 +998,11 @@ const App: React.FC = () => {
         return (
           <AudioPlayerScreen
             collection={currentCollection}
-            mediaItemId={navState.params?.mediaItemId}
-            assetUrl={navState.params?.assetUrl}
-            assetTitle={navState.params?.assetTitle}
-            lyricsUrl={navState.params?.lyricsUrl}
-            assetOfflineAvailable={navState.params?.assetOfflineAvailable}
+            mediaItemId={currentParams?.mediaItemId}
+            assetUrl={currentParams?.assetUrl}
+            assetTitle={currentParams?.assetTitle}
+            lyricsUrl={currentParams?.lyricsUrl}
+            assetOfflineAvailable={currentParams?.assetOfflineAvailable}
             onNavigate={navigate}
             onBack={goBack}
           />
@@ -1014,10 +1071,10 @@ const App: React.FC = () => {
         return (
           <VideoPlayerScreen
             collection={currentCollection}
-            mediaItemId={navState.params?.mediaItemId}
-            assetUrl={navState.params?.assetUrl}
-            assetTitle={navState.params?.assetTitle}
-            assetOfflineAvailable={navState.params?.assetOfflineAvailable}
+            mediaItemId={currentParams?.mediaItemId}
+            assetUrl={currentParams?.assetUrl}
+            assetTitle={currentParams?.assetTitle}
+            assetOfflineAvailable={currentParams?.assetOfflineAvailable}
             onNavigate={navigate}
             onBack={goBack}
           />
@@ -1070,9 +1127,9 @@ const App: React.FC = () => {
     }
   };
 
-  const showNav = ['home', 'search', 'videos', 'music', 'formations', 'materials', 'support', 'profile', 'my_data', 'admin', 'characters'].includes(navState.currentScreen);
+  const showNav = ['home', 'search', 'videos', 'music', 'formations', 'materials', 'support', 'profile', 'my_data', 'admin', 'characters'].includes(currentScreen);
   // Modal opens immediately when collectionId is present, even if collection is still loading
-  const isModalOpen = !!navState.params?.collectionId && ['home', 'search'].includes(navState.currentScreen);
+  const isModalOpen = !!currentParams?.collectionId && ['home', 'search'].includes(currentScreen);
   const mainShellClassName = `relative w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-white overscroll-none md:h-screen`;
 
 
@@ -1083,8 +1140,8 @@ const App: React.FC = () => {
 
       {showNav && (
         <BottomNav
-          currentScreen={navState.currentScreen}
-          currentParams={navState.params}
+          currentScreen={currentScreen}
+          currentParams={currentParams}
           onNavigate={navigate}
           profile={accessProfile}
           brandSlug={brandSlug}
@@ -1102,7 +1159,7 @@ const App: React.FC = () => {
       <CollectionModal
         collection={currentCollection || null}
         isOpen={isModalOpen}
-        initialStackIds={Array.isArray(navState.params?.modalStackIds) ? navState.params.modalStackIds : undefined}
+        initialStackIds={Array.isArray(currentParams?.modalStackIds) ? currentParams.modalStackIds : undefined}
         onClose={closeModal}
         onNavigate={navigate}
       />

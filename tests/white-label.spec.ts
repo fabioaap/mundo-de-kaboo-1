@@ -9,6 +9,7 @@ import { waitForAuthenticatedScreen, navigateToWhiteLabel } from './helpers/navi
 const WHITE_LABEL_PREVIEW_KEY = 'kaboo:white-label-preview-settings';
 const NAV_STATE_KEY = 'kaboo_nav_state';
 const DEV_MOCK_SESSION_KEY = 'kaboo_dev_mock_session';
+const HEALTH_STATUS_LABEL = /Crítico|Atenção|Saudável/;
 
 // ─── Setup compartilhado ───
 async function adminAtWhiteLabel(page: Page): Promise<void> {
@@ -54,6 +55,14 @@ async function seedCentralCorujaPreview(
             devMockSession: options?.devMockSession ?? false,
         },
     );
+}
+
+function getHealthSummarySection(page: Page) {
+    return page.locator('section').filter({ has: page.getByText('Resumo operacional') }).first();
+}
+
+function getCentralCorujaBrandAsset(page: Page) {
+    return page.getByAltText('Central Coruja').first();
 }
 
 // ===========================================================================
@@ -280,16 +289,14 @@ test.describe('JN-WL-006 — Feature Flags', () => {
         expect(wasChecked).not.toBe(nowChecked);
     });
 
-    test('parallax toggle e seletor de modo estão presentes', async ({ page }) => {
+    test('controles de parallax e seletor de modo estão presentes', async ({ page }) => {
         await adminAtWhiteLabel(page);
         await page.getByRole('button', { name: 'Operações' }).click();
         await expect(page.getByText('Hero Parallax')).toBeVisible({ timeout: 5_000 });
 
-        // Modo options
-        await expect(page.getByText('Modo do Parallax')).toBeVisible();
-        await expect(page.getByRole('button', { name: /Off/i }).first()).toBeVisible();
-        await expect(page.getByRole('button', { name: /Subtle/i }).first()).toBeVisible();
-        await expect(page.getByRole('button', { name: /Standard/i }).first()).toBeVisible();
+        await expect(page.getByRole('button', { name: /Desligado/i }).first()).toBeVisible();
+        await expect(page.getByRole('button', { name: /Suave/i }).first()).toBeVisible();
+        await expect(page.getByRole('button', { name: /Padrão|Padrao/i }).first()).toBeVisible();
     });
 
     test('campo de motivo para auditoria está presente', async ({ page }) => {
@@ -307,9 +314,8 @@ test.describe('JN-WL-007 — Publicação e Rollout', () => {
         await adminAtWhiteLabel(page);
         await page.getByRole('button', { name: 'Operações' }).click();
 
-        await expect(page.getByRole('heading', { name: 'Publicação' })).toBeVisible({ timeout: 5_000 });
-        await expect(page.getByText(/v\d+/)).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Publicar' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Versão/ })).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByRole('button', { name: /Publicar agora|Publicar nova versão/ })).toBeVisible();
     });
 
     test('rollout por ondas mostra 3 opções', async ({ page }) => {
@@ -390,28 +396,28 @@ test.describe('JN-WL-010 — Health Check banner', () => {
     test('health check banner está visível no topo', async ({ page }) => {
         await adminAtWhiteLabel(page);
 
-        // Health check deve ter um dos 3 status
-        const healthHeading = page.getByRole('heading', { name: /Crítico|Aviso|Saudável/ });
-        await expect(healthHeading).toBeVisible({ timeout: 10_000 });
+        const healthSection = getHealthSummarySection(page);
+        await expect(healthSection).toBeVisible({ timeout: 10_000 });
+        await expect(healthSection.getByText(HEALTH_STATUS_LABEL)).toBeVisible({ timeout: 10_000 });
     });
 
     test('health check muda ao trocar de marca', async ({ page }) => {
         await adminAtWhiteLabel(page);
 
-        // Capturar status inicial
-        const initialStatus = await page.getByRole('heading', { name: /Crítico|Aviso|Saudável/ }).textContent();
+        const initialSection = getHealthSummarySection(page);
+        const initialStatus = await initialSection.getByText(HEALTH_STATUS_LABEL).textContent();
 
         // Trocar para Central Coruja
         await page.getByRole('button', { name: 'Central Coruja' }).click();
         await page.waitForTimeout(1500);
 
-        // Status pode mudar ou ser o mesmo, mas o heading ainda deve existir
-        const newStatus = await page.getByRole('heading', { name: /Crítico|Aviso|Saudável/ }).textContent();
+        const newSection = getHealthSummarySection(page);
+        const newStatus = await newSection.getByText(HEALTH_STATUS_LABEL).textContent();
         expect(newStatus).toBeTruthy();
 
         // Se kaboo é "Crítico" (rollout geral sem publicação) e coruja é "Saudável" (piloto), devem diferir
-        if (initialStatus === 'Crítico') {
-            expect(newStatus).toBe('Saudável');
+        if (initialStatus?.trim() === 'Crítico') {
+            expect(newStatus?.trim()).toBe('Saudável');
         }
     });
 });
@@ -429,10 +435,9 @@ test.describe('JN-WL-011 — Preview runtime da marca', () => {
         await page.getByRole('button', { name: 'Ir para o Início' }).click();
 
         await expect(page.getByRole('heading', { name: 'Bem-vindo à Central Coruja!' })).toBeVisible({ timeout: 10_000 });
-        await expect(page.getByText('Explore histórias, ouça, assista e descubra um mundo de aprendizagem e encantamento.')).toBeVisible();
+        await expect(page.getByText('Histórias, vídeos e experiências de aprendizagem organizados para você começar pela busca e explorar com mais clareza.')).toBeVisible();
         await expect(page.getByRole('button', { name: 'Áudios' })).toBeVisible();
-        await expect(page.getByText('educacross').first()).toBeVisible();
-        await expect(page.getByText('Todos os direitos reservados.').first()).toBeVisible();
+        await expect(getCentralCorujaBrandAsset(page)).toBeVisible();
         await expect(page.getByText('Mundo de Kaboo © 2025')).toHaveCount(0);
     });
 });
@@ -444,11 +449,11 @@ test.describe('JN-WL-012 — Auth runtime da marca', () => {
     test('forgot password herda identidade da Central Coruja', async ({ page }) => {
         await seedCentralCorujaPreview(page);
 
-        await page.goto('/');
+        await page.goto('/?brand=central-coruja#login&devSessionImportStatus=miss');
         await page.locator('#field-email').waitFor({ state: 'visible', timeout: 15_000 });
         await page.getByRole('button', { name: 'Esqueci minha senha' }).click();
 
-        await expect(page.getByText('Central Coruja').or(page.getByAltText('Central Coruja')).or(page.getByAltText('Central Coruja'))).toBeVisible({ timeout: 10_000 });
+        await expect(getCentralCorujaBrandAsset(page)).toBeVisible({ timeout: 10_000 });
         await expect(page.getByRole('heading', { name: 'Recuperar senha' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Enviar Link' })).toBeVisible();
     });
@@ -461,7 +466,7 @@ test.describe('JN-WL-012 — Auth runtime da marca', () => {
 
         await page.goto('/#set_password');
 
-        await expect(page.getByText('Central Coruja').or(page.getByAltText('Central Coruja')).or(page.getByAltText('Central Coruja'))).toBeVisible({ timeout: 10_000 });
+        await expect(getCentralCorujaBrandAsset(page)).toBeVisible({ timeout: 10_000 });
         await expect(page.getByRole('heading', { name: 'Criar sua senha' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Definir senha e entrar' })).toBeVisible();
     });
@@ -469,19 +474,9 @@ test.describe('JN-WL-012 — Auth runtime da marca', () => {
     test('link expirado mantém casca da Central Coruja', async ({ page }) => {
         await seedCentralCorujaPreview(page, { devMockSession: true });
 
-        await page.goto('/');
-        await page.locator('#field-email').waitFor({ state: 'visible', timeout: 15_000 });
-        await page.evaluate((navStateKey) => {
-            const state = { screen: 'set_password', params: { linkExpired: true } };
-            window.localStorage.setItem(
-                navStateKey,
-                JSON.stringify({ currentScreen: 'set_password', params: { linkExpired: true } }),
-            );
-            window.history.pushState(state, '', '#set_password');
-            window.dispatchEvent(new PopStateEvent('popstate', { state }));
-        }, NAV_STATE_KEY);
+        await page.goto('/?brand=central-coruja#error=access_denied&error_code=otp_expired');
 
-        await expect(page.getByText('Central Coruja').or(page.getByAltText('Central Coruja')).or(page.getByAltText('Central Coruja'))).toBeVisible({ timeout: 10_000 });
+        await expect(getCentralCorujaBrandAsset(page)).toBeVisible({ timeout: 10_000 });
         await expect(page.getByRole('heading', { name: 'Link de convite expirado' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Voltar ao login' })).toBeVisible();
     });

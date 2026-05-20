@@ -39,8 +39,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install wiki dependencies
+        run: npm ci --prefix docs
+
       - name: Build application
         run: npm run build
+
+      - name: Build wiki
+        env:
+          DOCS_SITE_URL: https://mundodekaboo.educacross.dev
+          DOCS_BASE_URL: /wiki/
+        run: npm --prefix docs run build
+
+      - name: Merge wiki into Pages artifact
+        run: node scripts/merge-pages-wiki.mjs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -66,6 +78,7 @@ jobs:
     env:
       PAGES_EXPECTED_HOST: mundodekaboo.educacross.dev
       PAGES_EXPECTED_TITLE: Mundo de Kaboo
+      PAGES_EXPECTED_WIKI_TEXT: Plataforma educacional para professores do Ensino Fundamental
       PAGES_GITHUB_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
       PAGES_DEPLOY_URL: ${{ needs.deploy.outputs.page_url }}
       CLOUDFLARE_ACCESS_CLIENT_ID: ${{ secrets.CLOUDFLARE_ACCESS_CLIENT_ID }}
@@ -146,6 +159,25 @@ jobs:
 
           if ! grep -qi "<title>${PAGES_EXPECTED_TITLE}</title>" smoke-body.html; then
             echo "::error::Published HTML does not match the Mundo de Kaboo app shell."
+            exit 1
+          fi
+
+          wiki_request_url="${request_url%/}/wiki/"
+
+          if ! wiki_final_url="$(curl -fsSL -o smoke-wiki-body.html -D smoke-wiki-headers.txt -L -w '%{url_effective}' "${access_headers[@]}" "${wiki_request_url}")"; then
+            echo "::error::Wiki request failed for ${wiki_request_url}."
+            exit 1
+          fi
+
+          wiki_final_host="$(printf '%s' "${wiki_final_url}" | sed -E 's#https?://([^/]+)/?.*#\1#')"
+
+          if [[ "${wiki_final_host}" != "${PAGES_EXPECTED_HOST}" ]]; then
+            echo "::error::Wiki resolved to unexpected host ${wiki_final_host}. Expected ${PAGES_EXPECTED_HOST}."
+            exit 1
+          fi
+
+          if ! grep -qi "${PAGES_EXPECTED_WIKI_TEXT}" smoke-wiki-body.html; then
+            echo "::error::Published wiki HTML does not match the Docusaurus shell."
             exit 1
           fi
 

@@ -6,16 +6,22 @@ import { buildAppUrl } from '../lib/appPaths';
 type PortalDestination = 'kaboo' | 'central-coruja' | 'wiki';
 
 const isLocalHostname = (hostname: string) => ['localhost', '127.0.0.1', '0.0.0.0'].includes(hostname);
-const WIKI_PRODUCTION_URL = 'https://docs.mundodekaboo.com';
+const WIKI_DEV_URL = 'http://localhost:4200';
+const WIKI_PAGES_PATH = 'wiki/';
+const WIKI_EXTERNAL_URL = import.meta.env.VITE_WIKI_URL?.trim();
 
 const getWikiUrl = (): string => {
+    const publishedWikiUrl = buildAppUrl(WIKI_EXTERNAL_URL || WIKI_PAGES_PATH);
+
     if (typeof window === 'undefined') {
-        return WIKI_PRODUCTION_URL;
+        return publishedWikiUrl;
     }
 
-    return isLocalHostname(window.location.hostname.toLowerCase())
-        ? 'http://localhost:4200'
-        : WIKI_PRODUCTION_URL;
+    if (!WIKI_EXTERNAL_URL && isLocalHostname(window.location.hostname.toLowerCase())) {
+        return WIKI_DEV_URL;
+    }
+
+    return publishedWikiUrl;
 };
 
 const routeToBrandLogin = (brandId: 'kaboo' | 'central-coruja') => {
