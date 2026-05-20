@@ -70,8 +70,14 @@ const MOCK_SESSION_STORAGE_KEY = 'kaboo_mock_session_user_id';
 const MOCK_COLLECTIONS_STORAGE_KEY = 'kaboo_mock_collections';
 
 // Active brand slug — set by App.tsx when useBrandConfig resolves.
-// Defaults to 'kaboo' so all non-brand-aware call sites work unchanged.
-let _activeMockBrandSlug = 'kaboo';
+// Eagerly read from URL so mock data is brand-aware before the first render.
+const _initialBrandFromUrl = (() => {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('brand') || 'kaboo';
+    } catch { return 'kaboo'; }
+})();
+let _activeMockBrandSlug = _initialBrandFromUrl;
 
 /** Called by App.tsx once per brand slug change to isolate data per brand. */
 export const setMockActiveBrand = (slug: string): void => {
