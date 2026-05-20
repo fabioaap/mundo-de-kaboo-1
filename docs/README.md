@@ -55,21 +55,21 @@ Workflow automático em `.github/workflows/update-docs.yml` que roda em cada pus
 
 ## 🌍 Deploy da Wiki
 
-O app principal continua no GitHub Pages. A wiki Docusaurus deve subir como site separado, apontando para `docs.mundodekaboo.com`.
+O app principal e a wiki Docusaurus sobem juntos no GitHub Pages. A wiki fica publicada em `/wiki/` dentro do mesmo domínio do portal.
 
 ### Premissas
 
 - Build da wiki: `npm run build` dentro de `docs/`
 - Saída estática: pasta `docs/build`
-- Domínio desejado: `docs.mundodekaboo.com`
-- Deploy separado do app principal, para não competir com o GitHub Pages atual
+- Destino final no artefato do Pages: `dist/wiki`
+- URL esperada em produção: `https://mundodekaboo.educacross.dev/wiki/`
 
-### Decisão pendente
+### Decisão aplicada
 
-O provedor final de hospedagem da wiki ainda pode ser definido depois. O importante neste momento é manter o app e a wiki desacoplados: o app continua no fluxo atual e a wiki fica preparada para um host próprio.
+O deploy do Pages agora monta o app na raiz e injeta o build do Docusaurus em `/wiki/`. Isso elimina a dependência de um host externo separado para a documentação.
 
-- Não é necessário reaproveitar a mesma publicação do app.
-- O endereço do card Wiki no portal já considera esse host separado.
+- O card Wiki no portal passa a abrir a wiki publicada no mesmo domínio.
+- Em desenvolvimento local, a wiki continua em `http://localhost:4200`.
 
 ---
 
