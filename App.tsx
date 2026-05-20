@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { NavState, ScreenName, Collection, UserProfile } from './types';
 import { api, clearAllUserCache, getCachedProfileSync, isDevMockSession, setActiveBrandForApi } from './lib/api';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
+import {
+  awaitDevSessionBridgeImport,
+  maybeHandleDevSessionBridgeExport,
+  maybeRequestDevSessionFromSibling,
+  supabase,
+  isSupabaseConfigured,
+} from './lib/supabase';
 import { useThemeBackground } from './hooks/useThemeBackground';
 import { useBrandConfig } from './hooks/useBrandConfig';
 import { resolveBrandSlugFromPathname } from './hooks/brandSlug';
@@ -79,6 +85,15 @@ const HASH_ADDRESSABLE_SCREENS = new Set<ScreenName>([
   'design_system',
   'characters',
 ]);
+const PUBLIC_ENTRY_SCREENS = new Set<ScreenName>([
+  'portal',
+  'login',
+  'forgot_password',
+  'set_password',
+  'email_confirmation',
+]);
+
+const shouldPreservePublicEntryScreen = (screen: ScreenName): boolean => PUBLIC_ENTRY_SCREENS.has(screen);
 
 const getHashScreen = (hash: string): ScreenName | null => {
   const rawHash = hash.replace(/^#/, '').trim();
@@ -347,15 +362,24 @@ const App: React.FC = () => {
       }
     }
 
-    // Only check session if Supabase is configured
-    if (!isSupabaseConfigured) {
-      api.getProfile(true)
-        .then((profile) => {
+    void (async () => {
+      try {
+        const devSessionBridgeImportResult = await awaitDevSessionBridgeImport();
+        const bridgeExportHandled = await maybeHandleDevSessionBridgeExport();
+
+        if (bridgeExportHandled) {
+          setSessionChecked(true);
+          return;
+        }
+
+        // Only check session if Supabase is configured
+        if (!isSupabaseConfigured) {
+          const profile = await api.getProfile(true);
           setAccessProfile(profile);
 
           setNavState((prev) => {
             if (!profile) {
-              if (prev.currentScreen === 'email_confirmation' || prev.currentScreen === 'portal') {
+              if (shouldPreservePublicEntryScreen(prev.currentScreen)) {
                 return prev;
               }
               return { currentScreen: getDefaultPublicScreen() };
@@ -375,65 +399,67 @@ const App: React.FC = () => {
 
             return prev;
           });
-        })
-        .finally(() => {
-          setSessionChecked(true);
-        });
-      return;
-    }
 
-    // 1. Initial Check
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        const shouldCompletePasswordSetup = hasPendingPasswordSetup() && isInvitedAuthUser(session.user);
-        const profile = await api.getProfile(true);
-        setAccessProfile(profile);
-
-        if (shouldCompletePasswordSetup) {
-          setNavState({ currentScreen: 'set_password' });
           setSessionChecked(true);
           return;
         }
 
-        setNavState(prev => {
-          if (profile && isAccessBlocked(profile)) {
-            return { currentScreen: 'access_expired' };
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session) {
+          const shouldCompletePasswordSetup = hasPendingPasswordSetup() && isInvitedAuthUser(session.user);
+          const profile = await api.getProfile(true);
+          setAccessProfile(profile);
+
+          if (shouldCompletePasswordSetup) {
+            setNavState({ currentScreen: 'set_password' });
+            setSessionChecked(true);
+            return;
           }
 
-          // Preserve current screen if user is on any valid authenticated screen
-          // Only redirect to home if on login/forgot_password screens
-          if (prev.currentScreen === 'login' || prev.currentScreen === 'forgot_password') {
-            return { currentScreen: 'home' };
-          }
-          // Preserve all other screens (home, search, profile, my_data, player screens, support, admin, etc.)
-          // If restoring a player screen, ensure collectionId is present
-          if (PLAYER_SCREENS.includes(prev.currentScreen)) {
-            if (!prev.params?.collectionId) {
-              // If player screen but no collectionId, go to home
+          setNavState(prev => {
+            if (profile && isAccessBlocked(profile)) {
+              return { currentScreen: 'access_expired' };
+            }
+
+            if (prev.currentScreen === 'login' || prev.currentScreen === 'forgot_password') {
               return { currentScreen: 'home' };
             }
-          }
-          return prev;
-        });
-      } else if (isDevMockSession()) {
-        // DEV mock session: skip redirect to login, preserve current nav state
-        setSessionChecked(true);
-        return;
-      } else {
-        setAccessProfile(null);
-        // No session - only preserve email_confirmation, otherwise go to login
-        setNavState(prev => {
-          if (prev.currentScreen === 'email_confirmation' || prev.currentScreen === 'portal') {
+
+            if (PLAYER_SCREENS.includes(prev.currentScreen) && !prev.params?.collectionId) {
+              return { currentScreen: 'home' };
+            }
+
             return prev;
+          });
+        } else if (isDevMockSession()) {
+          setSessionChecked(true);
+          return;
+        } else {
+          setAccessProfile(null);
+
+          const startedDevSessionBridge = devSessionBridgeImportResult !== 'miss'
+            && maybeRequestDevSessionFromSibling(window.location.href);
+
+          if (startedDevSessionBridge) {
+            setSessionChecked(true);
+            return;
           }
-          return { currentScreen: getDefaultPublicScreen() };
-        });
+
+          setNavState(prev => {
+            if (shouldPreservePublicEntryScreen(prev.currentScreen)) {
+              return prev;
+            }
+            return { currentScreen: getDefaultPublicScreen() };
+          });
+        }
+
+        setSessionChecked(true);
+      } catch (error) {
+        logger.error('Error checking session:', error);
+        setSessionChecked(true);
       }
-      setSessionChecked(true);
-    }).catch((error) => {
-      logger.error('Error checking session:', error);
-      setSessionChecked(true);
-    });
+    })();
 
     // 2. Realtime Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -482,7 +508,7 @@ const App: React.FC = () => {
 
         setNavState(prev => {
           // Preserve public entry screens when the auth layer emits SIGNED_OUT on root.
-          if (prev.currentScreen === 'email_confirmation' || prev.currentScreen === 'portal') {
+          if (shouldPreservePublicEntryScreen(prev.currentScreen)) {
             return prev;
           }
           // Clear saved state on logout before falling back to the public entry screen.
@@ -672,6 +698,31 @@ const App: React.FC = () => {
 
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  useEffect(() => {
+    const hashState = getNavStateFromHash();
+    if (!hashState) {
+      return;
+    }
+
+    if (navState.currentScreen === hashState.currentScreen && navState.params === undefined) {
+      return;
+    }
+
+    setNavState((prev) => {
+      if (prev.currentScreen === hashState.currentScreen && prev.params === undefined) {
+        return prev;
+      }
+
+      saveNavState(hashState);
+      history.replaceState(
+        { screen: hashState.currentScreen, params: hashState.params },
+        '',
+        getHistoryUrlForScreen(hashState.currentScreen)
+      );
+      return hashState;
+    });
+  }, [navState.currentScreen, navState.params]);
 
   const goBack = () => {
     if (PLAYER_SCREENS.includes(navState.currentScreen)) {
