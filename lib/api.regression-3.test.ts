@@ -24,12 +24,22 @@ const createStorageMock = (): Storage => {
 const stubBrowserStorage = () => {
   const sessionStorage = createStorageMock();
   const localStorage = createStorageMock();
+  sessionStorage.setItem('kaboo_dev_mock_session', '1');
 
   vi.stubGlobal('sessionStorage', sessionStorage);
   vi.stubGlobal('localStorage', localStorage);
   vi.stubGlobal('window', {
     sessionStorage,
     localStorage,
+    location: {
+      hash: '',
+      href: 'http://localhost:4100/',
+      hostname: 'localhost',
+      origin: 'http://localhost:4100',
+      port: '4100',
+      protocol: 'http:',
+      search: '',
+    },
   });
 
   return { sessionStorage, localStorage };
@@ -52,6 +62,10 @@ describe('api brand-aware media hub fallback', () => {
 
     setMockActiveBrand('central-coruja');
     setActiveBrandForApi('central-coruja');
+
+    await expect(api.getCollections()).resolves.toEqual([]);
+    await expect(api.getCharacters()).resolves.toEqual([]);
+    await expect(api.getCentralMaterials()).resolves.toEqual([]);
 
     const hubs: MediaHub[] = ['videos', 'music', 'formations', 'materials'];
 

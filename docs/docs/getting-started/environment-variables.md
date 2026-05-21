@@ -15,6 +15,7 @@ Crie o arquivo `.env.local` na raiz do projeto (nunca o comite no Git):
 ```env
 VITE_SUPABASE_URL=https://xxxxxxxxxxxxxxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_ENABLE_DEV_SESSION_BRIDGE=false
 ```
 
 ## Variáveis disponíveis
@@ -23,6 +24,7 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 |----------|:-----------:|-----------|
 | `VITE_SUPABASE_URL` | ✅ | URL do projeto Supabase |
 | `VITE_SUPABASE_ANON_KEY` | ✅ | Chave anônima pública do Supabase |
+| `VITE_ENABLE_DEV_SESSION_BRIDGE` |  | Habilita o redirecionamento entre origens locais irmãs para importar sessão em desenvolvimento. O padrão é `false`. |
 
 ## Como obter as credenciais
 

@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const REQUIRE_SUPABASE_IN_PROD = import.meta.env.VITE_REQUIRE_SUPABASE === 'true';
+const ENABLE_DEV_SESSION_BRIDGE = import.meta.env.VITE_ENABLE_DEV_SESSION_BRIDGE === 'true';
 const LOCAL_DEV_SESSION_BRIDGE_PORTS = ['4100', '4101'] as const;
 const DEV_SESSION_BRIDGE_MODE_KEY = 'devSessionBridge';
 const DEV_SESSION_BRIDGE_RETURN_TO_KEY = 'devSessionReturnTo';
@@ -223,7 +224,7 @@ export async function maybeHandleDevSessionBridgeExport(): Promise<boolean> {
 }
 
 export function maybeRequestDevSessionFromSibling(returnTo: string = window.location.href): boolean {
-  if (typeof window === 'undefined' || !isLocalDevSessionBridgeContext()) {
+  if (typeof window === 'undefined' || !ENABLE_DEV_SESSION_BRIDGE || !isLocalDevSessionBridgeContext()) {
     return false;
   }
 

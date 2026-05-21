@@ -15,6 +15,7 @@ import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
 import { setActiveBrandForCharacters } from './lib/characters';
 import { getAccessibleNavState, PROTECTED_SCREENS } from './lib/navigationAccess';
 import { logger } from './lib/logger';
+import { areNavStatesEqual, getHashUrlForScreen, getNavStateFromHashString } from './lib/navHistory';
 import { clearPendingPasswordSetup, hasPendingPasswordSetup, isInvitedAuthUser, markPendingPasswordSetup } from './lib/passwordSetupFlow';
 import { setMockActiveBrand } from './lib/mockData';
 
@@ -49,26 +50,6 @@ const STORAGE_NAV_STATE = 'kaboo_nav_state';
 const STORAGE_PREVIOUS_STATE = 'kaboo_previous_state';
 
 const PLAYER_SCREENS: ScreenName[] = ['player_audio', 'player_book', 'player_video', 'tools'];
-const HASH_ADDRESSABLE_SCREENS = new Set<ScreenName>([
-  'portal',
-  'login',
-  'forgot_password',
-  'set_password',
-  'access_expired',
-  'home',
-  'search',
-  'videos',
-  'music',
-  'formations',
-  'materials',
-  'profile',
-  'my_data',
-  'support',
-  'email_confirmation',
-  'admin',
-  'design_system',
-  'characters',
-]);
 const PUBLIC_ENTRY_SCREENS = new Set<ScreenName>([
   'portal',
   'login',
@@ -79,33 +60,17 @@ const PUBLIC_ENTRY_SCREENS = new Set<ScreenName>([
 
 const shouldPreservePublicEntryScreen = (screen: ScreenName): boolean => PUBLIC_ENTRY_SCREENS.has(screen);
 
-const getHashScreen = (hash: string): ScreenName | null => {
-  const rawHash = hash.replace(/^#/, '').trim();
-  if (!rawHash) {
-    return null;
-  }
-
-  const candidate = rawHash.split(/[?&]/)[0]?.trim();
-  if (!candidate || candidate.includes('=')) {
-    return null;
-  }
-
-  return HASH_ADDRESSABLE_SCREENS.has(candidate as ScreenName)
-    ? (candidate as ScreenName)
-    : null;
-};
-
 const getNavStateFromHash = (): NavState | null => {
   if (typeof window === 'undefined') {
     return null;
   }
 
-  const hashScreen = getHashScreen(window.location.hash);
-  if (!hashScreen || PLAYER_SCREENS.includes(hashScreen)) {
+  const hashState = getNavStateFromHashString(window.location.hash);
+  if (!hashState || PLAYER_SCREENS.includes(hashState.currentScreen)) {
     return null;
   }
 
-  return { currentScreen: hashScreen };
+  return hashState;
 };
 
 const isPortalEntryPath = (): boolean => {
@@ -140,27 +105,27 @@ const getPortalEntrySearch = (): string => {
   return nextSearch ? `?${nextSearch}` : '';
 };
 
-const getHistoryUrlForScreen = (screen: ScreenName): string => {
+const getHistoryUrlForScreen = (screen: ScreenName, params?: NavState['params']): string => {
   if (typeof window === 'undefined') {
-    return screen === 'portal' ? '/' : `#${screen}`;
+    return screen === 'portal' ? '/' : getHashUrlForScreen(screen, params);
   }
 
   return screen === 'portal'
     ? `${window.location.pathname}${getPortalEntrySearch()}`
-    : `#${screen}`;
+    : getHashUrlForScreen(screen, params);
 };
 
-const isHistoryUrlSynced = (screen: ScreenName): boolean => {
+const isHistoryUrlSynced = (screen: ScreenName, params?: NavState['params']): boolean => {
   if (typeof window === 'undefined') {
     return true;
   }
 
   if (screen === 'portal') {
     return window.location.hash === ''
-      && `${window.location.pathname}${window.location.search}` === getHistoryUrlForScreen(screen);
+      && `${window.location.pathname}${window.location.search}` === getHistoryUrlForScreen(screen, params);
   }
 
-  return window.location.hash === getHistoryUrlForScreen(screen);
+  return window.location.hash === getHistoryUrlForScreen(screen, params);
 };
 
 // Helper functions for localStorage persistence
@@ -640,7 +605,7 @@ const App: React.FC = () => {
     setNavState(newNavState);
     saveNavState(newNavState);
     // Push history entry so browser Back button works
-    history.pushState({ screen: normalizedScreen, params: normalizedParams }, '', getHistoryUrlForScreen(normalizedScreen));
+    history.pushState({ screen: normalizedScreen, params: normalizedParams }, '', getHistoryUrlForScreen(normalizedScreen, normalizedParams));
     window.scrollTo(0, 0);
   };
 
@@ -669,12 +634,12 @@ const App: React.FC = () => {
     // Seed the current history entry on first load, respecting the explicit hash when present.
     if (!window.history.state || hashState) {
       const seededState = hashState ?? navState;
-      history.replaceState(
-        { screen: seededState.currentScreen, params: seededState.params },
-        '',
-        getHistoryUrlForScreen(seededState.currentScreen)
-      );
-    }
+        history.replaceState(
+          { screen: seededState.currentScreen, params: seededState.params },
+          '',
+          getHistoryUrlForScreen(seededState.currentScreen, seededState.params)
+        );
+      }
 
     return () => window.removeEventListener('popstate', handlePopState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -690,11 +655,7 @@ const App: React.FC = () => {
       const nextState = getAccessibleStateForSession(hashState);
 
       setNavState((prev) => {
-        if (
-          prev.currentScreen === nextState.currentScreen
-          && prev.params === undefined
-          && isHistoryUrlSynced(nextState.currentScreen)
-        ) {
+        if (areNavStatesEqual(prev, nextState) && isHistoryUrlSynced(nextState.currentScreen, nextState.params)) {
           return prev;
         }
 
@@ -702,9 +663,9 @@ const App: React.FC = () => {
         history.replaceState(
           { screen: nextState.currentScreen, params: nextState.params },
           '',
-          getHistoryUrlForScreen(nextState.currentScreen)
+          getHistoryUrlForScreen(nextState.currentScreen, nextState.params)
         );
-        if (prev.currentScreen === nextState.currentScreen && prev.params === undefined) {
+        if (areNavStatesEqual(prev, nextState)) {
           return prev;
         }
 
@@ -726,20 +687,12 @@ const App: React.FC = () => {
 
     const nextState = getAccessibleStateForSession(hashState);
 
-    if (
-      navState.currentScreen === nextState.currentScreen
-      && navState.params === undefined
-      && isHistoryUrlSynced(nextState.currentScreen)
-    ) {
+    if (areNavStatesEqual(navState, nextState) && isHistoryUrlSynced(nextState.currentScreen, nextState.params)) {
       return;
     }
 
     setNavState((prev) => {
-      if (
-        prev.currentScreen === nextState.currentScreen
-        && prev.params === undefined
-        && isHistoryUrlSynced(nextState.currentScreen)
-      ) {
+      if (areNavStatesEqual(prev, nextState) && isHistoryUrlSynced(nextState.currentScreen, nextState.params)) {
         return prev;
       }
 
@@ -747,9 +700,9 @@ const App: React.FC = () => {
       history.replaceState(
         { screen: nextState.currentScreen, params: nextState.params },
         '',
-        getHistoryUrlForScreen(nextState.currentScreen)
+        getHistoryUrlForScreen(nextState.currentScreen, nextState.params)
       );
-      if (prev.currentScreen === nextState.currentScreen && prev.params === undefined) {
+      if (areNavStatesEqual(prev, nextState)) {
         return prev;
       }
 
@@ -762,7 +715,7 @@ const App: React.FC = () => {
       return;
     }
 
-    if (resolvedNavState.currentScreen === navState.currentScreen && isHistoryUrlSynced(resolvedNavState.currentScreen)) {
+    if (areNavStatesEqual(resolvedNavState, navState) && isHistoryUrlSynced(resolvedNavState.currentScreen, resolvedNavState.params)) {
       return;
     }
 
@@ -770,13 +723,13 @@ const App: React.FC = () => {
     history.replaceState(
       { screen: resolvedNavState.currentScreen, params: resolvedNavState.params },
       '',
-      getHistoryUrlForScreen(resolvedNavState.currentScreen)
+      getHistoryUrlForScreen(resolvedNavState.currentScreen, resolvedNavState.params)
     );
 
-    if (resolvedNavState.currentScreen !== navState.currentScreen) {
+    if (!areNavStatesEqual(resolvedNavState, navState)) {
       setNavState(resolvedNavState);
     }
-  }, [sessionChecked, resolvedNavState.currentScreen, resolvedNavState.params, navState.currentScreen]);
+  }, [sessionChecked, resolvedNavState.currentScreen, resolvedNavState.params, navState]);
 
   const goBack = () => {
     if (PLAYER_SCREENS.includes(navState.currentScreen)) {
@@ -810,7 +763,7 @@ const App: React.FC = () => {
         history.replaceState(
           { screen: restoredNavState.currentScreen, params: restoredNavState.params },
           '',
-          getHistoryUrlForScreen(restoredNavState.currentScreen)
+          getHistoryUrlForScreen(restoredNavState.currentScreen, restoredNavState.params)
         );
         window.scrollTo(0, 0);
         return;
@@ -827,7 +780,7 @@ const App: React.FC = () => {
         history.replaceState(
           { screen: restoredNavState.currentScreen, params: restoredNavState.params },
           '',
-          getHistoryUrlForScreen(restoredNavState.currentScreen)
+          getHistoryUrlForScreen(restoredNavState.currentScreen, restoredNavState.params)
         );
         window.scrollTo(0, 0);
         return;
@@ -864,11 +817,11 @@ const App: React.FC = () => {
       };
       setNavState(newNavState);
       saveNavState(newNavState);
-      history.replaceState(
-        { screen: newNavState.currentScreen, params: newNavState.params },
-        '',
-        getHistoryUrlForScreen(newNavState.currentScreen)
-      );
+        history.replaceState(
+          { screen: newNavState.currentScreen, params: newNavState.params },
+          '',
+          getHistoryUrlForScreen(newNavState.currentScreen, newNavState.params)
+        );
     }
   };
 

@@ -32,6 +32,12 @@ import {
 import { logger } from './logger';
 import { buildAppUrl } from './appPaths';
 import {
+  filterCentralMaterialsForBrand,
+  filterCharactersForBrand,
+  filterCollectionsForBrand,
+  shouldUseSharedMediaCatalog,
+} from './contentHygiene';
+import {
   getMockCharactersLive,
   mockCreateCharacter,
   mockUpdateCharacter,
@@ -888,7 +894,7 @@ const loadRemoteCharacters = async (forceRefresh: boolean = false): Promise<Char
   }
 
   if (!forceRefresh && remoteCharactersCache) {
-    return cloneCharacters(remoteCharactersCache);
+    return cloneCharacters(filterCharactersForBrand(remoteCharactersCache, _activeBrandSlugForApi));
   }
 
   const { data, error } = await supabase
@@ -908,11 +914,12 @@ const loadRemoteCharacters = async (forceRefresh: boolean = false): Promise<Char
   }
 
   const remoteCharacters = ((data || []) as Character[]).map((character) => normalizeCharacter(character));
+  const visibleRemoteCharacters = filterCharactersForBrand(remoteCharacters, _activeBrandSlugForApi);
   charactersTableAvailable = true;
   remoteCharactersCache = cloneCharacters(remoteCharacters);
-  setCharacterRegistrySnapshot(remoteCharacters);
+  setCharacterRegistrySnapshot(visibleRemoteCharacters);
 
-  return cloneCharacters(remoteCharacters);
+  return cloneCharacters(visibleRemoteCharacters);
 };
 
 const getSupabaseDevFallbackVoucher = (voucherCode: string): Voucher | null => {
@@ -1002,7 +1009,10 @@ const getCachedCollections = (): Collection[] | null => {
     const parsed = JSON.parse(cached);
     // Verify it's from the current session
     if (parsed.sessionId === getSessionId()) {
-      const hydratedCollections = hydrateCollectionsPresentationFields(parsed.collections || []);
+      const hydratedCollections = filterCollectionsForBrand(
+        hydrateCollectionsPresentationFields(parsed.collections || []),
+        _activeBrandSlugForApi,
+      );
 
       if (JSON.stringify(hydratedCollections) !== JSON.stringify(parsed.collections || [])) {
         saveCollectionsCache(hydratedCollections);
@@ -1520,7 +1530,7 @@ export const api = {
     }
 
     if (!isSupabaseConfigured || devMockSession) {
-      const collections = getMockCollectionsLive();
+      const collections = filterCollectionsForBrand(getMockCollectionsLive(), _activeBrandSlugForApi);
       saveCollectionsCache(collections);
       return collections;
     }
@@ -1538,7 +1548,10 @@ export const api = {
       return [];
     }
 
-    const collections = hydrateCollectionsPresentationFields((data || []) as Collection[], remoteCharacters ?? undefined);
+    const collections = filterCollectionsForBrand(
+      hydrateCollectionsPresentationFields((data || []) as Collection[], remoteCharacters ?? undefined),
+      _activeBrandSlugForApi,
+    );
 
     // Save to cache
     saveCollectionsCache(collections);
@@ -1551,7 +1564,10 @@ export const api = {
    */
   async getCollectionById(id: string): Promise<Collection | null> {
     if (!isSupabaseConfigured || devMockSession) {
-      return getMockCollectionByIdLive(id);
+      const mockCollection = getMockCollectionByIdLive(id);
+      return mockCollection
+        ? filterCollectionsForBrand([mockCollection], _activeBrandSlugForApi)[0] ?? null
+        : null;
     }
 
     const remoteCharacters = await loadRemoteCharacters();
@@ -1563,13 +1579,22 @@ export const api = {
       .single();
 
     if (error || !data) return null;
-    return hydrateCollectionPresentationFields(data as Collection, remoteCharacters ?? undefined);
+
+    return filterCollectionsForBrand(
+      [hydrateCollectionPresentationFields(data as Collection, remoteCharacters ?? undefined)],
+      _activeBrandSlugForApi,
+    )[0] ?? null;
   },
 
   /**
    * Fetch resources (files) for a specific collection
    */
   async getCollectionResources(collectionId: string): Promise<CollectionResource[]> {
+    const collection = await this.getCollectionById(collectionId);
+    if (!collection) {
+      return [];
+    }
+
     if (!isSupabaseConfigured) {
       return getMockCollectionResources(collectionId);
     }
@@ -1594,6 +1619,10 @@ export const api = {
       : staticFallbackResponse;
 
     if (!isSupabaseConfigured || devMockSession || mediaTablesAvailable === false) {
+      return preferredFallbackResponse;
+    }
+
+    if (!shouldUseSharedMediaCatalog(_activeBrandSlugForApi)) {
       return preferredFallbackResponse;
     }
 
@@ -1716,6 +1745,10 @@ export const api = {
   async getMediaItem(mediaItemId: string): Promise<MediaItemDetail | null> {
     const isCollectionBackedItem = Boolean(parseCollectionAssetMediaItemId(mediaItemId));
     let collections: Collection[] = [];
+
+    if (!shouldUseSharedMediaCatalog(_activeBrandSlugForApi) && !isCollectionBackedItem) {
+      return null;
+    }
 
     if (isCollectionBackedItem || !isSupabaseConfigured || devMockSession || mediaTablesAvailable === false) {
       collections = await this.getCollections();
@@ -1952,16 +1985,19 @@ export const api = {
   },
 
   async getCentralMaterials(): Promise<CentralMaterial[]> {
-    return getMockCentralMaterials();
+    return filterCentralMaterialsForBrand(getMockCentralMaterials(), _activeBrandSlugForApi);
   },
 
   async getCharacters(): Promise<Character[]> {
     if (!isSupabaseConfigured || devMockSession) {
-      return getMockCharactersLive();
+      return filterCharactersForBrand(getMockCharactersLive(), _activeBrandSlugForApi);
     }
 
     const remoteCharacters = await loadRemoteCharacters();
-    return remoteCharacters ?? getMockCharactersLive();
+    return filterCharactersForBrand(
+      remoteCharacters ?? getMockCharactersLive(),
+      _activeBrandSlugForApi,
+    );
   },
 
   async createCharacter(character: Partial<Character> & { name: string }): Promise<Character | null> {
