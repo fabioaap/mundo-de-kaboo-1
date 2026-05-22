@@ -1,6 +1,6 @@
 # Documentação de API
 
-**Atualizado em**: 20/05/2026, 14:13:15
+**Atualizado em**: 22/05/2026, 03:40:18
 
 ## Funções de API
 
@@ -14,6 +14,7 @@
 - `getCachedProfileSync()`
 
 ### Coleções
+- `stripMissingCollectionColumns()`
 - `clearCollectionsCache()`
 - `getCachedCollectionsSync()`
 
