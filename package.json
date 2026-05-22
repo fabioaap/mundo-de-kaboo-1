@@ -12,6 +12,7 @@
     "test:unit": "vitest run --project unit",
     "test:e2e": "npx playwright test --config playwright.config.ts",
     "test:e2e:ui": "npx playwright test --config playwright.config.ts --ui",
+    "test:jtbd:central-coruja-books": "node scripts/run-central-coruja-book-jtbd.mjs",
     "update-docs": "node scripts/update-docs.mjs",
     "sprint:chart": "node scripts/update-sprint-chart.mjs",
     "storybook": "storybook dev -p 6007",

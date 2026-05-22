@@ -402,6 +402,7 @@ export type ScreenName =
 
 export type AdminModule =
   | 'collections'
+  | 'books'
   | 'videos'
   | 'music'
   | 'formations'

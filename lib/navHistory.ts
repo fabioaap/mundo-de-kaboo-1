@@ -58,11 +58,21 @@ export const getNavStateFromHashString = (hash: string): NavState | null => {
 
   const hashParams = getHashParams(hash);
 
-  if (hashScreen === 'home' && hashParams.get('collectionGroup') === 'books') {
-    return {
-      currentScreen: hashScreen,
-      params: { collectionGroup: 'books' as const },
-    };
+  if (hashScreen === 'home') {
+    const collectionGroup = hashParams.get('collectionGroup') === 'books'
+      ? ('books' as const)
+      : undefined;
+    const collectionId = hashParams.get('collectionId')?.trim() || undefined;
+
+    if (collectionGroup || collectionId) {
+      return {
+        currentScreen: hashScreen,
+        params: {
+          ...(collectionGroup ? { collectionGroup } : {}),
+          ...(collectionId ? { collectionId } : {}),
+        },
+      };
+    }
   }
 
   return { currentScreen: hashScreen };
@@ -71,8 +81,14 @@ export const getNavStateFromHashString = (hash: string): NavState | null => {
 export const getHashUrlForScreen = (screen: ScreenName, params?: NavState['params']): string => {
   const hashParams = new URLSearchParams();
 
-  if (screen === 'home' && params?.collectionGroup === 'books') {
-    hashParams.set('collectionGroup', 'books');
+  if (screen === 'home') {
+    if (params?.collectionGroup === 'books') {
+      hashParams.set('collectionGroup', 'books');
+    }
+
+    if (typeof params?.collectionId === 'string' && params.collectionId.trim()) {
+      hashParams.set('collectionId', params.collectionId.trim());
+    }
   }
 
   const serializedParams = hashParams.toString();

@@ -201,6 +201,19 @@ const sanitizeCollectionPayload = (collection: Partial<Collection>, characters?:
   return syncedCollection;
 };
 
+export const stripMissingCollectionColumns = (
+  payload: Partial<Collection>,
+  missingColumnNames: string[]
+): Partial<Collection> => {
+  const nextPayload = { ...payload };
+
+  for (const columnName of missingColumnNames) {
+    delete nextPayload[columnName as keyof Collection];
+  }
+
+  return nextPayload;
+};
+
 const isMissingColumnError = (error: unknown, columnName: string): boolean => {
   if (!error || typeof error !== 'object') {
     return false;
@@ -2172,6 +2185,24 @@ export const api = {
         .single());
     }
 
+    if (error && isMissingColumnError(error, 'offline_available')) {
+      const legacyPayload = stripMissingCollectionColumns(payload, ['offline_available']);
+      ({ data, error } = await supabase
+        .from('collections')
+        .insert(legacyPayload)
+        .select()
+        .single());
+    }
+
+    if (error && (isMissingColumnError(error, 'character_ids') || isMissingColumnError(error, 'offline_available'))) {
+      const legacyPayload = stripMissingCollectionColumns(payload, ['character_ids', 'offline_available']);
+      ({ data, error } = await supabase
+        .from('collections')
+        .insert(legacyPayload)
+        .select()
+        .single());
+    }
+
     if (error) {
       logger.error('Error creating collection:', error);
       return null;
@@ -2212,6 +2243,26 @@ export const api = {
 
     if (error && isMissingColumnError(error, 'character_ids')) {
       const { character_ids, ...legacyPayload } = payload;
+      ({ data, error } = await supabase
+        .from('collections')
+        .update(legacyPayload)
+        .eq('id', id)
+        .select()
+        .single());
+    }
+
+    if (error && isMissingColumnError(error, 'offline_available')) {
+      const legacyPayload = stripMissingCollectionColumns(payload, ['offline_available']);
+      ({ data, error } = await supabase
+        .from('collections')
+        .update(legacyPayload)
+        .eq('id', id)
+        .select()
+        .single());
+    }
+
+    if (error && (isMissingColumnError(error, 'character_ids') || isMissingColumnError(error, 'offline_available'))) {
+      const legacyPayload = stripMissingCollectionColumns(payload, ['character_ids', 'offline_available']);
       ({ data, error } = await supabase
         .from('collections')
         .update(legacyPayload)

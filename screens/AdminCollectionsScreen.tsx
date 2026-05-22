@@ -22,13 +22,13 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollectionCharacters } from '../lib/characters';
 import { COLLECTION_ASSET_META, inferCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
-import { getCollectionDisplayCover, getCollectionType, getCollectionTypeMeta, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
+import { getCollectionDisplayCover, getCollectionTypeMeta, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
 
 interface AdminCollectionsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
   initialTab?: 'collections' | 'users';
-  initialLibraryArea?: 'videos' | 'music' | 'formations' | 'materials';
+  initialLibraryArea?: 'books' | 'videos' | 'music' | 'formations' | 'materials';
 }
 
 export interface AdminCollectionsHandle {
@@ -304,6 +304,7 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
 ];
 
 const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
+  books: 'Livros',
   videos: 'Vídeos',
   music: 'Áudios',
   formations: 'Formações',
@@ -311,6 +312,7 @@ const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
 };
 
 const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, FixedMediaSlotCategory[]> = {
+  books: ['reading'],
   // Vídeos: 1 slot por item (animation = o vídeo em si).
   // accessible_video e how_to_play são variantes dentro do Kit completo (Coleção).
   videos: ['animation'],
@@ -320,6 +322,7 @@ const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, FixedMediaSlotCategory[
 };
 
 const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
+  books: ['reading'],
   videos: ['animation'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
@@ -332,6 +335,12 @@ const LIBRARY_AREA_UI_META: Record<LibraryAreaKey, {
   emptyMessage: string;
   createLabel: string;
 }> = {
+  books: {
+    icon: 'BookOpen',
+    searchPlaceholder: 'Buscar por livro, BNCC ou tema...',
+    emptyMessage: 'Nenhum livro corresponde aos filtros.',
+    createLabel: 'Novo livro',
+  },
   music: {
     icon: 'Headphones',
     searchPlaceholder: 'Buscar por áudio, coleção ou tema...',
@@ -482,9 +491,11 @@ const Card3DCover: React.FC<{
 export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCollectionsScreenProps>(({ onNavigate, onBack, initialTab, initialLibraryArea }, ref) => {
   // Main tab — driven by initialTab prop (key remount in AdminScreen)
   const mainTab = initialTab || 'collections';
-  const isLibraryAreaMode = Boolean(initialLibraryArea);
-  const isCollectionsCatalogMode = !isLibraryAreaMode;
-  const defaultCollectionTab: 'identification' | 'media' = isLibraryAreaMode ? 'media' : 'identification';
+  const isBooksCatalogMode = initialLibraryArea === 'books';
+  const isAssetLibraryAreaMode = Boolean(initialLibraryArea && initialLibraryArea !== 'books');
+  const isLibraryAreaMode = isAssetLibraryAreaMode;
+  const isCollectionsCatalogMode = !initialLibraryArea;
+  const defaultCollectionTab: 'identification' | 'media' = isAssetLibraryAreaMode ? 'media' : 'identification';
   const createCollectionFormDataForCurrentFlow = (collection?: Partial<Collection>): CollectionFormData => {
     const nextFormData = buildCollectionFormData(collection);
 
@@ -493,6 +504,15 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         ...nextFormData,
         collection_type: 'kit',
         kit_cover_image: null,
+      };
+    }
+
+    if (isBooksCatalogMode) {
+      return {
+        ...nextFormData,
+        collection_type: 'book',
+        kit_cover_image: null,
+        kit_book_ids: [],
       };
     }
 
@@ -564,6 +584,45 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
   const activeLibraryAreaLabel = initialLibraryArea ? LIBRARY_AREA_LABEL[initialLibraryArea] : null;
   const activeLibraryAreaUi = initialLibraryArea ? LIBRARY_AREA_UI_META[initialLibraryArea] : null;
+  const contentEntityLabel = isBooksCatalogMode ? 'Livro' : 'Coleção';
+  const contentEntityLabelLower = contentEntityLabel.toLowerCase();
+  const createContentLabel = activeLibraryAreaUi?.createLabel || 'Nova Coleção';
+  const titleFieldPlaceholder = isCollectionsCatalogMode ? 'Título da coleção' : 'Título do livro';
+  const coverFieldLabel = isCollectionsCatalogMode ? 'Capa da coleção' : 'Capa do livro';
+  const coverFieldHelpText = isCollectionsCatalogMode
+    ? 'Essa imagem vira a thumbnail principal do card da coleção na vitrine.'
+    : 'Essa imagem vira a thumbnail principal do card do livro na vitrine de Livros.';
+  const colorFieldHelpText = isCollectionsCatalogMode
+    ? 'Essa cor organiza o fundo do card. Ao vincular um livro, usamos a paleta dele como ponto de partida e você ajusta só se precisar.'
+    : 'Essa cor organiza o fundo do card do livro e ajuda a dar unidade à vitrine editorial.';
+  const showcaseBadgeLabel = isCollectionsCatalogMode ? 'Coleção' : 'Livro';
+  const showcaseDescription = isCollectionsCatalogMode
+    ? 'A tag Coleção é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme os conteúdos publicados na aba Mídias.'
+    : 'A tag Livro é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme os conteúdos publicados na aba Mídias.';
+  const synopsisPlaceholder = isCollectionsCatalogMode
+    ? 'Sinopse editorial da coleção (opcional)'
+    : 'Sinopse editorial do livro (opcional)';
+  const themePlaceholder = isCollectionsCatalogMode ? 'Tema da coleção' : 'Tema do livro';
+  const emptyCatalogMessage = isBooksCatalogMode
+    ? 'Nenhum livro cadastrado ainda.'
+    : initialLibraryArea
+      ? `Nenhum asset publicado em ${activeLibraryAreaLabel?.toLowerCase() || 'esta área'}.`
+      : 'Nenhuma coleção encontrada.';
+  const emptyFilteredCollectionMessage = isBooksCatalogMode
+    ? 'Nenhum livro corresponde aos filtros.'
+    : 'Nenhuma coleção corresponde aos filtros.';
+
+  const scopedCollections = React.useMemo(() => {
+    if (isCollectionsCatalogMode) {
+      return collections.filter((collection) => getCollectionTypeMeta(collection).type === 'kit');
+    }
+
+    if (isBooksCatalogMode) {
+      return collections.filter((collection) => getCollectionTypeMeta(collection).type === 'book');
+    }
+
+    return collections;
+  }, [collections, isBooksCatalogMode, isCollectionsCatalogMode]);
 
   useEffect(() => {
     if (mainTab !== 'collections') {
@@ -598,7 +657,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   // 'media' tab and highlights the selected asset for editing.
 
   const libraryAssetItems = React.useMemo<LibraryAssetListItem[]>(() => {
-    if (!initialLibraryArea) {
+    if (!initialLibraryArea || isBooksCatalogMode) {
       return [];
     }
 
@@ -652,7 +711,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
           };
         });
     });
-  }, [collections, initialLibraryArea]);
+  }, [collections, initialLibraryArea, isBooksCatalogMode]);
 
   const filteredLibraryAssets = React.useMemo(() => {
     let filtered = [...libraryAssetItems];
@@ -1325,19 +1384,19 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       const updated = await api.updateCollection(editingId, normalizedDataToSave);
       success = !!updated;
       if (!success) {
-        errorMessage = 'Erro ao atualizar coleção. Verifique suas permissões e tente novamente.';
+        errorMessage = `Erro ao atualizar ${contentEntityLabelLower}. Verifique suas permissões e tente novamente.`;
       }
     } else {
       const created = await api.createCollection(normalizedDataToSave);
       success = !!created;
       if (!success) {
-        errorMessage = 'Erro ao criar coleção. Verifique suas permissões e tente novamente.';
+        errorMessage = `Erro ao criar ${contentEntityLabelLower}. Verifique suas permissões e tente novamente.`;
       }
     }
 
     if (success) {
       setOriginalFormData(createCollectionFormDataForCurrentFlow(normalizedDataToSave));
-      showToast(editingId ? 'Coleção atualizada com sucesso!' : 'Coleção criada com sucesso!', 'success');
+      showToast(editingId ? `${contentEntityLabel} atualizado com sucesso!` : `${contentEntityLabel} criado com sucesso!`, 'success');
       setEditingId(null);
       setShowCreateForm(false);
       setActiveTab(defaultCollectionTab);
@@ -1438,17 +1497,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   };
 
   const getFilteredAndSortedCollections = (): Collection[] => {
-    let filtered = [...collections];
-
-    // In the main "Coleções" view (no library area), show only kits — standalone
-    // books (livros avulsos) have their own separate listing scope.
-    if (!initialLibraryArea) {
-      filtered = filtered.filter((c) => getCollectionType(c) === 'kit');
-    }
+    let filtered = [...scopedCollections];
 
     // When in library area mode (Vídeos, Áudios, etc.), show only collections
     // that have at least one asset whose category belongs to that area's slots.
-    if (initialLibraryArea) {
+    if (isAssetLibraryAreaMode) {
       const relevantSlots = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
       filtered = filtered.filter(collection =>
         collection.collection_assets?.some(asset => relevantSlots.includes(asset.category as FixedMediaSlotCategory))
@@ -1517,9 +1570,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     return <EmptyIcon size={48} className="mx-auto mb-4 text-gray-300" />;
                   })()}
                   <p className="text-gray-500 font-bold">
-                    {initialLibraryArea
-                      ? `Nenhum asset publicado em ${activeLibraryAreaLabel?.toLowerCase() || 'esta área'}.`
-                      : 'Nenhuma coleção encontrada.'}
+                    {emptyCatalogMessage}
                   </p>
                   {!editingId && !showCreateForm && (
                     <button
@@ -1528,7 +1579,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-brand-primary px-6 text-sm font-bold text-white shadow-sm transition-all hover:bg-opacity-90 active:scale-95"
                     >
                       <Icons.Plus size={18} />
-                      <span>{activeLibraryAreaUi?.createLabel || 'Nova Coleção'}</span>
+                      <span>{createContentLabel}</span>
                     </button>
                   )}
                 </div>
@@ -1688,13 +1739,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         className="h-11 px-6 rounded-2xl bg-brand-primary text-white flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all active:scale-95 shadow-sm font-bold text-sm whitespace-nowrap"
                       >
                         <Icons.Plus size={18} />
-                        <span>{activeLibraryAreaUi?.createLabel || 'Nova Coleção'}</span>
+                        <span>{createContentLabel}</span>
                       </button>
                     )}
                   </div>
 
                   {/* Lista de conteúdo */}
-                  {initialLibraryArea ? (
+                  {isAssetLibraryAreaMode ? (
                     filteredLibraryAssets.length === 0 ? (
                       <div className="text-center py-12">
                         {(() => {
@@ -1822,9 +1873,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     <div className="text-center py-12">
                       <Icons.BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
                       <p className="text-gray-500 font-bold">
-                        {collections.length > 0 ? 'Nenhuma coleção corresponde aos filtros.' : 'Nenhuma coleção encontrada.'}
+                        {scopedCollections.length > 0 ? emptyFilteredCollectionMessage : emptyCatalogMessage}
                       </p>
-                      {collections.length > 0 && (searchFilter || levelFilter !== 'all' || sortOrder) && (
+                      {scopedCollections.length > 0 && (searchFilter || levelFilter !== 'all' || sortOrder) && (
                         <button
                           onClick={() => { setSearchFilter(''); setLevelFilter('all'); setSortOrder(null); }}
                           className="mt-3 text-sm font-bold text-brand-primary hover:underline"
@@ -1901,6 +1952,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                             <Card3D
                               collection={collection}
+                              tone={isBooksCatalogMode ? 'central-coruja' : 'default'}
                               onCollectionClick={() => {
                                 if (hasUnsavedChanges()) {
                                   setPendingAction(() => () => handleEdit(collection));
@@ -1943,11 +1995,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     {activeLibraryAreaLabel}
                   </p>
                 )}
-                <h2 className="text-base font-bold text-gray-800 line-clamp-1">
-                  {editingId
-                    ? (formData.title || 'Sem título')
-                    : (activeLibraryAreaUi?.createLabel || 'Nova Coleção')}
-                </h2>
+                  <h2 className="text-base font-bold text-gray-800 line-clamp-1">
+                    {editingId
+                      ? (formData.title || 'Sem título')
+                    : createContentLabel}
+                  </h2>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                 {isAdminUser && editingId && (
@@ -1955,7 +2007,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     type="button"
                     onClick={() => handleDeleteClick(editingId)}
                     className="w-9 h-9 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all text-red-500"
-                    title="Excluir coleção"
+                    title={isBooksCatalogMode ? 'Excluir livro' : 'Excluir coleção'}
                   >
                     <Icons.Trash2 size={16} />
                   </button>
@@ -1976,7 +2028,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
               <div className="px-6 pt-4 pb-0 flex-shrink-0">
                 <Tabs
                   tabs={[
-                    { id: 'identification', label: 'Dados da Coleção' },
+                    { id: 'identification', label: isBooksCatalogMode ? 'Dados do Livro' : 'Dados da Coleção' },
                     { id: 'media', label: 'Arquivos de Mídia' }
                   ]}
                   activeTab={activeTab}
@@ -2004,7 +2056,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         value={formData.title}
                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                         className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
-                        placeholder="Título da coleção"
+                        placeholder={titleFieldPlaceholder}
                       />
                     </div>
 
@@ -2015,11 +2067,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         <div>
                           <p className="text-sm font-bold text-gray-800">Formato na vitrine</p>
                           <p className="mt-1 text-xs text-gray-500">
-                            A tag Coleção é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme os conteúdos publicados na aba Mídias.
+                            {showcaseDescription}
                           </p>
                         </div>
                         <span className="inline-flex items-center rounded-full border border-brand-primary/15 bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-brand-primary shadow-sm">
-                          Coleção
+                          {showcaseBadgeLabel}
                         </span>
                       </div>
                     </div>
@@ -2027,16 +2079,17 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <FileUpload
-                          label="Capa da coleção"
+                          label={coverFieldLabel}
                           value={formData.cover_image || placeholderImageUrl}
                           onChange={(url) => setFormData({ ...formData, cover_image: url })}
                           folder="covers"
                           accept="image/*"
                           collectionId={editingId || undefined}
                           hideUrlInput={true}
+                          inputId={isBooksCatalogMode ? 'catalog-book-cover-upload' : 'catalog-collection-cover-upload'}
                         />
                         <p className="mt-2 text-xs text-gray-500">
-                          Essa imagem vira a thumbnail principal do card da coleção na vitrine.
+                          {coverFieldHelpText}
                         </p>
                       </div>
 
@@ -2047,7 +2100,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           onChange={(color) => setFormData({ ...formData, color_theme: color })}
                         />
                         <p className="mt-2 text-xs text-gray-500">
-                          Essa cor organiza o fundo do card. Ao vincular um livro, usamos a paleta dele como ponto de partida e você ajusta só se precisar.
+                          {colorFieldHelpText}
                         </p>
                       </div>
                     </div>
@@ -2057,7 +2110,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       <div className="flex-1">
                         <h4 className="text-sm font-bold text-gray-800">Disponível offline</h4>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          Permite que usuários baixem esta coleção para acesso sem internet.
+                          {isBooksCatalogMode
+                            ? 'Permite que usuários baixem este livro para acesso sem internet.'
+                            : 'Permite que usuários baixem esta coleção para acesso sem internet.'}
                           Funciona apenas com conteúdo hospedado internamente (não YouTube).
                         </p>
                       </div>
@@ -2074,6 +2129,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       </button>
                     </div>
 
+                    {isCollectionsCatalogMode && (
                     <div className="rounded-2xl border border-gray-200 p-4 bg-white space-y-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -2139,13 +2195,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         </div>
                       )}
                     </div>
+                    )}
 
                     {/* 1.10. Personagens */}
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Personagens</label>
                         <p className="text-xs text-gray-500 mb-3">
-                          Selecione os personagens cadastrados para manter a coleção sincronizada com a vitrine pública.
+                          {isBooksCatalogMode
+                            ? 'Selecione os personagens cadastrados para manter o livro sincronizado com a vitrine pública.'
+                            : 'Selecione os personagens cadastrados para manter a coleção sincronizada com a vitrine pública.'}
                         </p>
 
                         {selectableCharacters.length === 0 ? (
@@ -2296,14 +2355,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         <label className="block text-sm font-bold text-gray-700">Sinopse</label>
                         <span className="text-xs text-gray-400">{(formData.synopsis || '').length}/500</span>
                       </div>
-                      <textarea
-                        value={formData.synopsis || ''}
-                        onChange={(e) => setFormData({ ...formData, synopsis: e.target.value.slice(0, 500) })}
-                        className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none min-h-[80px]"
-                        placeholder="Sinopse editorial da coleção (opcional)"
-                        maxLength={500}
-                      />
-                    </div>
+                        <textarea
+                          value={formData.synopsis || ''}
+                          onChange={(e) => setFormData({ ...formData, synopsis: e.target.value.slice(0, 500) })}
+                          className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none min-h-[80px]"
+                          placeholder={synopsisPlaceholder}
+                          maxLength={500}
+                        />
+                      </div>
 
                     {/* 1.7. Tema */}
                     <div>
@@ -2313,7 +2372,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         value={formData.theme}
                         onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
                         className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
-                        placeholder="Tema da coleção"
+                        placeholder={themePlaceholder}
                       />
                     </div>
 
@@ -2360,11 +2419,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       {activeLibraryAreaLabel && editingId && (
                         <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 mb-4 flex items-center gap-2">
                           <Icons.BookOpen size={15} className="shrink-0 text-gray-400" />
-                          <span className="truncate">
-                            <span className="text-gray-500">Coleção: </span>
-                            <span className="font-bold text-gray-800">{formData.title || 'Sem título'}</span>
-                          </span>
-                        </div>
+                            <span className="truncate">
+                              <span className="text-gray-500">{isBooksCatalogMode ? 'Livro: ' : 'Coleção: '}</span>
+                              <span className="font-bold text-gray-800">{formData.title || 'Sem título'}</span>
+                            </span>
+                          </div>
                       )}
                       {highlightedAssetCategory && (
                         <div className="rounded-2xl border border-brand-primary/15 bg-white px-4 py-3 text-sm text-gray-700 mb-4 shadow-sm">
@@ -2402,6 +2461,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               accept="image/*"
                               collectionId={editingId || undefined}
                               hideUrlInput={true}
+                              inputId={`library-cover-upload-${initialLibraryArea ?? 'default'}`}
                             />
                             <div>
                               <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
@@ -2464,6 +2524,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               accept={slot.accept}
                               collectionId={editingId || undefined}
                               showAsIcon={true}
+                              inputId={`media-upload-${slot.category}`}
                             />
 
                             <div>
@@ -2581,7 +2642,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                 Cancelar
               </Button>
               <Button variant="primary" fullWidth onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Salvando...' : (editingId ? 'Salvar Alterações' : 'Criar Coleção')}
+                {isSaving ? 'Salvando...' : (editingId ? 'Salvar Alterações' : (isBooksCatalogMode ? 'Criar livro' : 'Criar Coleção'))}
               </Button>
             </div>
           </div>

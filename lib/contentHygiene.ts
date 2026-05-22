@@ -44,7 +44,6 @@ const isMockOrTestCollection = (collection: Collection): boolean => {
   ]);
 
   const candidateValues = [
-    collection.id,
     collection.title,
     collection.theme,
     collection.learning_objectives,
@@ -65,7 +64,7 @@ const isMockOrTestCollection = (collection: Collection): boolean => {
 
 const isMockOrTestCharacter = (character: Character): boolean => {
   return SEEDED_CHARACTER_IDS.has(character.id)
-    || [character.id, character.name, character.description, character.image_url ?? '']
+    || [character.name, character.description, character.image_url ?? '']
       .some((value) => hasMockMarker(value) || hasSampleUrl(value));
 };
 

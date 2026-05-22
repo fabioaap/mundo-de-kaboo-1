@@ -47,6 +47,22 @@ const qaCollection: Collection = {
   cover_image: 'https://cdn.example.com/regression-cover.png',
 };
 
+const devMockCollection: Collection = {
+  ...realCollection,
+  id: 'mock-171631234-real-central-coruja-book',
+  title: 'Conhecendo a Liga das Corujinhas',
+  cover_image: 'https://project.supabase.co/storage/v1/object/public/collections/covers/temp/coruja-book.png',
+  collection_assets: [
+    {
+      id: 'reading-1',
+      category: 'reading',
+      media_type: 'document',
+      title: 'Conhecendo a Liga das Corujinhas',
+      url: 'https://project.supabase.co/storage/v1/object/public/collections/pdfs/temp/liga-das-corujinhas.pdf',
+    },
+  ],
+};
+
 const realCharacter: Character = {
   id: 'coruja-guia',
   name: 'Coruja Guia',
@@ -67,23 +83,33 @@ const qaCharacter: Character = {
   status: 'active',
 };
 
+const devMockCharacter: Character = {
+  id: 'mock-character-123',
+  name: 'Lia Curadora',
+  description: 'Personagem real criada no ambiente operacional da Central Coruja.',
+  traits: ['Curiosa'],
+  aliases: [],
+  image_url: 'https://project.supabase.co/storage/v1/object/public/collections/characters/lia-curadora.png',
+  status: 'active',
+};
+
 describe('content hygiene for Central Coruja', () => {
   it('removes seeded and explicit QA/mock collections while preserving real content', () => {
     const filtered = filterCollectionsForBrand(
-      [seedCollection, qaCollection, realCollection],
+      [seedCollection, qaCollection, realCollection, devMockCollection],
       'central-coruja',
     );
 
-    expect(filtered.map((collection) => collection.id)).toEqual([realCollection.id]);
+    expect(filtered.map((collection) => collection.id)).toEqual([realCollection.id, devMockCollection.id]);
   });
 
   it('removes seeded and explicit QA/mock characters while preserving real ones', () => {
     const filtered = filterCharactersForBrand(
-      [CHARACTER_SEED[0], qaCharacter, realCharacter],
+      [CHARACTER_SEED[0], qaCharacter, realCharacter, devMockCharacter],
       'central-coruja',
     );
 
-    expect(filtered.map((character) => character.id)).toEqual([realCharacter.id]);
+    expect(filtered.map((character) => character.id)).toEqual([realCharacter.id, devMockCharacter.id]);
   });
 
   it('hides local seed materials and shared standalone media catalog for Central Coruja', () => {

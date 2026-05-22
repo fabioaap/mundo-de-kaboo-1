@@ -17,6 +17,7 @@ interface AdminScreenProps {
 
 const MODULE_META: Record<AdminModule, { icon: React.FC<{ className?: string }>; label: string }> = {
     collections: { icon: Icons.Library, label: 'Coleções' },
+    books: { icon: Icons.BookOpen, label: 'Livros' },
     videos: { icon: Icons.Video, label: 'Vídeos' },
     music: { icon: Icons.Headphones, label: 'Áudios' },
     formations: { icon: Icons.BookOpen, label: 'Formações' },
@@ -27,10 +28,10 @@ const MODULE_META: Record<AdminModule, { icon: React.FC<{ className?: string }>;
     white_label: { icon: Icons.Settings, label: 'White Label' },
 };
 
-const ALL_MODULES: AdminModule[] = ['collections', 'videos', 'music', 'formations', 'materials', 'users', 'characters', 'vouchers', 'white_label'];
-const EDITOR_MODULES: AdminModule[] = ['collections', 'videos', 'music', 'formations', 'materials', 'characters'];
+const ALL_MODULES: AdminModule[] = ['collections', 'books', 'videos', 'music', 'formations', 'materials', 'users', 'characters', 'vouchers', 'white_label'];
+const EDITOR_MODULES: AdminModule[] = ['collections', 'books', 'videos', 'music', 'formations', 'materials', 'characters'];
 
-const COLLECTION_SCREEN_MODULES: AdminModule[] = ['collections', 'users', 'videos', 'music', 'formations', 'materials'];
+const COLLECTION_SCREEN_MODULES: AdminModule[] = ['collections', 'books', 'users', 'videos', 'music', 'formations', 'materials'];
 
 /* ─── Sidebar ──────────────────────────────────────────── */
 
@@ -161,6 +162,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) 
     const renderModule = () => {
         switch (activeModule) {
             case 'collections':
+            case 'books':
             case 'users':
             case 'videos':
             case 'music':
