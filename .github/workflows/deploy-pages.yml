@@ -54,6 +54,12 @@ jobs:
       - name: Merge wiki into Pages artifact
         run: node scripts/merge-pages-wiki.mjs
 
+      - name: Smoke check merged Pages artifact locally
+        env:
+          PAGES_EXPECTED_TITLE: Mundo de Kaboo
+          PAGES_EXPECTED_WIKI_TEXT: Documentação da plataforma educacional Mundo de Kaboo para professores do Ensino Fundamental
+        run: bash scripts/smoke-pages-artifact.sh
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
