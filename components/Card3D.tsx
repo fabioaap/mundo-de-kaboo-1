@@ -195,7 +195,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
   const isCollectionCard = !isCentralCorujaTone && collectionTypeMeta.type === 'kit';
   const progress = collection.progress ?? 0;
   const themeColor = collection.color_theme?.trim() || DEFAULT_COLLECTION_THEME;
-  const collectionHeroCover = collection.cover_image?.trim() || displayCoverImage;
+  const collectionHeroCover = displayCoverImage || collection.cover_image?.trim() || '';
   const formatKinds = getCollectionFormatKinds(collection);
   const collectionCardLayout = getCollectionCardLayout(cardWidth, isMobile);
   const visibleFormatKinds = formatKinds.slice(0, collectionCardLayout.visibleFormatLimit);

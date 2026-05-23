@@ -98,4 +98,12 @@ describe('getCollectionDisplayCover', () => {
       kit_cover_image: 'https://cdn.example.com/kit-cover.jpg',
     } as any)).toBe('https://cdn.example.com/kit-cover.jpg');
   });
+
+  it('ignores the app placeholder cover when a kit thumbnail is available', () => {
+    expect(getCollectionDisplayCover({
+      collection_type: 'kit',
+      cover_image: '/assets/images/image-placeholder.png',
+      kit_cover_image: 'https://cdn.example.com/kit-cover.jpg',
+    } as any)).toBe('https://cdn.example.com/kit-cover.jpg');
+  });
 });

@@ -6,6 +6,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { FilePreviewModal } from './FilePreviewModal';
 import { Toast } from './Toast';
 import { useToast } from '../hooks/useToast';
+import { getFileUploadPreviewSizeClassName, type FileUploadPreviewSize } from '../lib/fileUploadPresentation';
 
 interface FileUploadProps {
   label: string;
@@ -18,6 +19,7 @@ interface FileUploadProps {
   hideUrlInput?: boolean; // For cover images, hide URL input
   showAsIcon?: boolean; // Show as file icon instead of URL input
   inputId?: string;
+  previewSize?: FileUploadPreviewSize;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -31,6 +33,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   hideUrlInput = false,
   showAsIcon = false,
   inputId,
+  previewSize = 'md',
 }) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +44,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const { toast, showToast, updateToast, hideToast } = useToast();
   const hasPlaceholderImage = isPlaceholderImageUrl(value);
   const resolvedInputId = inputId || `file-upload-${folder}`;
+  const previewSizeClassName = getFileUploadPreviewSizeClassName(previewSize);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -142,7 +146,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <img
                 src={value}
                 alt="Preview"
-                className="w-32 h-32 object-cover rounded-xl border-2 border-gray-200 transition-opacity duration-300"
+                className={`${previewSizeClassName} object-cover rounded-xl border-2 border-gray-200 transition-opacity duration-300`}
                 onError={(e) => {
                   // Fallback to placeholder if image fails to load
                   (e.target as HTMLImageElement).src = placeholderImageUrl;

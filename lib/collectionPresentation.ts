@@ -1,4 +1,5 @@
 import { Collection, CollectionAsset, CollectionType } from '../types';
+import { isPlaceholderImageUrl } from './appPaths';
 
 type CollectionTypeMeta = {
   type: CollectionType;
@@ -134,7 +135,7 @@ export const getCollectionDisplayCover = (collection?: Partial<Collection> | nul
   }
 
   const primaryCoverImage = normalizeImageUrl(collection.cover_image);
-  if (primaryCoverImage) {
+  if (primaryCoverImage && !isPlaceholderImageUrl(primaryCoverImage)) {
     return primaryCoverImage;
   }
 

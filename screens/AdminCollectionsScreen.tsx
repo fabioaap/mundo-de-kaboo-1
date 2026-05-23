@@ -590,8 +590,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const titleFieldPlaceholder = isCollectionsCatalogMode ? 'Título da coleção' : 'Título do livro';
   const coverFieldLabel = isCollectionsCatalogMode ? 'Capa da coleção' : 'Capa do livro';
   const coverFieldHelpText = isCollectionsCatalogMode
-    ? 'Essa imagem vira a thumbnail principal do card da coleção na vitrine.'
-    : 'Essa imagem vira a thumbnail principal do card do livro na vitrine de Livros.';
+    ? 'Essa imagem vira a thumbnail principal do card da coleção na vitrine. Se você não definir outra thumbnail, a própria capa do livro ou da coleção será usada automaticamente no card.'
+    : 'Essa imagem vira a thumbnail principal do card do livro na vitrine de Livros. Se você não definir outra thumbnail, a própria capa do livro será usada automaticamente no card.';
   const colorFieldHelpText = isCollectionsCatalogMode
     ? 'Essa cor organiza o fundo do card. Ao vincular um livro, usamos a paleta dele como ponto de partida e você ajusta só se precisar.'
     : 'Essa cor organiza o fundo do card do livro e ajuda a dar unidade à vitrine editorial.';
@@ -2087,6 +2087,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           collectionId={editingId || undefined}
                           hideUrlInput={true}
                           inputId={isBooksCatalogMode ? 'catalog-book-cover-upload' : 'catalog-collection-cover-upload'}
+                          previewSize="sm"
                         />
                         <p className="mt-2 text-xs text-gray-500">
                           {coverFieldHelpText}
