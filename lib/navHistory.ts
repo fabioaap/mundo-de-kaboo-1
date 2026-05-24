@@ -40,7 +40,7 @@ export const getHashScreen = (hash: string): ScreenName | null => {
     return null;
   }
 
-  const candidate = rawHash.split(/[?&]/)[0]?.trim();
+  const candidate = rawHash.split(/[?&/]/)[0]?.trim();
   if (!candidate || candidate.includes('=')) {
     return null;
   }
@@ -48,6 +48,18 @@ export const getHashScreen = (hash: string): ScreenName | null => {
   return HASH_ADDRESSABLE_SCREENS.has(candidate as ScreenName)
     ? (candidate as ScreenName)
     : null;
+};
+
+const getLegacyHomeCollectionGroup = (hash: string): 'books' | undefined => {
+  const rawHash = getHashPayload(hash);
+  const pathSegment = rawHash.match(/^home\/([^?&/]+)/i)?.[1];
+  const normalized = decodeURIComponent(pathSegment ?? '').trim().toLowerCase();
+
+  if (normalized === 'books' || normalized === 'livros') {
+    return 'books';
+  }
+
+  return undefined;
 };
 
 export const getNavStateFromHashString = (hash: string): NavState | null => {
@@ -59,7 +71,7 @@ export const getNavStateFromHashString = (hash: string): NavState | null => {
   const hashParams = getHashParams(hash);
 
   if (hashScreen === 'home') {
-    const collectionGroup = hashParams.get('collectionGroup') === 'books'
+    const collectionGroup = hashParams.get('collectionGroup') === 'books' || getLegacyHomeCollectionGroup(hash) === 'books'
       ? ('books' as const)
       : undefined;
     const collectionId = hashParams.get('collectionId')?.trim() || undefined;

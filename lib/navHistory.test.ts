@@ -21,6 +21,14 @@ describe('nav history helpers', () => {
     });
   });
 
+  it('parses legacy Livros hashes with slash paths back into nav params', () => {
+    expect(getHashScreen('#home/livros')).toBe('home');
+    expect(getNavStateFromHashString('#home/livros')).toEqual({
+      currentScreen: 'home',
+      params: { collectionGroup: 'books' },
+    });
+  });
+
   it('parses collection modal ids back from the home hash', () => {
     expect(getNavStateFromHashString('#home?collectionGroup=books&collectionId=mock-123')).toEqual({
       currentScreen: 'home',
