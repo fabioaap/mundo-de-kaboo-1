@@ -17,7 +17,7 @@ import { getAccessibleNavState, PROTECTED_SCREENS } from './lib/navigationAccess
 import { logger } from './lib/logger';
 import { clearPendingPasswordSetup, hasPendingPasswordSetup, isInvitedAuthUser, markPendingPasswordSetup } from './lib/passwordSetupFlow';
 import { setMockActiveBrand } from './lib/mockData';
-import { getHashUrlForScreen, getNavStateFromHashString } from './lib/navHistory';
+import { areNavStatesEqual, getHashUrlForScreen, getNavStateFromHashString } from './lib/navHistory';
 
 // Screens
 import { LoginScreen } from './screens/LoginScreen';
@@ -326,9 +326,8 @@ const areNavStatesEquivalent = (left: NavState, right: NavState): boolean => {
   const normalizedLeft = normalizeNavState(left);
   const normalizedRight = normalizeNavState(right);
 
-  return normalizedLeft.currentScreen === normalizedRight.currentScreen
-    && normalizedLeft.adminModule === normalizedRight.adminModule
-    && normalizedLeft.params === normalizedRight.params;
+  return normalizedLeft.adminModule === normalizedRight.adminModule
+    && areNavStatesEqual(normalizedLeft, normalizedRight);
 };
 
 const getPostAuthNavState = (state: NavState, fallbackScreen: ScreenName): NavState => {
