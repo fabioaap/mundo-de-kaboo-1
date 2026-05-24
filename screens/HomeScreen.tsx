@@ -704,12 +704,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const isCorujaHomeLayout = isCentralCoruja && !isSearchExperience;
   const isCorujaPinnedShelfLayout = isCorujaHomeLayout && Boolean(brandHomeHeroImageUrl);
   const desktopShellPaddingClass = isCorujaPinnedShelfLayout
-    ? 'px-[var(--space-page-x)] md:mx-auto md:w-full md:max-w-6xl md:px-0'
+    ? 'px-[var(--space-page-x)] md:mx-auto md:w-full md:max-w-[78rem] md:px-0'
     : isCentralCoruja
       ? 'px-[var(--space-page-x)] md:px-[var(--space-page-x)]'
       : 'px-4 sm:px-6 lg:px-8 xl:mx-auto xl:w-full xl:max-w-[68rem]';
   const desktopSkeletonHeaderPaddingClass = isCorujaPinnedShelfLayout
-    ? 'hidden md:block shrink-0 md:mx-auto md:w-full md:max-w-6xl md:pt-[var(--space-page-header-top-desktop)] md:pb-[var(--space-page-inset-y)]'
+    ? 'hidden md:block shrink-0 md:mx-auto md:w-full md:max-w-[78rem] md:pt-[var(--space-page-header-top-desktop)] md:pb-[var(--space-page-inset-y)]'
     : 'hidden md:block shrink-0 px-[var(--space-page-x-desktop)] pt-[var(--space-page-header-top-desktop)] pb-[var(--space-page-inset-y)] xl:mx-auto xl:w-full xl:max-w-[68rem]';
   const corujaHeroLayerDepths = useMemo(() => (isMobile ? [0.8, 0.36] : [1.4, 0.6]), [isMobile]);
   const { containerRef: corujaHeroMotionContainerRef, setLayerRef: setCorujaHeroLayerRef } = useParallaxMotion({
@@ -1642,8 +1642,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const renderImmersiveHeroControls = (tone: 'coruja' | 'kaboo' = 'coruja') => {
     const isKabooTone = tone === 'kaboo';
     const searchInputClass = isKabooTone
-      ? 'h-14 rounded-[28px] pl-11 pr-24 md:pr-72 bg-white border border-gray-200 hover:border-kaboo-primary/24 focus:border-kaboo-primary shadow-sm'
-      : 'h-14 rounded-[28px] pl-11 shadow-sm bg-white/92 border-transparent hover:border-transparent focus:border-kaboo-primary pr-24 md:pr-72';
+      ? 'h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-14 shadow-sm hover:border-kaboo-primary/24 focus:border-kaboo-primary'
+      : 'h-14 rounded-[28px] border-transparent bg-white/92 pl-11 pr-14 shadow-sm hover:border-transparent focus:border-kaboo-primary';
     const passiveFilterClass = isKabooTone
       ? 'bg-white text-kaboo-primary border-gray-200 shadow-sm hover:border-kaboo-primary/24'
       : 'bg-white/95 text-[#0C1A34] border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60';
@@ -1653,39 +1653,42 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
     return (
       <div className="space-y-3 md:space-y-4">
-        <div className="relative z-10 w-full md:max-w-[48%]">
-          <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
-            <Icons.Search size={18} />
-          </div>
-          <Input
-            ref={searchInputRef}
-            aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
-            placeholder="Título, BNCC, personagem, competência..."
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            className={searchInputClass}
-          />
-          <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2">
+        <div className="relative z-10 flex w-full flex-col gap-3 lg:max-w-[60rem] lg:flex-row lg:items-center">
+          <div className="relative min-w-0 flex-1">
+            <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+              <Icons.Search size={18} />
+            </div>
+            <Input
+              ref={searchInputRef}
+              aria-label={`Buscar ${collectionGroupTitle.toLowerCase()}`}
+              placeholder="Título, BNCC, personagem, competência..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className={searchInputClass}
+            />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/90 backdrop-blur-sm text-gray-500 transition-colors hover:text-gray-700"
+                className="absolute right-2 top-1/2 z-10 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/90 text-gray-500 backdrop-blur-sm transition-colors hover:text-gray-700"
                 title="Limpar busca"
               >
                 <Icons.X size={16} />
               </button>
             )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
             <button
               type="button"
               onClick={() => openFilterDrawer()}
-              className={`flex items-center gap-2 border transition-all active:scale-95 h-10 px-3 md:px-4 rounded-[20px] ${activeFilterCount > 0 ? 'bg-[#5D1E76] text-white border-[#5D1E76] shadow-[0_12px_26px_rgba(93,30,118,0.35)] inline-flex' : `${passiveFilterClass} inline-flex`}`}
+              className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 transition-all active:scale-95 md:px-4 ${activeFilterCount > 0 ? 'border-[#5D1E76] bg-[#5D1E76] text-white shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : passiveFilterClass}`}
               title="Refinar busca"
             >
               <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
-              <span className="hidden md:inline text-sm font-bold">Filtros</span>
+              <span className="hidden text-sm font-bold md:inline">Filtros</span>
               {activeFilterCount > 0 && (
-                <span className="min-w-5 h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center bg-white/20 text-white">
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[10px] font-black text-white">
                   {activeFilterCount}
                 </span>
               )}
@@ -1694,7 +1697,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               <button
                 type="button"
                 onClick={closeInlineSearch}
-                className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 backdrop-blur-sm px-3 text-gray-500 transition-colors hover:text-gray-700"
+                className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 px-3 text-gray-500 backdrop-blur-sm transition-colors hover:text-gray-700"
                 title="Fechar busca"
               >
                 <Icons.X size={16} />
@@ -1705,7 +1708,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
 
         {!isSearchExperience && (
-          <div className="relative z-20 flex gap-3 overflow-x-auto no-scrollbar pb-1 md:max-w-[48%]">
+          <div className="relative z-20 flex flex-wrap gap-3 overflow-x-auto no-scrollbar pb-1 lg:max-w-[60rem] lg:overflow-visible">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (

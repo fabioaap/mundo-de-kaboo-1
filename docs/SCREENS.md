@@ -1,6 +1,6 @@
 # Documentação de Telas (Screens)
 
-**Atualizado em**: 24/05/2026, 19:24:50
+**Atualizado em**: 24/05/2026, 21:27:34
 
 ## Resumo
 
