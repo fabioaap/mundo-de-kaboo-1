@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getCollectionDisplayCover,
   getCollectionFormatKinds,
+  getCollectionTypeMeta,
   getKitLinkedBookCount,
   getVisiblePrimaryCollectionAssets,
   normalizeSingleKitBookIds,
@@ -83,12 +84,12 @@ describe('getCollectionFormatKinds', () => {
 });
 
 describe('getCollectionDisplayCover', () => {
-  it('prefers cover_image over kit_cover_image when both are present', () => {
+  it('prefers kit_cover_image over cover_image when both are present', () => {
     expect(getCollectionDisplayCover({
       collection_type: 'kit',
       cover_image: 'https://cdn.example.com/cover.jpg',
       kit_cover_image: 'https://cdn.example.com/kit-cover.jpg',
-    } as any)).toBe('https://cdn.example.com/cover.jpg');
+    } as any)).toBe('https://cdn.example.com/kit-cover.jpg');
   });
 
   it('falls back to kit_cover_image for kits without a primary cover', () => {
@@ -105,5 +106,11 @@ describe('getCollectionDisplayCover', () => {
       cover_image: '/assets/images/image-placeholder.png',
       kit_cover_image: 'https://cdn.example.com/kit-cover.jpg',
     } as any)).toBe('https://cdn.example.com/kit-cover.jpg');
+  });
+});
+
+describe('getCollectionTypeMeta', () => {
+  it('uses Kit as short label for multimodal collections', () => {
+    expect(getCollectionTypeMeta({ collection_type: 'kit' } as any).shortLabel).toBe('Kit');
   });
 });

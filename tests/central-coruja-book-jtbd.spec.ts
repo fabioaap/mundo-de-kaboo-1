@@ -24,13 +24,15 @@ const captureScreenshot = async (page: Page, fileName: string) => {
     return filePath;
 };
 
-const getSanitizedUploadLabel = (fixture: CentralCorujaBookFixture) =>
-    fixture.fileName.replace(/[^a-zA-Z0-9.-]/g, '_').substring(0, 50);
+const getMaterialDrawer = (page: Page) => page.locator('div.fixed.inset-y-0.right-0.z-50.translate-x-0').filter({
+    has: page.getByPlaceholder('Título do material'),
+});
 
 const openMaterialsModule = async (page: Page, journal: ThinkAloudJournal, findings: JourneyFinding[]) => {
-    await expect(page.getByRole('heading', { name: 'Gerenciar' })).toBeVisible({ timeout: 15_000 });
+    const adminNavigation = page.getByRole('navigation');
+    await expect(adminNavigation.getByRole('button', { name: 'Materiais' })).toBeVisible({ timeout: 15_000 });
 
-    const adminBooksModules = await page.getByRole('navigation').getByRole('button', { name: 'Livros' }).count();
+    const adminBooksModules = await adminNavigation.getByRole('button', { name: 'Livros' }).count();
     if (adminBooksModules === 0) {
         findings.push({
             id: 'missing-admin-books-module',
@@ -48,18 +50,24 @@ const openMaterialsModule = async (page: Page, journal: ThinkAloudJournal, findi
         );
     }
 
-    await page.getByRole('navigation').getByRole('button', { name: 'Materiais' }).click();
+    await adminNavigation.getByRole('button', { name: 'Materiais' }).click();
     await expect(page.getByRole('heading', { name: 'Materiais', level: 1 })).toBeVisible({ timeout: 10_000 });
 };
 
 const ensureMaterialFormOpen = async (page: Page) => {
-    const drawerHeading = page.getByRole('heading', { name: 'Novo material' });
-    if (await drawerHeading.isVisible().catch(() => false)) {
-        return;
+    const titleInput = page.locator('div.fixed.inset-y-0.right-0.z-50.translate-x-0').getByPlaceholder('Título do material');
+    const readingSectionLabel = page.locator('div.fixed.inset-y-0.right-0.z-50.translate-x-0').getByText('Leitura', { exact: true });
+    const readingUpload = page.locator('div.fixed.inset-y-0.right-0.z-50.translate-x-0').locator('input[type="file"][accept="application/pdf"]').first();
+
+    if (!(await titleInput.isVisible().catch(() => false))) {
+        const openCreateButton = page.locator('main').getByRole('button', { name: 'Novo material', exact: true }).last();
+        await openCreateButton.scrollIntoViewIfNeeded();
+        await openCreateButton.click();
     }
 
-    await page.getByRole('button', { name: 'Novo material' }).click();
-    await expect(drawerHeading).toBeVisible({ timeout: 10_000 });
+    await expect(titleInput).toBeVisible({ timeout: 10_000 });
+    await expect(readingSectionLabel).toBeVisible({ timeout: 10_000 });
+    await expect(readingUpload).toHaveCount(1);
 };
 
 const createBookFromFixture = async (
@@ -70,7 +78,10 @@ const createBookFromFixture = async (
 ) => {
     await ensureMaterialFormOpen(page);
 
-    const saveLabel = (await page.getByRole('button', { name: 'Criar Coleção' }).textContent())?.trim() || 'Criar Coleção';
+    const materialDrawer = getMaterialDrawer(page);
+    const createButton = materialDrawer.getByRole('button', { name: /Criar (Material|Coleção|[Ll]ivro)/ }).last();
+    await expect(createButton).toBeVisible({ timeout: 10_000 });
+    const saveLabel = (await createButton.textContent())?.trim() || 'Criar Material';
     if (!findings.some((finding) => finding.id === 'book-flow-uses-collection-copy')) {
         findings.push({
             id: 'book-flow-uses-collection-copy',
@@ -90,17 +101,22 @@ const createBookFromFixture = async (
         },
     );
 
-    await page.getByRole('textbox', { name: 'Título do material' }).fill(fixture.displayTitle);
-    const segmentButton = page.getByRole('button', {
-        name: fixture.segment === 'Educação Infantil' ? 'Ed. Infantil' : 'E.F. Anos Iniciais',
-    }).last();
-    await segmentButton.evaluate((button: HTMLButtonElement) => button.click());
-    await page.locator('input#file-upload-pdfs').setInputFiles(fixture.absolutePath);
-    await expect(page.getByText('Arquivo enviado com sucesso!')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(getSanitizedUploadLabel(fixture))).toBeVisible({ timeout: 15_000 });
-    const createButton = page.getByRole('button', { name: 'Criar Coleção' }).last();
-    await createButton.evaluate((button: HTMLButtonElement) => button.click());
-    await expect(page.getByText('Coleção criada com sucesso!')).toBeVisible({ timeout: 15_000 });
+    const titleInput = materialDrawer.getByPlaceholder('Título do material');
+    await expect(titleInput).toBeVisible({ timeout: 10_000 });
+    await titleInput.fill(fixture.displayTitle);
+    if (fixture.segment !== 'Educação Infantil') {
+        const segmentButton = materialDrawer.getByRole('button', {
+            name: 'E.F. Anos Iniciais',
+            exact: true,
+        });
+        await segmentButton.evaluate((button: HTMLButtonElement) => button.click());
+    }
+    await materialDrawer.locator('input[type="file"][accept="application/pdf"]').first().setInputFiles(fixture.absolutePath);
+    await expect(materialDrawer.getByPlaceholder('https://...').first()).toHaveValue(/\/collections\/pdfs\//, { timeout: 15_000 });
+    await createButton.scrollIntoViewIfNeeded();
+    await expect(createButton).toBeEnabled({ timeout: 10_000 });
+    await createButton.click();
+    await expect(materialDrawer.getByPlaceholder('Título do material')).toBeHidden({ timeout: 15_000 });
     await expect(page.getByText(fixture.displayTitle).first()).toBeVisible({ timeout: 15_000 });
 
     journal.add(
@@ -118,8 +134,35 @@ const validatePublicBooksListing = async (
     fixtures: CentralCorujaBookFixture[],
     journal: ThinkAloudJournal,
 ) => {
-    await page.goto('/?brand=central-coruja#home?collectionGroup=books');
-    await expect(page.getByRole('heading', { name: 'Todos os Livros' })).toBeVisible({ timeout: 15_000 });
+    const booksNavState = {
+        currentScreen: 'home',
+        params: { collectionGroup: 'books' },
+    };
+
+    await page.goto('/?brand=central-coruja');
+    await page.evaluate((nextState) => {
+        window.localStorage.setItem('kaboo_nav_state', JSON.stringify(nextState));
+        window.history.replaceState(
+            {
+                screen: nextState.currentScreen,
+                params: nextState.params,
+            },
+            '',
+            window.location.pathname + window.location.search,
+        );
+        window.dispatchEvent(new PopStateEvent('popstate', {
+            state: {
+                screen: nextState.currentScreen,
+                params: nextState.params,
+            },
+        }));
+    }, booksNavState);
+    await expect.poll(async () => {
+        const raw = await page.evaluate(() => localStorage.getItem('kaboo_nav_state'));
+        if (!raw) return null;
+        return JSON.parse(raw)?.params?.collectionGroup ?? null;
+    }, { timeout: 15_000 }).toBe('books');
+    await expect(page.getByRole('textbox', { name: 'Buscar livros' })).toBeVisible({ timeout: 15_000 });
 
     for (const fixture of fixtures.slice(0, 2)) {
         await expect(page.getByText(fixture.displayTitle).first()).toBeVisible({ timeout: 15_000 });

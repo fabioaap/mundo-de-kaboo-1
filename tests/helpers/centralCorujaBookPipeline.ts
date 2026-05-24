@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Page } from '@playwright/test';
 
 export type SegmentLabel = 'Educação Infantil' | 'Fundamental I';
@@ -49,7 +50,8 @@ export type BatchJourneyReport = {
     finishedAt: string;
 };
 
-const DEFAULT_BOOK_DIR = 'C:\\Users\\Educacross\\Documents\\Projetos Educacross\\mundo-de-kaboo\\Conteúdo - Central Coruja\\Livros';
+const HELPERS_DIR = path.dirname(fileURLToPath(import.meta.url));
+const DEFAULT_BOOK_DIR = path.resolve(HELPERS_DIR, '..', 'fixtures', 'central-coruja-books');
 const DEFAULT_ARTIFACT_ROOT = path.join(process.cwd(), '.gstack', 'qa-reports', 'central-coruja-book-jtbd');
 export const CENTRAL_CORUJA_EDITOR_PERSONA = {
     name: 'Lia Editora',

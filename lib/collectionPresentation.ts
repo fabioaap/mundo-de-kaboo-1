@@ -40,7 +40,7 @@ const COLLECTION_TYPE_META: Record<CollectionType, CollectionTypeMeta> = {
   kit: {
     type: 'kit',
     label: 'Kit multimodal',
-    shortLabel: 'Coleção',
+    shortLabel: 'Kit',
     softClassName: 'bg-amber-50 text-amber-800 border-amber-200',
     coverClassName: 'bg-amber-500/90 text-white border-white/30 shadow-lg shadow-amber-950/20',
     detailSummary: 'Kit multimodal com livro, mídia e materiais de apoio reunidos na mesma experiência.',
@@ -134,13 +134,19 @@ export const getCollectionDisplayCover = (collection?: Partial<Collection> | nul
     return '';
   }
 
+  const collectionType = getCollectionType(collection);
   const primaryCoverImage = normalizeImageUrl(collection.cover_image);
+  const kitCoverImage = normalizeImageUrl(collection.kit_cover_image);
+
+  if (collectionType === 'kit' && kitCoverImage && !isPlaceholderImageUrl(kitCoverImage)) {
+    return kitCoverImage;
+  }
+
   if (primaryCoverImage && !isPlaceholderImageUrl(primaryCoverImage)) {
     return primaryCoverImage;
   }
 
-  const kitCoverImage = normalizeImageUrl(collection.kit_cover_image);
-  if (getCollectionType(collection) === 'kit' && kitCoverImage) {
+  if (collectionType === 'kit' && kitCoverImage) {
     return kitCoverImage;
   }
 

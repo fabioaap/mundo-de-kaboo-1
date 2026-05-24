@@ -24,6 +24,8 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const isLandscape = useOrientation();
   const isMobile = useIsMobile();
   const isMobileLandscape = isMobile && isLandscape;
+  const readingAsset = collection.collection_assets?.find((asset) => asset.category === 'reading');
+  const pdfUrl = readingAsset?.url?.trim() || collection.pdf_url?.trim() || '';
   const {
     isAvailable: canDownloadOffline,
     isDownloaded: isOfflineDownloaded,
@@ -33,8 +35,8 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
     handleRemove: handleOfflineRemove,
   } = useOfflineDownload(
     collection,
-    [collection.pdf_url],
-    collection.collection_assets?.find((a) => a.category === 'reading')?.offline_available
+    pdfUrl ? [pdfUrl] : [],
+    readingAsset?.offline_available
   );
   
   // Set browser background to match theme color
@@ -103,7 +105,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   }, []);
 
 
-  if (!collection.pdf_url) {
+  if (!pdfUrl) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-white" style={{ height: '100dvh', width: '100vw' }}>
         <div className="relative z-10 p-6 pt-12">
@@ -118,7 +120,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
           <div className="text-center p-8">
             <Icons.BookOpen size={64} className="mx-auto mb-4 text-gray-400" />
             <p className="text-lg font-bold text-gray-700 mb-2">PDF não disponível</p>
-            <p className="text-sm text-gray-500">Este livro não possui versão em PDF.</p>
+            <p className="text-sm text-gray-500">Este livro não possui versão em PDF publicada.</p>
           </div>
         </div>
       </div>
@@ -337,7 +339,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
         ) : (
           <FlipbookViewer
             ref={flipbookRef}
-            pdfUrl={collection.pdf_url}
+            pdfUrl={pdfUrl}
             className="h-full w-full"
             themeColor={themeColor}
             onLoadSuccess={() => {

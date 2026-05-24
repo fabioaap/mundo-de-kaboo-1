@@ -31,4 +31,12 @@ describe('getWhiteLabelFeatures', () => {
 
         expect(features['menu.music']?.enabled).toBe(true);
     });
+
+    it('exposes books and collections toggles in the Central Coruja mock baseline', async () => {
+        const { getWhiteLabelFeatures } = await import('./whiteLabelAdminApi');
+        const features = await getWhiteLabelFeatures('mock-central-coruja', ['menu.books', 'menu.collections']);
+
+        expect(features['menu.books']?.enabled).toBe(true);
+        expect(features['menu.collections']?.enabled).toBe(true);
+    });
 });

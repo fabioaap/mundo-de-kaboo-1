@@ -13,6 +13,8 @@ import { VouchersModule } from './VouchersModule';
 interface AdminScreenProps {
     onNavigate: (screen: ScreenName, params?: any) => void;
     onBack: () => void;
+    initialModule?: AdminModule;
+    onModuleChange?: (module: AdminModule) => void;
 }
 
 const MODULE_META: Record<AdminModule, { icon: React.FC<{ className?: string }>; label: string }> = {
@@ -124,9 +126,9 @@ const AdminTabBar: React.FC<{
 
 /* ─── Admin Screen (CMS shell) ─────────────────────────── */
 
-export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) => {
+export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack, initialModule, onModuleChange }) => {
     const isMobile = useIsMobile();
-    const [activeModule, setActiveModule] = useState<AdminModule>('collections');
+    const [activeModule, setActiveModule] = useState<AdminModule>(initialModule ?? 'collections');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isAdminUser, setIsAdminUser] = useState(false);
     const collectionsRef = useRef<AdminCollectionsHandle>(null);
@@ -137,6 +139,24 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) 
     }, []);
 
     const visibleModules = isAdminUser ? ALL_MODULES : EDITOR_MODULES;
+
+    useEffect(() => {
+        if (!initialModule || !visibleModules.includes(initialModule)) {
+            return;
+        }
+
+        setActiveModule((current) => current === initialModule ? current : initialModule);
+    }, [initialModule, visibleModules]);
+
+    useEffect(() => {
+        if (visibleModules.includes(activeModule)) {
+            return;
+        }
+
+        const fallbackModule = visibleModules[0] ?? 'collections';
+        setActiveModule(fallbackModule);
+        onModuleChange?.(fallbackModule);
+    }, [activeModule, onModuleChange, visibleModules]);
 
     const handleModuleSelect = (mod: AdminModule) => {
         // Guard: check for unsaved changes before leaving collections/users module
@@ -157,6 +177,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) 
         }
 
         setActiveModule(mod);
+        onModuleChange?.(mod);
     };
 
     const renderModule = () => {
@@ -176,7 +197,8 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack }) 
                         onNavigate={onNavigate}
                         onBack={onBack}
                         initialTab={activeModule === 'users' ? 'users' : 'collections'}
-                        initialLibraryArea={activeModule === 'collections' || activeModule === 'users' ? undefined : activeModule}
+                        initialCollectionScope={activeModule === 'collections' ? 'kits' : activeModule === 'books' ? 'books' : undefined}
+                        initialLibraryArea={activeModule === 'collections' || activeModule === 'books' || activeModule === 'users' ? undefined : activeModule}
                     />
                 );
             case 'vouchers':

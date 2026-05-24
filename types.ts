@@ -414,5 +414,6 @@ export type AdminModule =
 
 export interface NavState {
   currentScreen: ScreenName;
+  adminModule?: AdminModule;
   params?: any;
 }

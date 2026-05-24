@@ -3,7 +3,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 
 const BOOK_DIR = process.env.CENTRAL_CORUJA_BOOK_DIR
-  || 'C:\\Users\\Educacross\\Documents\\Projetos Educacross\\mundo-de-kaboo\\Conteúdo - Central Coruja\\Livros';
+  || path.join(process.cwd(), 'tests', 'fixtures', 'central-coruja-books');
 
 const repoRoot = process.cwd();
 const artifactRoot = path.join(repoRoot, '.gstack', 'qa-reports', 'central-coruja-book-jtbd');

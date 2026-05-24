@@ -156,11 +156,15 @@ const MOCK_BRANDS: WhiteLabelBrandRow[] = [
 
 const MOCK_FEATURES_BY_BRAND: Record<string, Record<string, WhiteLabelFeatureState>> = {
     'mock-kaboo': {
+        'menu.books': { enabled: true, config: {} },
+        'menu.collections': { enabled: true, config: {} },
         'menu.music': { enabled: true, config: {} },
         'hero.parallax': { enabled: false, config: { mode: 'off' } },
         'content.offline': { enabled: false, config: {} },
     },
     'mock-central-coruja': {
+        'menu.books': { enabled: true, config: {} },
+        'menu.collections': { enabled: true, config: {} },
         'menu.music': { enabled: true, config: {} },
         'hero.parallax': { enabled: false, config: { mode: 'off' } },
         'content.offline': { enabled: false, config: {} },
@@ -503,10 +507,12 @@ export async function setWhiteLabelBrandIdentity(input: {
 
 export async function getWhiteLabelFeatures(
     brandId: string,
-    keys: string[] = ['menu.music', 'hero.parallax', 'content.offline'],
+    keys: string[] = ['menu.books', 'menu.collections', 'menu.music', 'hero.parallax', 'content.offline'],
 ): Promise<Record<string, WhiteLabelFeatureState>> {
     if (!canUseRemoteWhiteLabel()) {
         return MOCK_FEATURES_BY_BRAND[brandId] ?? {
+            'menu.books': { enabled: true, config: {} },
+            'menu.collections': { enabled: true, config: {} },
             'menu.music': { enabled: true, config: {} },
             'hero.parallax': { enabled: false, config: { mode: 'off' } },
             'content.offline': { enabled: false, config: {} },
@@ -521,6 +527,8 @@ export async function getWhiteLabelFeatures(
     if (flagsError) {
         console.warn('[whiteLabelAdminApi] getWhiteLabelFeatures flags remote failed, using mock fallback:', flagsError);
         return MOCK_FEATURES_BY_BRAND[brandId] ?? {
+            'menu.books': { enabled: true, config: {} },
+            'menu.collections': { enabled: true, config: {} },
             'menu.music': { enabled: true, config: {} },
             'hero.parallax': { enabled: false, config: { mode: 'off' } },
             'content.offline': { enabled: false, config: {} },
@@ -538,6 +546,8 @@ export async function getWhiteLabelFeatures(
     if (overridesError) {
         console.warn('[whiteLabelAdminApi] getWhiteLabelFeatures overrides remote failed, using mock fallback:', overridesError);
         return MOCK_FEATURES_BY_BRAND[brandId] ?? {
+            'menu.books': { enabled: true, config: {} },
+            'menu.collections': { enabled: true, config: {} },
             'menu.music': { enabled: true, config: {} },
             'hero.parallax': { enabled: false, config: { mode: 'off' } },
             'content.offline': { enabled: false, config: {} },

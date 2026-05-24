@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MediaHubResponse, MediaItemCard } from '../types';
+import { placeholderImageUrl } from './appPaths';
 
 const createStorageMock = (): Storage => {
   const store = new Map<string, string>();
@@ -199,5 +200,40 @@ describe('api collection-backed media hub bridge', () => {
     expect(videoCard?.title).toBe('BUG-THUMB Video Principal');
     expect(videoCard?.collectionTitle).toBe(targetCollection.title);
     expect(videoCard?.thumbnailUrl).toBe('https://cdn.example.com/primary-cover.jpg');
+  });
+
+  it('falls back to the kit real cover when the collection primary cover is a placeholder', async () => {
+    stubBrowserStorage();
+    const { api } = await import('./api');
+
+    const initialCollections = await api.getCollections();
+    const targetCollection = initialCollections[0];
+
+    if (!targetCollection) {
+      throw new Error('Expected a seeded collection to validate placeholder thumbnail fallback');
+    }
+
+    await api.updateCollection(targetCollection.id, {
+      collection_type: 'kit',
+      cover_image: placeholderImageUrl,
+      kit_cover_image: 'https://cdn.example.com/real-kit-cover.jpg',
+      collection_assets: [
+        {
+          id: 'bug-thumb-placeholder-video',
+          category: 'animation',
+          media_type: 'video',
+          title: 'BUG-THUMB Placeholder Fallback',
+          url: 'https://cdn.example.com/bug-thumb-placeholder-video.mp4',
+          scope: 'primary',
+        },
+      ],
+    });
+
+    const videosHub = await api.getMediaHub('videos');
+    const videoCard = findHubCard(videosHub, 'BUG-THUMB Placeholder Fallback');
+
+    expect(videoCard?.title).toBe('BUG-THUMB Placeholder Fallback');
+    expect(videoCard?.collectionTitle).toBe(targetCollection.title);
+    expect(videoCard?.thumbnailUrl).toBe('https://cdn.example.com/real-kit-cover.jpg');
   });
 });

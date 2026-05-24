@@ -1264,6 +1264,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       // Collection is locked — don't open details
       return;
     }
+    const isStandaloneBook = currentCollectionGroup === 'books' && getCollectionTypeMeta(collection).type === 'book';
+    if (isStandaloneBook) {
+      onNavigate('player_book', { collectionId: collection.id });
+      return;
+    }
     // Open modal instead of navigating to details screen - stay on current screen
     onNavigate(screenName, { ...baseHomeParams, collectionId: collection.id });
   };

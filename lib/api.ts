@@ -30,7 +30,7 @@ import {
   VoucherValidationResult,
 } from '../types';
 import { logger } from './logger';
-import { buildAppUrl } from './appPaths';
+import { buildAppUrl, isPlaceholderImageUrl } from './appPaths';
 import {
   filterCentralMaterialsForBrand,
   filterCharactersForBrand,
@@ -436,6 +436,16 @@ const buildCollectionBackedChips = (collection: Collection, asset: CollectionAss
   ].filter(Boolean) as string[]));
 };
 
+const getCollectionBackedThumbnail = (collection: Collection): string | undefined => {
+  const primaryCoverImage = collection.cover_image?.trim();
+
+  if (primaryCoverImage && !isPlaceholderImageUrl(primaryCoverImage)) {
+    return primaryCoverImage;
+  }
+
+  return getCollectionDisplayCover(collection) || undefined;
+};
+
 const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection, asset: CollectionAsset): LibraryMockItem => {
   const variant = buildCollectionBackedVariant(hub, asset);
   const assetType = buildCollectionBackedAssetType(asset);
@@ -453,7 +463,7 @@ const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection,
       : undefined,
     relatedCollection: collection.title,
     collectionId: collection.id,
-    coverImage: getCollectionDisplayCover(collection) || undefined,
+    coverImage: getCollectionBackedThumbnail(collection),
     progress: 0,
     chips: buildCollectionBackedChips(collection, asset),
     ctaLabel: assetType === 'video'
