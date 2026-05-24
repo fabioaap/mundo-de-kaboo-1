@@ -17,6 +17,7 @@ import { getAccessibleNavState, PROTECTED_SCREENS } from './lib/navigationAccess
 import { logger } from './lib/logger';
 import { clearPendingPasswordSetup, hasPendingPasswordSetup, isInvitedAuthUser, markPendingPasswordSetup } from './lib/passwordSetupFlow';
 import { setMockActiveBrand } from './lib/mockData';
+import { getHashUrlForScreen, getNavStateFromHashString } from './lib/navHistory';
 
 // Screens
 import { LoginScreen } from './screens/LoginScreen';
@@ -198,6 +199,11 @@ const getNavStateFromHash = (): NavState | null => {
     return null;
   }
 
+  if (hashScreen === 'home') {
+    const homeState = getNavStateFromHashString(window.location.hash);
+    return homeState ? normalizeNavState(homeState) : normalizeNavState({ currentScreen: 'home' });
+  }
+
   return normalizeNavState({
     currentScreen: hashScreen,
     adminModule: hashScreen === 'admin'
@@ -245,6 +251,7 @@ const getPortalEntrySearch = (): string => {
 type HistoryNavState = {
   currentScreen: ScreenName;
   adminModule?: AdminModule;
+  params?: NavState['params'];
 };
 
 const getHistoryUrlForNavState = (state: ScreenName | HistoryNavState): string => {
@@ -260,9 +267,15 @@ const getHistoryUrlForNavState = (state: ScreenName | HistoryNavState): string =
       return '/';
     }
 
-    return currentScreen === 'admin' && adminModule
-      ? `#admin?module=${adminModule}`
-      : `#${currentScreen}`;
+    if (currentScreen === 'admin' && adminModule) {
+      return `#admin?module=${adminModule}`;
+    }
+
+    if (currentScreen === 'home') {
+      return getHashUrlForScreen('home', normalizedState.params);
+    }
+
+    return `#${currentScreen}`;
   }
 
   if (currentScreen === 'portal') {
@@ -271,6 +284,10 @@ const getHistoryUrlForNavState = (state: ScreenName | HistoryNavState): string =
 
   if (currentScreen === 'admin' && adminModule) {
     return `#admin?module=${adminModule}`;
+  }
+
+  if (currentScreen === 'home') {
+    return getHashUrlForScreen('home', normalizedState.params);
   }
 
   return `#${currentScreen}`;
