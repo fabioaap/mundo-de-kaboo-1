@@ -17,12 +17,13 @@ import { ColorPicker } from '../components/ColorPicker';
 import { CharacterAvatar } from '../components/CharacterAvatar';
 import { formatSegmentLabel, AVAILABLE_SEGMENTS } from '../constants';
 import useIsMobile from '../hooks/useIsMobile';
-import { placeholderImageUrl } from '../lib/appPaths';
+import { placeholderImageUrl, isPlaceholderImageUrl } from '../lib/appPaths';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollectionCharacters } from '../lib/characters';
 import { COLLECTION_ASSET_META, inferCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
 import { getCollectionDisplayCover, getCollectionTypeMeta, isStandaloneReadableBook, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
+import { VideoFramePicker } from '../components/VideoFramePicker';
 
 interface AdminCollectionsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -2456,16 +2457,36 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             />
                           </div>
                           <div className="grid grid-cols-2 gap-4 items-start">
-                            <FileUpload
-                              label="Imagem de Capa"
-                              value={formData.cover_image || placeholderImageUrl}
-                              onChange={(url) => setFormData({ ...formData, cover_image: url })}
-                              folder="covers"
-                              accept="image/*"
-                              collectionId={editingId || undefined}
-                              hideUrlInput={true}
-                              inputId={`library-cover-upload-${initialLibraryArea ?? 'default'}`}
-                            />
+                            <div>
+                              <FileUpload
+                                label="Imagem de Capa"
+                                value={formData.cover_image || placeholderImageUrl}
+                                onChange={(url) => setFormData({ ...formData, cover_image: url })}
+                                folder="covers"
+                                accept="image/*"
+                                collectionId={editingId || undefined}
+                                hideUrlInput={true}
+                                inputId={`library-cover-upload-${initialLibraryArea ?? 'default'}`}
+                              />
+                              {/* Frame picker: only for videos when cover is still placeholder */}
+                              {initialLibraryArea === 'videos' &&
+                                isPlaceholderImageUrl(formData.cover_image || placeholderImageUrl) &&
+                                (() => {
+                                  const videoAsset = formData.collection_assets.find(
+                                    (a) => a.category === 'animation' && a.url
+                                  );
+                                  return videoAsset ? (
+                                    <VideoFramePicker
+                                      videoUrl={videoAsset.url}
+                                      collectionId={editingId || undefined}
+                                      onFrameSelected={(url) =>
+                                        setFormData({ ...formData, cover_image: url })
+                                      }
+                                    />
+                                  ) : null;
+                                })()
+                              }
+                            </div>
                             <div>
                               <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
                               <div className="space-y-2">
