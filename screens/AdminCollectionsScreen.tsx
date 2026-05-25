@@ -22,7 +22,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollectionCharacters } from '../lib/characters';
 import { COLLECTION_ASSET_META, inferCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
-import { getCollectionDisplayCover, getCollectionTypeMeta, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
+import { getCollectionDisplayCover, getCollectionTypeMeta, isStandaloneReadableBook, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
 
 interface AdminCollectionsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -311,14 +311,15 @@ const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
   materials: 'Materiais',
 };
 
-const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, FixedMediaSlotCategory[]> = {
+const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
   books: ['reading'],
   // Vídeos: 1 slot por item (animation = o vídeo em si).
   // accessible_video e how_to_play são variantes dentro do Kit completo (Coleção).
   videos: ['animation'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
-  materials: ['reading'],
+  // Materiais = extra_material apenas; reading pertence exclusivamente a Livros.
+  materials: ['extra_material'],
 };
 
 const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
@@ -326,7 +327,8 @@ const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCat
   videos: ['animation'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
-  materials: ['reading', 'extra_material'],
+  // reading pertence exclusivamente a Livros; Materiais exibe apenas extra_material.
+  materials: ['extra_material'],
 };
 
 const LIBRARY_AREA_UI_META: Record<LibraryAreaKey, {
@@ -618,7 +620,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
 
     if (isBooksCatalogMode) {
-      return collections.filter((collection) => getCollectionTypeMeta(collection).type === 'book');
+      return collections.filter((collection) => isStandaloneReadableBook(collection));
     }
 
     return collections;
@@ -926,7 +928,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     ? formData.collection_assets.find((asset) => asset.id === highlightedAssetId) ?? null
     : null;
   const availableKitBooks = collections
-    .filter((collection) => collection.id !== editingId && getCollectionTypeMeta(collection).type === 'book')
+    .filter((collection) => collection.id !== editingId && isStandaloneReadableBook(collection))
     .sort((firstCollection, secondCollection) => (firstCollection.title || '').localeCompare(secondCollection.title || '', 'pt-BR'));
   const selectedKitBookIds = normalizeKitBookIds(formData.kit_book_ids);
   const selectedCharacterIds = Array.from(new Set(formData.character_ids || []));
@@ -1504,7 +1506,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     if (isAssetLibraryAreaMode) {
       const relevantSlots = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
       filtered = filtered.filter(collection =>
-        collection.collection_assets?.some(asset => relevantSlots.includes(asset.category as FixedMediaSlotCategory))
+        collection.collection_assets?.some(asset => relevantSlots.includes(asset.category as CollectionAssetCategory))
       );
     }
 

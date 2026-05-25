@@ -5,6 +5,7 @@ import {
   getCollectionFormatKinds,
   getCollectionTypeMeta,
   getKitLinkedBookCount,
+  isStandaloneReadableBook,
   getVisiblePrimaryCollectionAssets,
   normalizeSingleKitBookIds,
   shouldShowKitLinkedBooksPanel,
@@ -80,6 +81,33 @@ describe('getCollectionFormatKinds', () => {
         { id: 'audio', category: 'storytelling', media_type: 'audio', title: 'Contação', url: '/audio.mp3', scope: 'primary' },
       ],
     } as any)).toEqual(['reading', 'audio']);
+  });
+});
+
+describe('isStandaloneReadableBook', () => {
+  it('accepts standalone books that expose a reading surface', () => {
+    expect(isStandaloneReadableBook({
+      collection_type: 'book',
+      collection_assets: [
+        { id: 'reading', category: 'reading', media_type: 'document', title: 'Leitura', url: '/reading.pdf', scope: 'primary' },
+      ],
+    } as any)).toBe(true);
+  });
+
+  it('rejects standalone books that only expose audio or video assets', () => {
+    expect(isStandaloneReadableBook({
+      collection_type: 'book',
+      collection_assets: [
+        { id: 'audio', category: 'storytelling', media_type: 'audio', title: 'Áudio', url: '/audio.mp3', scope: 'primary' },
+      ],
+    } as any)).toBe(false);
+
+    expect(isStandaloneReadableBook({
+      collection_type: 'book',
+      collection_assets: [
+        { id: 'video', category: 'animation', media_type: 'video', title: 'Desenho Animado', url: '/video.mp4', scope: 'primary' },
+      ],
+    } as any)).toBe(false);
   });
 });
 

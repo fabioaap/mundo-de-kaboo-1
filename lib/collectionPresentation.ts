@@ -110,7 +110,6 @@ export const getCollectionFormatKinds = (
 
   const assets = collection.collection_assets || [];
   const linkedBookIds = normalizeSingleKitBookIds(collection.kit_book_ids);
-
   const hasReading = linkedBookIds.length > 0
     || Boolean(normalizeImageUrl(collection.pdf_url))
     || assets.some((asset) => asset.category === 'reading');
@@ -127,6 +126,16 @@ export const getCollectionFormatKinds = (
     hasVideo ? 'video' : null,
     hasMaterials ? 'materials' : null,
   ].filter(Boolean) as CollectionFormatKind[];
+};
+
+export const isStandaloneReadableBook = (
+  collection?: Partial<Collection> | null
+): boolean => {
+  if (getCollectionType(collection) !== 'book') {
+    return false;
+  }
+
+  return getCollectionFormatKinds(collection).includes('reading');
 };
 
 export const getCollectionDisplayCover = (collection?: Partial<Collection> | null): string => {

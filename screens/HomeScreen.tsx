@@ -16,7 +16,7 @@ import { useParallaxMotion } from '../hooks/useParallaxMotion';
 import { useBrandConfig } from '../hooks/useBrandConfig';
 import useIsMobile from '../hooks/useIsMobile';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
-import { getCollectionDisplayCover, getCollectionTypeMeta } from '../lib/collectionPresentation';
+import { getCollectionDisplayCover, getCollectionTypeMeta, isStandaloneReadableBook } from '../lib/collectionPresentation';
 import { lookupBncc } from '../lib/bnccLookup';
 // @ts-ignore
 import confetti from 'canvas-confetti';
@@ -72,7 +72,7 @@ type HomeCollectionGroup = 'kits' | 'books';
 
 const matchesCollectionGroup = (collection: Collection, group: HomeCollectionGroup) => {
   const type = getCollectionTypeMeta(collection).type;
-  return group === 'books' ? type === 'book' : type === 'kit';
+  return group === 'books' ? isStandaloneReadableBook(collection) : type === 'kit';
 };
 
 const formatBnccYear = (year: string) => year.replace(/;\s*/g, ' • ');
@@ -1266,7 +1266,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       // Collection is locked — don't open details
       return;
     }
-    const isStandaloneBook = currentCollectionGroup === 'books' && getCollectionTypeMeta(collection).type === 'book';
+    const isStandaloneBook = currentCollectionGroup === 'books' && isStandaloneReadableBook(collection);
     if (isStandaloneBook) {
       onNavigate('player_book', { collectionId: collection.id });
       return;
