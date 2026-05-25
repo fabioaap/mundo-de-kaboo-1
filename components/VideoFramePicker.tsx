@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Icons } from './Icons';
 import { uploadFile } from '../lib/storage';
 import { useToast } from '../hooks/useToast';
@@ -33,31 +33,41 @@ export const VideoFramePicker: React.FC<VideoFramePickerProps> = ({
 }) => {
   const [frameState, setFrameState] = useState<FrameState>({ status: 'idle' });
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  // Only mounted when we need to extract frames — avoids a muted <video> element
+  // sitting in the DOM sharing the same URL with the actual player (which would
+  // cause some browsers to mute or throttle audio on the real player).
+  const [videoMounted, setVideoMounted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast, showToast, updateToast, hideToast } = useToast();
 
-  // Extract frames whenever videoUrl changes
-  useEffect(() => {
-    if (!videoUrl) return;
-    setFrameState({ status: 'idle' });
-  }, [videoUrl]);
-
   const extractFrames = () => {
+    // Mount the hidden video first; extraction runs inside onLoadedMetadata
+    setFrameState({ status: 'loading' });
+    setVideoMounted(true);
+  };
+
+  // Called by the hidden <video> once metadata (and duration) is available
+  const handleVideoMetadata = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
 
-    setFrameState({ status: 'loading' });
-
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       setFrameState({ status: 'error', message: 'Canvas não suportado neste navegador.' });
+      setVideoMounted(false);
       return;
     }
 
     canvas.width = FRAME_WIDTH;
     canvas.height = FRAME_HEIGHT;
+
+    if (!video.duration || !isFinite(video.duration)) {
+      setFrameState({ status: 'error', message: 'Vídeo sem duração detectável.' });
+      setVideoMounted(false);
+      return;
+    }
 
     const capturedFrames: string[] = [];
     let positionIndex = 0;
@@ -65,6 +75,7 @@ export const VideoFramePicker: React.FC<VideoFramePickerProps> = ({
     const captureNext = () => {
       if (positionIndex >= FRAME_POSITIONS.length) {
         setFrameState({ status: 'ready', dataUrls: capturedFrames });
+        setVideoMounted(false); // unmount hidden video — no longer needed
         return;
       }
       video.currentTime = video.duration * FRAME_POSITIONS[positionIndex];
@@ -77,39 +88,26 @@ export const VideoFramePicker: React.FC<VideoFramePickerProps> = ({
         positionIndex++;
         captureNext();
       } catch {
-        // CORS block when drawing — canvas is tainted
         setFrameState({
           status: 'error',
           message:
             'Não foi possível extrair frames (restrição de CORS). Por favor, envie a capa manualmente.',
         });
         video.removeEventListener('seeked', onSeeked);
+        setVideoMounted(false);
       }
     };
 
-    const onError = () => {
-      setFrameState({
-        status: 'error',
-        message: 'Não foi possível carregar o vídeo para extração de frames.',
-      });
-    };
+    video.addEventListener('seeked', onSeeked);
+    captureNext();
+  };
 
-    const onLoaded = () => {
-      if (!video.duration || !isFinite(video.duration)) {
-        setFrameState({ status: 'error', message: 'Vídeo sem duração detectável.' });
-        return;
-      }
-      video.addEventListener('seeked', onSeeked);
-      captureNext();
-    };
-
-    video.removeEventListener('loadedmetadata', onLoaded);
-    video.removeEventListener('error', onError);
-    video.addEventListener('loadedmetadata', onLoaded, { once: true });
-    video.addEventListener('error', onError, { once: true });
-
-    // Re-load the video to trigger loadedmetadata
-    video.load();
+  const handleVideoError = () => {
+    setFrameState({
+      status: 'error',
+      message: 'Não foi possível carregar o vídeo para extração de frames.',
+    });
+    setVideoMounted(false);
   };
 
   const handleSelectFrame = async (dataUrl: string, index: number) => {
@@ -119,7 +117,6 @@ export const VideoFramePicker: React.FC<VideoFramePickerProps> = ({
     showToast('Enviando frame como capa...', 'progress', 0);
 
     try {
-      // dataURL → Blob → File
       const res = await fetch(dataUrl);
       const blob = await res.blob();
       const file = new File([blob], `frame-cover-${Date.now()}.jpg`, { type: 'image/jpeg' });
@@ -146,17 +143,23 @@ export const VideoFramePicker: React.FC<VideoFramePickerProps> = ({
 
   return (
     <>
-      {/* Hidden video + canvas used for frame extraction */}
-      <video
-        ref={videoRef}
-        src={videoUrl}
-        crossOrigin="anonymous"
-        muted
-        playsInline
-        preload="metadata"
-        className="hidden"
-        aria-hidden="true"
-      />
+      {/* Hidden video + canvas — only mounted during frame extraction to avoid
+          a permanently-present muted element that could interfere with the
+          browser's audio handling for the real video player. */}
+      {videoMounted && (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          crossOrigin="anonymous"
+          muted
+          playsInline
+          preload="auto"
+          className="hidden"
+          aria-hidden="true"
+          onLoadedMetadata={handleVideoMetadata}
+          onError={handleVideoError}
+        />
+      )}
       <canvas ref={canvasRef} className="hidden" aria-hidden="true" />
 
       <div className="mt-3">
