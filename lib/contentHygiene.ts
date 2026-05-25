@@ -34,6 +34,33 @@ const hasSampleUrl = (value?: string | null): boolean => {
   return Boolean(value?.trim()) && SAMPLE_URL_PATTERNS.some((pattern) => pattern.test(value as string));
 };
 
+type BrandScopedRecord = {
+  brand_id?: string | null;
+};
+
+const normalizeBrandId = (value?: string | null): string | null => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+};
+
+const matchesBrandScope = <T extends BrandScopedRecord>(
+  record: T,
+  brandSlug: string,
+  brandId?: string | null,
+): boolean => {
+  const resolvedBrandId = normalizeBrandId(brandId);
+  if (!resolvedBrandId) {
+    return true;
+  }
+
+  const recordBrandId = normalizeBrandId(record.brand_id);
+  if (!recordBrandId) {
+    return brandSlug === 'kaboo';
+  }
+
+  return recordBrandId === resolvedBrandId;
+};
+
 const isMockOrTestCollection = (collection: Collection): boolean => {
   const assetValues = (collection.collection_assets ?? []).flatMap((asset) => [
     asset.id,
@@ -72,23 +99,35 @@ export const shouldUseSharedMediaCatalog = (brandSlug: string): boolean => {
   return !isHygieneBrand(brandSlug);
 };
 
-export const filterCollectionsForBrand = (collections: Collection[], brandSlug: string): Collection[] => {
+export const filterCollectionsForBrand = (
+  collections: Collection[],
+  brandSlug: string,
+  brandId?: string | null,
+): Collection[] => {
+  const brandScopedCollections = collections.filter((collection) => matchesBrandScope(collection, brandSlug, brandId));
+
   if (!isHygieneBrand(brandSlug)) {
-    return collections;
+    return brandScopedCollections;
   }
 
-  return collections.filter((collection) =>
+  return brandScopedCollections.filter((collection) =>
     // Remove mock/test content
     !isMockOrTestCollection(collection),
   );
 };
 
-export const filterCharactersForBrand = (characters: Character[], brandSlug: string): Character[] => {
+export const filterCharactersForBrand = (
+  characters: Character[],
+  brandSlug: string,
+  brandId?: string | null,
+): Character[] => {
+  const brandScopedCharacters = characters.filter((character) => matchesBrandScope(character, brandSlug, brandId));
+
   if (!isHygieneBrand(brandSlug)) {
-    return characters;
+    return brandScopedCharacters;
   }
 
-  return characters.filter((character) => !isMockOrTestCharacter(character));
+  return brandScopedCharacters.filter((character) => !isMockOrTestCharacter(character));
 };
 
 export const filterCentralMaterialsForBrand = (materials: CentralMaterial[], brandSlug: string): CentralMaterial[] => {

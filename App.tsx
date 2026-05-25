@@ -473,9 +473,9 @@ const App: React.FC = () => {
   // brand slug is set before the first getCollections() call that children may make.
   useMemo(() => {
     setMockActiveBrand(brandSlug);
-    setActiveBrandForApi(brandSlug);
+    setActiveBrandForApi(brandSlug, brandBootstrap.brand.id);
     setActiveBrandForCharacters(brandSlug);
-  }, [brandSlug]);
+  }, [brandBootstrap.brand.id, brandSlug]);
 
   const brandDisplayName = brandBootstrap.settings.display_name || brandBootstrap.brand.name;
   const brandLogoUrl = brandBootstrap.settings.logo_url || (brandBootstrap.brand.slug === 'kaboo' ? LOGO_URL : undefined);

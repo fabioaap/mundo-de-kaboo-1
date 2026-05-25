@@ -93,6 +93,9 @@ const devMockCharacter: Character = {
   status: 'active',
 };
 
+const KABOO_BRAND_ID = '11111111-1111-1111-1111-111111111111';
+const CENTRAL_CORUJA_BRAND_ID = '22222222-2222-2222-2222-222222222222';
+
 describe('content hygiene for Central Coruja', () => {
   it('removes seeded and explicit QA/mock collections while preserving real content', () => {
     const filtered = filterCollectionsForBrand(
@@ -118,5 +121,68 @@ describe('content hygiene for Central Coruja', () => {
     expect(filterCentralMaterialsForBrand(materials, 'central-coruja')).toEqual([]);
     expect(shouldUseSharedMediaCatalog('central-coruja')).toBe(false);
     expect(shouldUseSharedMediaCatalog('kaboo')).toBe(true);
+  });
+
+  it('keeps legacy unscoped content visible only in Kaboo while respecting explicit brand ownership', () => {
+    const legacyCollection: Collection = {
+      ...realCollection,
+      id: 'legacy-kaboo-collection',
+    };
+    const kabooCollection: Collection = {
+      ...realCollection,
+      id: 'kaboo-scoped-collection',
+      brand_id: KABOO_BRAND_ID,
+    };
+    const centralCollection: Collection = {
+      ...realCollection,
+      id: 'central-scoped-collection',
+      brand_id: CENTRAL_CORUJA_BRAND_ID,
+    };
+    const legacyCharacter: Character = {
+      ...realCharacter,
+      id: 'legacy-kaboo-character',
+    };
+    const kabooCharacter: Character = {
+      ...realCharacter,
+      id: 'kaboo-scoped-character',
+      brand_id: KABOO_BRAND_ID,
+    };
+    const centralCharacter: Character = {
+      ...realCharacter,
+      id: 'central-scoped-character',
+      brand_id: CENTRAL_CORUJA_BRAND_ID,
+    };
+
+    expect(
+      filterCollectionsForBrand(
+        [legacyCollection, kabooCollection, centralCollection],
+        'kaboo',
+        KABOO_BRAND_ID,
+      ).map((collection) => collection.id),
+    ).toEqual(['legacy-kaboo-collection', 'kaboo-scoped-collection']);
+
+    expect(
+      filterCollectionsForBrand(
+        [legacyCollection, kabooCollection, centralCollection],
+        'central-coruja',
+        CENTRAL_CORUJA_BRAND_ID,
+      ).map((collection) => collection.id),
+    ).toEqual(['central-scoped-collection']);
+
+    expect(
+      filterCharactersForBrand(
+        [legacyCharacter, kabooCharacter, centralCharacter],
+        'kaboo',
+        KABOO_BRAND_ID,
+      ).map((character) => character.id),
+    ).toEqual(['legacy-kaboo-character', 'kaboo-scoped-character']);
+
+    expect(
+      filterCharactersForBrand(
+        [legacyCharacter, kabooCharacter, centralCharacter],
+        'central-coruja',
+        CENTRAL_CORUJA_BRAND_ID,
+      ).map((character) => character.id),
+    ).toEqual(['central-scoped-character']);
   });
 });

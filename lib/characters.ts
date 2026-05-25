@@ -60,6 +60,7 @@ export const normalizeCharacter = (character: Partial<Character> & { name: strin
     aliases: uniqueStrings(character.aliases),
     image_url: character.image_url?.trim() || null,
     status: character.status === 'inactive' ? 'inactive' : 'active',
+    brand_id: character.brand_id?.trim() || null,
   };
 };
 
@@ -76,6 +77,7 @@ const mergeCharacterRecords = (base: Character, override?: Character): Character
     aliases: [...(base.aliases || []), ...(override.aliases || [])],
     image_url: override.image_url ?? base.image_url ?? null,
     status: override.status ?? base.status,
+    brand_id: override.brand_id ?? base.brand_id ?? null,
   });
 };
 

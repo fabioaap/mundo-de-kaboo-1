@@ -85,16 +85,30 @@ const SESSION_KEY = 'kaboo_session_id';
 
 // Active brand slug for cache isolation — set by App.tsx alongside setMockActiveBrand.
 let _activeBrandSlugForApi = 'kaboo';
+let _activeBrandIdForApi: string | null = null;
+const brandIdCacheBySlug = new Map<string, string>();
+
+const normalizeBrandId = (value?: string | null): string | null => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+};
 
 /** Set by App.tsx once per brand slug change. Keeps collection cache isolated per brand. */
-export const setActiveBrandForApi = (slug: string): void => {
+export const setActiveBrandForApi = (slug: string, brandId?: string | null): void => {
   _activeBrandSlugForApi = slug;
+  _activeBrandIdForApi = normalizeBrandId(brandId);
+
+  if (_activeBrandIdForApi && !_activeBrandIdForApi.startsWith('mock-')) {
+    brandIdCacheBySlug.set(slug, _activeBrandIdForApi);
+  }
 };
 
 const getCollectionsCacheKey = (): string =>
   _activeBrandSlugForApi === 'kaboo'
     ? COLLECTIONS_CACHE_KEY
     : `${COLLECTIONS_CACHE_KEY}_${_activeBrandSlugForApi}`;
+
+const getActiveBrandScopeCacheKey = (): string => _activeBrandSlugForApi;
 
 // DEV-only: flag indicating we're running with a mock demo user despite Supabase being configured
 // Persisted in sessionStorage so it survives HMR and page reloads
@@ -120,7 +134,7 @@ const DEV_SUPABASE_VOUCHER_FALLBACKS: Record<string, Voucher['duration_months']>
 
 let userProgressTableAvailable: boolean | null = null;
 let charactersTableAvailable: boolean | null = null;
-let remoteCharactersCache: Character[] | null = null;
+const remoteCharactersCacheByBrand = new Map<string, Character[]>();
 let mediaTablesAvailable: boolean | null = null;
 
 type MediaItemRow = {
@@ -160,6 +174,53 @@ const isMissingUserProgressError = (error: unknown): boolean => {
   return candidate.code === 'PGRST205'
     || candidate.code === '42P01'
     || combinedMessage.includes('user_progress');
+};
+
+const resolveActiveBrandId = async (): Promise<string | null> => {
+  if (_activeBrandIdForApi && !_activeBrandIdForApi.startsWith('mock-')) {
+    return _activeBrandIdForApi;
+  }
+
+  const cachedBrandId = brandIdCacheBySlug.get(_activeBrandSlugForApi);
+  if (cachedBrandId) {
+    _activeBrandIdForApi = cachedBrandId;
+    return cachedBrandId;
+  }
+
+  if (!isSupabaseConfigured || devMockSession) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from('brands')
+    .select('id')
+    .eq('slug', _activeBrandSlugForApi)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (error) {
+    logger.error('Error resolving active brand id:', error);
+    return null;
+  }
+
+  const brandId = normalizeBrandId((data as { id?: string | null } | null)?.id);
+
+  if (!brandId) {
+    logger.error(`No active brand id found for slug "${_activeBrandSlugForApi}".`);
+    return null;
+  }
+
+  brandIdCacheBySlug.set(_activeBrandSlugForApi, brandId);
+  _activeBrandIdForApi = brandId;
+  return brandId;
+};
+
+const applyActiveBrandScope = (query: any, brandId: string) => {
+  if (_activeBrandSlugForApi === 'kaboo') {
+    return query.or(`brand_id.is.null,brand_id.eq.${brandId}`);
+  }
+
+  return query.eq('brand_id', brandId);
 };
 
 const PRESENTATION_SEED_COLLECTIONS_BY_ID = new Map(
@@ -924,14 +985,26 @@ const loadRemoteCharacters = async (forceRefresh: boolean = false): Promise<Char
     return null;
   }
 
-  if (!forceRefresh && remoteCharactersCache) {
-    return cloneCharacters(filterCharactersForBrand(remoteCharactersCache, _activeBrandSlugForApi));
+  const cacheKey = getActiveBrandScopeCacheKey();
+  const cachedCharacters = remoteCharactersCacheByBrand.get(cacheKey);
+  if (!forceRefresh && cachedCharacters) {
+    return cloneCharacters(filterCharactersForBrand(cachedCharacters, _activeBrandSlugForApi, _activeBrandIdForApi));
   }
 
-  const { data, error } = await supabase
+  const activeBrandId = await resolveActiveBrandId();
+  if (!activeBrandId) {
+    logger.error(`Unable to scope remote characters for brand "${_activeBrandSlugForApi}".`);
+    return [];
+  }
+
+  let query = supabase
     .from('characters')
     .select('*')
     .order('name', { ascending: true });
+
+  query = applyActiveBrandScope(query, activeBrandId);
+
+  const { data, error } = await query;
 
   if (error) {
     if (isMissingRelationError(error, 'characters')) {
@@ -945,9 +1018,9 @@ const loadRemoteCharacters = async (forceRefresh: boolean = false): Promise<Char
   }
 
   const remoteCharacters = ((data || []) as Character[]).map((character) => normalizeCharacter(character));
-  const visibleRemoteCharacters = filterCharactersForBrand(remoteCharacters, _activeBrandSlugForApi);
+  const visibleRemoteCharacters = filterCharactersForBrand(remoteCharacters, _activeBrandSlugForApi, activeBrandId);
   charactersTableAvailable = true;
-  remoteCharactersCache = cloneCharacters(remoteCharacters);
+  remoteCharactersCacheByBrand.set(cacheKey, cloneCharacters(remoteCharacters));
   setCharacterRegistrySnapshot(visibleRemoteCharacters);
 
   return cloneCharacters(visibleRemoteCharacters);
@@ -1043,6 +1116,7 @@ const getCachedCollections = (): Collection[] | null => {
       const hydratedCollections = filterCollectionsForBrand(
         hydrateCollectionsPresentationFields(parsed.collections || []),
         _activeBrandSlugForApi,
+        _activeBrandIdForApi,
       );
 
       if (JSON.stringify(hydratedCollections) !== JSON.stringify(parsed.collections || [])) {
@@ -1561,18 +1635,28 @@ export const api = {
     }
 
     if (!isSupabaseConfigured || devMockSession) {
-      const collections = filterCollectionsForBrand(getMockCollectionsLive(), _activeBrandSlugForApi);
+      const collections = filterCollectionsForBrand(getMockCollectionsLive(), _activeBrandSlugForApi, _activeBrandIdForApi);
       saveCollectionsCache(collections);
       return collections;
+    }
+
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) {
+      logger.error(`Unable to scope remote collections for brand "${_activeBrandSlugForApi}".`);
+      return [];
     }
 
     const remoteCharacters = await loadRemoteCharacters(forceRefresh);
 
     // Fetch from server
-    const { data, error } = await supabase
+    let query = supabase
       .from('collections')
       .select('*')
       .order('created_at', { ascending: false });
+
+    query = applyActiveBrandScope(query, activeBrandId);
+
+    const { data, error } = await query;
 
     if (error) {
       logger.error('Error fetching collections:', error);
@@ -1582,6 +1666,7 @@ export const api = {
     const collections = filterCollectionsForBrand(
       hydrateCollectionsPresentationFields((data || []) as Collection[], remoteCharacters ?? undefined),
       _activeBrandSlugForApi,
+      activeBrandId,
     );
 
     // Save to cache
@@ -1597,23 +1682,33 @@ export const api = {
     if (!isSupabaseConfigured || devMockSession) {
       const mockCollection = getMockCollectionByIdLive(id);
       return mockCollection
-        ? filterCollectionsForBrand([mockCollection], _activeBrandSlugForApi)[0] ?? null
+        ? filterCollectionsForBrand([mockCollection], _activeBrandSlugForApi, _activeBrandIdForApi)[0] ?? null
         : null;
+    }
+
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) {
+      logger.error(`Unable to scope collection lookup for brand "${_activeBrandSlugForApi}".`);
+      return null;
     }
 
     const remoteCharacters = await loadRemoteCharacters();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('collections')
       .select('*')
-      .eq('id', id)
-      .single();
+      .eq('id', id);
+
+    query = applyActiveBrandScope(query, activeBrandId);
+
+    const { data, error } = await query.single();
 
     if (error || !data) return null;
 
     return filterCollectionsForBrand(
       [hydrateCollectionPresentationFields(data as Collection, remoteCharacters ?? undefined)],
       _activeBrandSlugForApi,
+      activeBrandId,
     )[0] ?? null;
   },
 
@@ -2021,13 +2116,14 @@ export const api = {
 
   async getCharacters(): Promise<Character[]> {
     if (!isSupabaseConfigured || devMockSession) {
-      return filterCharactersForBrand(getMockCharactersLive(), _activeBrandSlugForApi);
+      return filterCharactersForBrand(getMockCharactersLive(), _activeBrandSlugForApi, _activeBrandIdForApi);
     }
 
     const remoteCharacters = await loadRemoteCharacters();
     return filterCharactersForBrand(
       remoteCharacters ?? getMockCharactersLive(),
       _activeBrandSlugForApi,
+      _activeBrandIdForApi,
     );
   },
 
@@ -2042,7 +2138,16 @@ export const api = {
     }
 
     try {
-      const payload = normalizeCharacter(character);
+      const activeBrandId = await resolveActiveBrandId();
+      if (!activeBrandId) {
+        logger.error(`Unable to scope character creation for brand "${_activeBrandSlugForApi}".`);
+        return null;
+      }
+
+      const payload = {
+        ...normalizeCharacter(character),
+        brand_id: activeBrandId,
+      };
       const { data, error } = await supabase
         .from('characters')
         .insert(payload)
@@ -2102,7 +2207,13 @@ export const api = {
         aliases,
       });
 
-      const { data, error } = await supabase
+      const activeBrandId = await resolveActiveBrandId();
+      if (!activeBrandId) {
+        logger.error(`Unable to scope character update for brand "${_activeBrandSlugForApi}".`);
+        return null;
+      }
+
+      let query = supabase
         .from('characters')
         .update({
           name: payload.name,
@@ -2111,11 +2222,14 @@ export const api = {
           aliases: payload.aliases || [],
           image_url: payload.image_url,
           status: payload.status,
+          brand_id: activeBrandId,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
+
+      query = applyActiveBrandScope(query, activeBrandId);
+
+      const { data, error } = await query.select().single();
 
       if (error) {
         if (isMissingRelationError(error, 'characters')) {
@@ -2187,7 +2301,16 @@ export const api = {
       }
       return created;
     }
-    const payload = sanitizeCollectionPayload(collection, (await loadRemoteCharacters()) ?? undefined);
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) {
+      logger.error(`Unable to scope collection creation for brand "${_activeBrandSlugForApi}".`);
+      return null;
+    }
+
+    const payload = {
+      ...sanitizeCollectionPayload(collection, (await loadRemoteCharacters()) ?? undefined),
+      brand_id: activeBrandId,
+    };
     let { data, error } = await supabase
       .from('collections')
       .insert(payload)
@@ -2243,7 +2366,16 @@ export const api = {
       }
       return updated;
     }
-    const payload = sanitizeCollectionPayload(updates, (await loadRemoteCharacters()) ?? undefined);
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) {
+      logger.error(`Unable to scope collection update for brand "${_activeBrandSlugForApi}".`);
+      return null;
+    }
+
+    const payload = {
+      ...sanitizeCollectionPayload(updates, (await loadRemoteCharacters()) ?? undefined),
+      brand_id: activeBrandId,
+    };
     // First, verify the collection exists and we can access it
     const existing = await this.getCollectionById(id);
     if (!existing) {
@@ -2252,41 +2384,43 @@ export const api = {
     }
 
     // Perform the update
-    let { data, error } = await supabase
+    let query = supabase
       .from('collections')
       .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
+      .eq('id', id);
+
+    query = applyActiveBrandScope(query, activeBrandId);
+
+    let { data, error } = await query.select().single();
 
     if (error && isMissingColumnError(error, 'character_ids')) {
       const { character_ids, ...legacyPayload } = payload;
-      ({ data, error } = await supabase
+      let legacyQuery = supabase
         .from('collections')
         .update(legacyPayload)
-        .eq('id', id)
-        .select()
-        .single());
+        .eq('id', id);
+      legacyQuery = applyActiveBrandScope(legacyQuery, activeBrandId);
+      ({ data, error } = await legacyQuery.select().single());
     }
 
     if (error && isMissingColumnError(error, 'offline_available')) {
       const legacyPayload = stripMissingCollectionColumns(payload, ['offline_available']);
-      ({ data, error } = await supabase
+      let legacyQuery = supabase
         .from('collections')
         .update(legacyPayload)
-        .eq('id', id)
-        .select()
-        .single());
+        .eq('id', id);
+      legacyQuery = applyActiveBrandScope(legacyQuery, activeBrandId);
+      ({ data, error } = await legacyQuery.select().single());
     }
 
     if (error && (isMissingColumnError(error, 'character_ids') || isMissingColumnError(error, 'offline_available'))) {
       const legacyPayload = stripMissingCollectionColumns(payload, ['character_ids', 'offline_available']);
-      ({ data, error } = await supabase
+      let legacyQuery = supabase
         .from('collections')
         .update(legacyPayload)
-        .eq('id', id)
-        .select()
-        .single());
+        .eq('id', id);
+      legacyQuery = applyActiveBrandScope(legacyQuery, activeBrandId);
+      ({ data, error } = await legacyQuery.select().single());
     }
 
     if (error) {
@@ -2329,6 +2463,18 @@ export const api = {
       return deleted;
     }
 
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) {
+      logger.error(`Unable to scope collection deletion for brand "${_activeBrandSlugForApi}".`);
+      return false;
+    }
+
+    const existing = await this.getCollectionById(id);
+    if (!existing) {
+      logger.error('Collection not found or no access:', id);
+      return false;
+    }
+
     // 1. Buscar todos os recursos associados antes de deletar
     const { data: resources, error: resourcesError } = await supabase
       .from('collection_resources')
@@ -2366,10 +2512,14 @@ export const api = {
     }
 
     // 4. Deletar a coleção
-    const { error } = await supabase
+    let query = supabase
       .from('collections')
       .delete()
       .eq('id', id);
+
+    query = applyActiveBrandScope(query, activeBrandId);
+
+    const { error } = await query;
 
     if (error) {
       logger.error('Error deleting collection:', error);

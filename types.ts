@@ -104,6 +104,7 @@ export interface Character {
   aliases?: string[];
   image_url?: string | null;
   status?: CharacterStatus;
+  brand_id?: string | null;
 }
 
 export interface CollectionResource {
@@ -152,6 +153,7 @@ export interface Collection {
   id: string;
   title: string;
   cover_image: string; // Mapped from DB snake_case
+  brand_id?: string | null;
   collection_type?: CollectionType;
   kit_cover_image?: string | null;
   kit_book_ids?: string[];

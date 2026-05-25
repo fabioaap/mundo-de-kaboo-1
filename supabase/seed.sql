@@ -560,4 +560,16 @@ INSERT INTO collection_resources (collection_id, title, type, url, size) VALUES
   NULL
 );
 
+UPDATE public.characters
+SET brand_id = b.id
+FROM public.brands b
+WHERE b.slug = 'kaboo'
+  AND public.characters.brand_id IS NULL;
+
+UPDATE public.collections
+SET brand_id = b.id
+FROM public.brands b
+WHERE b.slug = 'kaboo'
+  AND public.collections.brand_id IS NULL;
+
 COMMIT;
