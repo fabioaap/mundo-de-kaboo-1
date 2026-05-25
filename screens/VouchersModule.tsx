@@ -553,7 +553,7 @@ const ModelWizard: React.FC<{
                         <label className="block text-sm font-medium text-gray-700 mb-1">Nome interno *</label>
                         <input
                             type="text" value={name} onChange={(e) => setName(e.target.value)}
-                            placeholder="Ex: Kit Aventura Kaboo"
+                            placeholder="Ex.: Kit de Acesso Premium"
                             className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                         />
                     </div>

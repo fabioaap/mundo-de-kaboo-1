@@ -582,7 +582,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
           </div>
           <div className="min-w-0">
             <p className="line-clamp-1 text-xs font-bold">{item.title}</p>
-            <p className="text-[11px] text-white/70">{item.collectionTitle ?? 'Kaboo'}</p>
+            <p className="text-[11px] text-white/70">{item.collectionTitle ?? ''}</p>
           </div>
         </button>
       ))}

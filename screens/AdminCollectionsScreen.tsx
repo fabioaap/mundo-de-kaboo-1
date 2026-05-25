@@ -261,7 +261,7 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     folder: 'video',
     accept: 'video/*',
     allowMetadata: true,
-    titlePlaceholder: 'Ex.: Kaboo e a Floresta Encantada',
+    titlePlaceholder: 'Ex.: A Floresta Encantada',
     descriptionPlaceholder: 'Descrição opcional do vídeo animado.',
   },
   {

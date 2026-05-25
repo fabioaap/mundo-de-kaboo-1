@@ -21,7 +21,7 @@ const BG_IMAGE = backgroundImage;
 export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNavigate, brandSlug, brandLogoUrl, brandName, backgroundImageUrl }) => {
   const isCentralCoruja = brandSlug === 'central-coruja';
   const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
-  const resolvedBrandName = brandName || 'Mundo de Kaboo';
+  const resolvedBrandName = brandName || (isCentralCoruja ? 'Central Coruja' : 'Mundo de Kaboo');
   const resolvedBackgroundImageUrl = backgroundImageUrl || BG_IMAGE;
   const shellBackgroundStyle = isCentralCoruja
     ? {

@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 import { formatAccessDate, getProfileAccessStatus } from '../lib/access';
 import { getCollectionDisplayCover } from '../lib/collectionPresentation';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { useBrandConfig } from '../hooks/useBrandConfig';
 
 const getPendingSignupVoucher = (): string => {
     if (typeof window === 'undefined') {
@@ -35,6 +36,8 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
     onNavigate,
     onAccessRecovered,
 }) => {
+    const { slug: brandSlug } = useBrandConfig();
+    const voucherPlaceholder = brandSlug === 'central-coruja' ? 'Ex.: CORUJA-6MESES-2026' : 'Ex.: KABOO-6MESES-2026';
     const [voucherCode, setVoucherCode] = useState(() => getPendingSignupVoucher());
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -267,7 +270,7 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
                                         if (errorMsg) setErrorMsg(null);
                                     }}
                                     className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
-                                    placeholder="Ex.: KABOO-6MESES-2026"
+                                    placeholder={voucherPlaceholder}
                                     required
                                 />
                                 <Icons.RotateCw className="absolute left-4 top-4 text-gray-400" size={20} />

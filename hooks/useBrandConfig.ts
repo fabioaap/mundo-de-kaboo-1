@@ -169,13 +169,13 @@ function normalizeNullableString(value: string | null | undefined): string | nul
     return trimmed ? trimmed : null;
 }
 
-function normalizeBrandSettings(settings: BrandSettings): BrandSettings {
+function normalizeBrandSettings(settings: BrandSettings, fallbackName = 'Mundo de Kaboo'): BrandSettings {
     const visualIdentity = extractBrandVisualIdentity(settings.menu_config);
     const designTokens = extractBrandDesignTokens(settings.menu_config);
 
     return {
         ...settings,
-        display_name: settings.display_name?.trim() || 'Mundo de Kaboo',
+        display_name: settings.display_name?.trim() || fallbackName,
         logo_url: normalizeNullableString(settings.logo_url),
         primary_color: normalizeNullableString(settings.primary_color),
         light_color: normalizeNullableString(settings.light_color),
@@ -249,7 +249,7 @@ function applyMockOverrideToSettings(settings: BrandSettings, override: MockBran
 }
 
 function normalizeBootstrap(bootstrap: BrandBootstrap): BrandBootstrap {
-    const normalizedSettings = normalizeBrandSettings(bootstrap.settings);
+    const normalizedSettings = normalizeBrandSettings(bootstrap.settings, bootstrap.brand.name);
     const nextSettings = bootstrap.brand.slug === 'central-coruja' && !normalizedSettings.home_hero_image_url
         ? {
             ...normalizedSettings,

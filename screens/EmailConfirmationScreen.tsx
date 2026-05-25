@@ -22,7 +22,7 @@ interface EmailConfirmationScreenProps {
 export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = ({ onNavigate, params, brandSlug, brandLogoUrl, brandName, backgroundImageUrl }) => {
   const isCentralCoruja = brandSlug === 'central-coruja';
   const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
-  const resolvedBrandName = brandName || 'Mundo de Kaboo';
+  const resolvedBrandName = brandName || (isCentralCoruja ? 'Central Coruja' : 'Mundo de Kaboo');
   const isPendingConfirmation = params?.status === 'pending';
   const shellBackgroundStyle = isCentralCoruja
     ? {
@@ -48,7 +48,7 @@ export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = (
   const title = isPendingConfirmation ? 'Confirme seu e-mail' : 'E-mail Confirmado!';
   const description = isPendingConfirmation
     ? params?.message || 'Enviamos um link de confirmação para o seu e-mail. Verifique sua caixa de entrada e a pasta de spam antes de tentar entrar.'
-    : 'Sua conta foi verificada com sucesso. Agora você tem acesso completo ao Mundo de Kaboo.';
+    : `Sua conta foi verificada com sucesso. Agora você tem acesso completo ao ${resolvedBrandName}.`;
 
   return (
     <div className={`flex min-h-screen items-center justify-center px-[var(--space-page-x)] py-[var(--space-page-x)] md:p-[var(--space-auth-shell-desktop)] relative overflow-hidden ${isCentralCoruja ? 'bg-[#0C1A34]' : 'bg-gray-50'}`} style={shellBackgroundStyle}>

@@ -315,7 +315,7 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
                   value={formData.name}
                   onChange={(event) => setFormData({ ...formData, name: event.target.value })}
                   className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
-                  placeholder="Ex.: Kaboo"
+                  placeholder="Ex.: Nome do personagem"
                 />
               </div>
 

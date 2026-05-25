@@ -1939,7 +1939,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
                                 <div className="min-w-0 flex-1">
                                   <p className="line-clamp-2 text-[12px] font-bold leading-4 text-white">{item.title}</p>
-                                  <p className="mt-0.5 text-[10px] text-white/70">{item.collectionTitle ?? 'Kaboo'}</p>
+                                  <p className="mt-0.5 text-[10px] text-white/70">{item.collectionTitle ?? ''}</p>
                                 </div>
 
                                 <Icons.ChevronRight size={14} className="shrink-0 text-white/70" />
@@ -2023,7 +2023,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
               <div className="min-w-0">
                 <p className="line-clamp-2 text-[13px] font-bold leading-5 text-white">{item.title}</p>
-                <p className="mt-1 text-[11px] text-white/70">{item.collectionTitle ?? 'Kaboo'}</p>
+                <p className="mt-1 text-[11px] text-white/70">{item.collectionTitle ?? ''}</p>
               </div>
             </button>
           ))}
@@ -2105,7 +2105,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
                 <div className="min-w-0">
                   <p className="line-clamp-2 text-[12px] font-bold leading-4 text-white">{item.title}</p>
-                  <p className="mt-0.5 text-[10px] text-white/70">{item.collectionTitle ?? 'Kaboo'}</p>
+                  <p className="mt-0.5 text-[10px] text-white/70">{item.collectionTitle ?? ''}</p>
                 </div>
               </button>
             ))}
