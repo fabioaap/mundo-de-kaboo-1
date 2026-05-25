@@ -197,8 +197,7 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack, in
                         onNavigate={onNavigate}
                         onBack={onBack}
                         initialTab={activeModule === 'users' ? 'users' : 'collections'}
-                        initialCollectionScope={activeModule === 'collections' ? 'kits' : activeModule === 'books' ? 'books' : undefined}
-                        initialLibraryArea={activeModule === 'collections' || activeModule === 'books' || activeModule === 'users' ? undefined : activeModule}
+                        initialLibraryArea={activeModule === 'collections' || activeModule === 'users' ? undefined : activeModule}
                     />
                 );
             case 'vouchers':
