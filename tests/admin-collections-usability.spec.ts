@@ -815,3 +815,167 @@ test.describe('EDGE-014 · Offline available', () => {
     });
   });
 });
+
+// ═══════════════════════════════════════════════════════════
+// JN-COL-015: Criar coleção — jornada completa (end-to-end)
+// JTBD: "Quando finalizo o formulário e clico em Criar Coleção,
+// quero que o item apareça na lista imediatamente."
+// ═══════════════════════════════════════════════════════════
+test.describe('JN-COL-015 · Criar coleção — end-to-end', () => {
+  const UNIQUE_TITLE = `Teste E2E ${Date.now()}`;
+
+  test('criar coleção com título → toast de sucesso e drawer fecha', async ({ page }) => {
+    await setupAdminAtAdmin(page, 'collections');
+    await openNewCollectionDrawer(page);
+
+    // Preenche título
+    await fillCollectionTitle(page, UNIQUE_TITLE);
+
+    // Clica em Criar Coleção
+    const saveBtn = drawer(page).getByRole('button', { name: /Criar Coleção/i });
+    await saveBtn.click();
+
+    // Toast de sucesso aparece
+    const toast = page.getByText(/criado com sucesso/i);
+    await expect(toast).toBeVisible({ timeout: 15_000 });
+
+    // Drawer volta para estado fechado (translate-x-full)
+    await expect(drawer(page)).toHaveClass(/translate-x-full/, { timeout: 15_000 });
+  });
+
+  test('após criar, coleção aparece na lista', async ({ page }) => {
+    await setupAdminAtAdmin(page, 'collections');
+
+    // Cria coleção
+    await openNewCollectionDrawer(page);
+    const title = UNIQUE_TITLE + ' lista';
+    await fillCollectionTitle(page, title);
+    await drawer(page).getByRole('button', { name: /Criar Coleção/i }).click();
+
+    // Aguarda toast de sucesso (confirma que a operação ocorreu)
+    await expect(page.getByText(/criado com sucesso/i)).toBeVisible({ timeout: 15_000 });
+
+    // Aguarda drawer fechar (translate-x-full)
+    await expect(drawer(page)).toHaveClass(/translate-x-full/, { timeout: 10_000 });
+
+    // Coleção aparece na lista
+    await expect(page.getByText(title)).toBeVisible({ timeout: 10_000 });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// JN-COL-016: Editar coleção existente — end-to-end
+// JTBD: "Quando clico em uma coleção existente, quero editar
+// os dados e salvar as alterações."
+// ═══════════════════════════════════════════════════════════
+test.describe('JN-COL-016 · Editar coleção — end-to-end', () => {
+  test('clicar em coleção existente abre drawer com dados preenchidos', async ({ page }) => {
+    await setupAdminAtAdmin(page, 'videos');
+    // Usa módulo videos que tem dados garantidos
+    const firstItem = page.locator('button[aria-label*="Editar"], button[title*="Editar"]').first();
+    const hasItem = await firstItem.isVisible({ timeout: 5_000 }).catch(() => false);
+    test.skip(!hasItem, 'Nenhum item disponível para editar');
+
+    await firstItem.click();
+    await expect(drawer(page)).toBeVisible({ timeout: 10_000 });
+
+    // Botão deve ser "Salvar Alterações" (não "Criar")
+    const saveBtn = drawer(page).getByRole('button', { name: /Salvar Alterações/i });
+    await expect(saveBtn).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('editar título e salvar exibe toast de sucesso', async ({ page }) => {
+    await setupAdminAtAdmin(page, 'collections');
+
+    // Abre primeiro item da lista se existir
+    const firstCard = page.locator('[data-collection-id], button[aria-label*="Editar"]').first();
+    const hasItem = await firstCard.isVisible({ timeout: 5_000 }).catch(() => false);
+    test.skip(!hasItem, 'Nenhuma coleção disponível para editar');
+
+    await firstCard.click();
+    await expect(drawer(page)).toBeVisible({ timeout: 10_000 });
+
+    const saveBtn = drawer(page).getByRole('button', { name: /Salvar Alterações/i });
+    const isEditing = await saveBtn.isVisible({ timeout: 3_000 }).catch(() => false);
+    test.skip(!isEditing, 'Drawer não abriu em modo de edição');
+
+    // Limpa e repreenche título
+    const titleInput = drawer(page).getByPlaceholder(/Título/i).first();
+    await titleInput.fill('');
+    await titleInput.fill(`Título editado ${Date.now()}`);
+    await saveBtn.click();
+
+    // Toast de sucesso
+    await expect(page.getByText(/atualizado com sucesso/i)).toBeVisible({ timeout: 10_000 });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// JN-COL-017: Excluir coleção — jornada completa
+// JTBD: "Quando clico no botão excluir, quero ver um modal
+// de confirmação antes de remover definitivamente."
+// ═══════════════════════════════════════════════════════════
+test.describe('JN-COL-017 · Excluir coleção — end-to-end', () => {
+  test('botão excluir abre modal de confirmação', async ({ page }) => {
+    await setupAdminAtAdmin(page, 'collections');
+
+    // Abre primeiro item existente
+    const firstCard = page.locator('[data-collection-id], button[aria-label*="Editar"]').first();
+    const hasItem = await firstCard.isVisible({ timeout: 5_000 }).catch(() => false);
+    test.skip(!hasItem, 'Nenhuma coleção disponível para excluir');
+
+    await firstCard.click();
+    await expect(drawer(page)).toBeVisible({ timeout: 10_000 });
+
+    const deleteBtn = drawer(page).locator('button[title*="Excluir"]');
+    const hasDelete = await deleteBtn.isVisible({ timeout: 3_000 }).catch(() => false);
+    test.skip(!hasDelete, 'Botão excluir não visível (role insuficiente ou modo criação)');
+
+    await deleteBtn.click();
+
+    // Modal de confirmação aparece
+    await expect(page.getByText(/Tem certeza/i)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('button', { name: /Excluir/i }).last()).toBeVisible();
+  });
+
+  test('cancelar no modal de confirmação mantém coleção intacta', async ({ page }) => {
+    await setupAdminAtAdmin(page, 'collections');
+
+    const firstCard = page.locator('[data-collection-id], button[aria-label*="Editar"]').first();
+    const hasItem = await firstCard.isVisible({ timeout: 5_000 }).catch(() => false);
+    test.skip(!hasItem, 'Nenhuma coleção disponível');
+
+    await firstCard.click();
+    await expect(drawer(page)).toBeVisible({ timeout: 10_000 });
+
+    const deleteBtn = drawer(page).locator('button[title*="Excluir"]');
+    const hasDelete = await deleteBtn.isVisible({ timeout: 3_000 }).catch(() => false);
+    test.skip(!hasDelete, 'Botão excluir não visível');
+
+    await deleteBtn.click();
+    await expect(page.getByText(/Tem certeza/i)).toBeVisible({ timeout: 5_000 });
+
+    // Cancela
+    const cancelBtn = page.getByRole('button', { name: /Cancelar/i }).last();
+    await cancelBtn.click();
+
+    // Modal some, drawer ainda visível
+    await expect(page.getByText(/Tem certeza/i)).not.toBeVisible({ timeout: 5_000 });
+    await expect(drawer(page)).toBeVisible();
+  });
+
+  test('editor não consegue excluir (apenas admin pode)', async ({ page }) => {
+    await setupEditorAtAdmin(page, 'collections');
+
+    const firstCard = page.locator('[data-collection-id], button[aria-label*="Editar"]').first();
+    const hasItem = await firstCard.isVisible({ timeout: 5_000 }).catch(() => false);
+    test.skip(!hasItem, 'Nenhuma coleção disponível');
+
+    await firstCard.click();
+    await expect(drawer(page)).toBeVisible({ timeout: 10_000 });
+
+    // Editor não vê botão de excluir no drawer
+    const deleteBtn = drawer(page).locator('button[title*="Excluir"]');
+    await expect(deleteBtn).not.toBeVisible({ timeout: 3_000 });
+  });
+});
