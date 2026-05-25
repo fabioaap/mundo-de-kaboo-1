@@ -134,6 +134,7 @@ type CollectionCardLayout = {
   aspectRatio: string;
   stackWidth: number;
   stackRight: number;
+  stackPosition: 'center' | 'bottom';
   headerPaddingRight: number;
   bodyPaddingRight: number;
   footerPaddingRight: number;
@@ -145,28 +146,30 @@ const getCollectionCardLayout = (cardWidth: number, isMobile: boolean): Collecti
   const resolvedWidth = cardWidth > 0 ? cardWidth : (isMobile ? 343 : 320);
 
   if (isMobile) {
-    const stackWidth = clampNumber(resolvedWidth * 0.39, 132, 156);
+    const stackWidth = clampNumber(resolvedWidth * 0.30, 100, 126);
     return {
-      aspectRatio: '1.28 / 1',
+      aspectRatio: '1.85 / 1',
       stackWidth,
-      stackRight: 10,
-      headerPaddingRight: Math.max(84, stackWidth - 34),
-      bodyPaddingRight: Math.max(88, stackWidth - 28),
-      footerPaddingRight: Math.max(76, stackWidth - 40),
+      stackRight: 6,
+      stackPosition: 'bottom',
+      headerPaddingRight: stackWidth + 8,
+      bodyPaddingRight: stackWidth + 12,
+      footerPaddingRight: stackWidth - 8,
       visibleFormatLimit: 2,
       summaryClampClassName: 'line-clamp-2',
     };
   }
 
   if (resolvedWidth < 360) {
-    const stackWidth = clampNumber(resolvedWidth * 0.38, 118, 140);
+    const stackWidth = clampNumber(resolvedWidth * 0.42, 118, 148);
     return {
-      aspectRatio: '1.46 / 1',
+      aspectRatio: '0.88 / 1',
       stackWidth,
-      stackRight: 8,
-      headerPaddingRight: Math.max(80, stackWidth - 28),
-      bodyPaddingRight: Math.max(84, stackWidth - 22),
-      footerPaddingRight: Math.max(72, stackWidth - 34),
+      stackRight: 6,
+      stackPosition: 'bottom',
+      headerPaddingRight: 8,
+      bodyPaddingRight: 8,
+      footerPaddingRight: 8,
       visibleFormatLimit: 2,
       summaryClampClassName: 'line-clamp-2',
     };
@@ -177,6 +180,7 @@ const getCollectionCardLayout = (cardWidth: number, isMobile: boolean): Collecti
     aspectRatio: '1.6 / 1',
     stackWidth,
     stackRight: 8,
+    stackPosition: 'center',
     headerPaddingRight: Math.max(126, stackWidth - 4),
     bodyPaddingRight: Math.max(120, stackWidth),
     footerPaddingRight: Math.max(108, stackWidth - 12),
@@ -317,7 +321,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         className={`overflow-hidden relative group w-full ${isCentralCorujaTone
           ? 'mb-3 rounded-[28px] bg-transparent shadow-none'
           : isCollectionCard
-            ? 'rounded-[30px] bg-transparent shadow-[0_28px_60px_rgba(15,23,42,0.12)]'
+            ? 'rounded-[30px] bg-white shadow-[0_28px_60px_rgba(15,23,42,0.12)]'
             : 'mb-3 rounded-lg shadow-md shadow-gray-100'}`}
         style={{
           ...(isActive && { WebkitMaskImage: '-webkit-radial-gradient(white, black)' }),
@@ -375,7 +379,9 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             />
 
             <div
-              className="absolute top-1/2 -translate-y-1/2"
+              className={collectionCardLayout.stackPosition === 'bottom'
+                ? 'absolute bottom-3 right-0'
+                : 'absolute top-1/2 -translate-y-1/2'}
               style={{
                 right: `${collectionCardLayout.stackRight}px`,
                 width: `${collectionCardLayout.stackWidth}px`,

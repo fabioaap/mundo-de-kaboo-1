@@ -46,9 +46,19 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
         setOpen(false);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && open) {
+        e.stopPropagation();
+        setOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('keydown', handleKeyDown, true); // capture phase to intercept first
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [open]);
 
   const filtered = options.filter((opt) => {
     const q = search.toLowerCase();

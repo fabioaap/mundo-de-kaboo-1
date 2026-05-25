@@ -79,10 +79,7 @@ export const filterCollectionsForBrand = (collections: Collection[], brandSlug: 
 
   return collections.filter((collection) =>
     // Remove mock/test content
-    !isMockOrTestCollection(collection)
-    // Kit-type collections belong exclusively to the Kaboo brand and must not
-    // appear in white-label brands such as central-coruja.
-    && collection.collection_type !== 'kit',
+    !isMockOrTestCollection(collection),
   );
 };
 

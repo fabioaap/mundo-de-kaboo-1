@@ -147,13 +147,10 @@ const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, gra
       className={`grid auto-rows-fr ${isCorujaTone
         ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
           : usesCollectionLayout
-            ? 'grid-cols-1'
+            ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
           : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} ${layoutSpacing.cardGridGap}`}
         style={{
           contain: 'layout style',
-          ...(usesCollectionLayout
-          ? { gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 24.75rem), 1fr))' }
-          : null)
         }}
       >
       {collections.map((collection) => (
