@@ -279,7 +279,7 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
             <div className="rounded-3xl border border-gray-200 bg-gray-50 p-5 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <CharacterAvatar
-                  name={formData.name || 'Kaboo'}
+                  name={formData.name || ''}
                   alt={formData.name || 'Personagem'}
                   className="h-24 w-24 shrink-0 rounded-3xl border border-white/80 shadow-sm"
                   imageClassName="absolute inset-0 w-full h-full object-cover"
