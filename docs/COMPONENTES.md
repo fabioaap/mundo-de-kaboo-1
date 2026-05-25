@@ -1,6 +1,6 @@
 # Documentação de Componentes
 
-**Atualizado em**: 25/05/2026, 13:21:37
+**Atualizado em**: 25/05/2026, 18:27:41
 
 ## Índice
 
@@ -21,6 +21,7 @@
 - [ModalSkeleton](#modalskeleton)
 - [MultipleFileUpload](#multiplefileupload)
 - [PageHeader](#pageheader)
+- [SearchableMultiSelect](#searchablemultiselect)
 - [Tabs](#tabs)
 - [TagInput](#taginput)
 - [Toast](#toast)
@@ -236,6 +237,18 @@
 
 
 **Exports**: `PageHeader`
+
+---
+
+## SearchableMultiSelect
+
+**Arquivo**: `components/SearchableMultiSelect.tsx`
+
+
+
+
+
+**Exports**: `SelectOption`, `SearchableMultiSelect`
 
 ---
 
