@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Icons } from '../components/Icons';
 import { Card3D } from '../components/Card3D';
 import { Character, Collection, CollectionAsset, CollectionAssetCategory, ScreenName, UserAuthStatus, UserProfile, UserRole } from '../types';
@@ -906,9 +906,21 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     assets: CollectionAsset[],
     options?: { linkedBook?: Collection | null }
   ) => {
+    // Derive legacy URL fields directly from the explicit assets list so that
+    // inferCollectionAssets (called inside buildCollectionFormData) does not
+    // re-add assets that were intentionally removed by the caller.
+    const VIDEO_PRIORITY = ['animation', 'accessible_video', 'how_to_play', 'video_lesson'] as const;
     const withAssets: CollectionFormData = {
       ...currentFormData,
       collection_assets: assets,
+      pdf_url: assets.find(a => a.category === 'reading')?.url ?? '',
+      audio_url: assets.find(a => a.category === 'storytelling')?.url ?? '',
+      video_url: VIDEO_PRIORITY.map(cat => assets.find(a => a.category === cat)?.url).find(Boolean) ?? '',
+      extra_materials: Array.from(new Set(
+        assets
+          .filter(a => COLLECTION_ASSET_META[a.category].scope === 'library')
+          .map(a => a.url)
+      )),
       offline_available: assets.some((asset) => asset.offline_available === true),
     };
     const withLinkedBook = options && 'linkedBook' in options
@@ -1009,6 +1021,18 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     Object.values(byCategory).forEach((items) => {
       items?.sort((firstItem, secondItem) => firstItem.displayTitle.localeCompare(secondItem.displayTitle, 'pt-BR'));
     });
+    // Deduplicate by URL within each category — the same media file may be
+    // linked in multiple collections. Keep only the first occurrence so the
+    // radio group shows exactly one option per unique media file.
+    for (const category of Object.keys(byCategory) as CollectionAssetCategory[]) {
+      const seen = new Set<string>();
+      byCategory[category] = byCategory[category]!.filter((item) => {
+        const url = item.asset.url.trim();
+        if (seen.has(url)) return false;
+        seen.add(url);
+        return true;
+      });
+    }
     return byCategory;
   }, [collections, editingId]);
   const selectedCharacterIds = Array.from(new Set(formData.character_ids || []));
@@ -2659,7 +2683,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                        }`}
                                      >
                                       <div className="flex gap-3 p-3">
-                                        <div className="relative h-24 w-[4.75rem] shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+                                        <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
                                           <img
                                             src={libraryItem.coverImage}
                                             alt=""
@@ -2667,9 +2691,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                             className="h-full w-full object-cover"
                                           />
                                           <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/55 to-transparent" />
-                                          <span className="absolute left-2 top-2 inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-gray-700">
-                                            {COLLECTION_ASSET_META[libraryItem.asset.category].label}
-                                          </span>
                                         </div>
 
                                         <div className="min-w-0 flex-1">
@@ -2801,7 +2822,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                        }`}
                                      >
                                       <div className="flex gap-3 p-3">
-                                        <div className="relative h-24 w-[4.75rem] shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+                                        <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
                                           <img
                                             src={libraryItem.coverImage}
                                             alt=""
@@ -2809,9 +2830,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                             className="h-full w-full object-cover"
                                           />
                                           <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/55 to-transparent" />
-                                          <span className="absolute left-2 top-2 inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-gray-700">
-                                            Material
-                                          </span>
                                         </div>
 
                                         <div className="min-w-0 flex-1">
