@@ -1,6 +1,6 @@
 # Documentação de Componentes
 
-**Atualizado em**: 25/05/2026, 12:53:15
+**Atualizado em**: 25/05/2026, 13:13:52
 
 ## Índice
 
@@ -25,6 +25,7 @@
 - [TagInput](#taginput)
 - [Toast](#toast)
 - [UserIdentityCard](#useridentitycard)
+- [VideoFramePicker](#videoframepicker)
 - [VouchersOnboardingBanner](#vouchersonboardingbanner)
 - [Flipbook](#flipbook)
 - [FlipbookLoader](#flipbookloader)
@@ -283,6 +284,19 @@
 
 
 **Exports**: `UserIdentityCard`
+
+---
+
+## VideoFramePicker
+
+**Arquivo**: `components/VideoFramePicker.tsx`
+
+**Descrição**: /  URL of the video to extract frames from /
+
+
+
+
+**Exports**: `VideoFramePicker`
 
 ---
 
