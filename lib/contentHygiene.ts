@@ -54,10 +54,6 @@ const matchesBrandScope = <T extends BrandScopedRecord>(
   }
 
   const recordBrandId = normalizeBrandId(record.brand_id);
-  if (!recordBrandId) {
-    return brandSlug === 'kaboo';
-  }
-
   return recordBrandId === resolvedBrandId;
 };
 

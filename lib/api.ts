@@ -216,10 +216,6 @@ const resolveActiveBrandId = async (): Promise<string | null> => {
 };
 
 const applyActiveBrandScope = (query: any, brandId: string) => {
-  if (_activeBrandSlugForApi === 'kaboo') {
-    return query.or(`brand_id.is.null,brand_id.eq.${brandId}`);
-  }
-
   return query.eq('brand_id', brandId);
 };
 

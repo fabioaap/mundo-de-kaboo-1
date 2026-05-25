@@ -123,7 +123,7 @@ describe('content hygiene for Central Coruja', () => {
     expect(shouldUseSharedMediaCatalog('kaboo')).toBe(true);
   });
 
-  it('keeps legacy unscoped content visible only in Kaboo while respecting explicit brand ownership', () => {
+  it('hides legacy unscoped content from all brands until ownership is explicit', () => {
     const legacyCollection: Collection = {
       ...realCollection,
       id: 'legacy-kaboo-collection',
@@ -159,7 +159,7 @@ describe('content hygiene for Central Coruja', () => {
         'kaboo',
         KABOO_BRAND_ID,
       ).map((collection) => collection.id),
-    ).toEqual(['legacy-kaboo-collection', 'kaboo-scoped-collection']);
+    ).toEqual(['kaboo-scoped-collection']);
 
     expect(
       filterCollectionsForBrand(
@@ -175,7 +175,7 @@ describe('content hygiene for Central Coruja', () => {
         'kaboo',
         KABOO_BRAND_ID,
       ).map((character) => character.id),
-    ).toEqual(['legacy-kaboo-character', 'kaboo-scoped-character']);
+    ).toEqual(['kaboo-scoped-character']);
 
     expect(
       filterCharactersForBrand(
