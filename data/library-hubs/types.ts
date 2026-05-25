@@ -30,6 +30,8 @@ export interface LibraryMockItem {
     assetType?: LibraryMockItemAssetType;
     assetUrl?: string;
     assetTitle?: string;
+    /** Per-asset offline availability flag — mirrors collection_assets.offline_available */
+    assetOfflineAvailable?: boolean | null;
 }
 
 export interface LibraryRail {

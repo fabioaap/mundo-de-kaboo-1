@@ -1174,6 +1174,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
         mediaItemId: item.id,
         assetUrl: resolvedUrl,
         assetTitle: resolvedTitle,
+        assetOfflineAvailable: item.assetOfflineAvailable ?? undefined,
       });
       return;
     }

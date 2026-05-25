@@ -12,7 +12,12 @@ export const useOfflineDownload = (
 ) => {
   const { isFeatureEnabled } = useBrandConfig();
   const brandAllowsOffline = isFeatureEnabled('content.offline');
-  const isAvailable = brandAllowsOffline && collection.offline_available === true && assetOfflineAvailable !== false;
+  // The admin toggle defaults to "on" (null/undefined treated as enabled).
+  // Only an explicit false disables offline for an asset.
+  // Collection-level flag is a secondary gate; brand flag is a top-level opt-in
+  // but is bypassed when the asset hasn't been explicitly disabled (DB column may be missing).
+  const collectionAllows = collection.offline_available !== false;
+  const isAvailable = assetOfflineAvailable !== false && (brandAllowsOffline || collectionAllows);
   const hasExplicitTargets = extraUrls.length > 0;
   const relevantUrlsKey = extraUrls
     .filter((url): url is string => typeof url === 'string')

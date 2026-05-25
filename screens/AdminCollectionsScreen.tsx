@@ -7,7 +7,7 @@ import { canEditCollections, isAdmin } from '../lib/auth';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../design-system';
 import { FileUpload } from '../components/FileUpload';
-import { TagInput } from '../components/TagInput';
+import { SearchableMultiSelect } from '../components/SearchableMultiSelect';
 import { Tabs } from '../components/Tabs';
 import { MultipleFileUpload } from '../components/MultipleFileUpload';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -15,7 +15,7 @@ import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { ColorPicker } from '../components/ColorPicker';
 import { CharacterAvatar } from '../components/CharacterAvatar';
-import { formatSegmentLabel, AVAILABLE_SEGMENTS } from '../constants';
+import { formatSegmentLabel, AVAILABLE_SEGMENTS, AGE_GRADE_OPTIONS, BNCC_OPTIONS, CASEL_OPTIONS } from '../constants';
 import useIsMobile from '../hooks/useIsMobile';
 import { placeholderImageUrl, isPlaceholderImageUrl } from '../lib/appPaths';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -323,6 +323,18 @@ const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory
   materials: ['extra_material'],
 };
 
+// Maps each asset category to a human-readable hint for the empty-state in the media picker.
+const CATEGORY_REGISTER_HINT: Partial<Record<CollectionAssetCategory, string>> = {
+  animation: 'na área de Vídeos',
+  storytelling: 'na área de Áudios',
+  reading: 'na área de Livros',
+  accessible_video: 'na área de Vídeos (variante Libras)',
+  how_to_play: 'na área de Vídeos (Como Jogar)',
+  video_lesson: 'na área de Formações',
+  teacher_guide: 'na área de Formações',
+  extra_material: 'na área de Materiais',
+};
+
 const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
   books: ['reading'],
   videos: ['animation'],
@@ -600,8 +612,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     : 'Essa cor organiza o fundo do card do livro e ajuda a dar unidade à vitrine editorial.';
   const showcaseBadgeLabel = isCollectionsCatalogMode ? 'Coleção' : 'Livro';
   const showcaseDescription = isCollectionsCatalogMode
-    ? 'A tag Coleção é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme os conteúdos publicados na aba Mídias.'
-    : 'A tag Livro é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme os conteúdos publicados na aba Mídias.';
+    ? 'A tag Coleção é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme as mídias vinculadas nesta coleção.'
+    : 'A tag Livro é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme as mídias vinculadas neste livro.';
   const synopsisPlaceholder = isCollectionsCatalogMode
     ? 'Sinopse editorial da coleção (opcional)'
     : 'Sinopse editorial do livro (opcional)';
@@ -614,6 +626,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const emptyFilteredCollectionMessage = isBooksCatalogMode
     ? 'Nenhum livro corresponde aos filtros.'
     : 'Nenhuma coleção corresponde aos filtros.';
+
+  // The book (standalone readable) currently linked to this kit collection, if any.
+  const linkedReadingBook = React.useMemo<Collection | null>(() => {
+    if (!isCollectionsCatalogMode) return null;
+    const bookId = normalizeKitBookIds(formData.kit_book_ids)[0];
+    if (!bookId) return null;
+    return collections.find((c) => c.id === bookId) ?? null;
+  }, [isCollectionsCatalogMode, formData.kit_book_ids, collections]);
 
   const scopedCollections = React.useMemo(() => {
     if (isCollectionsCatalogMode) {
@@ -834,76 +854,98 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const pendingInviteCount = users.filter((user) => getUserAuthStatus(user) === 'invite_pending').length;
   const editingUser = editingUserId ? users.find((user) => user.id === editingUserId) ?? null : null;
 
-  const updateFormWithAssets = (assets: CollectionAsset[]) => {
-    setFormData((currentFormData) => buildCollectionFormData({
+  const syncLinkedBookSelection = (currentFormData: CollectionFormData, linkedBook: Collection | null): CollectionFormData => {
+    if (!isCollectionsCatalogMode) {
+      return currentFormData;
+    }
+
+    const currentKitBookIds = normalizeKitBookIds(currentFormData.kit_book_ids);
+    const currentSelectedBook = collections.find((collection) => collection.id === currentKitBookIds[0]);
+    const nextKitBookIds = linkedBook ? [linkedBook.id] : [];
+    const normalizedCurrentColorTheme = normalizeThemeColor(currentFormData.color_theme);
+    const normalizedCurrentSelectedBookTheme = normalizeThemeColor(currentSelectedBook?.color_theme);
+    const normalizedNextSelectedBookTheme = normalizeThemeColor(linkedBook?.color_theme);
+    const shouldSyncThemeFromBook = Boolean(normalizedNextSelectedBookTheme)
+      && (
+        !normalizedCurrentColorTheme
+        || normalizedCurrentColorTheme === normalizeThemeColor(DEFAULT_COLLECTION_COLOR_THEME)
+        || normalizedCurrentColorTheme === normalizedCurrentSelectedBookTheme
+      );
+
+    // Helper: inherit field from book if currently empty OR if it matched the old book's value
+    const inheritField = <T,>(current: T, fromOldBook: T | undefined, fromNewBook: T | undefined, empty: T): T => {
+      if (!fromNewBook || (Array.isArray(fromNewBook) && (fromNewBook as unknown[]).length === 0)) return current;
+      const currentIsEmpty = !current || (Array.isArray(current) && (current as unknown[]).length === 0) || current === empty;
+      const currentMatchedOldBook = fromOldBook !== undefined && JSON.stringify(current) === JSON.stringify(fromOldBook);
+      if (currentIsEmpty || currentMatchedOldBook) return fromNewBook;
+      return current;
+    };
+
+    return {
+      ...currentFormData,
+      kit_book_ids: nextKitBookIds,
+      color_theme: shouldSyncThemeFromBook
+        ? linkedBook?.color_theme || currentFormData.color_theme
+        : currentFormData.color_theme,
+      kit_cover_image: null,
+      // Inherit pedagogical fields from the linked book
+      segments: inheritField(currentFormData.segments, currentSelectedBook?.segments, linkedBook?.segments, [] as string[]),
+      primary_segment: inheritField(currentFormData.primary_segment, currentSelectedBook?.primary_segment, linkedBook?.primary_segment, ''),
+      level: linkedBook?.level || currentFormData.level,
+      age_grade: inheritField(currentFormData.age_grade, currentSelectedBook?.age_grade, linkedBook?.age_grade, [] as string[]),
+      synopsis: inheritField(currentFormData.synopsis, currentSelectedBook?.synopsis ?? undefined, linkedBook?.synopsis ?? undefined, ''),
+      theme: inheritField(currentFormData.theme, currentSelectedBook?.theme, linkedBook?.theme, ''),
+      learning_objectives: inheritField(currentFormData.learning_objectives, currentSelectedBook?.learning_objectives, linkedBook?.learning_objectives, ''),
+      bncc_skills: inheritField(currentFormData.bncc_skills, currentSelectedBook?.bncc_skills, linkedBook?.bncc_skills, [] as string[]),
+      casel_competencies: inheritField(currentFormData.casel_competencies, currentSelectedBook?.casel_competencies, linkedBook?.casel_competencies, [] as string[]),
+    };
+  };
+
+  const buildNextFormFromAssets = (
+    currentFormData: CollectionFormData,
+    assets: CollectionAsset[],
+    options?: { linkedBook?: Collection | null }
+  ) => {
+    const withAssets: CollectionFormData = {
       ...currentFormData,
       collection_assets: assets,
-    }));
+      offline_available: assets.some((asset) => asset.offline_available === true),
+    };
+    const withLinkedBook = options && 'linkedBook' in options
+      ? syncLinkedBookSelection(withAssets, options.linkedBook ?? null)
+      : withAssets;
+    return buildCollectionFormData(withLinkedBook);
+  };
+
+  const updateFormWithAssets = (assets: CollectionAsset[]) => {
+    setFormData((currentFormData) => buildNextFormFromAssets(currentFormData, assets));
   };
 
   const getAssetByCategory = (category: CollectionAssetCategory) => {
     return formData.collection_assets.find((asset) => asset.category === category);
   };
 
-  const setAssetUrl = (category: FixedMediaSlotCategory, url: string) => {
-    const trimmedUrl = url.trim();
-    const currentAsset = getAssetByCategory(category);
-    const nextAssets = formData.collection_assets.filter((asset) => asset.category !== category);
+  const linkAssetFromLibrary = (category: FixedMediaSlotCategory, libraryItem: LibraryAssetListItem) => {
+    setFormData((currentFormData) => {
+      const currentAsset = currentFormData.collection_assets.find((asset) => asset.category === category);
+      const nextAssets = currentFormData.collection_assets.filter((asset) => asset.category !== category);
 
-    if (trimmedUrl) {
-      const meta = COLLECTION_ASSET_META[category];
       nextAssets.push({
         id: currentAsset?.id || createAssetId(category),
         category,
-        media_type: meta.mediaType,
-        title: currentAsset?.title?.trim() || meta.label,
-        url: trimmedUrl,
-        description: currentAsset?.description?.trim() || null,
-        scope: meta.scope,
-        lyrics_url: currentAsset?.lyrics_url ?? null,
+        media_type: libraryItem.asset.media_type,
+        title: libraryItem.displayTitle,
+        url: libraryItem.asset.url.trim(),
+        description: libraryItem.asset.description?.trim() || null,
+        scope: COLLECTION_ASSET_META[category].scope,
+        lyrics_url: libraryItem.asset.lyrics_url ?? null,
+        offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
       });
-    }
 
-    updateFormWithAssets(nextAssets);
-  };
-
-  const setAssetLyricsUrl = (category: FixedMediaSlotCategory, lyricsUrl: string) => {
-    const currentAsset = getAssetByCategory(category);
-    if (!currentAsset) {
-      return;
-    }
-
-    updateFormWithAssets(
-      formData.collection_assets.map((asset) =>
-        asset.category === category ? { ...asset, lyrics_url: lyricsUrl.trim() || null } : asset
-      )
-    );
-  };
-
-  const setAssetTitle = (category: FixedMediaSlotCategory, title: string) => {
-    const currentAsset = getAssetByCategory(category);
-    if (!currentAsset) {
-      return;
-    }
-
-    updateFormWithAssets(
-      formData.collection_assets.map((asset) =>
-        asset.category === category ? { ...asset, title } : asset
-      )
-    );
-  };
-
-  const setAssetDescription = (category: FixedMediaSlotCategory, description: string) => {
-    const currentAsset = getAssetByCategory(category);
-    if (!currentAsset) {
-      return;
-    }
-
-    updateFormWithAssets(
-      formData.collection_assets.map((asset) =>
-        asset.category === category ? { ...asset, description } : asset
-      )
-    );
+      return buildNextFormFromAssets(currentFormData, nextAssets, category === 'reading'
+        ? { linkedBook: libraryItem.collection }
+        : undefined);
+    });
   };
 
   const setAssetOfflineAvailable = (category: FixedMediaSlotCategory, value: boolean) => {
@@ -911,15 +953,17 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     if (!currentAsset) {
       return;
     }
-    updateFormWithAssets(
-      formData.collection_assets.map((asset) =>
-        asset.category === category ? { ...asset, offline_available: value } : asset
-      )
+    const updatedAssets = formData.collection_assets.map((asset) =>
+      asset.category === category ? { ...asset, offline_available: value } : asset
     );
+    updateFormWithAssets(updatedAssets);
   };
 
   const removeAsset = (category: FixedMediaSlotCategory) => {
-    updateFormWithAssets(formData.collection_assets.filter((asset) => asset.category !== category));
+    setFormData((currentFormData) => {
+      const nextAssets = currentFormData.collection_assets.filter((asset) => asset.category !== category);
+      return buildNextFormFromAssets(currentFormData, nextAssets, category === 'reading' ? { linkedBook: null } : undefined);
+    });
   };
 
   const extraMaterialAssets = formData.collection_assets.filter((asset) => asset.category === 'extra_material');
@@ -928,10 +972,45 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const highlightedAsset = highlightedAssetId
     ? formData.collection_assets.find((asset) => asset.id === highlightedAssetId) ?? null
     : null;
-  const availableKitBooks = collections
-    .filter((collection) => collection.id !== editingId && isStandaloneReadableBook(collection))
-    .sort((firstCollection, secondCollection) => (firstCollection.title || '').localeCompare(secondCollection.title || '', 'pt-BR'));
-  const selectedKitBookIds = normalizeKitBookIds(formData.kit_book_ids);
+
+  // Media library: all assets (by category) from every collection except the one being edited.
+  // Used by the linked-media picker to let the user associate existing assets.
+  const mediaLibraryByCategory = React.useMemo(() => {
+    const byCategory: Partial<Record<CollectionAssetCategory, LibraryAssetListItem[]>> = {};
+    for (const collection of collections) {
+      if (collection.id === editingId) continue;
+      for (const asset of (collection.collection_assets ?? [])) {
+        if (!asset.url?.trim()) continue;
+        const displayTitle = getLibraryAssetDisplayTitle(collection, asset);
+        const collectionCover = getCollectionDisplayCover(collection) || collection.cover_image;
+        const coverImage = collectionCover || CATEGORY_COVER_URL[asset.category] || placeholderImageUrl;
+
+        if (!byCategory[asset.category]) byCategory[asset.category] = [];
+        byCategory[asset.category]!.push({
+          key: `${collection.id}:${asset.id}`,
+          collection,
+          asset,
+          displayTitle,
+          previewText: (asset.description || '').trim() || (collection.theme || '').trim() || null,
+          coverImage,
+          searchText: normalizeSearchableText(
+            displayTitle,
+            asset.title,
+            COLLECTION_ASSET_META[asset.category].label,
+            collection.title,
+            collection.theme,
+            asset.description,
+          ),
+          levelLabel: getCollectionLevelChipLabel(collection.level),
+          iconName: getLibraryAssetIcon(asset),
+        });
+      }
+    }
+    Object.values(byCategory).forEach((items) => {
+      items?.sort((firstItem, secondItem) => firstItem.displayTitle.localeCompare(secondItem.displayTitle, 'pt-BR'));
+    });
+    return byCategory;
+  }, [collections, editingId]);
   const selectedCharacterIds = Array.from(new Set(formData.character_ids || []));
   const selectedCharacterNames = resolveCharacterNamesFromIds(selectedCharacterIds);
   const unmappedLegacyCharacters = (formData.characters || []).filter(
@@ -949,34 +1028,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
     return firstCharacter.name.localeCompare(secondCharacter.name, 'pt-BR');
   });
-
-  const toggleKitBookSelection = (bookId: string) => {
-    setFormData((currentFormData) => {
-      const currentKitBookIds = normalizeKitBookIds(currentFormData.kit_book_ids);
-      const nextKitBookIds = currentKitBookIds.includes(bookId) ? [] : [bookId];
-      const currentSelectedBook = collections.find((collection) => collection.id === currentKitBookIds[0]);
-      const nextSelectedBook = collections.find((collection) => collection.id === nextKitBookIds[0]);
-      const normalizedCurrentColorTheme = normalizeThemeColor(currentFormData.color_theme);
-      const normalizedCurrentSelectedBookTheme = normalizeThemeColor(currentSelectedBook?.color_theme);
-      const normalizedNextSelectedBookTheme = normalizeThemeColor(nextSelectedBook?.color_theme);
-      const shouldSyncThemeFromBook = isCollectionsCatalogMode
-        && Boolean(normalizedNextSelectedBookTheme)
-        && (
-          !normalizedCurrentColorTheme
-          || normalizedCurrentColorTheme === normalizeThemeColor(DEFAULT_COLLECTION_COLOR_THEME)
-          || normalizedCurrentColorTheme === normalizedCurrentSelectedBookTheme
-        );
-
-      return {
-        ...currentFormData,
-        kit_book_ids: nextKitBookIds,
-        color_theme: shouldSyncThemeFromBook
-          ? nextSelectedBook?.color_theme || currentFormData.color_theme
-          : currentFormData.color_theme,
-        kit_cover_image: isCollectionsCatalogMode ? null : currentFormData.kit_cover_image,
-      };
-    });
-  };
 
   const toggleCharacterSelection = (characterId: string) => {
     setFormData((currentFormData) => {
@@ -1010,30 +1061,59 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   };
 
   const setExtraMaterialUrls = (urls: string[]) => {
-    const assetsWithoutExtras = formData.collection_assets.filter((asset) => asset.category !== 'extra_material');
+    setFormData((currentFormData) => {
+      const currentExtraMaterialAssets = currentFormData.collection_assets.filter((asset) => asset.category === 'extra_material');
+      const assetsWithoutExtras = currentFormData.collection_assets.filter((asset) => asset.category !== 'extra_material');
 
-    const nextExtraAssets = urls.reduce<CollectionAsset[]>((assets, url, index) => {
-      const trimmedUrl = url.trim();
-      if (!trimmedUrl) {
+      const nextExtraAssets = urls.reduce<CollectionAsset[]>((assets, url, index) => {
+        const trimmedUrl = url.trim();
+        if (!trimmedUrl) {
+          return assets;
+        }
+
+        const currentAsset = currentExtraMaterialAssets.find((asset) => asset.url === trimmedUrl);
+
+        assets.push({
+          id: currentAsset?.id || createAssetId('extra_material'),
+          category: 'extra_material' as const,
+          media_type: currentAsset?.media_type || inferAssetMediaTypeFromUrl(trimmedUrl),
+          title: currentAsset?.title?.trim() || normalizeAssetTitle(trimmedUrl, `Material Extra ${index + 1}`),
+          url: trimmedUrl,
+          description: currentAsset?.description?.trim() || null,
+          scope: 'library' as const,
+          offline_available: currentAsset?.offline_available ?? null,
+        });
+
         return assets;
-      }
+      }, []);
 
-      const currentAsset = extraMaterialAssets.find((asset) => asset.url === trimmedUrl);
+      return buildNextFormFromAssets(currentFormData, [...assetsWithoutExtras, ...nextExtraAssets]);
+    });
+  };
 
-      assets.push({
-        id: currentAsset?.id || createAssetId('extra_material'),
-        category: 'extra_material' as const,
-        media_type: currentAsset?.media_type || inferAssetMediaTypeFromUrl(trimmedUrl),
-        title: currentAsset?.title?.trim() || normalizeAssetTitle(trimmedUrl, `Material Extra ${index + 1}`),
-        url: trimmedUrl,
-        description: currentAsset?.description?.trim() || null,
-        scope: 'library' as const,
-      });
+  const toggleExtraMaterialFromLibrary = (libraryItem: LibraryAssetListItem) => {
+    setFormData((currentFormData) => {
+      const currentExtraMaterialAssets = currentFormData.collection_assets.filter((asset) => asset.category === 'extra_material');
+      const assetsWithoutExtras = currentFormData.collection_assets.filter((asset) => asset.category !== 'extra_material');
+      const existingAsset = currentExtraMaterialAssets.find((asset) => asset.url === libraryItem.asset.url);
+      const nextExtraAssets = existingAsset
+        ? currentExtraMaterialAssets.filter((asset) => asset.url !== libraryItem.asset.url)
+        : [
+          ...currentExtraMaterialAssets,
+          {
+            id: createAssetId('extra_material'),
+            category: 'extra_material' as const,
+            media_type: libraryItem.asset.media_type,
+            title: libraryItem.displayTitle,
+            url: libraryItem.asset.url.trim(),
+            description: libraryItem.asset.description?.trim() || null,
+            scope: 'library' as const,
+            offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
+          },
+        ];
 
-      return assets;
-    }, []);
-
-    updateFormWithAssets([...assetsWithoutExtras, ...nextExtraAssets]);
+      return buildNextFormFromAssets(currentFormData, [...assetsWithoutExtras, ...nextExtraAssets]);
+    });
   };
 
   useEffect(() => {
@@ -1377,7 +1457,17 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       return;
     }
 
-    const normalizedDataToSave = buildCollectionPayload(formData);
+    const readingAssetUrl = formData.collection_assets.find((asset) => asset.category === 'reading')?.url?.trim() || '';
+    const linkedReadingSource = readingAssetUrl
+      ? (mediaLibraryByCategory.reading ?? []).find((item) => item.asset.url === readingAssetUrl)?.collection ?? null
+      : null;
+    const effectiveFormData = buildNextFormFromAssets(
+      formData,
+      formData.collection_assets,
+      isCollectionsCatalogMode ? { linkedBook: linkedReadingSource } : undefined
+    );
+
+    const normalizedDataToSave = buildCollectionPayload(effectiveFormData);
 
     setIsSaving(true);
     let success = false;
@@ -2026,13 +2116,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
               </div>
             </div>
 
-            {/* Tabs - only in full collection edit mode */}
+            {/* Tabs — generic collection flow keeps identification and linked-media steps together */}
             {!isLibraryAreaMode && (
               <div className="px-6 pt-4 pb-0 flex-shrink-0">
                 <Tabs
                   tabs={[
                     { id: 'identification', label: isBooksCatalogMode ? 'Dados do Livro' : 'Dados da Coleção' },
-                    { id: 'media', label: 'Arquivos de Mídia' }
+                    { id: 'media', label: 'Mídias vinculadas' }
                   ]}
                   activeTab={activeTab}
                   onChange={(tabId) => setActiveTab(tabId as any)}
@@ -2109,96 +2199,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       </div>
                     </div>
 
-                    {/* Disponibilidade Offline */}
-                    <div className="rounded-2xl border border-gray-200 p-4 bg-white flex items-start gap-4">
-                      <div className="flex-1">
-                        <h4 className="text-sm font-bold text-gray-800">Disponível offline</h4>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {isBooksCatalogMode
-                            ? 'Permite que usuários baixem este livro para acesso sem internet.'
-                            : 'Permite que usuários baixem esta coleção para acesso sem internet.'}
-                          Funciona apenas com conteúdo hospedado internamente (não YouTube).
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={!!formData.offline_available}
-                        onClick={() => setFormData({ ...formData, offline_available: !formData.offline_available })}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 ${formData.offline_available ? 'bg-brand-primary' : 'bg-gray-200'}`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.offline_available ? 'translate-x-5' : 'translate-x-0'}`}
-                        />
-                      </button>
-                    </div>
-
                     {isCollectionsCatalogMode && (
-                    <div className="rounded-2xl border border-gray-200 p-4 bg-white space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h4 className="text-sm font-bold text-gray-800">Livro da coleção</h4>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Selecione o livro que faz parte desta coleção. Ao escolher outro, ele substitui o vínculo anterior.
-                          </p>
-                        </div>
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-black uppercase tracking-[0.12em] border border-amber-200 whitespace-nowrap">
-                          {selectedKitBookIds.length === 1 ? '1 livro' : '0 livro'}
+                      <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 flex items-start gap-2">
+                        <Icons.CheckCircle size={16} className="shrink-0 text-gray-400 mt-0.5" />
+                        <span>
+                          O livro da coleção e a disponibilidade offline agora são definidos na etapa <span className="font-bold text-gray-800">Mídias vinculadas</span>, só escolhendo os conteúdos já cadastrados.
                         </span>
                       </div>
-
-                      {availableKitBooks.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
-                          Cadastre pelo menos um livro para montar esta coleção.
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {availableKitBooks.map((book) => {
-                            const isSelected = selectedKitBookIds.includes(book.id);
-                            const displayCoverImage = getCollectionDisplayCover(book) || book.cover_image;
-
-                            return (
-                              <button
-                                key={book.id}
-                                type="button"
-                                onClick={() => toggleKitBookSelection(book.id)}
-                                aria-pressed={isSelected}
-                                className={`w-full rounded-2xl border px-3 py-3 transition-all active:scale-[0.99] ${isSelected
-                                  ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
-                                  : 'border-gray-200 bg-white hover:bg-gray-50'
-                                  }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <img
-                                    src={displayCoverImage}
-                                    alt=""
-                                    aria-hidden="true"
-                                    className="w-12 h-12 rounded-xl object-cover border border-gray-200 bg-gray-100 flex-shrink-0"
-                                  />
-
-                                  <div className="min-w-0 flex-1 text-left">
-                                    <p className="text-sm font-bold text-gray-800 line-clamp-1">{book.title}</p>
-                                    <p className="text-xs text-gray-500 line-clamp-1 mt-1">
-                                      {formatSegmentLabel(book.level)}
-                                      {book.theme ? ` • ${book.theme}` : ''}
-                                    </p>
-                                  </div>
-
-                                  <div className="flex items-center gap-2 flex-shrink-0">
-                                    <span className={`w-6 h-6 rounded-full border flex items-center justify-center ${isSelected
-                                      ? 'border-brand-primary bg-brand-primary text-white'
-                                      : 'border-gray-300 bg-white text-transparent'
-                                      }`}>
-                                      <Icons.Check size={14} />
-                                    </span>
-                                  </div>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
                     )}
 
                     {/* 1.10. Personagens */}
@@ -2268,158 +2275,210 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     {/* Separation line */}
                     <div className="border-t border-gray-200 my-6"></div>
 
-                    {/* Informações Pedagógicas Title */}
+                    {/* Informações Pedagógicas */}
                     <div>
-                      <h3 className="text-lg font-bold text-gray-800 mb-4">Informações Pedagógicas</h3>
+                      <h3 className="text-lg font-bold text-gray-800 mb-1">Informações Pedagógicas</h3>
+                      {isCollectionsCatalogMode && (
+                        <p className="text-xs text-gray-500 mb-4">
+                          {linkedReadingBook
+                            ? <>Herdadas automaticamente do livro vinculado. Vá para <span className="font-semibold text-gray-700">Mídias vinculadas</span> para trocar o livro.</>
+                            : <>Vincule um livro na aba <span className="font-semibold text-gray-700">Mídias vinculadas</span> para preencher esses campos automaticamente.</>}
+                        </p>
+                      )}
                     </div>
 
-
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
-                      <div className="space-y-2">
-                        {AVAILABLE_SEGMENTS.map((seg) => {
-                          const checked = formData.segments?.includes(seg) ?? false;
-                          const isPrimary = formData.primary_segment === seg;
-                          return (
-                            <div key={seg} className="flex items-center gap-3">
-                              <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => {
-                                    const prev = formData.segments || [];
-                                    let next: string[];
-                                    if (checked) {
-                                      next = prev.filter(s => s !== seg);
-                                      // If removing the primary, pick the first remaining or clear
-                                      if (isPrimary) {
-                                        const newPrimary = next[0] || '';
-                                        setFormData({
+                    {/* When in collections mode with a linked book, show read-only inherited summary */}
+                    {isCollectionsCatalogMode && linkedReadingBook ? (
+                      <div className="rounded-2xl border border-gray-200 bg-gray-50 divide-y divide-gray-100 text-sm">
+                        {[
+                          {
+                            label: 'Segmento',
+                            value: (formData.segments || []).length > 0
+                              ? (formData.segments || []).join(', ')
+                              : formData.primary_segment || null,
+                          },
+                          { label: 'Ano Escolar', value: (formData.age_grade || []).join(', ') || null },
+                          { label: 'Sinopse', value: formData.synopsis || null },
+                          { label: 'Tema', value: formData.theme || null },
+                          { label: 'Objetivos de Aprendizado', value: formData.learning_objectives || null },
+                          {
+                            label: 'BNCC',
+                            value: (formData.bncc_skills || []).length > 0
+                              ? (formData.bncc_skills || []).join(' · ')
+                              : null,
+                          },
+                          {
+                            label: 'Casel',
+                            value: (formData.casel_competencies || []).length > 0
+                              ? (formData.casel_competencies || []).join(' · ')
+                              : null,
+                          },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="flex gap-3 px-4 py-3">
+                            <span className="w-36 shrink-0 font-semibold text-gray-600">{label}</span>
+                            <span className={value ? 'text-gray-800' : 'italic text-gray-400'}>
+                              {value ?? 'Não preenchido no livro'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        {/* Editable pedagogical fields (books mode, or collections without a linked book) */}
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
+                          <div className="space-y-2">
+                            {AVAILABLE_SEGMENTS.map((seg) => {
+                              const checked = formData.segments?.includes(seg) ?? false;
+                              const isPrimary = formData.primary_segment === seg;
+                              return (
+                                <div key={seg} className="flex items-center gap-3">
+                                  <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => {
+                                        const prev = formData.segments || [];
+                                        let next: string[];
+                                        if (checked) {
+                                          next = prev.filter(s => s !== seg);
+                                          if (isPrimary) {
+                                            const newPrimary = next[0] || '';
+                                            setFormData({
+                                              ...formData,
+                                              segments: next,
+                                              primary_segment: newPrimary,
+                                              level: newPrimary === 'Educação Infantil' ? 'Educação Infantil' : (newPrimary ? 'Fundamental I' : formData.level),
+                                            });
+                                            return;
+                                          }
+                                        } else {
+                                          next = [...prev, seg];
+                                          if (next.length === 1) {
+                                            setFormData({
+                                              ...formData,
+                                              segments: next,
+                                              primary_segment: seg,
+                                              level: seg === 'Educação Infantil' ? 'Educação Infantil' : 'Fundamental I',
+                                            });
+                                            return;
+                                          }
+                                        }
+                                        setFormData({ ...formData, segments: next });
+                                      }}
+                                      className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                                    />
+                                    <span className="text-sm text-gray-800">{seg}</span>
+                                  </label>
+                                  {checked && (
+                                    <label className="flex items-center gap-1 cursor-pointer text-xs text-gray-500 shrink-0">
+                                      <input
+                                        type="radio"
+                                        name="primary_segment"
+                                        checked={isPrimary}
+                                        onChange={() => setFormData({
                                           ...formData,
-                                          segments: next,
-                                          primary_segment: newPrimary,
-                                          level: newPrimary === 'Educação Infantil' ? 'Educação Infantil' : (newPrimary ? 'Fundamental I' : formData.level),
-                                        });
-                                        return;
-                                      }
-                                    } else {
-                                      next = [...prev, seg];
-                                      // Auto-set primary if first segment
-                                      if (next.length === 1) {
-                                        setFormData({
-                                          ...formData,
-                                          segments: next,
                                           primary_segment: seg,
                                           level: seg === 'Educação Infantil' ? 'Educação Infantil' : 'Fundamental I',
-                                        });
-                                        return;
-                                      }
-                                    }
-                                    setFormData({ ...formData, segments: next });
-                                  }}
-                                  className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
-                                />
-                                <span className="text-sm text-gray-800">{seg}</span>
-                              </label>
-                              {checked && (
-                                <label className="flex items-center gap-1 cursor-pointer text-xs text-gray-500 shrink-0">
-                                  <input
-                                    type="radio"
-                                    name="primary_segment"
-                                    checked={isPrimary}
-                                    onChange={() => setFormData({
-                                      ...formData,
-                                      primary_segment: seg,
-                                      level: seg === 'Educação Infantil' ? 'Educação Infantil' : 'Fundamental I',
-                                    })}
-                                    className="w-3 h-3 text-brand-primary focus:ring-brand-primary"
-                                  />
-                                  <span className={isPrimary ? 'font-bold text-brand-primary' : ''}>Principal</span>
-                                </label>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                                        })}
+                                        className="w-3 h-3 text-brand-primary focus:ring-brand-primary"
+                                      />
+                                      <span className={isPrimary ? 'font-bold text-brand-primary' : ''}>Principal</span>
+                                    </label>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
 
-                    {/* Ano Escolar */}
-                    <div>
-                      <TagInput
-                        label="Ano Escolar"
-                        value={formData.age_grade || []}
-                        onChange={(tags) => setFormData({ ...formData, age_grade: tags })}
-                        placeholder="Digite um ano escolar e pressione Enter"
-                      />
-                    </div>
+                        <div>
+                          <SearchableMultiSelect
+                            label="Ano Escolar"
+                            options={AGE_GRADE_OPTIONS}
+                            value={formData.age_grade || []}
+                            onChange={(vals) => setFormData({ ...formData, age_grade: vals })}
+                            placeholder="Selecionar ano(s) escolar(es)"
+                            searchPlaceholder="Pesquisar ano escolar..."
+                          />
+                        </div>
 
-                    {/* 1.6. Sinopse */}
-                    <div>
-                      <div className="mb-2 flex items-center justify-between">
-                        <label className="block text-sm font-bold text-gray-700">Sinopse</label>
-                        <span className="text-xs text-gray-400">{(formData.synopsis || '').length}/500</span>
-                      </div>
-                        <textarea
-                          value={formData.synopsis || ''}
-                          onChange={(e) => setFormData({ ...formData, synopsis: e.target.value.slice(0, 500) })}
-                          className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none min-h-[80px]"
-                          placeholder={synopsisPlaceholder}
-                          maxLength={500}
-                        />
-                      </div>
+                        <div>
+                          <div className="mb-2 flex items-center justify-between">
+                            <label className="block text-sm font-bold text-gray-700">Sinopse</label>
+                            <span className="text-xs text-gray-400">{(formData.synopsis || '').length}/500</span>
+                          </div>
+                          <textarea
+                            value={formData.synopsis || ''}
+                            onChange={(e) => setFormData({ ...formData, synopsis: e.target.value.slice(0, 500) })}
+                            className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none min-h-[80px]"
+                            placeholder={synopsisPlaceholder}
+                            maxLength={500}
+                          />
+                        </div>
 
-                    {/* 1.7. Tema */}
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">Tema</label>
-                      <input
-                        type="text"
-                        value={formData.theme}
-                        onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
-                        className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
-                        placeholder={themePlaceholder}
-                      />
-                    </div>
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Tema</label>
+                          <input
+                            type="text"
+                            value={formData.theme}
+                            onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
+                            className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
+                            placeholder={themePlaceholder}
+                          />
+                        </div>
 
-                    {/* 1.7. Objetivos de Aprendizado */}
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">Objetivos de Aprendizado</label>
-                      <textarea
-                        value={formData.learning_objectives}
-                        onChange={(e) => setFormData({ ...formData, learning_objectives: e.target.value })}
-                        className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none min-h-[100px]"
-                        placeholder="Objetivos de aprendizado..."
-                      />
-                    </div>
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Objetivos de Aprendizado</label>
+                          <textarea
+                            value={formData.learning_objectives}
+                            onChange={(e) => setFormData({ ...formData, learning_objectives: e.target.value })}
+                            className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none min-h-[100px]"
+                            placeholder="Objetivos de aprendizado..."
+                          />
+                        </div>
 
-                    {/* 1.8. Habilidades BNCC */}
-                    <div>
-                      <TagInput
-                        label="Habilidades BNCC"
-                        value={formData.bncc_skills || []}
-                        onChange={(tags) => setFormData({ ...formData, bncc_skills: tags })}
-                        placeholder="Digite uma habilidade BNCC e pressione Enter"
-                      />
-                    </div>
+                        <div>
+                          <SearchableMultiSelect
+                            label="Habilidades BNCC"
+                            options={BNCC_OPTIONS}
+                            value={formData.bncc_skills || []}
+                            onChange={(vals) => setFormData({ ...formData, bncc_skills: vals })}
+                            placeholder="Selecionar habilidades BNCC"
+                            searchPlaceholder="Pesquisar por código ou descrição..."
+                          />
+                        </div>
 
-                    {/* 1.9. Competências Casel */}
-                    <div>
-                      <TagInput
-                        label="Competências Casel"
-                        value={formData.casel_competencies || []}
-                        onChange={(tags) => setFormData({ ...formData, casel_competencies: tags })}
-                        placeholder="Digite uma competência Casel e pressione Enter"
-                      />
-                    </div>
+                        <div>
+                          <SearchableMultiSelect
+                            label="Competências Casel"
+                            options={CASEL_OPTIONS}
+                            value={formData.casel_competencies || []}
+                            onChange={(vals) => setFormData({ ...formData, casel_competencies: vals })}
+                            placeholder="Selecionar competências Casel"
+                            searchPlaceholder="Pesquisar competência..."
+                          />
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
 
-                {/* Tab: Arquivos de Mídia */}
+                {/* Tab: Mídias vinculadas */}
                 {activeTab === 'media' && (
                   <>
                     <div>
                       <h3 className="text-lg font-bold text-gray-800 mb-4">
-                        {activeLibraryAreaLabel ? activeLibraryAreaLabel : 'Arquivos de Mídia'}
+                        {activeLibraryAreaLabel ? activeLibraryAreaLabel : 'Mídias vinculadas'}
                       </h3>
+                      {!activeLibraryAreaLabel && !editingId && (
+                        <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 mb-4 flex items-start gap-2">
+                          <Icons.AlertCircle size={16} className="shrink-0 text-gray-400 mt-0.5" />
+                          <span>
+                            Toque nos cards abaixo para vincular as mídias já cadastradas em Livros, Vídeos, Áudios, Formações e Materiais antes de salvar.
+                          </span>
+                        </div>
+                      )}
                       {activeLibraryAreaLabel && editingId && (
                         <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 mb-4 flex items-center gap-2">
                           <Icons.BookOpen size={15} className="shrink-0 text-gray-400" />
@@ -2522,102 +2581,132 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         : FIXED_MEDIA_SLOTS
                       ).map((slot) => {
                         const asset = getAssetByCategory(slot.category);
+                        const libraryItems = mediaLibraryByCategory[slot.category] ?? [];
+                        const selectedLibraryItem = asset?.url
+                          ? libraryItems.find((item) => item.asset.url === asset.url) ?? null
+                          : null;
+                        const hasUnavailableSelection = Boolean(asset?.url && !selectedLibraryItem);
+                        const slotHelperText = slot.category === 'reading' && isCollectionsCatalogMode
+                          ? 'Escolha 1 livro. O vínculo da coleção é sincronizado automaticamente.'
+                          : 'Escolha 1 opção já cadastrada.';
                         const isHighlightedSlot = highlightedAssetCategory === slot.category
                           || (highlightedAssetId ? asset?.id === highlightedAssetId : false);
 
                         return (
                           <div
                             key={slot.category}
-                            ref={(element) => {
-                              mediaSectionRefs.current[slot.category] = element;
-                            }}
+                            ref={(element) => { mediaSectionRefs.current[slot.category] = element; }}
                             className={`rounded-2xl border p-4 space-y-3 bg-white transition-all border-gray-200 ${isHighlightedSlot ? 'ring-2 ring-brand-primary ring-offset-2 shadow-[0_0_0_6px_var(--color-brand-light)]' : ''}`}
                           >
-                            <FileUpload
-                              label={slot.label}
-                              value={asset?.url || ''}
-                              onChange={(url) => {
-                                if (!url) {
-                                  removeAsset(slot.category);
-                                  return;
-                                }
-
-                                setAssetUrl(slot.category, url);
-                              }}
-                              folder={slot.folder}
-                              accept={slot.accept}
-                              collectionId={editingId || undefined}
-                              showAsIcon={true}
-                              inputId={`media-upload-${slot.category}`}
-                            />
-
-                            <div>
-                              <label className="block text-sm font-bold text-gray-700 mb-2">
-                                {slot.urlLabel ?? 'Ou cole um link (YouTube ou arquivo direto)'}
-                              </label>
-                              <input
-                                type="url"
-                                value={asset?.url || ''}
-                                onChange={(event) => {
-                                  const nextUrl = event.target.value;
-                                  if (!nextUrl.trim()) {
-                                    removeAsset(slot.category);
-                                    return;
-                                  }
-
-                                  setAssetUrl(slot.category, nextUrl);
-                                }}
-                                placeholder={slot.urlPlaceholder ?? 'https://www.youtube.com/watch?v=...'}
-                                className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
-                              />
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-bold text-gray-800">{slot.label}</p>
+                                <p className="text-xs text-gray-500 mt-1">{slotHelperText}</p>
+                              </div>
+                              {asset?.url && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeAsset(slot.category)}
+                                  className="shrink-0 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-red-600 transition-colors hover:bg-red-100"
+                                >
+                                  Limpar
+                                </button>
+                              )}
                             </div>
 
-                            {slot.allowMetadata && (
-                              <div className="grid gap-3 md:grid-cols-2">
-                                <div>
-                                  <label className="block text-sm font-bold text-gray-700 mb-2">Título opcional</label>
-                                  <input
-                                    type="text"
-                                    value={asset?.title || ''}
-                                    onChange={(event) => setAssetTitle(slot.category, event.target.value)}
-                                    disabled={!asset?.url}
-                                    placeholder={slot.titlePlaceholder}
-                                    className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none disabled:opacity-60"
-                                  />
+                            {hasUnavailableSelection && asset && (
+                              <div className="flex items-start gap-3 rounded-2xl border border-brand-primary/20 bg-brand-primary/5 px-4 py-3">
+                                <img
+                                  src={CATEGORY_COVER_URL[slot.category] || placeholderImageUrl}
+                                  alt=""
+                                  aria-hidden="true"
+                                  className="h-16 w-12 shrink-0 rounded-xl border border-gray-200 bg-gray-100 object-cover"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-bold text-brand-primary truncate">{asset.title || slot.label}</p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Esta mídia já estava vinculada, mas não está disponível na biblioteca para nova seleção.
+                                  </p>
                                 </div>
-
-                                <div className="md:col-span-2">
-                                  <label className="block text-sm font-bold text-gray-700 mb-2">Descrição opcional</label>
-                                  <textarea
-                                    value={asset?.description || ''}
-                                    onChange={(event) => setAssetDescription(slot.category, event.target.value)}
-                                    disabled={!asset?.url}
-                                    placeholder={slot.descriptionPlaceholder}
-                                    className="w-full min-h-[96px] resize-y bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none disabled:opacity-60"
-                                  />
-                                </div>
-
-                                {slot.category === 'storytelling' && (
-                                  <div className="md:col-span-2">
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">
-                                      Letra da música (opcional)
-                                    </label>
-                                    <p className="text-xs text-gray-500 mb-2">Cole o link de um arquivo de texto com a letra (.txt, .md ou URL pública)</p>
-                                    <input
-                                      type="url"
-                                      value={asset?.lyrics_url || ''}
-                                      onChange={(event) => setAssetLyricsUrl(slot.category, event.target.value)}
-                                      disabled={!asset?.url}
-                                      placeholder="https://..."
-                                      className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none disabled:opacity-60"
-                                    />
-                                  </div>
-                                )}
                               </div>
                             )}
-                            {/* Offline download toggle — shows only when there is content uploaded */}
+
+                            {/* Library picker */}
+                            {libraryItems.length === 0 ? (
+                              <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-center space-y-1">
+                                <p className="text-sm text-gray-400 font-medium">Nenhuma mídia cadastrada</p>
+                                <p className="text-xs text-gray-400">
+                                  {CATEGORY_REGISTER_HINT[slot.category]
+                                    ? `Registre mídias ${CATEGORY_REGISTER_HINT[slot.category]} antes de vincular.`
+                                    : 'Nenhuma mídia disponível para vincular.'}
+                                </p>
+                              </div>
+                            ) : (
+                              <div role="radiogroup" aria-label={slot.label} className="grid gap-3 md:grid-cols-2 max-h-[32rem] overflow-y-auto pr-1">
+                                {libraryItems.map((libraryItem) => {
+                                  const isSelected = asset?.url === libraryItem.asset.url;
+                                  return (
+                                    <button
+                                      key={libraryItem.key}
+                                      type="button"
+                                      role="radio"
+                                      aria-checked={isSelected}
+                                      onClick={() => linkAssetFromLibrary(slot.category, libraryItem)}
+                                      className={`w-full overflow-hidden rounded-[22px] border text-left transition-all active:scale-[0.99] ${
+                                        isSelected
+                                          ? 'border-brand-primary bg-brand-primary/10 shadow-sm ring-2 ring-brand-primary/10'
+                                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                       }`}
+                                     >
+                                      <div className="flex gap-3 p-3">
+                                        <div className="relative h-24 w-[4.75rem] shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+                                          <img
+                                            src={libraryItem.coverImage}
+                                            alt=""
+                                            aria-hidden="true"
+                                            className="h-full w-full object-cover"
+                                          />
+                                          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/55 to-transparent" />
+                                          <span className="absolute left-2 top-2 inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-gray-700">
+                                            {COLLECTION_ASSET_META[libraryItem.asset.category].label}
+                                          </span>
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                              <p className={`text-sm font-bold truncate ${isSelected ? 'text-brand-primary' : 'text-gray-800'}`}>
+                                                {libraryItem.displayTitle}
+                                              </p>
+                                              <p className="text-xs text-gray-500 truncate mt-1">{libraryItem.collection.title}</p>
+                                            </div>
+                                            <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-brand-primary bg-brand-primary' : 'border-gray-300 bg-white'}`}>
+                                              <span className={`h-2.5 w-2.5 rounded-full ${isSelected ? 'bg-white' : 'bg-transparent'}`} />
+                                            </span>
+                                          </div>
+
+                                          {libraryItem.previewText && (
+                                            <p className="mt-2 line-clamp-2 text-xs text-gray-500">
+                                              {libraryItem.previewText}
+                                            </p>
+                                          )}
+
+                                          <div className="mt-3 flex flex-wrap gap-2">
+                                            <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-2 py-1 text-[11px] font-bold text-gray-600">
+                                              {libraryItem.levelLabel}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* Offline toggle for linked asset */}
                             {asset?.url && (
-                              <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3 mt-1">
+                              <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-bold text-gray-800">Disponível offline</p>
                                   <p className="text-xs text-gray-500 mt-0.5">Permite download deste arquivo para uso sem internet. Não funciona com YouTube.</p>
@@ -2626,7 +2715,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                   type="button"
                                   role="switch"
                                   aria-checked={asset.offline_available !== false}
-                                  onClick={() => setAssetOfflineAvailable(slot.category, asset.offline_available === false ? true : false)}
+                                  onClick={() => setAssetOfflineAvailable(slot.category, asset.offline_available !== true ? true : false)}
                                   className={`ml-4 relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 ${asset.offline_available !== false ? 'bg-brand-primary' : 'bg-gray-200'}`}
                                 >
                                   <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${asset.offline_available !== false ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -2637,22 +2726,128 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         );
                       })}
 
-                      {/* Extra materials: always visible in collection edit mode, only visible in Materiais area mode */}
-                      {(!isLibraryAreaMode || initialLibraryArea === 'materials') && (
-                        <div
-                          ref={extraMaterialsSectionRef}
-                          className={`rounded-2xl border p-4 bg-white transition-all ${isExtraMaterialsHighlighted ? 'border-brand-primary/35 ring-2 ring-brand-primary ring-offset-2 shadow-[0_0_0_6px_var(--color-brand-light)]' : 'border-gray-200'}`}
-                        >
-                          <MultipleFileUpload
-                            label="Materiais da Coleção"
-                            value={extraMaterialAssets.map((asset) => asset.url)}
-                            onChange={setExtraMaterialUrls}
-                            folder="extras"
-                            accept="*/*"
-                            collectionId={editingId || undefined}
-                          />
-                        </div>
-                      )}
+                      {/* Extra materials section */}
+                      {(!isLibraryAreaMode || initialLibraryArea === 'materials') && (() => {
+                        const extraLibItems = mediaLibraryByCategory['extra_material'] ?? [];
+                        const linkedUrls = new Set(extraMaterialAssets.map((a) => a.url));
+                        const unavailableExtraAssets = extraMaterialAssets.filter(
+                          (asset) => !extraLibItems.some((item) => item.asset.url === asset.url)
+                        );
+                        return (
+                          <div
+                            ref={extraMaterialsSectionRef}
+                            className={`rounded-2xl border p-4 bg-white space-y-3 transition-all ${isExtraMaterialsHighlighted ? 'border-brand-primary/35 ring-2 ring-brand-primary ring-offset-2 shadow-[0_0_0_6px_var(--color-brand-light)]' : 'border-gray-200'}`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-bold text-gray-800">Materiais da Coleção</p>
+                                <p className="text-xs text-gray-500 mt-1">Selecione quantos materiais quiser para compor a coleção.</p>
+                              </div>
+                              {linkedUrls.size > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setExtraMaterialUrls([])}
+                                  className="shrink-0 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-red-600 transition-colors hover:bg-red-100"
+                                >
+                                  Limpar
+                                </button>
+                              )}
+                            </div>
+
+                            {unavailableExtraAssets.length > 0 && (
+                              <div className="space-y-2">
+                                {unavailableExtraAssets.map((asset) => (
+                                  <div key={asset.id} className="flex items-start gap-3 rounded-2xl border border-brand-primary/20 bg-brand-primary/5 px-4 py-3">
+                                    <img
+                                      src={CATEGORY_COVER_URL.extra_material || placeholderImageUrl}
+                                      alt=""
+                                      aria-hidden="true"
+                                      className="h-16 w-12 shrink-0 rounded-xl border border-gray-200 bg-gray-100 object-cover"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-bold text-brand-primary truncate">{asset.title || 'Material extra'}</p>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Este material já estava vinculado, mas não está disponível na biblioteca para nova seleção.
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Extra materials picker */}
+                            {extraLibItems.length === 0 ? (
+                              <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-center space-y-1">
+                                <p className="text-sm text-gray-400 font-medium">Nenhum material cadastrado</p>
+                                <p className="text-xs text-gray-400">
+                                  Registre materiais na área de Materiais antes de vincular.
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="grid gap-3 md:grid-cols-2 max-h-[32rem] overflow-y-auto pr-1">
+                                {extraLibItems.map((libraryItem) => {
+                                  const isLinked = linkedUrls.has(libraryItem.asset.url);
+                                  return (
+                                    <button
+                                      key={libraryItem.key}
+                                      type="button"
+                                      role="checkbox"
+                                      aria-checked={isLinked}
+                                      onClick={() => toggleExtraMaterialFromLibrary(libraryItem)}
+                                      className={`w-full overflow-hidden rounded-[22px] border text-left transition-all active:scale-[0.99] ${
+                                        isLinked
+                                          ? 'border-brand-primary bg-brand-primary/10 shadow-sm ring-2 ring-brand-primary/10'
+                                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                       }`}
+                                     >
+                                      <div className="flex gap-3 p-3">
+                                        <div className="relative h-24 w-[4.75rem] shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+                                          <img
+                                            src={libraryItem.coverImage}
+                                            alt=""
+                                            aria-hidden="true"
+                                            className="h-full w-full object-cover"
+                                          />
+                                          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/55 to-transparent" />
+                                          <span className="absolute left-2 top-2 inline-flex items-center rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-gray-700">
+                                            Material
+                                          </span>
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                              <p className={`text-sm font-bold truncate ${isLinked ? 'text-brand-primary' : 'text-gray-800'}`}>
+                                                {libraryItem.displayTitle}
+                                              </p>
+                                              <p className="text-xs text-gray-500 truncate mt-1">{libraryItem.collection.title}</p>
+                                            </div>
+                                            <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border ${isLinked ? 'border-brand-primary bg-brand-primary text-white' : 'border-gray-300 bg-white text-transparent'}`}>
+                                              <Icons.Check size={12} />
+                                            </span>
+                                          </div>
+
+                                          {libraryItem.previewText && (
+                                            <p className="mt-2 line-clamp-2 text-xs text-gray-500">
+                                              {libraryItem.previewText}
+                                            </p>
+                                          )}
+
+                                          <div className="mt-3 flex flex-wrap gap-2">
+                                            <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-2 py-1 text-[11px] font-bold text-gray-600">
+                                              {libraryItem.levelLabel}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </>
                 )}

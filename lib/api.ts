@@ -474,13 +474,21 @@ const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection,
     assetType,
     assetUrl: asset.url,
     assetTitle: asset.title,
+    assetOfflineAvailable: asset.offline_available ?? null,
   };
 };
 
 const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]): LibraryMockItem[] => {
   const allowedCategories = COLLECTION_BACKED_HUB_CATEGORIES[hub];
 
+  // For the materials hub: book collections share the 'reading' category but belong in
+  // the Books hub, so we exclude them here to avoid cross-hub bleed.
+  // Videos and music hubs intentionally allow book collections (they carry animation/
+  // storytelling assets that should appear in those hubs).
+  const excludeBookCollections = hub === 'materials';
+
   return collections
+    .filter((collection) => !excludeBookCollections || collection.collection_type !== 'book')
     .flatMap((collection) => (collection.collection_assets ?? [])
       .filter((asset) => allowedCategories.includes(asset.category))
       .map((asset) => ({ collection, asset })))

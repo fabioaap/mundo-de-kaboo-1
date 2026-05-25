@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { NavState, ScreenName, Collection, UserProfile, AdminModule } from './types';
 import { api, clearAllUserCache, getCachedProfileSync, isDevMockSession, setActiveBrandForApi } from './lib/api';
 import {
@@ -469,7 +469,9 @@ const App: React.FC = () => {
   const brandSlug = brandBootstrap.brand.slug;
 
   // Sync brand slug into mock data and API modules so collection storage is isolated per brand.
-  useEffect(() => {
+  // useMemo runs synchronously during render — before any child useEffect — ensuring the
+  // brand slug is set before the first getCollections() call that children may make.
+  useMemo(() => {
     setMockActiveBrand(brandSlug);
     setActiveBrandForApi(brandSlug);
     setActiveBrandForCharacters(brandSlug);

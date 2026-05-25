@@ -133,6 +133,118 @@ export const AVAILABLE_SEGMENTS = [
   'Ensino Médio',
 ] as const;
 
+// ---------------------------------------------------------------------------
+// OPÇÕES DE ANO ESCOLAR
+// ---------------------------------------------------------------------------
+export const AGE_GRADE_OPTIONS = [
+  // Educação Infantil
+  { value: 'Berçário I',   label: 'Berçário I',   group: 'Educação Infantil' },
+  { value: 'Berçário II',  label: 'Berçário II',  group: 'Educação Infantil' },
+  { value: 'Maternal I',   label: 'Maternal I',   group: 'Educação Infantil' },
+  { value: 'Maternal II',  label: 'Maternal II',  group: 'Educação Infantil' },
+  { value: 'Jardim I',     label: 'Jardim I',     group: 'Educação Infantil' },
+  { value: 'Jardim II',    label: 'Jardim II',    group: 'Educação Infantil' },
+  // Ensino Fundamental I
+  { value: '1º ano – E.F.', label: '1º ano',  group: 'E.F. Anos Iniciais' },
+  { value: '2º ano – E.F.', label: '2º ano',  group: 'E.F. Anos Iniciais' },
+  { value: '3º ano – E.F.', label: '3º ano',  group: 'E.F. Anos Iniciais' },
+  { value: '4º ano – E.F.', label: '4º ano',  group: 'E.F. Anos Iniciais' },
+  { value: '5º ano – E.F.', label: '5º ano',  group: 'E.F. Anos Iniciais' },
+  // Ensino Fundamental II
+  { value: '6º ano – E.F.', label: '6º ano',  group: 'E.F. Anos Finais' },
+  { value: '7º ano – E.F.', label: '7º ano',  group: 'E.F. Anos Finais' },
+  { value: '8º ano – E.F.', label: '8º ano',  group: 'E.F. Anos Finais' },
+  { value: '9º ano – E.F.', label: '9º ano',  group: 'E.F. Anos Finais' },
+  // Ensino Médio
+  { value: '1ª série – E.M.', label: '1ª série', group: 'Ensino Médio' },
+  { value: '2ª série – E.M.', label: '2ª série', group: 'Ensino Médio' },
+  { value: '3ª série – E.M.', label: '3ª série', group: 'Ensino Médio' },
+];
+
+// ---------------------------------------------------------------------------
+// OPÇÕES DE HABILIDADES BNCC
+// Língua Portuguesa – Educação Infantil e E.F. (foco em leitura e oralidade)
+// ---------------------------------------------------------------------------
+export const BNCC_OPTIONS = [
+  // Educação Infantil – Campos de Experiência
+  { value: 'EI01EO01', label: 'EI01EO01', description: 'Perceber que suas ações têm efeitos nas outras crianças e adultos.', group: 'Educação Infantil' },
+  { value: 'EI02EO06', label: 'EI02EO06', description: 'Respeitar regras básicas de convívio social nas interações e brincadeiras.', group: 'Educação Infantil' },
+  { value: 'EI03ET03', label: 'EI03ET03', description: 'Identificar e selecionar fontes de informações para responder questões.', group: 'Educação Infantil' },
+  { value: 'EI03EF01', label: 'EI03EF01', description: 'Expressar ideias, desejos e sentimentos por diferentes linguagens.', group: 'Educação Infantil' },
+  // E.F. Anos Iniciais – Língua Portuguesa
+  { value: 'EF01LP01', label: 'EF01LP01', description: 'Reconhecer que textos são lidos da esquerda para a direita.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF01LP02', label: 'EF01LP02', description: 'Escrever o próprio nome, de familiares e colegas.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF01LP03', label: 'EF01LP03', description: 'Identificar e nomear as letras do alfabeto.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF02LP01', label: 'EF02LP01', description: 'Ler palavras com fluência em voz alta ou silenciosamente.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF02LP02', label: 'EF02LP02', description: 'Ler e compreender textos narrativos curtos.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF02LP07', label: 'EF02LP07', description: 'Identificar a finalidade de textos de diferentes gêneros.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF03LP01', label: 'EF03LP01', description: 'Ler e compreender textos narrativos com autonomia.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF03LP04', label: 'EF03LP04', description: 'Identificar o tema e a ideia central de textos.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF04LP01', label: 'EF04LP01', description: 'Ler e compreender, com autonomia, textos literários de diferentes gêneros.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF04LP05', label: 'EF04LP05', description: 'Inferir informações implícitas em textos.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF05LP01', label: 'EF05LP01', description: 'Ler e compreender textos com fluência e autonomia.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF15LP01', label: 'EF15LP01', description: 'Identificar a função social de textos do cotidiano (1º ao 5º ano).', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF15LP02', label: 'EF15LP02', description: 'Estabelecer expectativas em relação ao texto antes da leitura.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF15LP03', label: 'EF15LP03', description: 'Localizar informações explícitas em textos.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF15LP04', label: 'EF15LP04', description: 'Identificar o efeito de sentido produzido pelo uso de recursos expressivos.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF15LP05', label: 'EF15LP05', description: 'Planejar e produzir, com colaboração, recontagens e textos narrativos.', group: 'E.F. Anos Iniciais – LP' },
+  { value: 'EF15LP09', label: 'EF15LP09', description: 'Expressar-se em situações de intercâmbio oral com clareza.', group: 'E.F. Anos Iniciais – LP' },
+  // E.F. Anos Finais
+  { value: 'EF69LP01', label: 'EF69LP01', description: 'Diferenciar textos literários de não literários (6º ao 9º ano).', group: 'E.F. Anos Finais – LP' },
+  { value: 'EF69LP44', label: 'EF69LP44', description: 'Inferir informações implícitas em textos de diferentes gêneros.', group: 'E.F. Anos Finais – LP' },
+  { value: 'EF69LP46', label: 'EF69LP46', description: 'Interpretar textos com auxílio de material gráfico diverso.', group: 'E.F. Anos Finais – LP' },
+  { value: 'EF67LP28', label: 'EF67LP28', description: 'Ler e apreciar textos literários de diferentes gêneros e épocas.', group: 'E.F. Anos Finais – LP' },
+  { value: 'EF89LP33', label: 'EF89LP33', description: 'Ler e interpretar textos que articulam o verbal e o não verbal.', group: 'E.F. Anos Finais – LP' },
+  // Arte e Educação Socioemocional
+  { value: 'EF15AR23', label: 'EF15AR23', description: 'Reconhecer e apreciar formas distintas das artes visuais.', group: 'Arte' },
+  { value: 'EF15AR30', label: 'EF15AR30', description: 'Explorar diferentes fontes sonoras e materiais para criação musical.', group: 'Arte' },
+];
+
+// ---------------------------------------------------------------------------
+// OPÇÕES DE COMPETÊNCIAS CASEL
+// ---------------------------------------------------------------------------
+export const CASEL_OPTIONS = [
+  {
+    value: 'Autoconsciência',
+    label: 'Autoconsciência',
+    description: 'Identificar emoções, valores, pontos fortes e limitações pessoais.',
+    group: 'Competências Centrais',
+  },
+  {
+    value: 'Autorregulação',
+    label: 'Autorregulação',
+    description: 'Gerenciar emoções, pensamentos e comportamentos em diferentes situações.',
+    group: 'Competências Centrais',
+  },
+  {
+    value: 'Consciência Social',
+    label: 'Consciência Social',
+    description: 'Ter empatia e compreender perspectivas diversas.',
+    group: 'Competências Centrais',
+  },
+  {
+    value: 'Habilidades de Relacionamento',
+    label: 'Habilidades de Relacionamento',
+    description: 'Estabelecer e manter relacionamentos saudáveis e cooperativos.',
+    group: 'Competências Centrais',
+  },
+  {
+    value: 'Tomada de Decisão Responsável',
+    label: 'Tomada de Decisão Responsável',
+    description: 'Fazer escolhas construtivas sobre comportamento pessoal e interações sociais.',
+    group: 'Competências Centrais',
+  },
+  // Sub-competências
+  { value: 'Identificação de emoções',     label: 'Identificação de emoções',     description: 'Nomear e compreender as próprias emoções.',         group: 'Sub-competências' },
+  { value: 'Empatia',                      label: 'Empatia',                      description: 'Reconhecer e compreender sentimentos alheios.',      group: 'Sub-competências' },
+  { value: 'Resolução de conflitos',       label: 'Resolução de conflitos',       description: 'Lidar com desacordos de forma respeitosa.',          group: 'Sub-competências' },
+  { value: 'Persistência e resiliência',   label: 'Persistência e resiliência',   description: 'Superar dificuldades com equilíbrio emocional.',     group: 'Sub-competências' },
+  { value: 'Comunicação efetiva',          label: 'Comunicação efetiva',          description: 'Expressar ideias com clareza e ouvir ativamente.',   group: 'Sub-competências' },
+  { value: 'Autoconfiança',               label: 'Autoconfiança',               description: 'Acreditar nas próprias capacidades e habilidades.',  group: 'Sub-competências' },
+  { value: 'Responsabilidade social',     label: 'Responsabilidade social',     description: 'Contribuir com o bem-estar da comunidade.',          group: 'Sub-competências' },
+  { value: 'Cooperação',                  label: 'Cooperação',                  description: 'Trabalhar em grupo para atingir objetivos comuns.', group: 'Sub-competências' },
+];
+
 export const COLLECTIONS: Collection[] = [];
 
 export const TABS = [

@@ -111,7 +111,8 @@ const createBookFromFixture = async (
         });
         await segmentButton.evaluate((button: HTMLButtonElement) => button.click());
     }
-    await materialDrawer.locator('input[type="file"][accept="application/pdf"]').first().setInputFiles(fixture.absolutePath);
+    await materialDrawer.locator('input#media-upload-reading').setInputFiles(fixture.absolutePath);
+    await expect(page.getByText('Arquivo enviado com sucesso!')).toBeVisible({ timeout: 15_000 });
     await expect(materialDrawer.getByPlaceholder('https://...').first()).toHaveValue(/\/collections\/pdfs\//, { timeout: 15_000 });
     await createButton.scrollIntoViewIfNeeded();
     await expect(createButton).toBeEnabled({ timeout: 10_000 });
