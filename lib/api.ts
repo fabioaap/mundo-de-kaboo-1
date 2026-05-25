@@ -1631,7 +1631,13 @@ export const api = {
     }
 
     if (!isSupabaseConfigured || devMockSession) {
-      const collections = filterCollectionsForBrand(getMockCollectionsLive(), _activeBrandSlugForApi, _activeBrandIdForApi);
+      const mockRaw = getMockCollectionsLive();
+      // Seed/mock data has no brand_id — stamp with active brand so brand filter works
+      const brandId = _activeBrandIdForApi;
+      const stamped = brandId
+        ? mockRaw.map(c => c.brand_id ? c : { ...c, brand_id: brandId })
+        : mockRaw;
+      const collections = filterCollectionsForBrand(stamped, _activeBrandSlugForApi, _activeBrandIdForApi);
       saveCollectionsCache(collections);
       return collections;
     }
@@ -2112,7 +2118,12 @@ export const api = {
 
   async getCharacters(): Promise<Character[]> {
     if (!isSupabaseConfigured || devMockSession) {
-      return filterCharactersForBrand(getMockCharactersLive(), _activeBrandSlugForApi, _activeBrandIdForApi);
+      const mockRaw = getMockCharactersLive();
+      const brandId = _activeBrandIdForApi;
+      const stamped = brandId
+        ? mockRaw.map(c => c.brand_id ? c : { ...c, brand_id: brandId })
+        : mockRaw;
+      return filterCharactersForBrand(stamped, _activeBrandSlugForApi, _activeBrandIdForApi);
     }
 
     const remoteCharacters = await loadRemoteCharacters();
