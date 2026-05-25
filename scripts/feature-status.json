@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "lastUpdated": "2026-04-20",
-    "updatedBy": "Fabio",
-    "version": "v1.2",
+    "lastUpdated": "2026-05-25",
+    "updatedBy": "Copilot",
+    "version": "v1.3-parcial",
     "description": "Panorama de produto — Central Coruja / Mundo de Kaboo"
   },
   "categories": [
@@ -357,11 +357,11 @@
         {
           "id": "supabase-remoto",
           "name": "Backend Supabase remoto (validação end-to-end)",
-          "status": "partial",
+          "status": "done",
           "version": "v1.3",
-          "deliveredAt": null,
+          "deliveredAt": "2026-05-25",
           "notes": [
-            "Migrations criadas e aplicadas; validação ponta a ponta ainda incompleta"
+            "Migrations aplicadas no projeto remoto yevysgqlnhonhkczkyhu (São Paulo). Push validado via CLI."
           ]
         },
         {
@@ -392,6 +392,130 @@
           "deliveredAt": null,
           "notes": [
             "Depende de conta nas lojas e build estável"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "white-label",
+      "label": "White Label / Branding",
+      "features": [
+        {
+          "id": "white-label-engine",
+          "name": "Engine white-label com slug, tema, menu e feature flags por marca",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-04-29",
+          "notes": [
+            "Bootstrap de marca via useBrandConfig; rotas por slug; isolamento Kaboo vs Central Coruja"
+          ]
+        },
+        {
+          "id": "private-media-backbone",
+          "name": "Backbone de mídia privada (storage por marca)",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-04-25",
+          "notes": [
+            "Migration 20260425000100_private_media_backbone.sql aplicada"
+          ]
+        },
+        {
+          "id": "white-label-access-control",
+          "name": "Controle de acesso por marca (RLS por brand)",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-04-29",
+          "notes": [
+            "Migrations 20260426000100 e 20260429000100 aplicadas"
+          ]
+        },
+        {
+          "id": "offline-content-flag",
+          "name": "Flag de conteúdo offline por item de catálogo",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-05-13",
+          "notes": [
+            "Migration 20260513000100_add_content_offline_flag.sql aplicada no remoto"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cms-media",
+      "label": "CMS Admin — Mídia e Vinculação",
+      "features": [
+        {
+          "id": "video-frame-picker",
+          "name": "Seleção de frame de vídeo como capa no admin",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-05-13",
+          "notes": [
+            "Extração de frame com canvas; upload automático para storage"
+          ]
+        },
+        {
+          "id": "admin-media-segregation",
+          "name": "Segregação de mídia por tipo no painel admin (vídeos, áudios, PDFs, materiais)",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-05-13",
+          "notes": []
+        },
+        {
+          "id": "collection-link-radio-cards",
+          "name": "Vínculo de mídia com radio buttons visuais (card com thumbnail)",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-05-25",
+          "notes": [
+            "Thumbnails 64x64 harmônicas, deduplicação por URL, radio single-select"
+          ]
+        },
+        {
+          "id": "limpar-asset-fix",
+          "name": "Botão Limpar remove asset vinculado corretamente",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-05-25",
+          "notes": [
+            "Fix em buildNextFormFromAssets: sync legacy URL fields do array assets antes de inferCollectionAssets"
+          ]
+        },
+        {
+          "id": "searchable-multi-select",
+          "name": "SearchableMultiSelect com herança automática de campos pedagógicos",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-05-25",
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "qa",
+      "label": "QA / Testes de Usabilidade",
+      "features": [
+        {
+          "id": "usability-tests-central-coruja",
+          "name": "Suíte Playwright — Central Coruja (50 testes: jornadas, JTBD, edge cases)",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-05-25",
+          "notes": [
+            "39 passed, 11 skipped (data-dependent). Cobre JN-COL-001 a 017, EDGE-001 a 014"
+          ]
+        },
+        {
+          "id": "usability-tests-kaboo",
+          "name": "Suíte Playwright — Kaboo (23 testes: fix verifications + módulos)",
+          "status": "done",
+          "version": "v1.3",
+          "deliveredAt": "2026-05-25",
+          "notes": [
+            "23/23 passed. Verifica FIX-001/002/003 e 9 módulos admin"
           ]
         }
       ]

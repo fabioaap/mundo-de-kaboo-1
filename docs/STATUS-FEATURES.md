@@ -1,7 +1,7 @@
 # Status de Features — Central Coruja / Mundo de Kaboo
 
 > Gerado automaticamente por `scripts/update-feature-status.mjs`
-> Última atualização: **2026-04-20** · atualizado por: Fabio
+> Última atualização: **2026-05-25** · atualizado por: Copilot
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Status | Qtd | % |
 |--------|-----|---|
-| ✅ Entregue | 32 | — |
-| 🟡 Parcial  | 3 | — |
+| ✅ Entregue | 44 | — |
+| 🟡 Parcial  | 2 | — |
 | 🔴 Pendente | 9 | — |
-| **Total**   | **44** | **76% entregue** |
+| **Total**   | **55** | **82% entregue** |
 
 ---
 
@@ -87,10 +87,36 @@
 |---------|--------|--------|-------------|-------|
 | Deploy GitHub Pages (modo demo) | ✅ Entregue | v1.2 | 2026-04-16 | — |
 | Design system (17+ componentes) | ✅ Entregue | v1.2 | 2026-04-15 | — |
-| Backend Supabase remoto (validação end-to-end) | 🟡 Parcial | v1.3 | — | Migrations criadas e aplicadas; validação ponta a ponta ainda incompleta |
+| Backend Supabase remoto (validação end-to-end) | ✅ Entregue | v1.3 | 2026-05-25 | Migrations aplicadas no projeto remoto yevysgqlnhonhkczkyhu (São Paulo). Push validado via CLI. |
 | Servidor/banco separado para Central Coruja | 🔴 Pendente | v1.3 | — | Depende de conta Empatia e decisão de infra (Maxwell) |
 | Conta Empatia registrada no Google Play e Apple | 🔴 Pendente | v1.3 | — | Responsável: Douglas + Rafael + Maxwell |
 | Build nativo (Capacitor/TWA) | 🔴 Pendente | v1.3 | — | Depende de conta nas lojas e build estável |
+
+## White Label / Branding
+
+| Feature | Status | Versão | Entregue em | Notas |
+|---------|--------|--------|-------------|-------|
+| Engine white-label com slug, tema, menu e feature flags por marca | ✅ Entregue | v1.3 | 2026-04-29 | Bootstrap de marca via useBrandConfig; rotas por slug; isolamento Kaboo vs Central Coruja |
+| Backbone de mídia privada (storage por marca) | ✅ Entregue | v1.3 | 2026-04-25 | Migration 20260425000100_private_media_backbone.sql aplicada |
+| Controle de acesso por marca (RLS por brand) | ✅ Entregue | v1.3 | 2026-04-29 | Migrations 20260426000100 e 20260429000100 aplicadas |
+| Flag de conteúdo offline por item de catálogo | ✅ Entregue | v1.3 | 2026-05-13 | Migration 20260513000100_add_content_offline_flag.sql aplicada no remoto |
+
+## CMS Admin — Mídia e Vinculação
+
+| Feature | Status | Versão | Entregue em | Notas |
+|---------|--------|--------|-------------|-------|
+| Seleção de frame de vídeo como capa no admin | ✅ Entregue | v1.3 | 2026-05-13 | Extração de frame com canvas; upload automático para storage |
+| Segregação de mídia por tipo no painel admin (vídeos, áudios, PDFs, materiais) | ✅ Entregue | v1.3 | 2026-05-13 | — |
+| Vínculo de mídia com radio buttons visuais (card com thumbnail) | ✅ Entregue | v1.3 | 2026-05-25 | Thumbnails 64x64 harmônicas, deduplicação por URL, radio single-select |
+| Botão Limpar remove asset vinculado corretamente | ✅ Entregue | v1.3 | 2026-05-25 | Fix em buildNextFormFromAssets: sync legacy URL fields do array assets antes de inferCollectionAssets |
+| SearchableMultiSelect com herança automática de campos pedagógicos | ✅ Entregue | v1.3 | 2026-05-25 | — |
+
+## QA / Testes de Usabilidade
+
+| Feature | Status | Versão | Entregue em | Notas |
+|---------|--------|--------|-------------|-------|
+| Suíte Playwright — Central Coruja (50 testes: jornadas, JTBD, edge cases) | ✅ Entregue | v1.3 | 2026-05-25 | 39 passed, 11 skipped (data-dependent). Cobre JN-COL-001 a 017, EDGE-001 a 014 |
+| Suíte Playwright — Kaboo (23 testes: fix verifications + módulos) | ✅ Entregue | v1.3 | 2026-05-25 | 23/23 passed. Verifica FIX-001/002/003 e 9 módulos admin |
 
 ## v2.0 — Expansão
 
@@ -110,7 +136,6 @@
 - **Assinatura digital pós-voucher** (`assinatura-digital`) — v1.3: UX do fluxo ainda não definida
 - **Vídeo com Libras (campo existe, UX não exposta sem arquivo real)** (`video-libras`) — v1.3: Campo accessible_video_url presente no modelo; aguarda arquivos reais
 - **Vídeo animado/IA** (`video-animado`) — v1.3: Campo animated_video_url presente no modelo; aguarda arquivos reais
-- **Backend Supabase remoto (validação end-to-end)** (`supabase-remoto`) — v1.3: Migrations criadas e aplicadas; validação ponta a ponta ainda incompleta
 - **Servidor/banco separado para Central Coruja** (`servidor-separado`) — v1.3: Depende de conta Empatia e decisão de infra (Maxwell)
 - **Conta Empatia registrada no Google Play e Apple** (`conta-lojas`) — v1.3: Responsável: Douglas + Rafael + Maxwell
 - **Build nativo (Capacitor/TWA)** (`app-nativo`) — v1.3: Depende de conta nas lojas e build estável
