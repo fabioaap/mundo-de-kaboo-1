@@ -1952,7 +1952,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                             <Card3D
                               collection={collection}
-                              tone={isBooksCatalogMode ? 'central-coruja' : 'default'}
+                              tone="default"
                               onCollectionClick={() => {
                                 if (hasUnsavedChanges()) {
                                   setPendingAction(() => () => handleEdit(collection));
