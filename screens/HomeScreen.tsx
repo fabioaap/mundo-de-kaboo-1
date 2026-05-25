@@ -700,7 +700,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     !brandHomeHeroImageUrl;
   const isCorujaHeroImageLayout = isCentralCoruja && Boolean(brandHomeHeroImageUrl) && !isSearchExperience;
   const shouldShowDesktopHeader = (!isCentralCoruja && !isKabooWelcomeLayout) || isSearchExperience;
-  const shouldRenderBrandHero = !isSearchExperience && (Boolean(brandHomeHeroImageUrl) || isCentralCoruja || brandSlug === 'kaboo');
+  const shouldRenderBrandHero = !isSearchExperience
+    && (Boolean(brandHomeHeroImageUrl) || isCentralCoruja || brandSlug === 'kaboo')
+    && !(isCentralCoruja && currentCollectionGroup === 'books');
   const isCorujaHomeLayout = isCentralCoruja && !isSearchExperience;
   const isCorujaPinnedShelfLayout = isCorujaHomeLayout && Boolean(brandHomeHeroImageUrl);
   const desktopShellPaddingClass = isCorujaPinnedShelfLayout
@@ -1898,7 +1900,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           {/* Central Coruja with hero image: content floats over parallax background */}
           {isCentralCoruja && brandHomeHeroImageUrl ? (
-            <div className="relative space-y-3 pt-[108px] pb-4 md:pt-8 md:pb-6 md:space-y-4">
+            <div className={`relative space-y-3 ${shouldRenderBrandHero ? 'pt-[108px] pb-4 md:pt-8 md:pb-6 md:space-y-4' : 'pt-3 pb-4 md:pt-4 md:pb-6 md:space-y-4'}`}>
               {shouldRenderBrandHero && (
                 <div className="max-w-xl md:max-w-[54%]">
                   <p className="text-sm font-bold text-white/78">Olá, {profileDisplayFirstName}.</p>

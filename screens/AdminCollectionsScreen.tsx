@@ -1886,8 +1886,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     </div>
                   ) : (
                     <div
-                      className="grid auto-rows-fr gap-4 md:gap-6"
-                      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 24.75rem), 1fr))' }}
+                      className={`grid auto-rows-fr gap-4 md:gap-6 ${isBooksCatalogMode ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : ''}`}
+                      style={isBooksCatalogMode ? undefined : { gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 24.75rem), 1fr))' }}
                     >
                       {getFilteredAndSortedCollections().map((collection) => {
                         const actionsButton = (
