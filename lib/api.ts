@@ -30,7 +30,7 @@ import {
   VoucherValidationResult,
 } from '../types';
 import { logger } from './logger';
-import { buildAppUrl, isPlaceholderImageUrl } from './appPaths';
+import { buildAppUrl, buildPublicAppUrl, isPlaceholderImageUrl } from './appPaths';
 import {
   filterCentralMaterialsForBrand,
   filterCharactersForBrand,
@@ -1541,7 +1541,7 @@ export const api = {
 
     try {
       const emailRedirectTo = typeof window !== 'undefined'
-        ? buildAppUrl('?confirmation=success')
+        ? buildPublicAppUrl('?confirmation=success')
         : undefined;
 
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -2717,7 +2717,7 @@ export const api = {
       // Usa a Edge Function invite-user que roda com service_role no servidor.
       // Isso garante segurança (service_role nunca exposta ao browser) e usa
       // admin.inviteUserByEmail() que cria o usuário e envia um único e-mail de convite.
-      const redirectTo = buildAppUrl();
+      const redirectTo = buildPublicAppUrl();
 
       const { data: fnData, error: fnError } = await supabase.functions.invoke('invite-user', {
         body: {

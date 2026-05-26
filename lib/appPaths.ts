@@ -1,12 +1,21 @@
 import placeholderImage from '../assets/images/image-placeholder.png';
 
 const APP_PLACEHOLDER_ORIGIN = 'https://app.local';
+const DEFAULT_PUBLIC_APP_URL = 'https://mundodekaboo.educacross.dev';
 const RAW_BASE_PATH = import.meta.env.BASE_URL || '/';
 const USE_RELATIVE_BASE = RAW_BASE_PATH === '' || RAW_BASE_PATH === '.' || RAW_BASE_PATH === './';
 
 const normalizeBasePath = (basePath: string): string => {
     const withLeadingSlash = basePath.startsWith('/') ? basePath : `/${basePath}`;
     return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
+};
+
+const toAbsoluteBaseUrl = (value: string): URL => {
+    const url = new URL(value);
+    url.pathname = normalizeBasePath(url.pathname || '/');
+    url.search = '';
+    url.hash = '';
+    return url;
 };
 
 const toRelativeAppPath = (value: string): string => {
@@ -27,6 +36,7 @@ const toRelativeAppPath = (value: string): string => {
 
 const appBasePath = USE_RELATIVE_BASE ? './' : normalizeBasePath(RAW_BASE_PATH);
 const appBaseUrl = new URL(appBasePath, APP_PLACEHOLDER_ORIGIN);
+const publicAppBaseUrl = toAbsoluteBaseUrl(import.meta.env.VITE_PUBLIC_APP_URL?.trim() || DEFAULT_PUBLIC_APP_URL);
 
 const isExternalUrl = (value: string): boolean => {
     return /^[a-z][a-z\d+.-]*:/i.test(value) || value.startsWith('//');
@@ -58,6 +68,12 @@ export const buildAppUrl = (value = ''): string => {
 
     const baseUrl = USE_RELATIVE_BASE ? window.location.href : window.location.origin;
     return new URL(resolvedPath, baseUrl).toString();
+};
+
+// Auth e-mails must always land on a public URL, even if the action started from localhost.
+export const buildPublicAppUrl = (value = ''): string => {
+    const resolvedPath = resolveAppUrl(value);
+    return new URL(resolvedPath, publicAppBaseUrl).toString();
 };
 
 export const placeholderImageUrl = placeholderImage;
