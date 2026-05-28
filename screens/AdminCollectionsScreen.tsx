@@ -2149,7 +2149,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                 <Tabs
                   tabs={[
                     { id: 'identification', label: isBooksCatalogMode ? 'Dados do Livro' : 'Dados da Coleção' },
-                    { id: 'media', label: isBooksCatalogMode ? 'PDF do Livro' : 'Mídias vinculadas' }
+                    ...(!isBooksCatalogMode ? [{ id: 'media' as const, label: 'Mídias vinculadas' }] : [])
                   ]}
                   activeTab={activeTab}
                   onChange={(tabId) => setActiveTab(tabId as any)}
@@ -2488,6 +2488,45 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         </div>
                       </>
                     )}
+
+                    {/* PDF do Livro — só aparece na aba Dados quando isBooksCatalogMode */}
+                    {isBooksCatalogMode && (() => {
+                      const asset = getAssetByCategory('reading');
+                      return (
+                        <div className="space-y-2">
+                          <p className="text-sm font-bold text-gray-800">PDF do Livro</p>
+                          <FileUpload
+                            label="Arquivo PDF"
+                            value={asset?.url || ''}
+                            onChange={(url) => {
+                              if (url) {
+                                setFormData((currentFormData) => {
+                                  const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'reading');
+                                  const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'reading');
+                                  nextAssets.push({
+                                    id: currentAsset?.id || createAssetId('reading'),
+                                    category: 'reading',
+                                    media_type: 'document',
+                                    title: currentFormData.title || 'Leitura',
+                                    url: url.trim(),
+                                    description: null,
+                                    scope: COLLECTION_ASSET_META.reading.scope,
+                                    lyrics_url: null,
+                                    offline_available: true,
+                                  });
+                                  return buildNextFormFromAssets(currentFormData, nextAssets);
+                                });
+                              } else {
+                                removeAsset('reading');
+                              }
+                            }}
+                            folder="pdfs"
+                            accept="application/pdf"
+                            collectionId={editingId || undefined}
+                          />
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
 
