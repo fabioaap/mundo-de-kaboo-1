@@ -263,6 +263,8 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     allowMetadata: true,
     titlePlaceholder: 'Ex.: A Floresta Encantada',
     descriptionPlaceholder: 'Descrição opcional do vídeo animado.',
+    urlLabel: 'Cole o link do vídeo (YouTube, Vimeo ou URL direta)',
+    urlPlaceholder: 'https://www.youtube.com/watch?v=... ou https://...',
   },
   {
     category: 'accessible_video',
@@ -959,6 +961,30 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       return buildNextFormFromAssets(currentFormData, nextAssets, category === 'reading'
         ? { linkedBook: libraryItem.collection }
         : undefined);
+    });
+  };
+
+  const setAssetDirectUrl = (category: FixedMediaSlotCategory, url: string) => {
+    setFormData((currentFormData) => {
+      const currentAsset = currentFormData.collection_assets.find((asset) => asset.category === category);
+      const nextAssets = currentFormData.collection_assets.filter((asset) => asset.category !== category);
+
+      if (url.trim()) {
+        const slot = FIXED_MEDIA_SLOTS.find((s) => s.category === category);
+        nextAssets.push({
+          id: currentAsset?.id || createAssetId(category),
+          category,
+          media_type: 'video',
+          title: currentFormData.title || slot?.label || '',
+          url: url.trim(),
+          description: null,
+          scope: COLLECTION_ASSET_META[category].scope,
+          lyrics_url: null,
+          offline_available: false,
+        });
+      }
+
+      return buildNextFormFromAssets(currentFormData, nextAssets);
     });
   };
 
@@ -2642,6 +2668,21 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               </div>
                             </div>
                           </div>
+                          <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Descrição</label>
+                            <textarea
+                              value={formData.description || ''}
+                              onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
+                              rows={3}
+                              className="w-full bg-white border-none rounded-2xl p-4 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-brand-primary outline-none shadow-sm resize-none"
+                              placeholder={
+                                initialLibraryArea === 'music' ? 'Descrição da música ou contação...'
+                                  : initialLibraryArea === 'videos' ? 'Descrição do vídeo...'
+                                    : initialLibraryArea === 'formations' ? 'Descrição da formação...'
+                                      : 'Descrição do material...'
+                              }
+                            />
+                          </div>
                         </div>
                       )}
 
@@ -2804,6 +2845,20 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               </div>
                             )}
 
+                            {/* Direct URL input when slot has urlLabel */}
+                            {slot.urlLabel && (
+                              <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-700">{slot.urlLabel}</label>
+                                <input
+                                  type="url"
+                                  value={asset?.url || ''}
+                                  onChange={(e) => setAssetDirectUrl(slot.category, e.target.value)}
+                                  placeholder={slot.urlPlaceholder || 'https://...'}
+                                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm placeholder-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                                />
+                              </div>
+                            )}
+
                             {/* Offline toggle for linked asset */}
                             {asset?.url && (
                               <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
@@ -2958,7 +3013,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                 Cancelar
               </Button>
               <Button variant="primary" fullWidth onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Salvando...' : (editingId ? 'Salvar Alterações' : (isBooksCatalogMode ? 'Criar livro' : 'Criar Coleção'))}
+                {isSaving ? 'Salvando...' : (editingId ? 'Salvar Alterações' : (isBooksCatalogMode ? 'Criar livro' : isLibraryAreaMode ? (createContentLabel || 'Novo vídeo') : 'Criar Coleção'))}
               </Button>
             </div>
           </div>
