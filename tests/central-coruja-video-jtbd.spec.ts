@@ -58,7 +58,7 @@ const ensureVideoFormOpen = async (page: Page) => {
   const titleInput = drawer.getByPlaceholder('Título do vídeo');
 
   if (!(await titleInput.isVisible().catch(() => false))) {
-    const openBtn = page.locator('main').getByRole('button', { name: 'Novo vídeo', exact: true }).last();
+    const openBtn = page.locator('main').getByRole('button', { name: 'Novo vídeo', exact: true }).first();
     await openBtn.scrollIntoViewIfNeeded();
     await openBtn.click();
   }
@@ -75,7 +75,7 @@ const createVideoFromFixture = async (
   await ensureVideoFormOpen(page);
 
   const drawer = getVideoDrawer(page);
-  const createButton = drawer.getByRole('button', { name: /Criar/ }).last();
+  const createButton = drawer.getByRole('button', { name: /Criar|Salvar/i }).last();
   await expect(createButton).toBeVisible({ timeout: 10_000 });
 
   journal.add('step', `Vou cadastrar "${fixture.displayTitle}" no módulo de vídeos.`, {
@@ -89,7 +89,7 @@ const createVideoFromFixture = async (
   await titleInput.fill(fixture.displayTitle);
 
   // Verificar se existe campo de URL de vídeo (slot animation)
-  const videoUrlInput = drawer.locator('input[type="url"], input[placeholder*="URL"], input[placeholder*="url"], input[placeholder*="ideo"]').first();
+  const videoUrlInput = drawer.locator('input[type="url"], input[placeholder*="URL"], input[placeholder*="url"], input[placeholder*="ideo"], input[placeholder*="youtube"], input[placeholder*="YouTube"]').first();
   if (await videoUrlInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await videoUrlInput.fill(fixture.videoUrl);
   } else {

@@ -3013,7 +3013,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                 Cancelar
               </Button>
               <Button variant="primary" fullWidth onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Salvando...' : (editingId ? 'Salvar Alterações' : (isBooksCatalogMode ? 'Criar livro' : isLibraryAreaMode ? (createContentLabel || 'Novo vídeo') : 'Criar Coleção'))}
+                {isSaving ? 'Salvando...' : (editingId ? 'Salvar Alterações' : (isBooksCatalogMode ? 'Criar livro' : isLibraryAreaMode ? `Criar ${activeLibraryAreaLabel?.replace(/s$/, '').toLowerCase() || 'item'}` : 'Criar Coleção'))}
               </Button>
             </div>
           </div>
