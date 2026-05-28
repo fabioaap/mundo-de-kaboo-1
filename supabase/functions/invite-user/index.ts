@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     }
 
     // Parse do body
-    const { email, full_name, role, redirect_to } = await req.json();
+    const { email, full_name, role, redirect_to, password } = await req.json();
     if (!email || !full_name) {
       return new Response(JSON.stringify({ error: 'email e full_name são obrigatórios' }), {
         status: 400,
@@ -72,40 +72,77 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (password !== undefined && password.length < 8) {
+      return new Response(JSON.stringify({ success: false, error: 'Senha deve ter pelo menos 8 caracteres' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const assignedRole = role ?? 'viewer';
     const isOperationalRole = assignedRole === 'admin' || assignedRole === 'editor';
 
-    // Convida o usuário — cria conta + envia e-mail de convite em uma só chamada
-    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-      email,
-      {
-        redirectTo: redirect_to ?? supabaseUrl,
-        data: { full_name },
+    let createdUser: any;
+
+    if (password) {
+      // Cria usuário com senha definida pelo admin (sem envio de e-mail de convite)
+      const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name },
+      });
+
+      if (createError) {
+        return new Response(JSON.stringify({ success: false, error: createError.message }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
-    );
 
-    if (inviteError) {
-      // Retorna 200 com error no body para o SDK cliente não tratar como erro genérico
-      return new Response(JSON.stringify({ success: false, error: inviteError.message }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+      if (!createData.user) {
+        return new Response(JSON.stringify({ success: false, error: 'Falha ao criar usuário' }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
-    if (!inviteData.user) {
-      return new Response(JSON.stringify({ success: false, error: 'Falha ao criar usuário' }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      createdUser = createData.user;
+    } else {
+      // Convida o usuário — cria conta + envia e-mail de convite em uma só chamada
+      const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
+        email,
+        {
+          redirectTo: redirect_to ?? supabaseUrl,
+          data: { full_name },
+        }
+      );
+
+      if (inviteError) {
+        // Retorna 200 com error no body para o SDK cliente não tratar como erro genérico
+        return new Response(JSON.stringify({ success: false, error: inviteError.message }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!inviteData.user) {
+        return new Response(JSON.stringify({ success: false, error: 'Falha ao criar usuário' }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      createdUser = inviteData.user;
     }
 
     const nextAppMetadata = {
-      ...(inviteData.user.app_metadata ?? {}),
+      ...(createdUser.app_metadata ?? {}),
       created_by: caller.id,
     };
 
     const { error: metadataError } = await adminClient.auth.admin.updateUserById(
-      inviteData.user.id,
+      createdUser.id,
       { app_metadata: nextAppMetadata }
     );
 
@@ -118,7 +155,7 @@ Deno.serve(async (req) => {
 
     // Cria/atualiza o perfil com papel e status corretos
     const { error: upsertError } = await adminClient.from('profiles').upsert({
-      id: inviteData.user.id,
+      id: createdUser.id,
       email,
       full_name,
       school_name: null,
@@ -138,7 +175,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, userId: inviteData.user.id }),
+      JSON.stringify({ success: true, userId: createdUser.id }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (err: any) {

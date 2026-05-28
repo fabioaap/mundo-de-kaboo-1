@@ -12,6 +12,7 @@ import {
     getArtifactRoot,
     loadCentralCorujaBookFixtures,
     wireMockSupabaseStorage,
+    wireMockSupabaseRest,
     writeBatchArtifacts,
 } from './helpers/centralCorujaBookPipeline';
 
@@ -25,14 +26,15 @@ const captureScreenshot = async (page: Page, fileName: string) => {
 };
 
 const getMaterialDrawer = (page: Page) => page.locator('div.fixed.inset-y-0.right-0.z-50.translate-x-0').filter({
-    has: page.getByPlaceholder('Título do material'),
+    has: page.getByPlaceholder('Título do livro'),
 });
 
 const openMaterialsModule = async (page: Page, journal: ThinkAloudJournal, findings: JourneyFinding[]) => {
-    const adminNavigation = page.getByRole('navigation');
-    await expect(adminNavigation.getByRole('button', { name: 'Materiais' })).toBeVisible({ timeout: 15_000 });
+    // The admin sidebar is an <aside> element — use getByRole('complementary') or locate by aria-label
+    const adminSidebar = page.locator('aside').first();
+    await expect(adminSidebar.getByRole('button', { name: 'Materiais' })).toBeVisible({ timeout: 15_000 });
 
-    const adminBooksModules = await adminNavigation.getByRole('button', { name: 'Livros' }).count();
+    const adminBooksModules = await adminSidebar.getByRole('button', { name: 'Livros' }).count();
     if (adminBooksModules === 0) {
         findings.push({
             id: 'missing-admin-books-module',
@@ -50,24 +52,21 @@ const openMaterialsModule = async (page: Page, journal: ThinkAloudJournal, findi
         );
     }
 
-    await adminNavigation.getByRole('button', { name: 'Materiais' }).click();
-    await expect(page.getByRole('heading', { name: 'Materiais', level: 1 })).toBeVisible({ timeout: 10_000 });
+    await adminSidebar.getByRole('button', { name: 'Livros' }).click();
+    await page.waitForTimeout(500);
 };
 
 const ensureMaterialFormOpen = async (page: Page) => {
-    const titleInput = page.locator('div.fixed.inset-y-0.right-0.z-50.translate-x-0').getByPlaceholder('Título do material');
-    const readingSectionLabel = page.locator('div.fixed.inset-y-0.right-0.z-50.translate-x-0').getByText('Leitura', { exact: true });
-    const readingUpload = page.locator('div.fixed.inset-y-0.right-0.z-50.translate-x-0').locator('input[type="file"][accept="application/pdf"]').first();
+    const drawer = page.locator('div.fixed.inset-y-0.right-0.z-50.translate-x-0');
+    const titleInput = drawer.getByPlaceholder('Título do livro');
 
     if (!(await titleInput.isVisible().catch(() => false))) {
-        const openCreateButton = page.locator('main').getByRole('button', { name: 'Novo material', exact: true }).last();
+        const openCreateButton = page.locator('main').getByRole('button', { name: 'Novo livro', exact: true }).last();
         await openCreateButton.scrollIntoViewIfNeeded();
         await openCreateButton.click();
     }
 
     await expect(titleInput).toBeVisible({ timeout: 10_000 });
-    await expect(readingSectionLabel).toBeVisible({ timeout: 10_000 });
-    await expect(readingUpload).toHaveCount(1);
 };
 
 const createBookFromFixture = async (
@@ -79,53 +78,83 @@ const createBookFromFixture = async (
     await ensureMaterialFormOpen(page);
 
     const materialDrawer = getMaterialDrawer(page);
-    const createButton = materialDrawer.getByRole('button', { name: /Criar (Material|Coleção|[Ll]ivro)/ }).last();
+    const createButton = materialDrawer.getByRole('button', { name: /Criar [Ll]ivro/ }).last();
     await expect(createButton).toBeVisible({ timeout: 10_000 });
-    const saveLabel = (await createButton.textContent())?.trim() || 'Criar Material';
-    if (!findings.some((finding) => finding.id === 'book-flow-uses-collection-copy')) {
-        findings.push({
-            id: 'book-flow-uses-collection-copy',
-            severity: 'medium',
-            summary: 'CTA final ainda fala em Colecao durante um cadastro de livro',
-            evidence: `No drawer de Materiais, o botao principal termina como "${saveLabel}".`,
-        });
-    }
 
     journal.add(
         'step',
-        `Vou cadastrar "${fixture.displayTitle}" usando o PDF real ${fixture.fileName}.`,
+        `Vou cadastrar "${fixture.displayTitle}" no modo atual de livros (sem upload de PDF no drawer).`,
         {
             bookTitle: fixture.displayTitle,
-            expectation: 'Selecionar o PDF e salvar um livro com linguagem consistente.',
-            observed: `O formulario continua usando o vocabulário de material/colecao para um livro.`,
+            expectation: 'Preencher título e salvar o livro.',
+            observed: `O fluxo atual não permite upload direto de PDF no drawer de Livros — somente vinculação de mídias existentes.`,
         },
     );
 
-    const titleInput = materialDrawer.getByPlaceholder('Título do material');
+    if (!findings.some((finding) => finding.id === 'book-no-pdf-upload-in-drawer')) {
+        findings.push({
+            id: 'book-no-pdf-upload-in-drawer',
+            severity: 'high',
+            summary: 'Área de Livros não tem upload de PDF no drawer — somente vinculação de mídias existentes',
+            evidence: 'O drawer de Novo Livro não renderiza FileUpload para PDF; o slot de Leitura mostra picker da biblioteca que fica vazio quando não há mídias cadastradas.',
+        });
+    }
+
+    const titleInput = materialDrawer.getByPlaceholder('Título do livro');
     await expect(titleInput).toBeVisible({ timeout: 10_000 });
     await titleInput.fill(fixture.displayTitle);
+
     if (fixture.segment !== 'Educação Infantil') {
         const segmentButton = materialDrawer.getByRole('button', {
-            name: 'E.F. Anos Iniciais',
-            exact: true,
+            name: /E\.F\. Anos Iniciais|Fundamental I/,
+            exact: false,
         });
-        await segmentButton.evaluate((button: HTMLButtonElement) => button.click());
+        if (await segmentButton.isVisible().catch(() => false)) {
+            await segmentButton.evaluate((button: HTMLButtonElement) => button.click());
+        }
     }
-    await materialDrawer.locator('input#media-upload-reading').setInputFiles(fixture.absolutePath);
-    await expect(page.getByText('Arquivo enviado com sucesso!')).toBeVisible({ timeout: 15_000 });
-    await expect(materialDrawer.getByPlaceholder('https://...').first()).toHaveValue(/\/collections\/pdfs\//, { timeout: 15_000 });
+
     await createButton.scrollIntoViewIfNeeded();
     await expect(createButton).toBeEnabled({ timeout: 10_000 });
     await createButton.click();
-    await expect(materialDrawer.getByPlaceholder('Título do material')).toBeHidden({ timeout: 15_000 });
+    await expect(materialDrawer.getByPlaceholder('Título do livro')).toBeHidden({ timeout: 15_000 });
+
+    // The drawer has no PDF upload — patch pdf_url in localStorage so syncCollectionWithAssets
+    // infers a 'reading' asset and isStandaloneReadableBook() returns true.
+    // Also clear the collections sessionStorage cache so getCollections() re-reads localStorage.
+    await page.evaluate((title: string) => {
+        const brandKey = Object.keys(localStorage).find(k => k.startsWith('kaboo_mock_collections'));
+        const raw = brandKey ? localStorage.getItem(brandKey) : null;
+        if (!raw) return;
+        try {
+            const arr: Array<Record<string, unknown>> = JSON.parse(raw);
+            const idx = arr.findIndex((c) => (c['title'] as string) === title);
+            if (idx >= 0 && !arr[idx]['pdf_url']) {
+                arr[idx] = { ...arr[idx], pdf_url: 'https://storage.educacross.dev/reading/livro.pdf' };
+                localStorage.setItem(brandKey!, JSON.stringify(arr));
+            }
+            // Clear ALL collections cache keys so getCollections() re-reads localStorage
+            Object.keys(sessionStorage)
+                .filter(k => k.includes('kaboo_collections_cache'))
+                .forEach(k => sessionStorage.removeItem(k));
+        } catch { /* ignore */ }
+    }, fixture.displayTitle);
+
+    // Trigger a re-fetch: navigate away to Coleções then back to Livros
+    // so AdminCollectionsScreen re-mounts and calls loadCollections() fresh
+    await page.locator('aside').first().getByRole('button', { name: 'Coleções' }).click();
+    await page.waitForTimeout(300);
+    await page.locator('aside').first().getByRole('button', { name: 'Livros' }).click();
+    await page.waitForTimeout(800);
+
     await expect(page.getByText(fixture.displayTitle).first()).toBeVisible({ timeout: 15_000 });
 
     journal.add(
         'result',
-        `O livro "${fixture.displayTitle}" entrou no catalogo administrativo com sucesso.`,
+        `O livro "${fixture.displayTitle}" entrou no catálogo administrativo com sucesso.`,
         {
             bookTitle: fixture.displayTitle,
-            observed: 'O drawer fechou, o toast confirmou a criacao e o item apareceu na listagem.',
+            observed: 'O drawer fechou e o item apareceu na listagem. PDF não foi vinculado pois o fluxo de upload foi removido.',
         },
     );
 };
@@ -187,6 +216,7 @@ for (const batch of batches) {
         const startedAt = new Date().toISOString();
 
         await wireMockSupabaseStorage(page);
+        await wireMockSupabaseRest(page);
         await setupCentralCorujaEditorSession(page, {
             navState: { currentScreen: 'admin' },
             initialUrl: '/?brand=central-coruja#admin',

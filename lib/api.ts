@@ -30,7 +30,7 @@ import {
   VoucherValidationResult,
 } from '../types';
 import { logger } from './logger';
-import { buildAppUrl, buildPublicAppUrl, isPlaceholderImageUrl } from './appPaths';
+import { buildAppUrl, isPlaceholderImageUrl } from './appPaths';
 import {
   filterCentralMaterialsForBrand,
   filterCharactersForBrand,
@@ -1540,8 +1540,9 @@ export const api = {
     }
 
     try {
+      const _brandParam = _activeBrandSlugForApi !== 'kaboo' ? `&brand=${_activeBrandSlugForApi}` : '';
       const emailRedirectTo = typeof window !== 'undefined'
-        ? buildPublicAppUrl('?confirmation=success')
+        ? buildAppUrl(`?confirmation=success${_brandParam}`)
         : undefined;
 
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -2690,13 +2691,14 @@ export const api = {
     email: string;
     full_name: string;
     role?: 'admin' | 'editor' | 'viewer';
+    password?: string;
   }): Promise<{ success: boolean; error?: string; userId?: string }> {
     const assignedRole = userData.role || 'viewer';
     const isOperationalRole = assignedRole === 'admin' || assignedRole === 'editor';
 
     if (!isSupabaseConfigured) {
       // Em modo mock, gera senha aleatória internamente — o colaborador nunca a vê
-      const mockPassword = crypto.randomUUID();
+      const mockPassword = userData.password ?? crypto.randomUUID();
       const result = createMockUser({
         email: userData.email,
         password: mockPassword,
@@ -2717,7 +2719,8 @@ export const api = {
       // Usa a Edge Function invite-user que roda com service_role no servidor.
       // Isso garante segurança (service_role nunca exposta ao browser) e usa
       // admin.inviteUserByEmail() que cria o usuário e envia um único e-mail de convite.
-      const redirectTo = buildPublicAppUrl();
+      const _brandParam2 = _activeBrandSlugForApi !== 'kaboo' ? `?brand=${_activeBrandSlugForApi}` : '';
+      const redirectTo = buildAppUrl(_brandParam2);
 
       const { data: fnData, error: fnError } = await supabase.functions.invoke('invite-user', {
         body: {
@@ -2725,6 +2728,7 @@ export const api = {
           full_name: userData.full_name,
           role: assignedRole,
           redirect_to: redirectTo,
+          ...(userData.password ? { password: userData.password } : {}),
         },
       });
 

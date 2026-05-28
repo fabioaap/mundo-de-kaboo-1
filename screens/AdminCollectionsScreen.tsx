@@ -554,6 +554,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [userFormData, setUserFormData] = useState({
     email: '',
     full_name: '',
+    password: '',
     role: 'viewer' as UserRole,
   });
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
@@ -1267,12 +1268,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         email: userFormData.email,
         full_name: userFormData.full_name,
         role: userFormData.role,
+        ...(userFormData.password ? { password: userFormData.password } : {}),
       });
 
       if (result.success) {
-        showToast(`Convite enviado para ${userFormData.email}!`, 'success');
+        showToast(userFormData.password ? `Usuário ${userFormData.email} criado com sucesso!` : `Convite enviado para ${userFormData.email}!`, 'success');
         setShowUserForm(false);
-        setUserFormData({ email: '', full_name: '', role: 'viewer' });
+        setUserFormData({ email: '', full_name: '', password: '', role: 'viewer' });
         setAcceptedTerms(false);
         setUserSuccessMsg(null);
         loadUsers();
@@ -3049,7 +3051,21 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     </div>
                   </div>
 
-                  {/* Password Field removed — collaborator sets password via invite email */}
+                  {/* Password Field */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-600 ml-2">Senha inicial <span className="font-normal text-gray-400">(opcional)</span></label>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={userFormData.password}
+                        onChange={(e) => { setUserFormData({ ...userFormData, password: e.target.value }); clearUserError(); }}
+                        className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-brand-primary outline-none transition-all"
+                        placeholder="Senha forte (mín. 8 caracteres)"
+                        minLength={8}
+                      />
+                      <Icons.Lock className="absolute left-4 top-4 text-gray-400" size={20} />
+                    </div>
+                  </div>
 
                   {/* Role Field */}
                   <div className="space-y-2">
@@ -3119,7 +3135,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                   {isSupabaseConfigured ? (
                     <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 leading-relaxed flex items-start gap-2">
                       <Icons.Mail size={14} className="mt-0.5 shrink-0" />
-                      <span>Um e-mail de convite será enviado automaticamente para que o colaborador defina a própria senha no primeiro acesso.</span>
+                      <span>{userFormData.password ? 'O usuário já pode acessar com a senha definida. Ele pode trocá-la a qualquer momento nas configurações.' : 'Um e-mail de convite será enviado automaticamente para que o colaborador defina a própria senha no primeiro acesso.'}</span>
                     </div>
                   ) : (
                     <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-800 leading-relaxed">
@@ -3162,7 +3178,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                   <div className="pt-2">
                     <Button type="submit" fullWidth disabled={isCreatingUser}>
-                      {isCreatingUser ? 'Enviando convite...' : 'Enviar convite por e-mail'}
+                      {isCreatingUser ? (userFormData.password ? 'Criando usuário...' : 'Enviando convite...') : (userFormData.password ? 'Criar usuário com senha' : 'Enviar convite por e-mail')}
                     </Button>
                   </div>
                 </form>

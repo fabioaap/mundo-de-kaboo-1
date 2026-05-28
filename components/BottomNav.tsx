@@ -114,9 +114,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     { key: 'materials', screen: 'materials', icon: Icons.FileText, label: 'Materiais' },
   ] as NavItem[]).filter(item => isMenuKeyEnabled(item.key));
 
-  // Add admin collections item if user has permission
+  // Add admin collections item if user has permission.
+  // When the user is browsing the Livros (books) catalog, clicking "Gerenciar"
+  // should open the admin panel on the Books module instead of the default
+  // Collections module. We achieve this by passing the relevant module param
+  // so that App.tsx / AdminScreen can resolve the correct initialModule.
   const adminNavItem: NavItem | null = canEdit
-    ? { key: 'admin', screen: 'admin', icon: Icons.Settings, label: 'Gerenciar' }
+    ? {
+        key: 'admin',
+        screen: 'admin',
+        icon: Icons.Settings,
+        label: 'Gerenciar',
+        params: currentCollectionGroup === 'books' ? { module: 'books' } : undefined,
+      }
     : null;
 
 
