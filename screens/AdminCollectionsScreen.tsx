@@ -2631,10 +2631,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             className={`rounded-2xl border p-4 space-y-3 bg-white transition-all border-gray-200 ${isHighlightedSlot ? 'ring-2 ring-brand-primary ring-offset-2 shadow-[0_0_0_6px_var(--color-brand-light)]' : ''}`}
                           >
                             <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-bold text-gray-800">{slot.label}</p>
-                                <p className="text-xs text-gray-500 mt-1">{slotHelperText}</p>
-                              </div>
+                              {!(isBooksCatalogMode && slot.category === 'reading') && (
+                                <div>
+                                  <p className="text-sm font-bold text-gray-800">{slot.label}</p>
+                                  <p className="text-xs text-gray-500 mt-1">{slotHelperText}</p>
+                                </div>
+                              )}
                               {asset?.url && (
                                 <button
                                   type="button"
@@ -2646,7 +2648,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               )}
                             </div>
 
-                            {hasUnavailableSelection && asset && (
+                            {hasUnavailableSelection && asset && !(isBooksCatalogMode && slot.category === 'reading') && (
                               <div className="flex items-start gap-3 rounded-2xl border border-brand-primary/20 bg-brand-primary/5 px-4 py-3">
                                 <img
                                   src={CATEGORY_COVER_URL[slot.category] || placeholderImageUrl}
@@ -2676,7 +2678,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                       nextAssets.push({
                                         id: currentAsset?.id || createAssetId('reading'),
                                         category: 'reading',
-                                        media_type: 'pdf',
+                                        media_type: 'document',
                                         title: currentFormData.title || 'Leitura',
                                         url: url.trim(),
                                         description: null,
@@ -2786,7 +2788,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       })}
 
                       {/* Extra materials section */}
-                      {(!isLibraryAreaMode || initialLibraryArea === 'materials') && (() => {
+                      {!isBooksCatalogMode && (!isLibraryAreaMode || initialLibraryArea === 'materials') && (() => {
                         const extraLibItems = mediaLibraryByCategory['extra_material'] ?? [];
                         const linkedUrls = new Set(extraMaterialAssets.map((a) => a.url));
                         const unavailableExtraAssets = extraMaterialAssets.filter(
