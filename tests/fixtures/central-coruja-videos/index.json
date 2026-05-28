@@ -1,0 +1,30 @@
+[
+  {
+    "fileName": "v1_aventura_no_bosque.json",
+    "displayTitle": "Aventura No Bosque",
+    "segment": "Educação Infantil",
+    "videoUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "version": 1
+  },
+  {
+    "fileName": "v2_cores_e_formas.json",
+    "displayTitle": "Cores E Formas",
+    "segment": "Fundamental I",
+    "videoUrl": "https://www.youtube.com/watch?v=9bZkp7q19f0",
+    "version": 2
+  },
+  {
+    "fileName": "v3_contando_historias.json",
+    "displayTitle": "Contando Histórias",
+    "segment": "Educação Infantil",
+    "videoUrl": "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
+    "version": 3
+  },
+  {
+    "fileName": "v4_mundo_das_letras.json",
+    "displayTitle": "Mundo Das Letras",
+    "segment": "Fundamental I",
+    "videoUrl": "https://www.youtube.com/watch?v=hT_nvWreIhg",
+    "version": 4
+  }
+]
