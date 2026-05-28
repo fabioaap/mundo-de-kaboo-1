@@ -642,7 +642,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
 
     if (isBooksCatalogMode) {
-      return collections.filter((collection) => isStandaloneReadableBook(collection));
+      // In admin, show all books regardless of having assets (pdf may be added later)
+      return collections.filter((collection) => collection.collection_type === 'book');
     }
 
     return collections;
@@ -1205,10 +1206,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
   };
 
-  const loadCollections = async () => {
+  const loadCollections = async (forceRefresh = false) => {
     setLoading(true);
     try {
-      const data = await api.getCollections();
+      const data = await api.getCollections(forceRefresh);
       setCollections(data);
     } catch (error) {
       console.error('Error loading collections:', error);
@@ -1520,7 +1521,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       setShowCreateForm(false);
       setActiveTab(defaultCollectionTab);
       resetForm();
-      loadCollections();
+      loadCollections(true);
     } else {
       showToast(errorMessage || 'Erro ao salvar coleção. Tente novamente.', 'error');
     }
@@ -2148,7 +2149,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                 <Tabs
                   tabs={[
                     { id: 'identification', label: isBooksCatalogMode ? 'Dados do Livro' : 'Dados da Coleção' },
-                    { id: 'media', label: 'Mídias vinculadas' }
+                    { id: 'media', label: isBooksCatalogMode ? 'PDF do Livro' : 'Mídias vinculadas' }
                   ]}
                   activeTab={activeTab}
                   onChange={(tabId) => setActiveTab(tabId as any)}
@@ -2501,7 +2502,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 mb-4 flex items-start gap-2">
                           <Icons.AlertCircle size={16} className="shrink-0 text-gray-400 mt-0.5" />
                           <span>
-                            Toque nos cards abaixo para vincular as mídias já cadastradas em Livros, Vídeos, Áudios, Formações e Materiais antes de salvar.
+                            {isBooksCatalogMode
+                              ? 'Faça upload ou cole o link do arquivo PDF do livro. O arquivo pode ser adicionado agora ou depois.'
+                              : 'Toque nos cards abaixo para vincular as mídias já cadastradas em Livros, Vídeos, Áudios, Formações e Materiais antes de salvar.'
+                            }
                           </span>
                         </div>
                       )}
@@ -2604,7 +2608,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                       {(isLibraryAreaMode
                         ? FIXED_MEDIA_SLOTS.filter((s) => LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea!].includes(s.category))
-                        : FIXED_MEDIA_SLOTS
+                        : isBooksCatalogMode
+                          ? FIXED_MEDIA_SLOTS.filter((s) => s.category === 'reading')
+                          : FIXED_MEDIA_SLOTS
                       ).map((slot) => {
                         const asset = getAssetByCategory(slot.category);
                         const libraryItems = mediaLibraryByCategory[slot.category] ?? [];
@@ -2657,8 +2663,38 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               </div>
                             )}
 
-                            {/* Library picker */}
-                            {libraryItems.length === 0 ? (
+                            {/* Library picker OR direct upload (books) */}
+                            {isBooksCatalogMode && slot.category === 'reading' ? (
+                              <FileUpload
+                                label="Arquivo PDF do Livro"
+                                value={asset?.url || ''}
+                                onChange={(url) => {
+                                  if (url) {
+                                    setFormData((currentFormData) => {
+                                      const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'reading');
+                                      const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'reading');
+                                      nextAssets.push({
+                                        id: currentAsset?.id || createAssetId('reading'),
+                                        category: 'reading',
+                                        media_type: 'pdf',
+                                        title: currentFormData.title || 'Leitura',
+                                        url: url.trim(),
+                                        description: null,
+                                        scope: COLLECTION_ASSET_META.reading.scope,
+                                        lyrics_url: null,
+                                        offline_available: true,
+                                      });
+                                      return buildNextFormFromAssets(currentFormData, nextAssets);
+                                    });
+                                  } else {
+                                    removeAsset('reading');
+                                  }
+                                }}
+                                folder="pdfs"
+                                accept="application/pdf"
+                                collectionId={editingId || undefined}
+                              />
+                            ) : libraryItems.length === 0 ? (
                               <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-center space-y-1">
                                 <p className="text-sm text-gray-400 font-medium">Nenhuma mídia cadastrada</p>
                                 <p className="text-xs text-gray-400">
