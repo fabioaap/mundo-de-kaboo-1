@@ -876,19 +876,37 @@ export const redeemMockVoucher = (rawCode: string): VoucherRedemptionResult => {
 
 // ── Mock CRUD para coleções (persiste em localStorage) ──────────────────────
 
+// In-memory write-through cache so that getLiveCollections() returns fresh
+// data immediately after any write, even when localStorage isn't flushed yet.
+let _inMemoryCollections: Collection[] | null = null;
+let _inMemoryCollectionsKey: string | null = null;
+
 const readStoredCollections = (): Collection[] | null => {
+    const key = getCollectionsStorageKey();
+    // Return in-memory cache if the brand key is the same
+    if (_inMemoryCollections !== null && _inMemoryCollectionsKey === key) {
+        return _inMemoryCollections;
+    }
     if (typeof window === 'undefined') return null;
     try {
-        const stored = localStorage.getItem(getCollectionsStorageKey());
-        return stored ? normalizeCollections(JSON.parse(stored) as Collection[]) : null;
+        const stored = localStorage.getItem(key);
+        const parsed = stored ? normalizeCollections(JSON.parse(stored) as Collection[]) : null;
+        _inMemoryCollections = parsed;
+        _inMemoryCollectionsKey = key;
+        return parsed;
     } catch {
         return null;
     }
 };
 
 const writeStoredCollections = (collections: Collection[]): void => {
+    const key = getCollectionsStorageKey();
+    const normalized = normalizeCollections(collections);
+    // Always update in-memory cache so subsequent reads see the latest data
+    _inMemoryCollections = normalized;
+    _inMemoryCollectionsKey = key;
     if (typeof window === 'undefined') return;
-    localStorage.setItem(getCollectionsStorageKey(), JSON.stringify(normalizeCollections(collections)));
+    localStorage.setItem(key, JSON.stringify(normalized));
 };
 
 const mergeSeedCollections = (storedCollections: Collection[]): { collections: Collection[]; changed: boolean } => {
