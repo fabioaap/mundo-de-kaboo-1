@@ -2616,7 +2616,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               className="w-full bg-white border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none shadow-sm"
                               placeholder={
                                 initialLibraryArea === 'music' ? 'Título da música'
-                                  : initialLibraryArea === 'videos' ? 'Título do vídeo'
+                                  : initialLibraryArea === 'videos' ? 'Nome do vídeo que os alunos verão'
                                     : initialLibraryArea === 'formations' ? 'Título da formação'
                                       : 'Título do material'
                               }
@@ -3025,7 +3025,15 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                 Cancelar
               </Button>
               <Button variant="primary" fullWidth onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Salvando...' : (editingId ? 'Salvar Alterações' : (isBooksCatalogMode ? 'Criar livro' : isLibraryAreaMode ? `Criar ${activeLibraryAreaLabel?.replace(/s$/, '').toLowerCase() || 'item'}` : 'Criar Coleção'))}
+                {isSaving ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Salvando...
+                  </span>
+                ) : (editingId ? 'Salvar Alterações' : (isBooksCatalogMode ? 'Criar livro' : isLibraryAreaMode ? `Criar ${activeLibraryAreaLabel?.replace(/s$/, '').toLowerCase() || 'item'}` : 'Criar Coleção'))}
               </Button>
             </div>
           </div>
