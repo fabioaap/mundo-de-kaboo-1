@@ -1,4 +1,16 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+
+const toSingular = (label: string) => {
+  const map: Record<string, string> = {
+    'Coleções': 'Coleção',
+    'Livros': 'Livro',
+    'Vídeos': 'Vídeo',
+    'Áudios': 'Áudio',
+    'Materiais': 'Material',
+    'Formações': 'Formação',
+  };
+  return map[label] ?? label.replace(/s$/, '');
+};
 import { Icons } from '../components/Icons';
 import { Card3D } from '../components/Card3D';
 import { Character, Collection, CollectionAsset, CollectionAssetCategory, ScreenName, UserAuthStatus, UserProfile, UserRole } from '../types';
@@ -1547,10 +1559,20 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         errorMessage = `Erro ao atualizar ${contentEntityLabelLower}. Verifique suas permissões e tente novamente.`;
       }
     } else {
-      const created = await api.createCollection(normalizedDataToSave);
-      success = !!created;
-      if (!success) {
-        errorMessage = `Erro ao criar ${contentEntityLabelLower}. Verifique suas permissões e tente novamente.`;
+      try {
+        const created = await api.createCollection(normalizedDataToSave);
+        success = !!created;
+        if (!success) {
+          errorMessage = `Erro ao criar ${contentEntityLabelLower}. Verifique suas permissões e tente novamente.`;
+        }
+      } catch (err: unknown) {
+        success = false;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        if (errMsg.startsWith('brand_not_resolved')) {
+          errorMessage = `Erro ao criar ${contentEntityLabelLower}: marca (brand) não encontrada. Verifique a configuração do ambiente.`;
+        } else {
+          errorMessage = `Erro ao criar ${contentEntityLabelLower}. Verifique suas permissões e tente novamente.`;
+        }
       }
     }
 
@@ -2210,7 +2232,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                     {/* 1.3. Título */}
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2">Título *</label>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Título <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         value={formData.title}
@@ -2252,6 +2274,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         <p className="mt-2 text-xs text-gray-500">
                           {coverFieldHelpText}
                         </p>
+                        {isPlaceholderImageUrl(formData.cover_image || placeholderImageUrl) && (
+                          <p className="text-xs text-amber-600 mt-1">Usando imagem padrão. Recomendamos adicionar uma capa personalizada.</p>
+                        )}
                       </div>
 
                       <div>
@@ -2610,7 +2635,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       {isLibraryAreaMode && (
                         <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-4">
                           <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Título *</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Título <span className="text-red-500">*</span></label>
                             <input
                               type="text"
                               value={formData.title}
@@ -2636,6 +2661,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 hideUrlInput={true}
                                 inputId={`library-cover-upload-${initialLibraryArea ?? 'default'}`}
                               />
+                              {/* Aviso de imagem padrão para não-vídeos */}
+                              {initialLibraryArea !== 'videos' && isPlaceholderImageUrl(formData.cover_image || placeholderImageUrl) && (
+                                <p className="text-xs text-amber-600 mt-1">Usando imagem padrão. Recomendamos adicionar uma capa personalizada.</p>
+                              )}
                               {/* Frame picker: only for videos when cover is still placeholder */}
                               {initialLibraryArea === 'videos' &&
                                 isPlaceholderImageUrl(formData.cover_image || placeholderImageUrl) &&
@@ -3093,7 +3122,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     </svg>
                     Salvando...
                   </span>
-                ) : (editingId ? 'Salvar Alterações' : (isBooksCatalogMode ? 'Criar livro' : isLibraryAreaMode ? `Criar ${activeLibraryAreaLabel?.replace(/s$/, '').toLowerCase() || 'item'}` : 'Criar Coleção'))}
+                ) : (editingId ? 'Salvar Alterações' : (isBooksCatalogMode ? 'Criar livro' : isLibraryAreaMode ? `Criar ${activeLibraryAreaLabel ? toSingular(activeLibraryAreaLabel).toLowerCase() : 'item'}` : 'Criar Coleção'))}
               </Button>
             </div>
           </div>

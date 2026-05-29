@@ -2311,8 +2311,9 @@ export const api = {
     }
     const activeBrandId = await resolveActiveBrandId();
     if (!activeBrandId) {
-      logger.error(`Unable to scope collection creation for brand "${_activeBrandSlugForApi}".`);
-      return null;
+      const brandErrMsg = `brand_not_resolved: Unable to scope collection creation for brand "${_activeBrandSlugForApi}".`;
+      logger.error(brandErrMsg);
+      throw new Error(brandErrMsg);
     }
 
     const payload = {
