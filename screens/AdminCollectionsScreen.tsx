@@ -984,7 +984,19 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         });
       }
 
-      return buildNextFormFromAssets(currentFormData, nextAssets);
+      const nextForm = buildNextFormFromAssets(currentFormData, nextAssets);
+
+      // Auto-preencher capa com thumbnail do YouTube quando ainda é placeholder
+      if (url.trim() && isPlaceholderImageUrl(nextForm.cover_image || '')) {
+        const youtubeId =
+          url.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/i)?.[1] ??
+          url.match(/[?&]v=([A-Za-z0-9_-]{6,})/i)?.[1];
+        if (youtubeId) {
+          return { ...nextForm, cover_image: `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` };
+        }
+      }
+
+      return nextForm;
     });
   };
 
