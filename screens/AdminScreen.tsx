@@ -128,7 +128,7 @@ const AdminTabBar: React.FC<{
 
 export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack, initialModule, onModuleChange }) => {
     const isMobile = useIsMobile();
-    const [activeModule, setActiveModule] = useState<AdminModule>(initialModule ?? 'collections');
+    const [activeModule, setActiveModule] = useState<AdminModule>(initialModule ?? 'books');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isAdminUser, setIsAdminUser] = useState(false);
     const collectionsRef = useRef<AdminCollectionsHandle>(null);
