@@ -1,0 +1,30 @@
+[
+  {
+    "fileName": "a1_conhecendo_a_liga.json",
+    "displayTitle": "Conhecendo a Liga das Corujinhas",
+    "segment": "Educação Infantil",
+    "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    "version": 1
+  },
+  {
+    "fileName": "a2_as_cores_da_amizade.json",
+    "displayTitle": "As Cores da Amizade",
+    "segment": "Fundamental I",
+    "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    "version": 2
+  },
+  {
+    "fileName": "a3_dia_de_piquenique.json",
+    "displayTitle": "Dia de Piquenique",
+    "segment": "Educação Infantil",
+    "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    "version": 3
+  },
+  {
+    "fileName": "a4_o_trombone_silencioso.json",
+    "displayTitle": "O Trombone Silencioso",
+    "segment": "Fundamental I",
+    "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    "version": 4
+  }
+]

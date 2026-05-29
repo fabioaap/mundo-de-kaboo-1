@@ -974,7 +974,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         nextAssets.push({
           id: currentAsset?.id || createAssetId(category),
           category,
-          media_type: 'video',
+          media_type: COLLECTION_ASSET_META[category].mediaType,
           title: currentFormData.title || slot?.label || '',
           url: url.trim(),
           description: null,
