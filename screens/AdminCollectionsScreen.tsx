@@ -2166,8 +2166,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
           {/* Drawer Panel */}
           <div
-            className={`fixed inset-y-0 right-0 z-50 flex flex-col bg-white shadow-2xl w-full sm:w-[600px] max-w-full transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${(editingId || showCreateForm) ? 'translate-x-0' : 'translate-x-full'
-              }`}
+            className="fixed inset-y-0 right-0 z-50 flex flex-col bg-white shadow-2xl w-full sm:w-[600px] max-w-full transition-[transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+            style={{ transform: (editingId || showCreateForm) ? 'translateX(0)' : 'translateX(100%)' }}
           >
             {/* Drawer Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
