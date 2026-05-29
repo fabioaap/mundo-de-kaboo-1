@@ -17,6 +17,7 @@ interface FileUploadProps {
   collectionId?: string;
   disabled?: boolean;
   hideUrlInput?: boolean; // For cover images, hide URL input
+  onFile?: (file: File) => void; // Called with the raw File object when a file is selected
   showAsIcon?: boolean; // Show as file icon instead of URL input
   inputId?: string;
   previewSize?: FileUploadPreviewSize;
@@ -34,6 +35,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   showAsIcon = false,
   inputId,
   previewSize = 'md',
+  onFile,
 }) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +51,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Notify parent with raw File object (e.g. for metadata extraction)
+    onFile?.(file);
 
     // Validate file size (500MB limit)
     const maxSize = 500 * 1024 * 1024; // 500MB

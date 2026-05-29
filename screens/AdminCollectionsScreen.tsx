@@ -24,6 +24,8 @@ import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollecti
 import { COLLECTION_ASSET_META, inferCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
 import { getCollectionDisplayCover, getCollectionTypeMeta, isStandaloneReadableBook, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
 import { VideoFramePicker } from '../components/VideoFramePicker';
+import { extractAudioCoverArt } from '../lib/extractAudioCoverArt';
+import { uploadFile } from '../lib/storage';
 
 interface AdminCollectionsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -2788,7 +2790,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 accept="application/pdf"
                                 collectionId={editingId || undefined}
                               />
-                            ) : libraryItems.length === 0 ? (
+                            ) : isLibraryAreaMode ? null : libraryItems.length === 0 ? (
                               <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-center space-y-1">
                                 <p className="text-sm text-gray-400 font-medium">Nenhuma mídia cadastrada</p>
                                 <p className="text-xs text-gray-400">
@@ -2888,11 +2890,35 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 accept="audio/*"
                                 collectionId={editingId || undefined}
                                 showAsIcon={true}
+                                onFile={async (file) => {
+                                  // Tentar extrair imagem de capa do áudio automaticamente
+                                  setFormData((currentFormData) => {
+                                    const hasCover = currentFormData.cover_image &&
+                                      currentFormData.cover_image !== '' &&
+                                      !isPlaceholderImageUrl(currentFormData.cover_image);
+                                    if (hasCover) return currentFormData;
+                                    // Kick off async extraction without blocking render
+                                    extractAudioCoverArt(file).then(async (coverFile) => {
+                                      if (!coverFile) return;
+                                      const result = await uploadFile(coverFile, 'covers', editingId || undefined);
+                                      if (result.url) {
+                                        setFormData((prev) => {
+                                          const stillNoCover = !prev.cover_image ||
+                                            prev.cover_image === '' ||
+                                            isPlaceholderImageUrl(prev.cover_image);
+                                          if (!stillNoCover) return prev;
+                                          return { ...prev, cover_image: result.url! };
+                                        });
+                                      }
+                                    });
+                                    return currentFormData;
+                                  });
+                                }}
                               />
                             )}
 
-                            {/* Direct URL input when slot has urlLabel */}
-                            {slot.urlLabel && (
+                            {/* Direct URL input when slot has urlLabel (hidden for audio categories) */}
+                            {slot.urlLabel && slot.category !== 'music' && slot.category !== 'storytelling' && (
                               <div className="space-y-1">
                                 <label className="text-xs font-bold text-gray-700">{slot.urlLabel}</label>
                                 <input

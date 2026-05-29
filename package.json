@@ -25,6 +25,7 @@
     "canvas-confetti": "1.9.2",
     "clsx": "^2.1.0",
     "lucide-react": "^0.561.0",
+    "music-metadata": "^11.12.3",
     "pdfjs-dist": "5.4.296",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
