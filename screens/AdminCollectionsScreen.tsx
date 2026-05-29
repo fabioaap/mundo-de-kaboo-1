@@ -2857,13 +2857,47 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               </div>
                             )}
 
+                            {/* Upload de arquivo local para áudio */}
+                            {slot.category === 'storytelling' && slot.accept?.startsWith('audio') && (
+                              <FileUpload
+                                label="Fazer upload de arquivo de áudio"
+                                value={asset?.url || ''}
+                                onChange={(url) => {
+                                  if (url) {
+                                    setFormData((currentFormData) => {
+                                      const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'storytelling');
+                                      const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'storytelling');
+                                      nextAssets.push({
+                                        id: currentAsset?.id || createAssetId('storytelling'),
+                                        category: 'storytelling',
+                                        media_type: 'audio',
+                                        title: currentFormData.title || 'Áudio',
+                                        url: url.trim(),
+                                        description: null,
+                                        scope: COLLECTION_ASSET_META.storytelling.scope,
+                                        lyrics_url: null,
+                                        offline_available: true,
+                                      });
+                                      return buildNextFormFromAssets(currentFormData, nextAssets);
+                                    });
+                                  } else {
+                                    removeAsset('storytelling');
+                                  }
+                                }}
+                                folder="audio"
+                                accept="audio/*"
+                                collectionId={editingId || undefined}
+                                showAsIcon={true}
+                              />
+                            )}
+
                             {/* Direct URL input when slot has urlLabel */}
                             {slot.urlLabel && (
                               <div className="space-y-1">
                                 <label className="text-xs font-bold text-gray-700">{slot.urlLabel}</label>
                                 <input
                                   type="url"
-                                  value={asset?.url || ''}
+                                  value={slot.category === 'storytelling' ? '' : (asset?.url || '')}
                                   onChange={(e) => setAssetDirectUrl(slot.category, e.target.value)}
                                   placeholder={slot.urlPlaceholder || 'https://...'}
                                   className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm placeholder-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
