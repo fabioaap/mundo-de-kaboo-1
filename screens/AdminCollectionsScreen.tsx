@@ -2755,7 +2755,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         const selectedLibraryItem = asset?.url
                           ? libraryItems.find((item) => item.asset.url === asset.url) ?? null
                           : null;
-                        const hasUnavailableSelection = Boolean(asset?.url && !selectedLibraryItem);
+                        const hasUnavailableSelection = Boolean(!isLibraryAreaMode && asset?.url && !selectedLibraryItem);
                         const slotHelperText = slot.category === 'reading' && isCollectionsCatalogMode
                           ? 'Escolha 1 livro. O vínculo da coleção é sincronizado automaticamente.'
                           : 'Escolha 1 opção já cadastrada.';
