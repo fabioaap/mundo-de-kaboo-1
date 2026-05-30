@@ -133,6 +133,7 @@ const DEV_SUPABASE_VOUCHER_FALLBACKS: Record<string, Voucher['duration_months']>
 };
 
 let userProgressTableAvailable: boolean | null = null;
+let mediaProgressTableAvailable: boolean | null = null;
 let charactersTableAvailable: boolean | null = null;
 const remoteCharactersCacheByBrand = new Map<string, Character[]>();
 let mediaTablesAvailable: boolean | null = null;
@@ -953,12 +954,15 @@ const getCurrentUserId = async (): Promise<string | null> => {
 };
 
 const getRemoteMediaUserState = async (userId: string) => {
+  const skipProgress = mediaProgressTableAvailable === false;
   const [progressResult, favoritesResult] = await Promise.all([
-    supabase
-      .from('user_media_progress')
-      .select('media_item_id, progress_percent, last_position_seconds, last_played_at')
-      .eq('user_id', userId)
-      .order('last_played_at', { ascending: false }),
+    skipProgress
+      ? { data: [], error: null }
+      : supabase
+        .from('user_media_progress')
+        .select('media_item_id, progress_percent, last_position_seconds, last_played_at')
+        .eq('user_id', userId)
+        .order('last_played_at', { ascending: false }),
     supabase
       .from('user_media_favorites')
       .select('media_item_id')
@@ -969,7 +973,9 @@ const getRemoteMediaUserState = async (userId: string) => {
   const favoriteIds = new Set<string>();
   const continueItemIds: string[] = [];
 
-  if (!progressResult.error) {
+  if (progressResult.error) {
+    mediaProgressTableAvailable = false;
+  } else if (!skipProgress) {
     (progressResult.data || []).forEach((entry: any) => {
       progressByItemId[entry.media_item_id] = {
         progressPercent: entry.progress_percent ?? 0,
@@ -2034,7 +2040,7 @@ export const api = {
   },
 
   async saveMediaProgress(input: SaveMediaProgressInput): Promise<{ ok: boolean; error?: string }> {
-    if (!isSupabaseConfigured || devMockSession) {
+    if (!isSupabaseConfigured || devMockSession || mediaProgressTableAvailable === false) {
       return { ok: true };
     }
 
@@ -2057,15 +2063,13 @@ export const api = {
       });
 
     if (error) {
-      if (isMissingRelationError(error, 'user_media_progress')) {
-        logger.warn('user_media_progress unavailable; skipping remote progress persistence for this environment.', error);
-        return { ok: true };
-      }
-
-      logger.error('Error saving media progress:', error);
-      return { ok: false, error: error.message };
+      // Any error (missing table, missing column, RLS, etc.) → disable for this session
+      mediaProgressTableAvailable = false;
+      logger.warn('user_media_progress unavailable; disabling remote progress persistence for this session.', error);
+      return { ok: true };
     }
 
+    mediaProgressTableAvailable = true;
     return { ok: true };
   },
 

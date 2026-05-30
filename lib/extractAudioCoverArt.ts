@@ -1,12 +1,13 @@
-import { parseBlob } from 'music-metadata';
-
 /**
  * Tenta extrair a imagem de capa embutida em um arquivo de áudio (ID3/FLAC/Vorbis/M4A).
  * Retorna um File pronto para upload, ou null se não houver capa.
  * Formatos suportados: MP3, M4A/AAC, OGG, FLAC, WAV, AIFF, Opus, WebM.
+ *
+ * Uses dynamic import so Rollup doesn't choke on music-metadata's Node.js internals.
  */
 export async function extractAudioCoverArt(audioFile: File): Promise<File | null> {
   try {
+    const { parseBlob } = await import('music-metadata');
     const metadata = await parseBlob(audioFile, { skipCovers: false });
     const picture = metadata.common.picture?.[0];
     if (!picture) return null;
