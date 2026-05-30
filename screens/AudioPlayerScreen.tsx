@@ -55,7 +55,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const [resolvedPlaybackTitle, setResolvedPlaybackTitle] = useState<string | null>(null);
   const [relatedTracks, setRelatedTracks] = useState<MediaItemCard[]>([]);
   const [trackDescription, setTrackDescription] = useState<string>('');
-  const [trackEnded, setTrackEnded] = useState(false);
+
   const [showSidebar, setShowSidebar] = useState(false);
   const [showLyrics, setShowLyrics] = useState(false);
   const [lyricsText, setLyricsText] = useState<string | null>(null);
@@ -166,7 +166,6 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
 
     setResolvedPlaybackUrl(null);
     setResolvedPlaybackTitle(null);
-    setTrackEnded(false);
     setShowSidebar(false);
     setShowLyrics(false);
     setShowMobileUtilitySheet(false);
@@ -454,14 +453,6 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
     };
   }, [maybeSaveProgress]);
 
-  const handleReplay = () => {
-    if (!audioRef.current) return;
-    audioRef.current.currentTime = 0;
-    audioRef.current.play();
-    setIsPlaying(true);
-    setTrackEnded(false);
-  };
-
   const SkipTenGlyph: React.FC<{ direction: 'back' | 'forward'; size?: number }> = ({
     direction,
     size = 24,
@@ -611,7 +602,6 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => {
             setIsPlaying(false);
-            setTrackEnded(true);
             maybeSaveProgress(true);
           }}
           onPlay={() => setIsPlaying(true)}
@@ -793,41 +783,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
         </section>
       )}
 
-      {/* Track Ended Overlay */}
-      {trackEnded && (
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/70 backdrop-blur-md">
-          <div className="text-center px-8 space-y-5 w-full max-w-sm">
-            <div className="text-5xl select-none">🎵</div>
-            <h2 className="text-xl font-black text-white">Faixa concluída!</h2>
-            <p className="text-sm text-white/70">O que você quer fazer agora?</p>
-            <div className="space-y-3">
-              <button
-                onClick={handleReplay}
-                className="w-full py-3 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 text-white font-bold text-base transition-all active:scale-95 hover:bg-white/30"
-              >
-                Ouvir novamente
-              </button>
-              {relatedTracks.length > 0 && (
-                <button
-                  onClick={() => {
-                    setTrackEnded(false);
-                    openRelatedTrack(relatedTracks[0]);
-                  }}
-                  className="w-full py-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white/80 font-semibold text-sm transition-all active:scale-95 hover:bg-white/20"
-                >
-                  Próxima: {relatedTracks[0].title}
-                </button>
-              )}
-              <button
-                onClick={handleBack}
-                className="w-full py-2 text-white/60 font-medium text-sm transition-all active:scale-95 hover:text-white/80"
-              >
-                Voltar ao catálogo
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Main Content - two-column layout on desktop */}
       <div className={`relative z-10 flex-1 overflow-hidden ${isMobileLandscape ? 'px-4 pb-4' : 'flex flex-col lg:flex-row'}`}>
