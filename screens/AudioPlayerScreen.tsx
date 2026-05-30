@@ -182,6 +182,12 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
           return;
         }
 
+        if (!session) {
+          setResolvedPlaybackUrl(null);
+          setResolvedPlaybackTitle(null);
+          return;
+        }
+
         setResolvedPlaybackUrl(session.source.url ?? null);
         setResolvedPlaybackTitle(session.item.title);
       })
@@ -333,7 +339,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   };
 
   const handleLoadedMetadata = () => {
-    if (audioRef.current) {
+    if (audioRef.current && Number.isFinite(audioRef.current.duration)) {
       setDuration(audioRef.current.duration);
     }
   };
@@ -400,7 +406,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   };
 
   const formatTime = (time: number) => {
-    if (isNaN(time)) return "00:00";
+    if (!Number.isFinite(time) || time < 0) return "00:00";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
