@@ -1593,7 +1593,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
     if (success) {
       setOriginalFormData(createCollectionFormDataForCurrentFlow(normalizedDataToSave));
-      showToast(editingId ? `${contentEntityLabel} atualizado com sucesso!` : `${contentEntityLabel} criado com sucesso!`, 'success');
+      const hasNoMedia = !editingId && formData.collection_assets.filter(a => a.url?.trim()).length === 0;
+      const successMsg = hasNoMedia
+        ? `${contentEntityLabel} criado com sucesso! Adicione mídias na aba Mídias vinculadas.`
+        : (editingId ? `${contentEntityLabel} atualizado com sucesso!` : `${contentEntityLabel} criado com sucesso!`);
+      showToast(successMsg, 'success');
       setEditingId(null);
       setShowCreateForm(false);
       setActiveTab(defaultCollectionTab);
@@ -2124,6 +2128,29 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       e.preventDefault();
+                                      if (hasUnsavedChanges()) {
+                                        setPendingAction(() => () => handleEdit(collection));
+                                        setShowUnsavedChangesModal(true);
+                                      } else {
+                                        handleEdit(collection);
+                                      }
+                                      setOpenActionsDropdown(null);
+                                    }}
+                                    onMouseDown={(e) => {
+                                      e.stopPropagation();
+                                    }}
+                                    className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl text-gray-700 hover:bg-gray-50 font-medium"
+                                  >
+                                    <Icons.Edit size={18} />
+                                    <span>Editar</span>
+                                  </button>
+                                )}
+                                {isAdminUser && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
                                       handleDeleteClick(collection.id);
                                       setOpenActionsDropdown(null);
                                     }}
@@ -2226,7 +2253,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                 <Tabs
                   tabs={[
                     { id: 'identification', label: isBooksCatalogMode ? 'Dados do Livro' : 'Dados da Coleção' },
-                    ...(!isBooksCatalogMode ? [{ id: 'media' as const, label: 'Mídias vinculadas' }] : [])
+                    ...(!isBooksCatalogMode ? [{ id: 'media' as const, label: (() => {
+                      const n = formData.collection_assets.filter(a => a.url?.trim()).length;
+                      return n === 0
+                        ? <span>Mídias vinculadas <span className="inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 ml-1">0</span></span>
+                        : <span>Mídias vinculadas <span className="inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 ml-1">{n}</span></span>;
+                    })() }] : [])
                   ]}
                   activeTab={activeTab}
                   onChange={(tabId) => setActiveTab(tabId as any)}
@@ -2244,6 +2276,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     <div>
                       <h3 className="text-lg font-bold text-gray-800 mb-4">Informações de Identificação</h3>
                     </div>
+
+                    {/* Section heading: Identificação (books only) */}
+                    {isBooksCatalogMode && (
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mt-6 mb-3">Identificação</h3>
+                    )}
 
                     {/* 1.3. Título */}
                     <div>
@@ -2381,6 +2418,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                     {/* Separation line */}
                     <div className="border-t border-gray-200 my-6"></div>
+
+                    {/* Section heading: Contexto Pedagógico (books only) */}
+                    {isBooksCatalogMode && (
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mt-6 mb-3">Contexto Pedagógico</h3>
+                    )}
 
                     {/* Informações Pedagógicas */}
                     <div>
@@ -2569,6 +2611,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       </>
                     )}
 
+                    {/* Section heading: Conteúdo (books only) */}
+                    {isBooksCatalogMode && (
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mt-6 mb-3">Conteúdo</h3>
+                    )}
+
                     {/* PDF do Livro — só aparece na aba Dados quando isBooksCatalogMode */}
                     {isBooksCatalogMode && (() => {
                       const asset = getAssetByCategory('reading');
@@ -2607,6 +2654,18 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         </div>
                       );
                     })()}
+                    {!isBooksCatalogMode && (
+                      <div className="flex justify-end pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('media')}
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-primary text-white text-sm font-semibold hover:bg-brand-primary/90 transition-colors"
+                        >
+                          Próximo
+                          <Icons.ChevronRight size={16} />
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
 

@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface TabsProps {
-  tabs: { id: string; label: string }[];
+  tabs: { id: string; label: React.ReactNode }[];
   activeTab: string;
   onChange: (tabId: string) => void;
 }
