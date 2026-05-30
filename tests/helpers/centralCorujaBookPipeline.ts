@@ -254,3 +254,5 @@ export const wireMockSupabaseStorage = async (page: Page): Promise<void> => {
         await route.continue();
     });
 };
+
+export const wireMockSupabaseRest = wireMockSupabaseStorage;

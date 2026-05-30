@@ -195,6 +195,41 @@ export async function uploadFile(
 }
 
 /**
+ * Moves a file from its current path to a new path within the same bucket.
+ * Used to promote temp/ uploads to their permanent collection-scoped path after save.
+ */
+export async function moveFile(
+  fromUrl: string,
+  toPath: string,
+): Promise<string | null> {
+  try {
+    // Extract just the path within bucket from the full URL
+    const urlObj = new URL(fromUrl);
+    const pathParts = urlObj.pathname.split('/object/public/collections/');
+    if (pathParts.length < 2) return null;
+    const fromPath = pathParts[1];
+
+    const { error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .move(fromPath, toPath);
+
+    if (error) {
+      logger.error('[storage] moveFile error:', error);
+      return null;
+    }
+
+    // Return new public URL
+    const { data } = supabase.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(toPath);
+    return data.publicUrl;
+  } catch (err) {
+    logger.error('[storage] moveFile exception:', err);
+    return null;
+  }
+}
+
+/**
  * Delete a file from Supabase Storage
  */
 export async function deleteFile(fileUrl: string): Promise<boolean> {

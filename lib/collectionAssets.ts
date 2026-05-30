@@ -302,6 +302,46 @@ export const inferCollectionAssets = (collection: Partial<Collection>): Collecti
     return sortAssets(Array.from(assetsByUrl.values()));
 };
 
+/**
+ * After a new collection is saved and we have the collectionId,
+ * move all assets from temp/ paths to permanent collectionId-scoped paths.
+ * Returns updated CollectionAsset[] with permanent URLs.
+ */
+export async function promoteCollectionAssets(
+    collectionId: string,
+    assets: CollectionAsset[],
+): Promise<CollectionAsset[]> {
+    const promoted: CollectionAsset[] = [];
+
+    for (const asset of assets) {
+        if (!asset.url || !asset.url.includes('/temp/')) {
+            // Already permanent or no URL - keep as-is
+            promoted.push(asset);
+            continue;
+        }
+
+        // Determine folder from URL path
+        const urlPath = new URL(asset.url).pathname;
+        const afterBucket = urlPath.split('/object/public/collections/')[1] ?? '';
+        const folderMatch = afterBucket.match(/^([^/]+)\/temp\/(.+)$/);
+        if (!folderMatch) {
+            promoted.push(asset);
+            continue;
+        }
+
+        const folder = folderMatch[1]; // e.g. 'audio', 'covers', 'pdfs'
+        const fileName = folderMatch[2]; // original filename
+        const newPath = `${folder}/${collectionId}/${fileName}`;
+
+        const { moveFile } = await import('./storage');
+        const newUrl = await moveFile(asset.url, newPath);
+
+        promoted.push({ ...asset, url: newUrl ?? asset.url });
+    }
+
+    return promoted;
+}
+
 export const syncCollectionWithAssets = <T extends Partial<Collection>>(collectionLike: T) => {
     const collectionAssets = inferCollectionAssets(collectionLike);
     const firstReading = collectionAssets.find((asset) => asset.category === 'reading');

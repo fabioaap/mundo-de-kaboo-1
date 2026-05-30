@@ -33,7 +33,7 @@ import { placeholderImageUrl, isPlaceholderImageUrl } from '../lib/appPaths';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollectionCharacters } from '../lib/characters';
-import { COLLECTION_ASSET_META, inferCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
+import { COLLECTION_ASSET_META, inferCollectionAssets, promoteCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
 import { getCollectionDisplayCover, getCollectionTypeMeta, isStandaloneReadableBook, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
 import { VideoFramePicker } from '../components/VideoFramePicker';
 import { extractAudioCoverArt } from '../lib/extractAudioCoverArt';
@@ -1564,6 +1564,21 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         success = !!created;
         if (!success) {
           errorMessage = `Erro ao criar ${contentEntityLabelLower}. Verifique suas permissões e tente novamente.`;
+        } else if (created) {
+          // Promote any temp/ assets to permanent collectionId-scoped paths
+          const originalAssets = created.collection_assets ?? [];
+          const promotedAssets = await promoteCollectionAssets(created.id, originalAssets);
+          const hasChanges = promotedAssets.some((a, i) => a.url !== originalAssets[i]?.url);
+          if (hasChanges) {
+            const synced = syncCollectionWithAssets({ ...created, collection_assets: promotedAssets });
+            await api.updateCollection(created.id, {
+              collection_assets: promotedAssets,
+              audio_url: synced.audio_url,
+              pdf_url: synced.pdf_url,
+              video_url: synced.video_url,
+              cover_image: synced.cover_image,
+            });
+          }
         }
       } catch (err: unknown) {
         success = false;
