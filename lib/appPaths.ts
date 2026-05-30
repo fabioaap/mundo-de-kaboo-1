@@ -42,6 +42,15 @@ const isExternalUrl = (value: string): boolean => {
     return /^[a-z][a-z\d+.-]*:/i.test(value) || value.startsWith('//');
 };
 
+const normalizeBrandSlug = (value?: string | null): 'kaboo' | 'central-coruja' | null => {
+    const normalizedValue = value?.trim().toLowerCase();
+    if (normalizedValue === 'kaboo' || normalizedValue === 'central-coruja') {
+        return normalizedValue;
+    }
+
+    return null;
+};
+
 export const resolveAppUrl = (value: string): string => {
     if (!value) {
         return appBasePath;
@@ -74,6 +83,17 @@ export const buildAppUrl = (value = ''): string => {
 export const buildPublicAppUrl = (value = ''): string => {
     const resolvedPath = resolveAppUrl(value);
     return new URL(resolvedPath, publicAppBaseUrl).toString();
+};
+
+export const buildTenantPublicAppUrl = (brandSlug?: string | null, value = ''): string => {
+    const url = new URL(buildPublicAppUrl(value));
+    const normalizedBrandSlug = normalizeBrandSlug(brandSlug);
+
+    if (normalizedBrandSlug) {
+        url.searchParams.set('brand', normalizedBrandSlug);
+    }
+
+    return url.toString();
 };
 
 export const placeholderImageUrl = placeholderImage;
