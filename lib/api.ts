@@ -282,6 +282,21 @@ const isMissingColumnError = (error: unknown, columnName: string): boolean => {
   return combinedMessage.includes(columnName.toLowerCase());
 };
 
+/** Extract the missing column name from a PGRST204 error, if any. */
+const extractMissingColumnName = (error: unknown): string | null => {
+  if (!error || typeof error !== 'object') return null;
+  const candidate = error as { code?: string; message?: string };
+  if (candidate.code !== 'PGRST204' && candidate.code !== '42703') return null;
+  // PGRST204 message: "Could not find the 'description' column of 'collections' in the schema cache"
+  const match = candidate.message?.match(/the '(\w+)' column/i)
+    ?? candidate.message?.match(/column "(\w+)"/i);
+  return match?.[1] ?? null;
+};
+
+const STRIPPABLE_COLLECTION_COLUMNS = new Set([
+  'character_ids', 'offline_available', 'description',
+]);
+
 const isMissingRelationError = (error: unknown, relationName: string): boolean => {
   if (!error || typeof error !== 'object') {
     return false;
@@ -2316,41 +2331,31 @@ export const api = {
       throw new Error(brandErrMsg);
     }
 
-    const payload = {
+    let currentPayload: Partial<Collection> & { brand_id: string } = {
       ...sanitizeCollectionPayload(collection, (await loadRemoteCharacters()) ?? undefined),
       brand_id: activeBrandId,
     };
-    let { data, error } = await supabase
-      .from('collections')
-      .insert(payload)
-      .select()
-      .single();
+    let data: Collection | null = null;
+    let error: unknown = null;
+    const stripped: string[] = [];
 
-    if (error && isMissingColumnError(error, 'character_ids')) {
-      const { character_ids, ...legacyPayload } = payload;
+    // Retry loop: strip missing columns one at a time (max 5 iterations)
+    for (let attempt = 0; attempt < 5; attempt++) {
       ({ data, error } = await supabase
         .from('collections')
-        .insert(legacyPayload)
+        .insert(currentPayload)
         .select()
         .single());
-    }
 
-    if (error && isMissingColumnError(error, 'offline_available')) {
-      const legacyPayload = stripMissingCollectionColumns(payload, ['offline_available']);
-      ({ data, error } = await supabase
-        .from('collections')
-        .insert(legacyPayload)
-        .select()
-        .single());
-    }
+      if (!error) break;
 
-    if (error && (isMissingColumnError(error, 'character_ids') || isMissingColumnError(error, 'offline_available'))) {
-      const legacyPayload = stripMissingCollectionColumns(payload, ['character_ids', 'offline_available']);
-      ({ data, error } = await supabase
-        .from('collections')
-        .insert(legacyPayload)
-        .select()
-        .single());
+      const missingCol = extractMissingColumnName(error);
+      if (!missingCol || !STRIPPABLE_COLLECTION_COLUMNS.has(missingCol) || stripped.includes(missingCol)) {
+        break; // not a strippable column error, or already stripped
+      }
+      stripped.push(missingCol);
+      currentPayload = stripMissingCollectionColumns(currentPayload, stripped) as typeof currentPayload;
+      logger.warn(`Retrying collection insert without column: ${missingCol}`);
     }
 
     if (error) {
@@ -2392,44 +2397,29 @@ export const api = {
       return null;
     }
 
-    // Perform the update
-    let query = supabase
-      .from('collections')
-      .update(payload)
-      .eq('id', id);
+    // Perform the update with retry for missing columns
+    let currentPayload = { ...payload };
+    let data: Collection | null = null;
+    let error: { code?: string; message?: string } | null = null;
+    const stripped: string[] = [];
 
-    query = applyActiveBrandScope(query, activeBrandId);
-
-    let { data, error } = await query.select().single();
-
-    if (error && isMissingColumnError(error, 'character_ids')) {
-      const { character_ids, ...legacyPayload } = payload;
-      let legacyQuery = supabase
+    for (let attempt = 0; attempt < 5; attempt++) {
+      let query = supabase
         .from('collections')
-        .update(legacyPayload)
+        .update(currentPayload)
         .eq('id', id);
-      legacyQuery = applyActiveBrandScope(legacyQuery, activeBrandId);
-      ({ data, error } = await legacyQuery.select().single());
-    }
+      query = applyActiveBrandScope(query, activeBrandId);
+      ({ data, error } = await query.select().single());
 
-    if (error && isMissingColumnError(error, 'offline_available')) {
-      const legacyPayload = stripMissingCollectionColumns(payload, ['offline_available']);
-      let legacyQuery = supabase
-        .from('collections')
-        .update(legacyPayload)
-        .eq('id', id);
-      legacyQuery = applyActiveBrandScope(legacyQuery, activeBrandId);
-      ({ data, error } = await legacyQuery.select().single());
-    }
+      if (!error) break;
 
-    if (error && (isMissingColumnError(error, 'character_ids') || isMissingColumnError(error, 'offline_available'))) {
-      const legacyPayload = stripMissingCollectionColumns(payload, ['character_ids', 'offline_available']);
-      let legacyQuery = supabase
-        .from('collections')
-        .update(legacyPayload)
-        .eq('id', id);
-      legacyQuery = applyActiveBrandScope(legacyQuery, activeBrandId);
-      ({ data, error } = await legacyQuery.select().single());
+      const missingCol = extractMissingColumnName(error);
+      if (!missingCol || !STRIPPABLE_COLLECTION_COLUMNS.has(missingCol) || stripped.includes(missingCol)) {
+        break;
+      }
+      stripped.push(missingCol);
+      currentPayload = stripMissingCollectionColumns(payload, stripped);
+      logger.warn(`Retrying collection update without column: ${missingCol}`);
     }
 
     if (error) {
