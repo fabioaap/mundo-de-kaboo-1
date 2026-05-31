@@ -197,6 +197,8 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack, in
                         onNavigate={onNavigate}
                         onBack={onBack}
                         initialTab={activeModule === 'users' ? 'users' : 'collections'}
+                        // 'books' maps to initialLibraryArea='books' → AdminCollectionsScreen sets isBooksCatalogMode=true
+                        // Fix: do NOT pass initialCollectionScope; use initialLibraryArea so books open in Books mode
                         initialLibraryArea={activeModule === 'collections' || activeModule === 'users' ? undefined : activeModule}
                     />
                 );
