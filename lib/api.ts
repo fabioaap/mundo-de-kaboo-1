@@ -1642,7 +1642,7 @@ export const api = {
    * Fetch all collections/books (with cache support)
    * @param forceRefresh - If true, bypass cache and fetch from server
    */
-  async getCollections(forceRefresh: boolean = false): Promise<Collection[]> {
+  async getCollections(forceRefresh: boolean = false, adminMode: boolean = false): Promise<Collection[]> {
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
       const cached = getCachedCollections();
@@ -1677,6 +1677,10 @@ export const api = {
       .from('collections')
       .select('*')
       .order('created_at', { ascending: false });
+
+    if (!adminMode) {
+      query = query.eq('is_published', true);
+    }
 
     query = applyActiveBrandScope(query, activeBrandId);
 
@@ -2452,6 +2456,32 @@ export const api = {
     clearCollectionsCache();
 
     return data;
+  },
+
+  /**
+   * Publish a collection (sets is_published = true and records published_at)
+   */
+  async publishCollection(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('collections')
+      .update({ is_published: true, published_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) { logger.error('publishCollection error', error); return false; }
+    clearCollectionsCache();
+    return true;
+  },
+
+  /**
+   * Unpublish a collection (sets is_published = false and clears published_at)
+   */
+  async unpublishCollection(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('collections')
+      .update({ is_published: false, published_at: null })
+      .eq('id', id);
+    if (error) { logger.error('unpublishCollection error', error); return false; }
+    clearCollectionsCache();
+    return true;
   },
 
   /**

@@ -107,6 +107,7 @@ const EMPTY_COLLECTION_FORM_DATA: CollectionFormData = {
   extra_materials: [],
   collection_assets: [],
   offline_available: false,
+  is_published: false,
 };
 
 const createAssetId = (category: CollectionAssetCategory) => {
@@ -1261,7 +1262,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const loadCollections = async (forceRefresh = false) => {
     setLoading(true);
     try {
-      const data = await api.getCollections(forceRefresh);
+      const data = await api.getCollections(forceRefresh, true);
       setCollections(data);
     } catch (error) {
       console.error('Error loading collections:', error);
@@ -2163,6 +2164,28 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     <span>Excluir</span>
                                   </button>
                                 )}
+                                {isAdminUser && (
+                                  <button
+                                    type="button"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      if (collection.is_published) {
+                                        // @ts-ignore
+                                        await api.unpublishCollection(collection.id);
+                                      } else {
+                                        // @ts-ignore
+                                        await api.publishCollection(collection.id);
+                                      }
+                                      setOpenActionsDropdown(null);
+                                      await loadCollections(true);
+                                    }}
+                                    onMouseDown={(e) => { e.stopPropagation(); }}
+                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-left hover:bg-gray-50"
+                                  >
+                                    {collection.is_published ? '🔒 Despublicar' : '🚀 Publicar'}
+                                  </button>
+                                )}
                               </div>
                             )}
                           </div>
@@ -2173,6 +2196,15 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             <div className="absolute right-4 top-4 z-20">
                               {actionsButton}
                             </div>
+
+                            {/* Badge de status no card */}
+                            <span className={`absolute top-2 left-2 z-20 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                              collection.is_published
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {collection.is_published ? 'Publicado' : 'Rascunho'}
+                            </span>
 
                             <Card3D
                               collection={collection}
@@ -2294,6 +2326,26 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       />
                     </div>
 
+                    {/* Toggle de publicação */}
+                    <div className="flex items-center justify-between mt-4 p-3 rounded-lg bg-gray-50 border border-gray-200">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Status de publicação</p>
+                        <p className="text-xs text-gray-500">
+                          {formData.is_published ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, is_published: !prev.is_published }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          formData.is_published ? 'bg-green-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                          formData.is_published ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </div>
 
                     {/* Capa principal e cor base do card */}
                     <div className="rounded-2xl border border-brand-primary/10 bg-brand-primary/[0.04] p-4">

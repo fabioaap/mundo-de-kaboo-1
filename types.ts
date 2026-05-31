@@ -188,6 +188,8 @@ export interface Collection {
   extra_materials?: string[]; // New field: Materiais Extras (array of file URLs)
   collection_assets?: CollectionAsset[];
   offline_available?: boolean | null;
+  is_published?: boolean;
+  published_at?: string | null;
 }
 
 export interface CentralMaterial {
