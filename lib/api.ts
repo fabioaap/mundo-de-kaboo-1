@@ -2462,6 +2462,11 @@ export const api = {
    * Publish a collection (sets is_published = true and records published_at)
    */
   async publishCollection(id: string): Promise<boolean> {
+    if (!isSupabaseConfigured || devMockSession) {
+      const updated = mockUpdateCollection(id, { is_published: true, published_at: new Date().toISOString() });
+      if (updated) clearCollectionsCache();
+      return !!updated;
+    }
     const { error } = await supabase
       .from('collections')
       .update({ is_published: true, published_at: new Date().toISOString() })
@@ -2475,6 +2480,11 @@ export const api = {
    * Unpublish a collection (sets is_published = false and clears published_at)
    */
   async unpublishCollection(id: string): Promise<boolean> {
+    if (!isSupabaseConfigured || devMockSession) {
+      const updated = mockUpdateCollection(id, { is_published: false, published_at: null });
+      if (updated) clearCollectionsCache();
+      return !!updated;
+    }
     const { error } = await supabase
       .from('collections')
       .update({ is_published: false, published_at: null })
