@@ -1700,8 +1700,9 @@ export const api = {
       activeBrandId,
     );
 
-    // Save to cache
-    saveCollectionsCache(collections);
+    // Only cache non-admin responses so the vitrine never reads admin-mode data
+    // (admin fetches include unpublished collections which must not leak into the vitrine cache).
+    if (!adminMode) saveCollectionsCache(collections);
 
     return collections;
   },
