@@ -1659,8 +1659,11 @@ export const api = {
       const stamped = brandId
         ? mockRaw.map(c => c.brand_id ? c : { ...c, brand_id: brandId })
         : mockRaw;
-      const collections = filterCollectionsForBrand(stamped, _activeBrandSlugForApi, _activeBrandIdForApi, { adminMode });
-      saveCollectionsCache(collections);
+      const filtered = filterCollectionsForBrand(stamped, _activeBrandSlugForApi, _activeBrandIdForApi, { adminMode });
+      // Mirror the Supabase behaviour: vitrine only sees published collections.
+      const collections = adminMode ? filtered : filtered.filter(c => c.is_published);
+      // Only cache non-admin responses so the vitrine never reads admin-mode data.
+      if (!adminMode) saveCollectionsCache(collections);
       return collections;
     }
 
