@@ -99,11 +99,20 @@ export const filterCollectionsForBrand = (
   collections: Collection[],
   brandSlug: string,
   brandId?: string | null,
+  options?: { adminMode?: boolean },
 ): Collection[] => {
   const brandScopedCollections = collections.filter((collection) => matchesBrandScope(collection, brandSlug, brandId));
 
   if (!isHygieneBrand(brandSlug)) {
     return brandScopedCollections;
+  }
+
+  // Admin mode sees all brand-scoped collections including ones with test-like titles.
+  // Only seeded Kaboo collections and those with /mock/ cover images are always excluded.
+  if (options?.adminMode) {
+    return brandScopedCollections.filter((collection) =>
+      !SEEDED_COLLECTION_IDS.has(collection.id) && !collection.cover_image?.startsWith('/mock/'),
+    );
   }
 
   return brandScopedCollections.filter((collection) =>

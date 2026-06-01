@@ -1659,7 +1659,7 @@ export const api = {
       const stamped = brandId
         ? mockRaw.map(c => c.brand_id ? c : { ...c, brand_id: brandId })
         : mockRaw;
-      const collections = filterCollectionsForBrand(stamped, _activeBrandSlugForApi, _activeBrandIdForApi);
+      const collections = filterCollectionsForBrand(stamped, _activeBrandSlugForApi, _activeBrandIdForApi, { adminMode });
       saveCollectionsCache(collections);
       return collections;
     }

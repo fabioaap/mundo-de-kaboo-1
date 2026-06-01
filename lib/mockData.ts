@@ -1003,6 +1003,7 @@ export const mockCreateCollection = (data: Partial<Collection>): Collection => {
         video_url: data.video_url || '',
         extra_materials: data.extra_materials || [],
         collection_assets: data.collection_assets || [],
+        is_published: data.is_published ?? false,
     });
     const updated = [...getLiveCollections(), newCollection];
     writeStoredCollections(updated);
