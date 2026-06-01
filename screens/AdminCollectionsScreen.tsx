@@ -659,8 +659,18 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
 
     if (isBooksCatalogMode) {
-      // In admin, show all books regardless of having assets (pdf may be added later)
-      return collections.filter((collection) => collection.collection_type === 'book');
+      // Non-reading primary asset categories that identify a collection as belonging to another library area.
+      const NON_BOOK_PRIMARY: CollectionAssetCategory[] = ['animation', 'storytelling', 'teacher_guide', 'video_lesson', 'extra_material'];
+      return collections.filter((collection) => {
+        if (collection.collection_type !== 'book') return false;
+        const assets = collection.collection_assets ?? [];
+        // A book that already has a reading (PDF) asset — always show.
+        if (assets.some(a => a.category === 'reading' && a.url?.trim())) return true;
+        // A collection created via another area (has only video/audio/etc. assets, no PDF) — exclude.
+        if (assets.some(a => NON_BOOK_PRIMARY.includes(a.category) && a.url?.trim())) return false;
+        // No assets yet or only metadata without URLs — show as empty book.
+        return true;
+      });
     }
 
     return collections;
@@ -1752,7 +1762,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   return (
     <div className="flex flex-col h-full bg-white pb-24 md:pb-0">
       <PageHeader
-        title={activeLibraryAreaLabel ? activeLibraryAreaLabel : 'Gerenciar'}
+        title={activeLibraryAreaLabel ?? 'Coleções'}
         onBack={handleBackClick}
       />
 
@@ -1977,9 +1987,80 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           const videoPreviewText = isVideoAssetCard ? getDistinctVideoPreviewText(item) : item.previewText;
 
                           return (
+                            <div key={item.key} className="relative">
+                              {/* Publish status badge */}
+                              <span className={`absolute top-2 left-2 z-20 pointer-events-none text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                item.collection.is_published
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {item.collection.is_published ? 'Publicado' : 'Rascunho'}
+                              </span>
+
+                              {/* Actions dropdown */}
+                              {isAdminUser && (
+                                <div
+                                  className="absolute top-2 right-2 z-20"
+                                  ref={(el) => { actionsDropdownRefs.current[item.collection.id] = el; }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenActionsDropdown(openActionsDropdown === item.collection.id ? null : item.collection.id);
+                                    }}
+                                    className="w-7 h-7 rounded-full bg-white/90 hover:bg-white border border-gray-200 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
+                                    aria-label="Ações"
+                                  >
+                                    <Icons.MoreHorizontal size={16} className="text-gray-600" />
+                                  </button>
+                                  {openActionsDropdown === item.collection.id && (
+                                    <div
+                                      className="absolute top-full right-0 mt-2 w-44 bg-white rounded-2xl shadow-xl border border-gray-100 z-[100] animate-fade-in-up origin-top-right actions-dropdown"
+                                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleLibraryAssetEdit(item);
+                                          setOpenActionsDropdown(null);
+                                        }}
+                                        className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl text-gray-700 hover:bg-gray-50 font-medium"
+                                      >
+                                        <Icons.Edit size={16} />
+                                        <span>Editar</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          if (item.collection.is_published) {
+                                            // @ts-ignore
+                                            await api.unpublishCollection(item.collection.id);
+                                          } else {
+                                            // @ts-ignore
+                                            await api.publishCollection(item.collection.id);
+                                          }
+                                          setOpenActionsDropdown(null);
+                                          await loadCollections(true);
+                                        }}
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl text-gray-700 hover:bg-gray-50 font-medium"
+                                      >
+                                        {item.collection.is_published
+                                          ? <><Icons.EyeOff size={16} /><span>Despublicar</span></>
+                                          : <><Icons.Eye size={16} /><span>Publicar</span></>}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
                             <button
                               type="button"
-                              key={item.key}
                               className={`group w-full border bg-white text-left transition-all active:scale-[0.99] ${isVideoAssetCard ? 'rounded-[18px] border-gray-200 p-4 shadow-sm hover:border-brand-primary/20 hover:shadow-md' : isAudioAssetCard ? 'rounded-[16px] border-brand-primary/10 p-3.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] hover:border-brand-primary/20 hover:shadow-[0_14px_24px_rgba(93,31,88,0.10)]' : 'rounded-2xl border-gray-200 p-5 shadow-sm hover:border-brand-primary/20 hover:shadow-md'}`}
                               onClick={() => handleLibraryAssetEdit(item)}
                             >
@@ -2067,6 +2148,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 </span>
                               </div>
                             </button>
+                            </div>
                           );
                         })}
                       </div>
