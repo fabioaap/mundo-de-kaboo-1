@@ -1573,6 +1573,7 @@ export const api = {
           emailRedirectTo,
           data: {
             full_name: input.full_name,
+            brand_id: _activeBrandIdForApi,
           }
         }
       });
@@ -1937,6 +1938,25 @@ export const api = {
       }
     }
 
+    // IDs de mock não são UUIDs válidos (ex: "formation-dialogue").
+    // Enviá-los ao banco causa erro 400 (invalid input syntax for type uuid).
+    // Se não é um UUID, resolve via mock catalog sem consultar o banco.
+    const isDbId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(mediaItemId);
+    if (!isDbId) {
+      const fallbackCollections = collections.length > 0 ? collections : await this.getCollections();
+      const fallbackMatch = findMockMediaItem(mediaItemId, fallbackCollections);
+      if (!fallbackMatch) return null;
+      const mockRelatedCollections: MediaRelatedCollection[] = fallbackMatch.item.collectionId
+        ? [{ collectionId: fallbackMatch.item.collectionId, title: fallbackMatch.item.relatedCollection ?? fallbackMatch.item.title, linkType: 'contextual' as const }]
+        : [];
+      return {
+        ...buildMockMediaItemCard(fallbackMatch.hub, fallbackMatch.item),
+        accessMode: 'active_subscription',
+        metadata: {},
+        relatedCollections: mockRelatedCollections,
+      };
+    }
+
     const { data, error } = await supabase
       .from('media_items')
       .select('*')
@@ -2000,7 +2020,9 @@ export const api = {
       return null;
     }
 
-    if (parseCollectionAssetMediaItemId(mediaItemId) || !isSupabaseConfigured || devMockSession || mediaTablesAvailable === false) {
+    const isDbPlaybackId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(mediaItemId);
+
+    if (parseCollectionAssetMediaItemId(mediaItemId) || !isDbPlaybackId || !isSupabaseConfigured || devMockSession || mediaTablesAvailable === false) {
       const collections = await this.getCollections();
       const mockMatch = findMockMediaItem(mediaItemId, collections);
       if (!mockMatch) {
