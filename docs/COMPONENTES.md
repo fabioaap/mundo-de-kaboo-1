@@ -1,6 +1,6 @@
 # Documentação de Componentes
 
-**Atualizado em**: 03/06/2026, 02:27:08
+**Atualizado em**: 04/06/2026, 20:37:31
 
 ## Índice
 
