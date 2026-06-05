@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { Icons } from './Icons';
 import { uploadFile, deleteFile, extractOriginalFileName } from '../lib/storage';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -150,7 +150,7 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
           {value.map((url, index) => (
             <div
               key={index}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-kaboo-primary/10 text-kaboo-primary rounded-full text-sm font-bold cursor-pointer transition-all duration-300 ease-in-out hover:bg-kaboo-primary/20"
+              className="inline-flex items-center gap-2 px-3 py-2 bg-brand-primary/10 text-brand-primary rounded-full text-sm font-bold cursor-pointer transition-all duration-300 ease-in-out hover:bg-brand-primary/20"
               onMouseEnter={() => setHoveredFileIndex(index)}
               onMouseLeave={() => setHoveredFileIndex(null)}
               onClick={() => setPreviewFile({ url, name: getFileName(url) })}
@@ -172,7 +172,7 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
                   e.stopPropagation();
                   setFileToDelete(url);
                 }}
-                className="hover:bg-kaboo-primary/30 rounded-full p-0.5 transition-colors flex-shrink-0"
+                className="hover:bg-brand-primary/30 rounded-full p-0.5 transition-colors flex-shrink-0"
                 aria-label={`Remover ${getFileName(url)}`}
                 disabled={disabled || uploading}
               >
@@ -197,13 +197,13 @@ export const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
           />
           <label
             htmlFor={`multiple-file-upload-${folder}`}
-            className={`flex items-center gap-2 px-4 py-2 bg-kaboo-primary/10 text-kaboo-primary rounded-xl font-bold cursor-pointer hover:bg-kaboo-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`flex items-center gap-2 px-4 py-2 bg-brand-primary/10 text-brand-primary rounded-xl font-bold cursor-pointer hover:bg-brand-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               uploading ? 'opacity-50 cursor-wait' : ''
             }`}
           >
             {uploading ? (
               <>
-                <div className="w-4 h-4 border-2 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
                 <span>Enviando...</span>
               </>
             ) : (

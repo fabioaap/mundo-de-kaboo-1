@@ -189,8 +189,8 @@ const CharacterFilterButton: React.FC<CharacterFilterButtonProps> = ({
       onMouseEnter={onPrepare}
       onFocus={onPrepare}
       className={`inline-flex min-h-12 items-center gap-2 rounded-full border px-2.5 py-2 pr-3 text-sm font-bold leading-none transition-all duration-200 ease-out active:scale-[0.98] ${isActive
-        ? 'border-kaboo-primary/30 bg-kaboo-primary/[0.08] text-kaboo-primary shadow-[0_10px_24px_rgba(111,37,108,0.12)]'
-        : 'border-gray-200 bg-white text-gray-600 hover:border-kaboo-primary/25 hover:bg-kaboo-primary/[0.03]'
+        ? 'border-brand-primary/30 bg-brand-primary/[0.08] text-brand-primary shadow-[0_10px_24px_rgba(111,37,108,0.12)]'
+        : 'border-gray-200 bg-white text-gray-600 hover:border-brand-primary/25 hover:bg-brand-primary/[0.03]'
         }`}
     >
       <CharacterAvatar
@@ -429,7 +429,7 @@ const BnccPickerSheet: React.FC<BnccPickerSheetProps> = ({
                 >
                   <div className="flex items-start gap-3">
                     <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border shadow-sm transition-colors ${isSelected
-                      ? 'border-kaboo-primary bg-kaboo-primary text-white'
+                      ? 'border-brand-primary bg-brand-primary text-white'
                       : 'border-gray-300 bg-white text-transparent'
                       }`}>
                       <Icons.Check size={14} />
@@ -536,7 +536,7 @@ const SearchResultsList: React.FC<SearchResultsListProps> = ({
               key={collection.id}
               type="button"
               onClick={() => onCollectionClick(collection)}
-              className="flex gap-4 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-kaboo-primary/20 transition-all active:scale-[0.98] cursor-pointer h-full text-left"
+              className="flex gap-4 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-primary/20 transition-all active:scale-[0.98] cursor-pointer h-full text-left"
             >
               <img
                 src={displayCoverImage}
@@ -1498,10 +1498,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       {TABS.map((tab) => {
         const isActive = activeTab === tab.id;
         const activeClass = tone === 'hero'
-          ? 'bg-[#5D1E76] text-white border-[#7A2A98] shadow-[0_14px_28px_rgba(93,30,118,0.35)]'
+          ? 'bg-brand-light text-white border-brand-primary shadow-[0_14px_28px_rgba(93,30,118,0.35)]'
           : tone === 'kaboo-hero'
-            ? 'bg-kaboo-primary text-white border-kaboo-primary shadow-[0_14px_30px_rgba(93,31,88,0.28)]'
-            : 'bg-kaboo-primary text-white border-kaboo-primary shadow-md shadow-kaboo-primary/20';
+            ? 'bg-brand-primary text-white border-brand-primary shadow-[0_14px_30px_rgba(93,31,88,0.28)]'
+            : 'bg-brand-primary text-white border-brand-primary shadow-md shadow-brand-primary/20';
         const inactiveClass = tone === 'hero'
           ? 'bg-white/8 text-white/82 border-white/12 hover:bg-white/14'
           : tone === 'kaboo-hero'
@@ -1531,30 +1531,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       : isKabooHeroTone
         ? 'rounded-[28px] border border-white/70 bg-white/72 p-4 shadow-[0_28px_60px_rgba(93,31,88,0.12)] backdrop-blur-xl md:px-5 md:py-4'
         : 'rounded-[28px] border border-gray-200 bg-white p-4 shadow-[0_20px_45px_rgba(15,23,42,0.08)] md:px-5 md:py-4';
-    const eyebrowClass = isHeroTone ? 'text-[#FFD58A]' : 'text-kaboo-primary';
+    const eyebrowClass = isHeroTone ? 'text-[#FFD58A]' : 'text-brand-primary';
     const bodyClass = isHeroTone ? 'text-white/78' : isKabooHeroTone ? 'text-slate-600' : 'text-gray-500';
     const dividerClass = isHeroTone ? 'border-white/12' : isKabooHeroTone ? 'border-white/70' : 'border-gray-100';
     const searchSurfaceClass = isHeroTone
-      ? 'border-white/60 bg-white text-gray-700 shadow-[0_18px_36px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60'
+      ? 'border-white/60 bg-white text-gray-700 shadow-[0_18px_36px_rgba(0,0,0,0.18)] hover:border-brand-accent/60'
       : isKabooHeroTone
-        ? 'border-white/85 bg-white/95 text-gray-500 shadow-[0_14px_30px_rgba(93,31,88,0.08)] hover:border-kaboo-primary/24'
-        : 'border-gray-200 bg-white text-gray-500 shadow-sm hover:border-kaboo-primary/20';
+        ? 'border-white/85 bg-white/95 text-gray-500 shadow-[0_14px_30px_rgba(93,31,88,0.08)] hover:border-brand-primary/24'
+        : 'border-gray-200 bg-white text-gray-500 shadow-sm hover:border-brand-primary/20';
     const closeButtonClass = isHeroTone
       ? 'border-white/15 bg-white/10 text-white/82 hover:bg-white/14 hover:text-white'
       : isKabooHeroTone
-        ? 'border-white/70 bg-white/82 text-gray-500 hover:border-kaboo-primary/20 hover:text-kaboo-primary'
-        : 'border-gray-200 bg-white text-gray-500 hover:border-kaboo-primary/20 hover:text-kaboo-primary';
+        ? 'border-white/70 bg-white/82 text-gray-500 hover:border-brand-primary/20 hover:text-brand-primary'
+        : 'border-gray-200 bg-white text-gray-500 hover:border-brand-primary/20 hover:text-brand-primary';
     const filterButtonClass = activeFilterCount > 0
       ? isHeroTone
-        ? 'border-[#7A2A98] bg-[#5D1E76] text-white shadow-[0_14px_30px_rgba(93,30,118,0.32)]'
+        ? 'border-brand-primary bg-brand-light text-white shadow-[0_14px_30px_rgba(93,30,118,0.32)]'
         : isKabooHeroTone
-          ? 'border-kaboo-primary bg-kaboo-primary text-white shadow-[0_14px_30px_rgba(93,31,88,0.22)]'
-          : 'border-kaboo-primary bg-kaboo-primary text-white shadow-sm'
+          ? 'border-brand-primary bg-brand-primary text-white shadow-[0_14px_30px_rgba(93,31,88,0.22)]'
+          : 'border-brand-primary bg-brand-primary text-white shadow-sm'
       : isHeroTone
         ? 'border-white/12 bg-white/10 text-white/88 hover:bg-white/14'
         : isKabooHeroTone
-          ? 'border-white/70 bg-white/84 text-gray-700 hover:border-kaboo-primary/20 hover:bg-white'
-          : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-kaboo-primary/20 hover:bg-white';
+          ? 'border-white/70 bg-white/84 text-gray-700 hover:border-brand-primary/20 hover:bg-white'
+          : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-brand-primary/20 hover:bg-white';
 
     return (
       <div className={panelClass}>
@@ -1641,14 +1641,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const renderImmersiveHeroControls = (tone: 'coruja' | 'kaboo' = 'coruja') => {
     const isKabooTone = tone === 'kaboo';
     const searchInputClass = isKabooTone
-      ? 'h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-14 shadow-sm hover:border-kaboo-primary/24 focus:border-kaboo-primary'
-      : 'h-14 rounded-[28px] border-transparent bg-white/92 pl-11 pr-14 shadow-sm hover:border-transparent focus:border-kaboo-primary';
+      ? 'h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-14 shadow-sm hover:border-brand-primary/24 focus:border-brand-primary'
+      : 'h-14 rounded-[28px] border-transparent bg-white/92 pl-11 pr-14 shadow-sm hover:border-transparent focus:border-brand-primary';
     const passiveFilterClass = isKabooTone
-      ? 'bg-white text-kaboo-primary border-gray-200 shadow-sm hover:border-kaboo-primary/24'
-      : 'bg-white/95 text-[#0C1A34] border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-[#EA9A3B]/60';
+      ? 'bg-white text-brand-primary border-gray-200 shadow-sm hover:border-brand-primary/24'
+      : 'bg-white/95 text-brand-primary border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-brand-accent/60';
     const passiveTabClass = isKabooTone
-      ? 'bg-white text-kaboo-primary border-gray-200 hover:bg-gray-50 hover:border-kaboo-primary/24'
-      : 'bg-white/95 text-[#0C1A34] border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white';
+      ? 'bg-white text-brand-primary border-gray-200 hover:bg-gray-50 hover:border-brand-primary/24'
+      : 'bg-white/95 text-brand-primary border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white';
 
     return (
       <div className="space-y-3 md:space-y-4">
@@ -1681,7 +1681,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             <button
               type="button"
               onClick={() => openFilterDrawer()}
-              className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 transition-all active:scale-95 md:px-4 ${activeFilterCount > 0 ? 'border-[#5D1E76] bg-[#5D1E76] text-white shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : passiveFilterClass}`}
+              className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 transition-all active:scale-95 md:px-4 ${activeFilterCount > 0 ? 'border-brand-light bg-brand-light text-white shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : passiveFilterClass}`}
               title="Refinar busca"
             >
               <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
@@ -1715,7 +1715,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? 'bg-[#5D1E76] text-white border-[#7A2A98]' : passiveTabClass}`}
+                  className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all active:scale-95 flex items-center gap-2 border ${isActive ? 'bg-brand-light text-white border-brand-primary' : passiveTabClass}`}
                 >
                   {tab.id === 'all' && <Icons.Grid size={14} />}
                   {tab.label}
@@ -1731,8 +1731,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const renderKabooWelcomeHero = () => (
     <div className="relative space-y-3 pb-4 pt-3 md:space-y-4 md:pb-6 md:pt-5">
       <div className="max-w-2xl">
-        <p className="text-sm font-bold text-kaboo-primary/72">Olá, {profileDisplayFirstName}.</p>
-        <h2 className="mt-2 text-[1.95rem] font-black leading-[1.04] tracking-[-0.03em] text-kaboo-primary md:text-[2.3rem]">
+        <p className="text-sm font-bold text-brand-primary/72">Olá, {profileDisplayFirstName}.</p>
+        <h2 className="mt-2 text-[1.95rem] font-black leading-[1.04] tracking-[-0.03em] text-brand-primary md:text-[2.3rem]">
           {kabooHeroTitle}
         </h2>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600 md:text-[15px]">
@@ -1949,12 +1949,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   )}
 
                   {isSearchExperience && (
-                    <div className="flex items-start justify-between gap-3 rounded-[24px] border border-kaboo-primary/10 bg-kaboo-primary/[0.03] px-4 py-3 animate-fade-in-up md:hidden">
+                    <div className="flex items-start justify-between gap-3 rounded-[24px] border border-brand-primary/10 bg-brand-primary/[0.03] px-4 py-3 animate-fade-in-up md:hidden">
                       <div className="min-w-0">
-                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary">{searchCollectionGroupTitle}</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-brand-primary">{searchCollectionGroupTitle}</p>
                         <p className="mt-1 text-sm text-gray-500">Pesquise por texto e use os filtros para explorar personagem, CASEL, BNCC ou idade-série.</p>
                       </div>
-                      <button type="button" onClick={closeInlineSearch} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-kaboo-primary/15 bg-white text-kaboo-primary transition-colors hover:bg-kaboo-primary/5" aria-label="Fechar busca">
+                      <button type="button" onClick={closeInlineSearch} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brand-primary/15 bg-white text-brand-primary transition-colors hover:bg-brand-primary/5" aria-label="Fechar busca">
                         <Icons.X size={16} />
                       </button>
                     </div>
@@ -1976,7 +1976,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         {(activeFilterCount > 0 || (!isSearchExperience && hasSearchQuery)) && (
           <div className={`${desktopShellPaddingClass} mb-4 flex gap-2 flex-wrap animate-fade-in-up shrink-0`}>
             {!isSearchExperience && hasSearchQuery && (
-              <span onClick={() => setSearchTerm('')} className="cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group bg-kaboo-primary/10 text-kaboo-primary hover:bg-red-50 hover:text-red-500">
+              <span onClick={() => setSearchTerm('')} className="cursor-pointer px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 transition-colors group bg-brand-primary/10 text-brand-primary hover:bg-red-50 hover:text-red-500">
                 Busca: {searchTerm.trim()} <Icons.X size={12} className="group-hover:scale-110" />
               </span>
             )}
@@ -2001,7 +2001,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               </span>
             ))}
             {!isSearchExperience && (
-              <button onClick={resetDiscovery} className="ml-1 text-xs font-bold text-kaboo-primary hover:underline">
+              <button onClick={resetDiscovery} className="ml-1 text-xs font-bold text-brand-primary hover:underline">
                 Limpar tudo
               </button>
             )}
@@ -2020,7 +2020,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   <div
                     key={c.id}
                     onClick={() => handleCollectionClick(c)}
-                    className="flex-shrink-0 w-64 rounded-2xl p-3 snap-center cursor-pointer active:scale-95 transition-transform bg-white shadow-lg shadow-gray-100/50 border border-gray-50 hover:border-kaboo-primary/30"
+                    className="flex-shrink-0 w-64 rounded-2xl p-3 snap-center cursor-pointer active:scale-95 transition-transform bg-white shadow-lg shadow-gray-100/50 border border-gray-50 hover:border-brand-primary/30"
                   >
                     <div className="flex gap-4">
                       <div className="relative flex-shrink-0">
@@ -2036,7 +2036,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     </div>
                     <div className="mt-3 px-1">
                       <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                         <div className="h-full rounded-full bg-kaboo-primary" style={{ width: `${progress}%` }} />
+                         <div className="h-full rounded-full bg-brand-primary" style={{ width: `${progress}%` }} />
                       </div>
                     </div>
                   </div>
@@ -2055,14 +2055,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               <>
                 <div className="flex justify-between items-end pb-4 border-b border-gray-100">
                   <div>
-                      <p className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-kaboo-primary">Filtros aplicados</p>
+                      <p className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-brand-primary">Filtros aplicados</p>
                     <h2 className="text-xl font-bold text-gray-800">{filteredCollectionGroupTitle}</h2>
                     <p className="text-sm text-gray-500 mt-1">{filteredCollections.length} {filteredCollections.length === 1 ? availableLabelSingular : availableLabelPlural}</p>
                   </div>
                   <button
                     type="button"
                     onClick={resetDiscovery}
-                     className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
+                     className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:border-brand-primary/20 hover:text-brand-primary"
                   >
                     Limpar
                   </button>
@@ -2089,7 +2089,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     </p>
                     <button
                       onClick={resetDiscovery}
-                      className="px-6 py-3 rounded-xl font-bold transition-colors bg-kaboo-primary/10 text-kaboo-primary hover:bg-kaboo-primary/20"
+                      className="px-6 py-3 rounded-xl font-bold transition-colors bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20"
                     >
                       Limpar filtros
                     </button>
@@ -2132,7 +2132,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     <div className="mx-auto max-w-5xl pointer-events-auto rounded-[30px] border border-white/80 bg-white/95 p-4 md:p-5 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/80">
+                          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-brand-primary/80">
                             {hasSearchQuery ? 'Resultados rápidos' : 'Filtros aplicados'}
                           </p>
                           <p className="mt-1 text-sm text-gray-500">
@@ -2142,7 +2142,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                         <button
                           type="button"
                           onClick={resetDiscovery}
-                           className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:border-kaboo-primary/20 hover:text-kaboo-primary"
+                           className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:border-brand-primary/20 hover:text-brand-primary"
                         >
                           Limpar
                         </button>
@@ -2173,9 +2173,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               <div className={`flex justify-between items-end pb-4 ${isCorujaHomeLayout ? 'border-b border-white/14' : 'border-b border-gray-100'}`}>
                 <div>
                   {hasSearchQuery && (
-                    <p className={`mb-1 text-xs font-bold uppercase tracking-[0.14em] ${isCorujaHomeLayout ? 'text-[#FFB347]' : 'text-kaboo-primary'}`}>Busca ativa</p>
+                    <p className={`mb-1 text-xs font-bold uppercase tracking-[0.14em] ${isCorujaHomeLayout ? 'text-brand-accent' : 'text-brand-primary'}`}>Busca ativa</p>
                   )}
-                  <h2 className={`text-xl font-bold ${isCorujaHomeLayout ? 'text-[#FFB347]' : 'text-gray-800'}`}>
+                  <h2 className={`text-xl font-bold ${isCorujaHomeLayout ? 'text-brand-accent' : 'text-gray-800'}`}>
                     {hasSearchQuery ? 'Resultados da busca' :
                       activeTab === 'all' && activeFilterCount === 0 ? allCollectionGroupTitle :
                         activeFilterCount > 0 ? filteredCollectionGroupTitle :
@@ -2191,8 +2191,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       onClick={() => setSortByAge(prev => !prev)}
                       className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${sortByAge
                         ? isCorujaHomeLayout
-                          ? 'bg-[#5D1E76] text-white shadow-[0_10px_22px_rgba(93,30,118,0.3)]'
-                          : 'bg-kaboo-primary text-white shadow-sm'
+                          ? 'bg-brand-light text-white shadow-[0_10px_22px_rgba(93,30,118,0.3)]'
+                          : 'bg-brand-primary text-white shadow-sm'
                         : isCorujaHomeLayout
                           ? 'bg-white/10 text-white/80 hover:bg-white/14'
                           : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
@@ -2241,7 +2241,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   </p>
                   <button
                     onClick={resetDiscovery}
-                    className={`px-6 py-3 rounded-xl font-bold transition-colors ${isCorujaHomeLayout ? 'bg-white/10 text-[#FFB347] hover:bg-white/14' : 'bg-kaboo-primary/10 text-kaboo-primary hover:bg-kaboo-primary/20'}`}
+                    className={`px-6 py-3 rounded-xl font-bold transition-colors ${isCorujaHomeLayout ? 'bg-white/10 text-brand-accent hover:bg-white/14' : 'bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20'}`}
                   >
                     Limpar busca e filtros
                   </button>
@@ -2300,7 +2300,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
             <div className="mb-6 flex justify-center">
               <img src={brandLogoUrl} alt={brandDisplayName} className="w-40 h-auto" />
             </div>
-            <h2 className="text-2xl font-black text-kaboo-primary mb-2">
+            <h2 className="text-2xl font-black text-brand-primary mb-2">
               Olá, {getFirstName(profile?.full_name || '')}!
             </h2>
             <p className="text-gray-600 mb-8 leading-relaxed">

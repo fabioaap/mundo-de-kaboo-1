@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Icons } from './Icons';
 
 interface FilePreviewModalProps {
@@ -50,10 +50,10 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            {actualFileType === 'pdf' && <Icons.FileText size={20} className="text-kaboo-primary" />}
-            {actualFileType === 'audio' && <Icons.Headphones size={20} className="text-kaboo-primary" />}
-            {actualFileType === 'video' && <Icons.Video size={20} className="text-kaboo-primary" />}
-            {actualFileType === 'image' && <Icons.Eye size={20} className="text-kaboo-primary" />}
+            {actualFileType === 'pdf' && <Icons.FileText size={20} className="text-brand-primary" />}
+            {actualFileType === 'audio' && <Icons.Headphones size={20} className="text-brand-primary" />}
+            {actualFileType === 'video' && <Icons.Video size={20} className="text-brand-primary" />}
+            {actualFileType === 'image' && <Icons.Eye size={20} className="text-brand-primary" />}
             <h2 className="text-lg font-bold text-gray-800 truncate">{fileName}</h2>
           </div>
           <button
@@ -111,7 +111,7 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                 href={fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-kaboo-primary hover:underline flex items-center gap-2"
+                className="text-brand-primary hover:underline flex items-center gap-2"
               >
                 Abrir arquivo em nova aba
               </a>

@@ -160,37 +160,29 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
   };
 
   const desktopShellClass = isCentralCoruja
-    ? 'bg-kaboo-primary'
-    : 'bg-kaboo-bg border-r border-kaboo-primary/10 shadow-sm';
+    ? 'bg-brand-primary'
+    : 'bg-brand-bg border-r border-brand-primary/10 shadow-sm';
   const desktopToggleClass = isCentralCoruja
-    ? 'bg-kaboo-primary border-white/15 hover:bg-white/[0.08]'
-    : 'bg-kaboo-bg border-kaboo-primary/20 hover:bg-kaboo-primary/5';
+    ? 'bg-brand-primary border-white/15 hover:bg-white/[0.08]'
+    : 'bg-brand-bg border-brand-primary/20 hover:bg-brand-primary/5';
   const desktopToggleIconClass = isCentralCoruja ? 'text-white/85' : 'text-gray-600';
   const desktopTogglePositionClass = isCollapsed
     ? 'top-4 -right-3 h-7 w-7'
     : 'top-6 right-4 h-8 w-8';
   const desktopToggleIconSize = isCollapsed ? 14 : 16;
-  const desktopSectionTitleClass = isCentralCoruja ? 'text-white/45' : 'text-kaboo-primary/50';
-  const desktopSectionDividerClass = isCentralCoruja ? 'border-white/10' : 'border-kaboo-primary/10';
+  const desktopSectionTitleClass = isCentralCoruja ? 'text-white/45' : 'text-brand-primary/50';
+  const desktopSectionDividerClass = isCentralCoruja ? 'border-white/10' : 'border-brand-primary/10';
   const desktopItemActiveClass = isCentralCoruja
-    ? 'bg-kaboo-light text-white shadow-md shadow-black/20'
-    : 'bg-kaboo-primary text-white shadow-md shadow-kaboo-primary/20';
+    ? 'bg-brand-light text-white shadow-md shadow-black/20'
+    : 'bg-brand-primary text-white shadow-md shadow-brand-primary/20';
   const desktopItemInactiveClass = isCentralCoruja
     ? 'bg-transparent text-white/78 hover:bg-white/[0.07] hover:text-white'
-    : 'bg-transparent text-gray-500 hover:bg-kaboo-primary/[0.06]';
-  const desktopItemInactiveHoverIconClass = isCentralCoruja ? 'group-hover:text-white' : 'group-hover:text-kaboo-primary';
-  const desktopItemInactiveHoverLabelClass = isCentralCoruja ? 'group-hover:text-white' : 'group-hover:text-kaboo-primary';
-  const desktopFooterTextClass = isCentralCoruja ? 'text-white/45' : 'text-kaboo-primary/40';
-  const desktopSectionPaddingClass = isCollapsed
-    ? 'px-2'
-    : isCentralCoruja
-      ? 'px-4'
-      : 'px-4';
-  const desktopFooterPaddingClass = isCollapsed
-    ? 'px-2 py-4'
-    : isCentralCoruja
-      ? 'px-4 pt-4 pb-6'
-      : 'px-4 pt-4 pb-6';
+    : 'bg-transparent text-gray-500 hover:bg-brand-primary/[0.06]';
+  const desktopItemInactiveHoverIconClass = isCentralCoruja ? 'group-hover:text-white' : 'group-hover:text-brand-primary';
+  const desktopItemInactiveHoverLabelClass = isCentralCoruja ? 'group-hover:text-white' : 'group-hover:text-brand-primary';
+  const desktopFooterTextClass = isCentralCoruja ? 'text-white/45' : 'text-brand-primary/40';
+  const desktopSectionPaddingClass = isCollapsed ? 'px-2' : 'px-4';
+  const desktopFooterPaddingClass = isCollapsed ? 'px-2 py-4' : 'px-4 pt-4 pb-6';
   const desktopFooterTextOffsetClass = '';
 
   return (
@@ -206,15 +198,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                 key={item.key}
                 onClick={() => handleMobileNavigate(item.screen, item.params)}
                 aria-label={item.label}
-                className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-[background-color,transform] duration-150 ${isActive ? 'bg-kaboo-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
+                className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-[background-color,transform] duration-150 ${isActive ? 'bg-brand-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
               >
-                <div className={`rounded-xl p-2 transition-colors ${isActive ? 'bg-kaboo-primary/12' : 'bg-transparent'}`}>
+                <div className={`rounded-xl p-2 transition-colors ${isActive ? 'bg-brand-primary/12' : 'bg-transparent'}`}>
                   <Icon
                     size={22}
-                    className={`transition-colors ${isActive ? 'text-kaboo-primary stroke-[3px]' : 'text-gray-400 stroke-[2px]'}`}
+                    className={`transition-colors ${isActive ? 'text-brand-primary stroke-[3px]' : 'text-gray-400 stroke-[2px]'}`}
                   />
                 </div>
-                <span className={`text-[10px] font-bold leading-none ${isActive ? 'text-kaboo-primary' : 'text-gray-400'}`}>
+                <span className={`text-[10px] font-bold leading-none ${isActive ? 'text-brand-primary' : 'text-gray-400'}`}>
                   {item.label}
                 </span>
               </button>
@@ -224,12 +216,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
           <button
             onClick={() => setIsMoreMenuOpen((open) => !open)}
             aria-label={isMoreMenuOpen ? 'Fechar menu' : 'Abrir mais opções'}
-            className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-[background-color,transform] duration-150 ${isMoreItemActive || isMoreMenuOpen ? 'bg-kaboo-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
+            className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-[background-color,transform] duration-150 ${isMoreItemActive || isMoreMenuOpen ? 'bg-brand-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
           >
-            <div className={`rounded-xl p-2 transition-colors ${isMoreItemActive || isMoreMenuOpen ? 'bg-kaboo-primary/12' : 'bg-transparent'}`}>
-              <Icons.MoreHorizontal size={22} className={`transition-colors ${isMoreItemActive || isMoreMenuOpen ? 'text-kaboo-primary stroke-[2.8px]' : 'text-gray-400 stroke-[2px]'}`} />
+            <div className={`rounded-xl p-2 transition-colors ${isMoreItemActive || isMoreMenuOpen ? 'bg-brand-primary/12' : 'bg-transparent'}`}>
+              <Icons.MoreHorizontal size={22} className={`transition-colors ${isMoreItemActive || isMoreMenuOpen ? 'text-brand-primary stroke-[2.8px]' : 'text-gray-400 stroke-[2px]'}`} />
             </div>
-            <span className={`text-[10px] font-bold leading-none ${isMoreItemActive || isMoreMenuOpen ? 'text-kaboo-primary' : 'text-gray-400'}`}>
+            <span className={`text-[10px] font-bold leading-none ${isMoreItemActive || isMoreMenuOpen ? 'text-brand-primary' : 'text-gray-400'}`}>
               Mais
             </span>
           </button>
@@ -252,7 +244,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
                     key={item.key}
                     onClick={() => handleMobileNavigate(item.screen, item.params)}
                     aria-label={item.label}
-                    className={`flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 transition-[background-color,color,transform,box-shadow] duration-150 ${isActive ? 'bg-kaboo-primary text-white shadow-sm shadow-kaboo-primary/25' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 active:scale-[0.99]'}`}
+                    className={`flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 transition-[background-color,color,transform,box-shadow] duration-150 ${isActive ? 'bg-brand-primary text-white shadow-sm shadow-brand-primary/25' : 'bg-gray-50 text-gray-700 hover:bg-gray-100 active:scale-[0.99]'}`}
                   >
                     <Icon size={18} className={isActive ? 'stroke-[2.5px]' : 'stroke-[2px]'} />
                     <span className="text-sm font-bold">{item.label}</span>

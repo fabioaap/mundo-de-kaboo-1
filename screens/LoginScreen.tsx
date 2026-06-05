@@ -18,9 +18,9 @@ const StepDots: React.FC<{ current: number; total: number }> = ({ current, total
       <div
         key={i}
         className={`rounded-full transition-all duration-300 ${i + 1 === current
-          ? 'w-6 h-2 bg-kaboo-primary'
+          ? 'w-6 h-2 bg-brand-primary'
           : i + 1 < current
-            ? 'w-2 h-2 bg-kaboo-primary/40'
+            ? 'w-2 h-2 bg-brand-primary/40'
             : 'w-2 h-2 bg-gray-200'
           }`}
       />
@@ -265,7 +265,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
   const bodyClassName = 'text-gray-500';
   const labelClassName = 'text-gray-600';
   const iconClassName = 'text-gray-400';
-  const inputBaseClassName = 'w-full bg-gray-50 border-none rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all';
+  const inputBaseClassName = 'w-full bg-gray-50 border-none rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-brand-primary outline-none transition-all';
 
   const voucherPlaceholder = isCentralCoruja ? 'Ex.: CORUJA-3MESES-2026' : 'Ex.: KABOO-3MESES-2026';
 
@@ -293,7 +293,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         href={LEAD_CAPTURE_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-kaboo-primary transition-colors hover:text-kaboo-primary/80"
+        className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-colors hover:text-brand-primary/80"
       >
         Entender como funciona e comprar meu acesso{' '}
         <span className="inline-block">→</span>
@@ -306,7 +306,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
       <p className="text-xs font-medium text-gray-500">Precisa de ajuda com o voucher?</p>
       <a
         href={SUPPORT_CONTACT_URL}
-        className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-gray-600 transition-colors hover:text-kaboo-primary"
+        className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-gray-600 transition-colors hover:text-brand-primary"
       >
         Falar com o suporte{' '}
         <span className="inline-block">→</span>
@@ -339,7 +339,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
       className="relative flex h-[100dvh] overflow-hidden p-0 md:items-center md:justify-center md:p-6 lg:p-8 bg-gray-50 bg-no-repeat"
       style={shellBackgroundStyle}
     >
-      <div className="absolute inset-0 bg-kaboo-primary/20 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 bg-brand-primary/20 backdrop-blur-[2px]" />
 
       <div className={`relative z-10 flex h-[100dvh] w-full flex-col overflow-hidden transition-all duration-300 md:h-auto md:max-h-[calc(100dvh-3rem)] md:max-w-md lg:max-h-[calc(100dvh-4rem)] bg-white md:rounded-3xl md:shadow-2xl ${isFullScreenMax ? 'md:max-w-lg' : ''}`}>
 
@@ -375,7 +375,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                   onChange={(e) => handleVoucherCodeChange(e.target.value)}
                   className={`w-full bg-gray-50 border-2 rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 outline-none transition-all text-base tracking-widest font-mono uppercase ${validatedVoucher
                     ? 'border-green-300 bg-green-50/50 focus:border-green-400'
-                    : 'border-gray-100 focus:border-kaboo-primary'
+                    : 'border-gray-100 focus:border-brand-primary'
                     }`}
                   placeholder={voucherPlaceholder}
                   autoComplete="one-time-code"
@@ -545,13 +545,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
                     id="terms"
                     checked={acceptedTerms}
                     onChange={(e) => { setAcceptedTerms(e.target.checked); clearError(); }}
-                    className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 transition-all outline-none border-gray-300 checked:border-kaboo-primary checked:bg-kaboo-primary focus:ring-2 focus:ring-kaboo-primary/30"
+                    className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 transition-all outline-none border-gray-300 checked:border-brand-primary checked:bg-brand-primary focus:ring-2 focus:ring-brand-primary/30"
                   />
                   <Icons.Check size={14} strokeWidth={4} className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                 </div>
                 <label htmlFor="terms" className="text-sm cursor-pointer select-none leading-tight text-gray-600">
                   Li e concordo com a{' '}
-                  <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer" className="font-bold hover:underline text-kaboo-primary">
+                  <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer" className="font-bold hover:underline text-brand-primary">
                     política de privacidade
                   </a>{' '}
                   do Mundo de Kaboo.
@@ -637,13 +637,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
             </div>
 
             <div className="mt-auto space-y-4 pt-8">
-              <div className="rounded-3xl border p-4 text-left shadow-sm border-kaboo-primary/15 bg-gradient-to-br from-kaboo-primary/[0.08] via-white to-white">
+              <div className="rounded-3xl border p-4 text-left shadow-sm border-brand-primary/15 bg-gradient-to-br from-brand-primary/[0.08] via-white to-white">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm bg-white text-kaboo-primary ring-1 ring-kaboo-primary/10">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm bg-white text-brand-primary ring-1 ring-brand-primary/10">
                     <Icons.Ticket size={18} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-kaboo-primary/70">Primeiro acesso</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-brand-primary/70">Primeiro acesso</p>
                     <p className={`mt-1 text-base font-bold ${titleClassName}`}>Ainda não tem cadastro?</p>
                     <p className="mt-1 text-sm leading-5 text-gray-600">Insira seu voucher de acesso para criar sua conta e liberar a plataforma.</p>
                   </div>

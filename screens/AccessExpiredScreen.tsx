@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '../design-system';
 import { Icons } from '../components/Icons';
 import { Collection, ScreenName, UserProfile, Voucher } from '../types';
@@ -269,7 +269,7 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
                                         setVoucherCode(e.target.value.toUpperCase());
                                         if (errorMsg) setErrorMsg(null);
                                     }}
-                                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all"
+                                    className="w-full bg-gray-50 border-none rounded-2xl p-4 pl-12 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-brand-primary outline-none transition-all"
                                     placeholder={voucherPlaceholder}
                                     required
                                 />

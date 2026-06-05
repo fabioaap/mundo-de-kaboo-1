@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { Button, Badge, Input, Heading } from '../design-system'
 
 // ─── Section wrapper ──────────────────────────────────────
@@ -33,9 +33,9 @@ export const DesignSystemScreen: React.FC = () => {
   const [inputError, setInputError] = useState('')
 
   return (
-    <div className="min-h-screen bg-kaboo-bg font-sans">
+    <div className="min-h-screen bg-brand-bg font-sans">
       {/* Header */}
-      <div className="bg-kaboo-primary text-white px-6 py-8 mb-10">
+      <div className="bg-brand-primary text-white px-6 py-8 mb-10">
         <Heading as="h1" size="2xl" className="text-white">Design System</Heading>
         <p className="text-white/70 mt-1 text-sm">Mundo de Kaboo — componentes e tokens</p>
       </div>
@@ -45,11 +45,11 @@ export const DesignSystemScreen: React.FC = () => {
         {/* ── Colors ── */}
         <Section title="Colors">
           <div className="flex flex-wrap gap-6">
-            <Swatch color="bg-kaboo-primary" label="primary"  value="#5D1F58" />
-            <Swatch color="bg-kaboo-light"   label="light"    value="#883E82" />
-            <Swatch color="bg-kaboo-bg border border-gray-200" label="bg" value="#F9F5F9" />
-            <Swatch color="bg-kaboo-accent"  label="accent"   value="#4EA8DE" />
-            <Swatch color="bg-kaboo-green"   label="green"    value="#70E000" />
+            <Swatch color="bg-brand-primary" label="primary"  value="#5D1F58" />
+            <Swatch color="bg-brand-light"   label="light"    value="#883E82" />
+            <Swatch color="bg-brand-bg border border-gray-200" label="bg" value="#F9F5F9" />
+            <Swatch color="bg-brand-accent"  label="accent"   value="#4EA8DE" />
+            <Swatch color="bg-brand-green"   label="green"    value="#70E000" />
           </div>
         </Section>
 
@@ -81,7 +81,7 @@ export const DesignSystemScreen: React.FC = () => {
             <Button variant="ghost" disabled>Disabled</Button>
           </Row>
           <Row label="white">
-            <div className="bg-kaboo-primary p-3 rounded-xl">
+            <div className="bg-brand-primary p-3 rounded-xl">
               <Button variant="white">White</Button>
             </div>
           </Row>
@@ -140,15 +140,15 @@ export const DesignSystemScreen: React.FC = () => {
         <Section title="Border Radius">
           <div className="flex gap-6 items-end">
             <div className="text-center">
-              <div className="w-16 h-16 bg-kaboo-primary/20 rounded-xl mb-2" />
+              <div className="w-16 h-16 bg-brand-primary/20 rounded-xl mb-2" />
               <span className="text-xs text-gray-500">xl — 1rem</span>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-kaboo-primary/20 rounded-2xl mb-2" />
+              <div className="w-16 h-16 bg-brand-primary/20 rounded-2xl mb-2" />
               <span className="text-xs text-gray-500">2xl — 1.5rem</span>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-kaboo-primary/20 rounded-3xl mb-2" />
+              <div className="w-16 h-16 bg-brand-primary/20 rounded-3xl mb-2" />
               <span className="text-xs text-gray-500">3xl — 2rem</span>
             </div>
           </div>

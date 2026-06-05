@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection, MediaItemCard, ScreenName } from '../types';
 import useIsMobile from '../hooks/useIsMobile';
@@ -932,7 +932,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                           <button
                             type="button"
                             onClick={() => openRelatedItem(leadRelatedItem)}
-                            className="rounded-xl border border-white/20 bg-kaboo-primary/80 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-kaboo-primary"
+                            className="rounded-xl border border-white/20 bg-brand-primary/80 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-primary"
                           >
                             Tentar próximo vídeo
                           </button>
@@ -1441,7 +1441,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => openRelatedItem(leadRelatedItem)}
-                  className="rounded-xl border border-white/20 bg-kaboo-primary/80 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-kaboo-primary"
+                  className="rounded-xl border border-white/20 bg-brand-primary/80 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-primary"
                 >
                   Tentar próximo vídeo
                 </button>

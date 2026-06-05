@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { Character, ScreenName } from '../types';
 import { getCharacterColor } from '../constants';
@@ -52,7 +52,7 @@ export const CharactersScreen: React.FC<CharactersScreenProps> = ({ onNavigate }
 
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="w-8 h-8 border-4 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : characters.length === 0 ? (
           <div className="max-w-xl mx-auto rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center">

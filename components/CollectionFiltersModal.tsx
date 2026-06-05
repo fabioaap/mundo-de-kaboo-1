@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Button } from '../design-system';
 import { CharacterAvatar } from './CharacterAvatar';
 import { Icons } from './Icons';
@@ -74,10 +74,10 @@ const CharacterFilterButton: React.FC<CharacterFilterButtonProps> = ({
             className={`inline-flex min-h-12 items-center gap-2 rounded-full border px-2.5 py-2 pr-3 text-sm font-bold leading-none transition-all duration-200 ease-out active:scale-[0.98] ${isActive
                 ? (isCorujaTone
                     ? 'border-[#d7c1f3] bg-[#f6efff] text-[#5D1E76] shadow-[0_10px_24px_rgba(93,30,118,0.14)]'
-                    : 'border-kaboo-primary/30 bg-kaboo-primary/[0.08] text-kaboo-primary shadow-[0_10px_24px_rgba(111,37,108,0.12)]')
+                    : 'border-brand-primary/30 bg-brand-primary/[0.08] text-brand-primary shadow-[0_10px_24px_rgba(111,37,108,0.12)]')
                 : (isCorujaTone
                     ? 'border-[#dde4f1] bg-white text-[#0C1A34] hover:border-[#5D1E76]/25 hover:bg-[#faf6ff]'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-kaboo-primary/25 hover:bg-kaboo-primary/[0.03]')
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-brand-primary/25 hover:bg-brand-primary/[0.03]')
                 }`}
         >
             <CharacterAvatar
@@ -176,7 +176,7 @@ export const CollectionFiltersModal: React.FC<CollectionFiltersModalProps> = ({
             <div className={`relative w-full md:w-[600px] h-[85vh] md:h-[80vh] rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-fade-in-up ${isCorujaTone ? 'border border-[#eadff8] bg-[#fcf9ff]' : 'bg-white'}`}>
                 <div className={`${layoutSpacing.modalHeader} border-b flex items-center justify-between shrink-0 ${isCorujaTone ? 'border-[#eee5fa] bg-[linear-gradient(180deg,#fffdfd_0%,#fcf9ff_100%)]' : 'border-gray-100 bg-white'}`}>
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isCorujaTone ? 'bg-[#f6efff] text-[#5D1E76]' : 'bg-kaboo-primary/10 text-kaboo-primary'}`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isCorujaTone ? 'bg-[#f6efff] text-[#5D1E76]' : 'bg-brand-primary/10 text-brand-primary'}`}>
                             <Icons.Filter size={20} />
                         </div>
                         <div>

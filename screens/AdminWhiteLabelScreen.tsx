@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ColorPicker } from '../components/ColorPicker';
 import { FileUpload } from '../components/FileUpload';
 import { Button } from '../design-system';
@@ -51,7 +51,7 @@ const MODE_OPTIONS: Array<{ value: HeroParallaxMode; label: string; description:
 ];
 
 const BRAND_ACCENTS: Record<string, string> = {
-    kaboo: 'from-kaboo-primary/10 via-kaboo-primary/[0.04] to-transparent',
+    kaboo: 'from-brand-primary/10 via-brand-primary/[0.04] to-transparent',
     'central-coruja': 'from-[#0C1A34]/16 via-[#5D1E76]/10 to-[#EA9A3B]/8',
 };
 

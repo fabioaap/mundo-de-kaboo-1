@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection } from '../types';
 import FlipbookViewer from '../components/flipbook/FlipbookViewer';
@@ -331,7 +331,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
                 setIsLoading(true);
                 window.location.reload();
               }}
-              className="px-6 py-3 bg-kaboo-primary text-white rounded-xl font-bold hover:opacity-90 transition-opacity"
+              className="px-6 py-3 bg-brand-primary text-white rounded-xl font-bold hover:opacity-90 transition-opacity"
             >
               Recarregar página
             </button>

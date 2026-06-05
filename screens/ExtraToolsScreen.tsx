@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Icons } from '../components/Icons';
 import { Collection, CollectionResource } from '../types';
 import { api } from '../lib/api';
@@ -78,11 +78,11 @@ export const ExtraToolsScreen: React.FC<ExtraToolsScreenProps> = ({ collection, 
             ) : (
                 <div className="space-y-4">
                     {resources.map((res) => (
-                        <div key={res.id} className="flex flex-col md:flex-row md:items-center p-4 border border-gray-100 rounded-2xl hover:border-kaboo-primary/30 hover:bg-kaboo-primary/5 transition-colors group">
+                        <div key={res.id} className="flex flex-col md:flex-row md:items-center p-4 border border-gray-100 rounded-2xl hover:border-brand-primary/30 hover:bg-brand-primary/5 transition-colors group">
                             {/* Mobile: Primeira linha - Ícone à esquerda, título à direita */}
                             {/* Desktop: Ícone à esquerda, título no meio */}
                             <div className="flex items-center gap-3 md:items-center md:gap-0 mb-3 md:mb-0 flex-1">
-                                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 md:mr-4 group-hover:bg-white group-hover:text-kaboo-primary transition-colors flex-shrink-0">
+                                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 md:mr-4 group-hover:bg-white group-hover:text-brand-primary transition-colors flex-shrink-0">
                                     {getFileIcon(res.type)}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -101,7 +101,7 @@ export const ExtraToolsScreen: React.FC<ExtraToolsScreenProps> = ({ collection, 
                                     href={res.url} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="w-10 h-10 rounded-full border-2 border-kaboo-primary/20 flex items-center justify-center text-kaboo-primary hover:bg-kaboo-primary hover:text-white transition-all flex-shrink-0"
+                                    className="w-10 h-10 rounded-full border-2 border-brand-primary/20 flex items-center justify-center text-brand-primary hover:bg-brand-primary hover:text-white transition-all flex-shrink-0"
                                 >
                                     <Icons.Download size={20} />
                                 </a>

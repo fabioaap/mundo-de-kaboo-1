@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Icons } from '../components/Icons';
 import { ScreenName, UserProfile } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -175,7 +175,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
           </div>
           {/* Edit Badge */}
           {!loading && (
-            <div className="absolute bottom-1 right-1 w-8 h-8 bg-kaboo-primary rounded-full flex items-center justify-center text-white border-2 border-white shadow-md transition-transform group-hover:scale-110 z-20">
+            <div className="absolute bottom-1 right-1 w-8 h-8 bg-brand-primary rounded-full flex items-center justify-center text-white border-2 border-white shadow-md transition-transform group-hover:scale-110 z-20">
               <Icons.Settings size={14} />
             </div>
           )}
@@ -268,12 +268,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
                 disabled={savingAvatar}
                 className="flex flex-col items-center gap-2 group disabled:opacity-50"
               >
-                <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center bg-gray-100 border-4 border-white shadow-md group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 ${selectedAvatarId === null ? 'ring-4 ring-kaboo-primary ring-offset-2' : ''}`}>
-                  <span className="text-2xl font-black text-gray-400 group-hover:text-kaboo-primary transition-colors">
+                <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center bg-gray-100 border-4 border-white shadow-md group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 ${selectedAvatarId === null ? 'ring-4 ring-brand-primary ring-offset-2' : ''}`}>
+                  <span className="text-2xl font-black text-gray-400 group-hover:text-brand-primary transition-colors">
                     {getInitials(profile?.full_name || '')}
                   </span>
                 </div>
-                <span className={`text-xs md:text-sm font-bold text-center leading-tight transition-colors ${selectedAvatarId === null ? 'text-kaboo-primary' : 'text-gray-600'}`}>
+                <span className={`text-xs md:text-sm font-bold text-center leading-tight transition-colors ${selectedAvatarId === null ? 'text-brand-primary' : 'text-gray-600'}`}>
                   Usar Sigla
                 </span>
               </button>
@@ -290,7 +290,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
                     disabled={savingAvatar}
                     className="flex flex-col items-center gap-2 group disabled:opacity-50"
                   >
-                    <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full shadow-md group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 overflow-hidden border-4 border-white relative ${isSelected ? 'ring-4 ring-kaboo-primary ring-offset-2' : ''} ${charColor}`}>
+                    <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full shadow-md group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 overflow-hidden border-4 border-white relative ${isSelected ? 'ring-4 ring-brand-primary ring-offset-2' : ''} ${charColor}`}>
                       {/* Background Color Layer */}
                       <div className={`absolute inset-0 opacity-50 ${getCharacterBgColor(char)} pointer-events-none`} />
                       {/* Image Layer */}
@@ -303,7 +303,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
                         onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0'; }}
                       />
                     </div>
-                    <span className={`text-xs md:text-sm font-bold text-center leading-tight transition-colors ${isSelected ? 'text-kaboo-primary' : 'text-gray-600'}`}>
+                    <span className={`text-xs md:text-sm font-bold text-center leading-tight transition-colors ${isSelected ? 'text-brand-primary' : 'text-gray-600'}`}>
                       {char}
                     </span>
                   </button>

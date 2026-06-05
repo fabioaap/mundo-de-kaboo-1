@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Button } from '../design-system';
 import { ScreenName } from '../types';
 import { buildAppUrl } from '../lib/appPaths';
@@ -42,7 +42,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
   const labelClassName = isCentralCoruja ? 'text-[#243A60]' : 'text-gray-600';
   const inputBaseClassName = isCentralCoruja
     ? 'w-full bg-[#fffdfd]/96 border border-[#dddff3] rounded-[22px] text-[#0C1A34] placeholder:text-[#8A93AD] outline-none transition-all focus:border-[#EA9A3B] focus:ring-4 focus:ring-[#EA9A3B]/15'
-    : 'w-full bg-gray-50 border-none rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all';
+    : 'w-full bg-gray-50 border-none rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-brand-primary outline-none transition-all';
 
   const renderBrandMark = () => {
     if (resolvedBrandLogoUrl) {
@@ -99,7 +99,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
     >
       <div className={`absolute inset-0 ${isCentralCoruja
         ? 'bg-[radial-gradient(56%_42%_at_14%_8%,rgba(234,154,59,0.18),transparent_55%),radial-gradient(46%_34%_at_88%_12%,rgba(93,30,118,0.18),transparent_58%),linear-gradient(180deg,rgba(9,23,35,0.34),rgba(9,23,35,0.1))] backdrop-blur-[1px]'
-        : 'bg-kaboo-primary/20 backdrop-blur-[2px]'}`}></div>
+        : 'bg-brand-primary/20 backdrop-blur-[2px]'}`}></div>
 
       <div className={`relative z-10 w-full min-h-screen md:min-h-0 md:h-auto md:max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300 ${isCentralCoruja
         ? 'bg-[linear-gradient(180deg,rgba(251,248,255,0.98)_0%,rgba(246,242,252,0.97)_100%)] md:rounded-[36px] md:border md:border-white/35 md:shadow-[0_34px_84px_rgba(6,18,31,0.34)]'
@@ -122,7 +122,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
           <div className="text-center mb-8">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${isCentralCoruja
               ? 'bg-[#fff6eb] text-[#EA9A3B] shadow-[0_16px_30px_rgba(234,154,59,0.18)]'
-              : 'bg-blue-50 text-kaboo-primary'}`}>
+              : 'bg-blue-50 text-brand-primary'}`}>
               <Icons.Mail size={32} />
             </div>
             <h1 className={`text-xl font-bold mb-3 ${titleClassName}`}>Recuperar senha</h1>
@@ -175,7 +175,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ onNa
             <div className="mt-6 text-center">
               <button
                 onClick={() => onNavigate('login')}
-                className={`font-bold hover:underline ${isCentralCoruja ? 'text-[#5D1E76]' : 'text-kaboo-primary'}`}
+                className={`font-bold hover:underline ${isCentralCoruja ? 'text-[#5D1E76]' : 'text-brand-primary'}`}
               >
                 Voltar para o Login
               </button>

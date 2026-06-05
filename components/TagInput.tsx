@@ -1,4 +1,4 @@
-import React, { useState, KeyboardEvent } from 'react';
+﻿import React, { useState, KeyboardEvent } from 'react';
 import { Icons } from './Icons';
 
 interface TagInputProps {
@@ -50,13 +50,13 @@ export const TagInput: React.FC<TagInputProps> = ({
           {value.map((tag, index) => (
             <span
               key={index}
-              className="inline-flex items-center gap-1 px-3 py-1 bg-kaboo-primary/10 text-kaboo-primary rounded-full text-sm font-bold"
+              className="inline-flex items-center gap-1 px-3 py-1 bg-brand-primary/10 text-brand-primary rounded-full text-sm font-bold"
             >
               {tag}
               <button
                 type="button"
                 onClick={() => handleRemoveTag(tag)}
-                className="hover:bg-kaboo-primary/20 rounded-full p-0.5 transition-colors"
+                className="hover:bg-brand-primary/20 rounded-full p-0.5 transition-colors"
                 aria-label={`Remover ${tag}`}
               >
                 <Icons.X size={14} />
@@ -73,14 +73,14 @@ export const TagInput: React.FC<TagInputProps> = ({
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
+          className="flex-1 bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
           placeholder={placeholder}
         />
         <button
           type="button"
           onClick={handleAddClick}
           disabled={!inputValue.trim() || value.includes(inputValue.trim())}
-          className="px-4 py-2 bg-kaboo-primary text-white rounded-2xl font-bold hover:bg-opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-brand-primary text-white rounded-2xl font-bold hover:bg-opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           title="Adicionar tag"
         >
           <Icons.Plus size={20} />

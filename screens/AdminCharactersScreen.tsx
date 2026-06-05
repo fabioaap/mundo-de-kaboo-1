@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+﻿import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { FileUpload } from '../components/FileUpload';
 import { Icons } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
@@ -271,7 +271,7 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-4 border-kaboo-primary border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : editingId || showCreateForm ? (
         <div className="flex-1 overflow-y-auto px-6 md:px-8 pb-6 pt-0">
@@ -314,7 +314,7 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
                   type="text"
                   value={formData.name}
                   onChange={(event) => setFormData({ ...formData, name: event.target.value })}
-                  className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
+                  className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
                   placeholder="Ex.: Nome do personagem"
                 />
               </div>
@@ -337,7 +337,7 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
                   value={formData.description}
                   onChange={(event) => setFormData({ ...formData, description: event.target.value })}
                   rows={4}
-                  className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none resize-none"
+                  className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none resize-none"
                   placeholder="Explique quem é esse personagem e como ele aparece nas histórias."
                 />
               </div>
@@ -367,7 +367,7 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
                         type="button"
                         onClick={() => setFormData({ ...formData, status })}
                         className={`h-14 rounded-2xl border font-bold transition-all active:scale-95 ${isActive
-                          ? 'border-kaboo-primary bg-kaboo-primary/10 text-kaboo-primary'
+                          ? 'border-brand-primary bg-brand-primary/10 text-brand-primary'
                           : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                           }`}
                       >
@@ -413,7 +413,7 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
                     type="text"
                     value={searchFilter}
                     onChange={(event) => setSearchFilter(event.target.value)}
-                    className="w-full h-14 bg-gray-50 border-none rounded-2xl pl-12 pr-4 text-gray-800 focus:ring-2 focus:ring-kaboo-primary outline-none"
+                    className="w-full h-14 bg-gray-50 border-none rounded-2xl pl-12 pr-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
                     placeholder="Buscar personagem"
                   />
                 </div>
@@ -432,7 +432,7 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
                         type="button"
                         onClick={() => setStatusFilter(option.id)}
                         className={`h-14 rounded-2xl border font-bold text-sm transition-all active:scale-95 ${isActive
-                          ? 'border-kaboo-primary bg-kaboo-primary/10 text-kaboo-primary'
+                          ? 'border-brand-primary bg-brand-primary/10 text-brand-primary'
                           : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                           }`}
                       >
@@ -464,7 +464,7 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
                         setSearchFilter('');
                         setStatusFilter('all');
                       }}
-                      className="mt-4 text-sm font-bold text-kaboo-primary hover:underline"
+                      className="mt-4 text-sm font-bold text-brand-primary hover:underline"
                     >
                       Limpar filtros
                     </button>

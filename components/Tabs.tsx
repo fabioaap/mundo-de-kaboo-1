@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 interface TabsProps {
   tabs: { id: string; label: React.ReactNode }[];
@@ -17,13 +17,13 @@ export const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onChange }) => {
             onClick={() => onChange(tab.id)}
             className={`px-6 py-3 text-sm font-bold transition-all relative ${
               isActive
-                ? 'text-kaboo-primary'
+                ? 'text-brand-primary'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             {tab.label}
             {isActive && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-kaboo-primary rounded-t-full" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary rounded-t-full" />
             )}
           </button>
         );

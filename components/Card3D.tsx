@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Collection } from '../types';
 import { Icons } from './Icons';
 import useIsMobile from '../hooks/useIsMobile';
@@ -344,7 +344,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
           <>
             <div className="absolute inset-0 rounded-[28px] bg-[radial-gradient(60%_40%_at_14%_100%,rgba(93,30,118,0.26),transparent_70%),radial-gradient(46%_28%_at_100%_0%,rgba(234,154,59,0.28),transparent_72%)]" />
             <div
-              className="absolute inset-[5px] overflow-hidden rounded-[24px] border-[2.5px] border-[#EA9A3B]/90 bg-[#0C1A34] shadow-[0_24px_44px_rgba(3,10,22,0.34)]"
+              className="absolute inset-[5px] overflow-hidden rounded-[24px] border-[2.5px] border-brand-accent/90 bg-brand-primary shadow-[0_24px_44px_rgba(3,10,22,0.34)]"
               style={{ transform: 'translateZ(16px)' }}
             >
               <img
@@ -544,7 +544,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         )}
         <div
           className={`absolute border ${isCentralCorujaTone
-            ? 'left-3 top-3 max-w-[calc(100%-4rem)] truncate rounded-full border-[#ffd28a]/70 bg-[#EA9A3B] px-3 py-1.5 text-[10px] text-white shadow-[0_12px_22px_rgba(62,28,4,0.28)]'
+            ? 'left-3 top-3 max-w-[calc(100%-4rem)] truncate rounded-full border-brand-accent/40 bg-brand-accent px-3 py-1.5 text-[10px] text-white shadow-[0_12px_22px_rgba(62,28,4,0.28)]'
             : isCollectionCard
               ? 'left-4 top-4 hidden'
               : `top-2 left-2 whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] ${collectionTypeMeta.coverClassName}`
@@ -653,14 +653,14 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
                 {visible.map((seg) => (
                   <span key={seg} className={`px-2 py-1 rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
                     ? 'bg-[#fff9eb] text-[#204b48] border-[#fff3d1]'
-                    : 'bg-white text-kaboo-primary border-white/50'}`}>
+                    : 'bg-white text-brand-primary border-white/50'}`}>
                     {formatSegmentLabel(seg)}
                   </span>
                 ))}
                 {extra > 0 && (
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
                     ? 'bg-[#fff9eb] text-[#204b48] border-[#fff3d1]'
-                    : 'bg-white text-kaboo-primary border-white/50'}`}>
+                    : 'bg-white text-brand-primary border-white/50'}`}>
                     +{extra}
                   </span>
                 )}
@@ -673,7 +673,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             <div
               className={`absolute bottom-2 right-2 px-2 py-1 rounded-full text-[10px] font-bold shadow-sm border ${isCentralCorujaTone
                 ? 'bg-[#fff9eb] text-[#243A60] border-[#fff3d1]'
-                : 'bg-white text-kaboo-primary border-white/50'}`}
+                : 'bg-white text-brand-primary border-white/50'}`}
               style={{ transform: 'translateZ(30px)' }}
             >
               {formatSegmentLabel(label)}
@@ -707,8 +707,8 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
       )}
 
       {!isCentralCorujaTone && !isCollectionCard && collection.progress !== undefined && collection.progress > 0 && (
-        <div className="mt-1 flex items-center gap-1 text-xs font-bold text-kaboo-light">
-          <div className="h-1.5 w-1.5 rounded-full bg-kaboo-light" />
+        <div className="mt-1 flex items-center gap-1 text-xs font-bold text-brand-light">
+          <div className="h-1.5 w-1.5 rounded-full bg-brand-light" />
           Em andamento
         </div>
       )}

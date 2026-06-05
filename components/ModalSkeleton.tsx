@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { layoutSpacing } from '../design-system/layout/spacing';
 
 export const ModalSkeleton: React.FC = () => {
@@ -26,11 +26,11 @@ export const ModalSkeleton: React.FC = () => {
           
           {/* Metadata Badges Skeleton - Level + Separator + Age Grades */}
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-4">
-            <div className="h-6 bg-kaboo-primary/10 rounded-full w-24"></div>
-            <div className="h-4 bg-kaboo-primary/40 rounded w-1"></div>
-            <div className="h-6 bg-kaboo-primary/10 rounded-full w-16"></div>
-            <div className="h-6 bg-kaboo-primary/10 rounded-full w-16"></div>
-            <div className="h-6 bg-kaboo-primary/10 rounded-full w-16"></div>
+            <div className="h-6 bg-brand-primary/10 rounded-full w-24"></div>
+            <div className="h-4 bg-brand-primary/40 rounded w-1"></div>
+            <div className="h-6 bg-brand-primary/10 rounded-full w-16"></div>
+            <div className="h-6 bg-brand-primary/10 rounded-full w-16"></div>
+            <div className="h-6 bg-brand-primary/10 rounded-full w-16"></div>
           </div>
 
           {/* Title Skeleton */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import { api } from '../lib/api';
 import { getCollectionDisplayCover } from '../lib/collectionPresentation';
@@ -107,7 +107,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
             placeholder="Título, BNCC, personagem, competência..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-gray-100 border-none rounded-2xl py-4 pl-12 pr-10 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-kaboo-primary outline-none transition-all font-medium"
+            className="w-full bg-gray-100 border-none rounded-2xl py-4 pl-12 pr-10 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-brand-primary outline-none transition-all font-medium"
             autoFocus
           />
           <Icons.Search className="absolute left-4 top-4 text-gray-400" size={20} />
@@ -142,7 +142,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
                   <div
                     key={collection.id}
                     onClick={() => onNavigate('search', { collectionId: collection.id })}
-                    className="flex gap-4 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-kaboo-primary/20 transition-all active:scale-98 cursor-pointer h-full"
+                    className="flex gap-4 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-primary/20 transition-all active:scale-98 cursor-pointer h-full"
                   >
                     <img
                       src={displayCoverImage}
@@ -187,7 +187,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
 
             {/* Navegar por Personagens */}
             <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <Icons.User size={20} className="text-kaboo-primary" />
+              <Icons.User size={20} className="text-brand-primary" />
               Personagens
             </h2>
 
@@ -205,7 +205,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
                       imageClassName="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 relative z-10"
                       initialClassName="absolute inset-0 flex items-center justify-center font-black text-2xl text-white/80"
                     />
-                    <span className="text-xs md:text-sm font-bold text-gray-600 text-center leading-tight group-hover:text-kaboo-primary transition-colors">
+                    <span className="text-xs md:text-sm font-bold text-gray-600 text-center leading-tight group-hover:text-brand-primary transition-colors">
                       {char}
                     </span>
                   </button>

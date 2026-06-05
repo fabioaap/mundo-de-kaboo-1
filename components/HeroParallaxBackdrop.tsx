@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { useParallaxMotion } from '../hooks/useParallaxMotion';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { HeroParallaxMode, WhiteLabelBrandId } from '../lib/whiteLabelPreview';
@@ -19,7 +19,7 @@ const MODE_CONFIG: Record<HeroParallaxMode, { layerDepths: number[]; smoothness:
 const BRAND_SKINS: Record<WhiteLabelBrandId, { background: string; far: string; mid: string; near: string }> = {
     kaboo: {
         background: 'bg-[radial-gradient(120%_70%_at_20%_10%,rgba(111,37,108,0.12),transparent_55%),radial-gradient(90%_70%_at_85%_20%,rgba(253,182,45,0.14),transparent_60%),linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(255,255,255,0.9)_100%)]',
-        far: 'bg-kaboo-primary/12',
+        far: 'bg-brand-primary/12',
         mid: 'bg-yellow-300/25',
         near: 'bg-white/75',
     },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Icons } from '../components/Icons';
 import { api } from '../lib/api';
 import { getCollectionDisplayCover } from '../lib/collectionPresentation';
@@ -47,7 +47,7 @@ export const LibraryScreen: React.FC<LibraryScreenProps> = ({ onNavigate }) => {
     <div className="flex flex-col h-full bg-white pb-24">
       {/* Header */}
       <div className={layoutSpacing.pageIntro}>
-        <h1 className="text-2xl font-black text-kaboo-primary mb-6">Minha Biblioteca</h1>
+        <h1 className="text-2xl font-black text-brand-primary mb-6">Minha Biblioteca</h1>
 
         {/* Tabs */}
         <div className="flex p-1 bg-gray-100 rounded-xl">
@@ -56,7 +56,7 @@ export const LibraryScreen: React.FC<LibraryScreenProps> = ({ onNavigate }) => {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${activeTab === tab
-                  ? 'bg-white text-kaboo-primary shadow-sm'
+                  ? 'bg-white text-brand-primary shadow-sm'
                   : 'text-gray-400 hover:text-gray-600'
                 }`}
             >
@@ -120,7 +120,7 @@ export const LibraryScreen: React.FC<LibraryScreenProps> = ({ onNavigate }) => {
             <p className="text-gray-500 font-medium">Nenhum item encontrado aqui.</p>
             <button
               onClick={() => onNavigate('home')}
-              className="mt-4 text-kaboo-primary font-bold text-sm hover:underline"
+              className="mt-4 text-brand-primary font-bold text-sm hover:underline"
             >
               Explorar acervo
             </button>

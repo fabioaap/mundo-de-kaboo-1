@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { NavState, ScreenName, Collection, UserProfile, AdminModule } from './types';
 import { api, clearAllUserCache, getCachedProfileSync, isDevMockSession, setActiveBrandForApi } from './lib/api';
 import {
@@ -1092,7 +1092,7 @@ const App: React.FC = () => {
             {brandDisplayName}
           </div>
         )}
-        <div className="w-8 h-8 border-4 border-kaboo-primary/30 border-t-kaboo-primary rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />
       </div>
     );
   }
@@ -1199,7 +1199,7 @@ const App: React.FC = () => {
       case 'player_audio':
         if (!currentCollection) {
           return (
-            <div className="flex flex-col items-center justify-center h-screen bg-kaboo-primary/90">
+            <div className="flex flex-col items-center justify-center h-screen bg-brand-primary/90">
               <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-8" />
               <button onClick={goBack} className="text-white/70 text-sm hover:text-white transition-colors">Voltar</button>
             </div>
@@ -1294,7 +1294,7 @@ const App: React.FC = () => {
         if (!currentCollection) {
           return (
             <div className="flex flex-col items-center justify-center h-screen bg-white">
-              <div className="w-12 h-12 border-4 border-kaboo-primary/30 border-t-kaboo-primary rounded-full animate-spin mb-8" />
+              <div className="w-12 h-12 border-4 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin mb-8" />
               <button onClick={goBack} className="text-gray-400 text-sm hover:text-gray-600 transition-colors">Voltar</button>
             </div>
           );
@@ -1306,7 +1306,7 @@ const App: React.FC = () => {
           <div className="flex flex-col h-full bg-white pb-24 md:pb-0">
             <PageHeader title="Suporte" onBack={() => navigate('home')} />
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-2xl mx-auto">
-              <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center text-kaboo-primary mb-6">
+              <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center text-brand-primary mb-6">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
               </div>
               <h2 className="text-xl font-bold text-gray-800 mb-2">Precisa de ajuda?</h2>
@@ -1315,7 +1315,7 @@ const App: React.FC = () => {
               </p>
               <a
                 href="mailto:suporte@mundodekaboo.com"
-                className="bg-kaboo-primary text-white px-8 py-4 rounded-2xl font-bold w-full md:w-auto shadow-lg hover:shadow-xl hover:bg-opacity-90 transition-all active:scale-95"
+                className="bg-brand-primary text-white px-8 py-4 rounded-2xl font-bold w-full md:w-auto shadow-lg hover:shadow-xl hover:bg-opacity-90 transition-all active:scale-95"
               >
                 Fale Conosco
               </a>
@@ -1350,7 +1350,7 @@ const App: React.FC = () => {
   const mainShellClassName = `relative w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-white overscroll-none md:h-screen`;
 
 
-  const appShellBg = showNav && brandSlug === 'central-coruja' ? 'bg-[#0C1A34]' : 'bg-white';
+  const appShellBg = showNav && brandSlug === 'central-coruja' ? 'bg-brand-primary' : 'bg-white';
 
   return (
     <div className={`flex h-[100dvh] min-h-[100dvh] w-full flex-col overflow-x-hidden md:h-auto md:min-h-screen md:flex-row ${appShellBg}`}>

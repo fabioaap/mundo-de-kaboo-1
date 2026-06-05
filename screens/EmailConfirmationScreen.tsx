@@ -29,7 +29,7 @@ export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = (
       backgroundImage: backgroundImageUrl
         ? `linear-gradient(135deg, rgba(9, 26, 38, 0.72), rgba(9, 26, 38, 0.16)), url(${backgroundImageUrl})`
         : undefined,
-      backgroundColor: '#0C1A34',
+      backgroundColor: 'var(--color-brand-primary)',
       backgroundPosition: 'center',
       backgroundSize: 'cover',
     }
@@ -51,7 +51,7 @@ export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = (
     : `Sua conta foi verificada com sucesso. Agora você tem acesso completo ao ${resolvedBrandName}.`;
 
   return (
-    <div className={`flex min-h-screen items-center justify-center px-[var(--space-page-x)] py-[var(--space-page-x)] md:p-[var(--space-auth-shell-desktop)] relative overflow-hidden ${isCentralCoruja ? 'bg-[#0C1A34]' : 'bg-gray-50'}`} style={shellBackgroundStyle}>
+    <div className={`flex min-h-screen items-center justify-center px-[var(--space-page-x)] py-[var(--space-page-x)] md:p-[var(--space-auth-shell-desktop)] relative overflow-hidden ${isCentralCoruja ? 'bg-brand-primary' : 'bg-gray-50'}`} style={shellBackgroundStyle}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {isCentralCoruja ? (
           <>
@@ -61,7 +61,7 @@ export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = (
           </>
         ) : (
           <>
-            <div className="absolute top-0 left-0 w-64 h-64 bg-kaboo-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute top-0 left-0 w-64 h-64 bg-brand-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
             <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-100 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
           </>
         )}
@@ -91,12 +91,12 @@ export const EmailConfirmationScreen: React.FC<EmailConfirmationScreenProps> = (
           {isPendingConfirmation ? <Icons.Mail size={36} strokeWidth={2.5} /> : <Icons.Check size={40} strokeWidth={3} />}
         </div>
 
-        <h1 className={`text-2xl font-black mb-2 ${isCentralCoruja ? 'text-[#0C1A34]' : 'text-gray-800'}`}>
+        <h1 className={`text-2xl font-black mb-2 ${isCentralCoruja ? 'text-brand-primary' : 'text-gray-800'}`}>
           {title}
         </h1>
 
         {isPendingConfirmation && params?.email && (
-          <p className={`text-sm font-semibold mb-3 ${isCentralCoruja ? 'text-[#5D1E76]' : 'text-kaboo-primary'}`}>
+          <p className={`text-sm font-semibold mb-3 ${isCentralCoruja ? 'text-brand-light' : 'text-brand-primary'}`}>
             {params.email}
           </p>
         )}

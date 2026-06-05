@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { getCharacterBgColor, getCharacterColor, getCharacterImageUrl } from '../constants';
 import { UserProfile } from '../types';
 
@@ -33,23 +33,23 @@ export const UserIdentityCard: React.FC<UserIdentityCardProps> = ({ profile, col
 
   const collapsedButtonClass = isCentralCoruja
     ? active
-      ? 'inline-flex items-center justify-center rounded-[22px] border border-[#7B4F99]/70 bg-kaboo-light p-2 text-white shadow-[0_12px_24px_rgba(93,30,118,0.26)]'
+      ? 'inline-flex items-center justify-center rounded-[22px] border border-[#7B4F99]/70 bg-brand-light p-2 text-white shadow-[0_12px_24px_rgba(93,30,118,0.26)]'
       : 'inline-flex items-center justify-center rounded-[22px] border border-transparent bg-transparent p-2 text-white hover:bg-white/[0.08] hover:border-white/12'
-    : `inline-flex items-center justify-center rounded-[22px] p-2 ${active ? 'bg-kaboo-primary/10 text-kaboo-primary shadow-sm' : 'hover:bg-gray-50'}`;
+    : `inline-flex items-center justify-center rounded-[22px] p-2 ${active ? 'bg-brand-primary/10 text-brand-primary shadow-sm' : 'hover:bg-gray-50'}`;
 
   const expandedButtonClass = isCentralCoruja
     ? active
-      ? 'w-full flex items-center gap-3 rounded-[24px] border border-[#7B4F99]/70 bg-kaboo-light px-4 py-3 text-left text-white shadow-[0_18px_32px_rgba(93,30,118,0.28)] hover:bg-[#6A2586]'
+      ? 'w-full flex items-center gap-3 rounded-[24px] border border-[#7B4F99]/70 bg-brand-light px-4 py-3 text-left text-white shadow-[0_18px_32px_rgba(93,30,118,0.28)] hover:bg-[#6A2586]'
       : 'w-full flex items-center gap-3 rounded-[24px] border border-transparent bg-transparent px-4 py-3 text-left text-white hover:bg-white/[0.08] hover:border-white/12'
-    : `w-full flex items-center gap-3 rounded-[24px] border px-4 py-3 text-left ${active ? 'border-kaboo-primary/15 bg-kaboo-primary/5 shadow-sm hover:bg-kaboo-primary/10' : 'border-gray-100 bg-gray-50/80 hover:bg-white hover:border-kaboo-primary/15'}`;
+    : `w-full flex items-center gap-3 rounded-[24px] border px-4 py-3 text-left ${active ? 'border-brand-primary/15 bg-brand-primary/5 shadow-sm hover:bg-brand-primary/10' : 'border-gray-100 bg-gray-50/80 hover:bg-white hover:border-brand-primary/15'}`;
 
   const avatarShellClass = isCentralCoruja
     ? 'border-white/12 shadow-[0_10px_20px_rgba(0,0,0,0.22)]'
     : 'border-gray-100 shadow-sm';
-  const fallbackAvatarClass = isCentralCoruja ? 'bg-white text-[#0C1A34]' : 'bg-kaboo-primary text-white';
+  const fallbackAvatarClass = isCentralCoruja ? 'bg-white text-[#0C1A34]' : 'bg-brand-primary text-white';
   const titleClass = isCentralCoruja
     ? active ? 'text-white' : 'text-white/92'
-    : active ? 'text-kaboo-primary' : 'text-gray-800';
+    : active ? 'text-brand-primary' : 'text-gray-800';
   const subtitleClass = isCentralCoruja
     ? active ? 'text-white/72' : 'text-white/60'
     : active ? 'text-gray-500' : 'text-gray-400';
