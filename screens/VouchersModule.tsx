@@ -38,7 +38,8 @@ import {
     MIN_VOUCHER_BATCH_QUANTITY,
     MAX_VOUCHER_BATCH_QUANTITY,
 } from '../lib/mockVoucherData';
-import { getMockCollectionsLive } from '../lib/mockData';
+import { api } from '../lib/api';
+import { Collection } from '../types';
 
 const getVoucherCollectionCover = (collection?: { cover_image?: string | null; kit_cover_image?: string | null; collection_type?: 'book' | 'kit' } | null) => {
     return getCollectionDisplayCover(collection) || collection?.cover_image || '';
@@ -494,14 +495,21 @@ const ModelWizard: React.FC<{
     onDone: (id: string) => void;
     onCancel: () => void;
 }> = ({ editId, onDone, onCancel }) => {
-    const collections = useMemo(() => getMockCollectionsLive(), []);
+    const [collections, setCollections] = useState<Collection[]>([]);
+    const [loadingCollections, setLoadingCollections] = useState(true);
+    useEffect(() => {
+        api.getCollections(false, true)
+            .then(setCollections)
+            .catch(() => setCollections([]))
+            .finally(() => setLoadingCollections(false));
+    }, []);
     const existing = editId ? getVoucherModelById(editId) : null;
     const hasCustomExistingDuration = existing ? !DURATION_OPTIONS.includes(existing.duration_months) : false;
 
     const [step, setStep] = useState(1);
     const [name, setName] = useState(existing?.name || '');
     const [description, setDescription] = useState(existing?.description || '');
-    const [packageType, setPackageType] = useState<VoucherPackageType>(existing?.package_type || 'kit');
+    const [packageType, setPackageType] = useState<VoucherPackageType>(existing?.package_type || 'book');
     const [durationMonths, setDurationMonths] = useState<VoucherDurationMonths>(existing?.duration_months || 6);
     const [durationMode, setDurationMode] = useState<'preset' | 'custom'>(hasCustomExistingDuration ? 'custom' : 'preset');
     const [customDurationInput, setCustomDurationInput] = useState(hasCustomExistingDuration ? String(existing?.duration_months ?? '') : '');
@@ -716,7 +724,13 @@ const ModelWizard: React.FC<{
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[360px] overflow-y-auto">
-                        {filteredCollections.map(col => {
+                        {loadingCollections && (
+                            <div className="col-span-2 py-6 text-center text-sm text-gray-400">Carregando coleções...</div>
+                        )}
+                        {!loadingCollections && filteredCollections.length === 0 && (
+                            <div className="col-span-2 py-6 text-center text-sm text-gray-400">Nenhuma coleção encontrada.</div>
+                        )}
+                        {!loadingCollections && filteredCollections.map(col => {
                             const selected = selectedIds.has(col.id);
                             return (
                                 <button
