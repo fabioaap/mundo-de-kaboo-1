@@ -153,7 +153,7 @@ Todos os conteúdos publicados (`is_published = true`).
 
 #### Grids de Cards
 
-| Contexto | Mobile (<640px) | sm (640px) | md (768px) | lg (1024px) |
+| Contexto | Mobile (&lt;640px) | sm (640px) | md (768px) | lg (1024px) |
 |----------|-----------------|-----------|-----------|------------|
 | Livros/Coleções | 1 coluna | 2 cols | 3 cols | 4 cols |
 | Kits | 1 coluna | — | 2 cols | — |

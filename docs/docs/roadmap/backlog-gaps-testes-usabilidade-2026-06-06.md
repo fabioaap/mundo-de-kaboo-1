@@ -1,7 +1,7 @@
 # Backlog — Gaps Encontrados nos Testes de Usabilidade MVP
 > Data: 2026-06-06  
 > Origem: execução completa das jornadas MVP em produção (`mundodekaboo.educacross.dev`)  
-> Relatório completo: [`docs/relatorio-usabilidade-mvp-2026-06-06.md`](../../relatorio-usabilidade-mvp-2026-06-06.md)
+> Relatório completo: [`relatorio-usabilidade-mvp-2026-06-06.md`](../relatorio-usabilidade-mvp-2026-06-06.md)
 
 ---
 
