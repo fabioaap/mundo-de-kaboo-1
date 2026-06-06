@@ -682,7 +682,7 @@ const ModelWizard: React.FC<{
                     <p className="text-xs text-gray-500">
                         Validade do código é até quando ele pode ser resgatado; duração do acesso é o tempo liberado depois do resgate.
                     </p>
-                    <div className="fixed bottom-0 left-0 right-0 md:static bg-white md:bg-transparent border-t border-gray-100 md:border-t-0 p-4 md:p-0 md:pt-2 flex justify-end z-10 shadow-[0_-1px_4px_rgba(0,0,0,0.06)] md:shadow-none">
+                    <div className="fixed bottom-[4.5rem] left-0 right-0 md:static md:bottom-auto md:left-auto md:right-auto bg-white md:bg-transparent border-t border-gray-100 md:border-t-0 p-4 md:p-0 md:pt-2 flex justify-end z-[51] md:z-auto shadow-[0_-1px_4px_rgba(0,0,0,0.06)] md:shadow-none">
                         <Button onClick={() => setStep(2)} disabled={!canProceedStep1} className="w-full md:w-auto">Próximo →</Button>
                     </div>
                 </div>
@@ -743,7 +743,7 @@ const ModelWizard: React.FC<{
                         </span>
                     </div>
 
-                    <div className="fixed bottom-0 left-0 right-0 md:static bg-white md:bg-transparent border-t border-gray-100 md:border-t-0 p-4 md:p-0 md:pt-2 flex justify-between gap-2 z-10 shadow-[0_-1px_4px_rgba(0,0,0,0.06)] md:shadow-none">
+                    <div className="fixed bottom-[4.5rem] left-0 right-0 md:static md:bottom-auto md:left-auto md:right-auto bg-white md:bg-transparent border-t border-gray-100 md:border-t-0 p-4 md:p-0 md:pt-2 flex justify-between gap-2 z-[51] md:z-auto shadow-[0_-1px_4px_rgba(0,0,0,0.06)] md:shadow-none">
                         <Button onClick={() => setStep(1)} variant="secondary">← Voltar</Button>
                         <Button onClick={() => setStep(3)} disabled={selectedIds.size === 0} className="flex-1 md:flex-none">Próximo →</Button>
                     </div>
@@ -779,7 +779,7 @@ const ModelWizard: React.FC<{
                         ⚠️ Se ainda houver dúvida, salve como rascunho. Depois da emissão, os dados críticos ficam congelados para os lotes gerados.
                     </div>
 
-                    <div className="fixed bottom-0 left-0 right-0 md:static bg-white md:bg-transparent border-t border-gray-100 md:border-t-0 p-4 md:p-0 md:pt-2 flex flex-wrap justify-between gap-2 z-10 shadow-[0_-1px_4px_rgba(0,0,0,0.06)] md:shadow-none">
+                    <div className="fixed bottom-[4.5rem] left-0 right-0 md:static md:bottom-auto md:left-auto md:right-auto bg-white md:bg-transparent border-t border-gray-100 md:border-t-0 p-4 md:p-0 md:pt-2 flex flex-wrap justify-between gap-2 z-[51] md:z-auto shadow-[0_-1px_4px_rgba(0,0,0,0.06)] md:shadow-none">
                         <Button onClick={() => setStep(2)} variant="secondary">← Voltar</Button>
                         <div className="flex gap-2 flex-1 md:flex-none justify-end">
                             <Button onClick={() => void handleSave('draft')} variant="secondary" disabled={!canSubmitModel || savingWizard}>{savingWizard ? 'Salvando...' : 'Salvar rascunho'}</Button>
