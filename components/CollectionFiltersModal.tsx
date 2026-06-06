@@ -227,7 +227,7 @@ export const CollectionFiltersModal: React.FC<CollectionFiltersModalProps> = ({
                     {availableOptions.age.length > 0 && (
                         <section ref={sectionRefHandlers?.age}>
                             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
-                                <Icons.Grid size={14} /> Idade-Série
+                                <Icons.Grid size={14} /> Ano Escolar
                             </h3>
                             <div className="flex flex-wrap gap-2">
                                 {availableOptions.age.map((age) => {

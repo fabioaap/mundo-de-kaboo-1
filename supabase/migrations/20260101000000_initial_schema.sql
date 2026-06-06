@@ -22,21 +22,16 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at    TIMESTAMPTZ DEFAULT NOW(),
   updated_at    TIMESTAMPTZ DEFAULT NOW()
 );
-
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Usuário lê o próprio perfil"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
-
 CREATE POLICY "Usuário atualiza o próprio perfil"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
-
 CREATE POLICY "Usuário cria o próprio perfil"
   ON public.profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
-
 -- Trigger para criar perfil automático no cadastro
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -47,12 +42,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
 -- ============================================================
 -- TABLE: collections
 -- Catálogo de livros/coleções do Kaboo
@@ -76,21 +69,17 @@ CREATE TABLE IF NOT EXISTS public.collections (
   created_at          TIMESTAMPTZ DEFAULT NOW(),
   updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
-
 ALTER TABLE public.collections ENABLE ROW LEVEL SECURITY;
-
 -- Qualquer usuário autenticado pode ler o catálogo
 CREATE POLICY "Autenticados lêem coleções"
   ON public.collections FOR SELECT
   TO authenticated
   USING (true);
-
 -- Somente service_role pode escrever (seed / admin)
 CREATE POLICY "Service role gerencia coleções"
   ON public.collections FOR ALL
   TO service_role
   USING (true);
-
 -- ============================================================
 -- TABLE: collection_resources
 -- Materiais extras vinculados a uma coleção (guias, etc.)
@@ -104,17 +93,13 @@ CREATE TABLE IF NOT EXISTS public.collection_resources (
   size          TEXT,
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_collection_resources_collection_id
   ON public.collection_resources(collection_id);
-
 ALTER TABLE public.collection_resources ENABLE ROW LEVEL SECURITY;
-
 CREATE POLICY "Autenticados lêem recursos"
   ON public.collection_resources FOR SELECT
   TO authenticated
   USING (true);
-
 CREATE POLICY "Service role gerencia recursos"
   ON public.collection_resources FOR ALL
   TO service_role

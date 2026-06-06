@@ -8,7 +8,7 @@ import { LIBRARY_HUB_MOCKS, LibraryHubData, LibraryHubKind, LibraryMockItem, Lib
 import { api } from '../lib/api';
 import { useBrandConfig } from '../hooks/useBrandConfig';
 import useIsMobile from '../hooks/useIsMobile';
-import { Collection, MediaHub, MediaHubResponse, MediaItemCard, ScreenName } from '../types';
+import { Collection, Formation, Material, MediaHub, MediaHubResponse, MediaItemCard, ScreenName } from '../types';
 
 interface LibraryHubScreenProps {
   screen: LibraryHubKind;
@@ -387,13 +387,12 @@ const getDistinctVideoSupportingLine = (item: LibraryMockItem) => {
     return '';
   }
 
-  const normalizedTitle = normalizeLibraryText(item.title);
-  const normalizedCollection = normalizeLibraryText(item.relatedCollection || item.eyebrow || '');
+  // Only suppress when the label matches the relatedCollection name — library-area
+  // videos often share the category label as their asset title (e.g. "Como Jogar"),
+  // so suppressing against the title hides the badge on those cards.
+  const normalizedCollection = normalizeLibraryText(item.relatedCollection || '');
 
-  if (
-    (normalizedTitle && (normalizedTitle.includes(normalizedValue) || normalizedValue.includes(normalizedTitle)))
-    || (normalizedCollection && (normalizedCollection.includes(normalizedValue) || normalizedValue.includes(normalizedCollection)))
-  ) {
+  if (normalizedCollection && (normalizedCollection.includes(normalizedValue) || normalizedValue.includes(normalizedCollection))) {
     return '';
   }
 
@@ -624,6 +623,32 @@ const adaptMediaShelvesToLibraryItems = (
       .filter((item) => allowedItemIds.has(item.id) && item.id !== heroItemId),
   }))
   .filter((shelf) => shelf.items.length > 0);
+
+const formationToLibraryItem = (f: Formation): LibraryMockItem => ({
+  id: f.id,
+  variant: 'formation',
+  eyebrow: f.level ?? '',
+  title: f.title,
+  description: f.description ?? '',
+  meta: `${f.steps_count ?? 1} etapa${(f.steps_count ?? 1) !== 1 ? 's' : ''}${f.duration_label ? ' • ' + f.duration_label : ''}`,
+  coverImage: f.cover_image ?? undefined,
+  chips: f.tags ?? [],
+  ctaLabel: 'Explorar',
+});
+
+const materialToLibraryItem = (m: Material): LibraryMockItem => ({
+  id: m.id,
+  variant: 'material',
+  eyebrow: (m.asset_type ?? 'pdf').toUpperCase(),
+  title: m.title,
+  description: m.description ?? '',
+  meta: (m.asset_type ?? 'pdf').toUpperCase(),
+  coverImage: m.cover_image ?? undefined,
+  assetUrl: m.asset_url ?? undefined,
+  assetType: m.asset_type as any,
+  chips: m.tags ?? [],
+  ctaLabel: 'Abrir',
+});
 
 const DEFAULT_LIBRARY_SURFACE = {
   page: 'bg-[radial-gradient(circle_at_top_right,rgba(93,31,88,0.1),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(78,168,222,0.08),transparent_26%),linear-gradient(180deg,#ffffff_0%,#fcfbfd_100%)]',
@@ -901,47 +926,62 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
     setMediaHubData(null);
     setMediaSourceStatus('loading');
 
-    api.getMediaHub(screen as MediaHub)
-      .then((response) => {
-        if (!isActive) {
-          return;
-        }
+    const loadItems = async () => {
+      if (screen === 'formations') {
+        const formations = await api.getFormations(false);
+        if (!isActive) return;
+        setMediaDrivenItems(formations.map(formationToLibraryItem));
+        setMediaSourceStatus('ready');
+        return;
+      }
 
-        const nextItems = flattenMediaHubResponseToLibraryItems(response);
-        if (nextItems.length > 0) {
-          setMediaDrivenItems(nextItems);
-          setMediaHubData(response);
-          setMediaSourceStatus('ready');
-          return;
-        }
+      if (screen === 'materials') {
+        const materials = await api.getMaterials(false);
+        if (!isActive) return;
+        setMediaDrivenItems(materials.map(materialToLibraryItem));
+        setMediaSourceStatus('ready');
+        return;
+      }
 
-        if (mockFlattenedItems.length === 0) {
-          setMediaDrivenItems([]);
-          setMediaHubData(response);
-          setMediaSourceStatus('ready');
-          return;
-        }
-
-        setMediaDrivenItems(mockFlattenedItems);
-        setMediaHubData(null);
-        setMediaSourceStatus('fallback');
-      })
-      .catch(() => {
-        if (!isActive) {
-          return;
-        }
-
-        if (mockFlattenedItems.length === 0) {
-          setMediaDrivenItems([]);
+      api.getMediaHub(screen as MediaHub)
+        .then((response) => {
+          if (!isActive) return;
+          const nextItems = flattenMediaHubResponseToLibraryItems(response);
+          if (nextItems.length > 0) {
+            setMediaDrivenItems(nextItems);
+            setMediaHubData(response);
+            setMediaSourceStatus('ready');
+            return;
+          }
+          if (mockFlattenedItems.length === 0) {
+            setMediaDrivenItems([]);
+            setMediaHubData(response);
+            setMediaSourceStatus('ready');
+            return;
+          }
+          setMediaDrivenItems(mockFlattenedItems);
           setMediaHubData(null);
-          setMediaSourceStatus('ready');
-          return;
-        }
+          setMediaSourceStatus('fallback');
+        })
+        .catch(() => {
+          if (!isActive) return;
+          if (mockFlattenedItems.length === 0) {
+            setMediaDrivenItems([]);
+            setMediaHubData(null);
+            setMediaSourceStatus('ready');
+            return;
+          }
+          setMediaDrivenItems(mockFlattenedItems);
+          setMediaHubData(null);
+          setMediaSourceStatus('fallback');
+        });
+    };
 
-        setMediaDrivenItems(mockFlattenedItems);
-        setMediaHubData(null);
-        setMediaSourceStatus('fallback');
-      });
+    loadItems().catch(() => {
+      if (!isActive) return;
+      setMediaDrivenItems(mockFlattenedItems.length > 0 ? mockFlattenedItems : []);
+      setMediaSourceStatus(mockFlattenedItems.length > 0 ? 'fallback' : 'ready');
+    });
 
     return () => {
       isActive = false;
@@ -1073,7 +1113,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
     : isFormationsHub
       ? (isBaseCompactCatalogEmpty ? 'Nenhum roteiro publicado ainda.' : 'Escolha o roteiro pelo momento da conversa.')
       : `${sortedCompactItems.length} entradas disponíveis para explorar.`;
-  const compactGridClassName = isCorujaLibraryHub ? 'md:grid-cols-2 xl:grid-cols-3' : 'md:grid-cols-2 xl:grid-cols-3';
+  const compactGridClassName = isCorujaLibraryHub ? 'md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4' : 'md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
   const videoEmptyStateMessage = isBaseVideoCatalogEmpty
     ? getLibraryEmptyStateMessage('videos', brandDisplayName)
     : 'Ajuste a busca ou limpe os filtros para voltar ao acervo completo.';
@@ -1296,7 +1336,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
       const videoSupportingLine = usesVideoFrame ? getDistinctVideoSupportingLine(item) : '';
       const audioSupportingLine = isSpotifyAudioCard
         ? (item.relatedCollection || item.description || item.eyebrow)
-        : (item.relatedCollection || item.eyebrow);
+        : (item.description || item.relatedCollection || item.eyebrow);
       const videoProgressPercent = usesVideoFrame
         ? Math.max(0, Math.min(100, Math.round(item.progress ?? 0)))
         : 0;
@@ -1364,6 +1404,14 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
           )}
 
           <div className={`min-w-0 ${usesVideoFrame ? 'mt-3 flex min-h-[68px] flex-col' : isSpotifyAudioCard ? 'mt-2.5 flex min-h-[56px] flex-col px-1 pb-1' : 'mt-2.5'}`}>
+            {/* Category badge — shown before title for video cards, matching admin card style */}
+            {usesVideoFrame && videoSupportingLine && (
+              <div className="mb-2">
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] ${isCorujaLibraryHub ? 'bg-white/10 text-[#FFB347]' : 'bg-brand-primary/10 text-brand-primary'}`}>
+                  {videoSupportingLine}
+                </span>
+              </div>
+            )}
             <h3 className={`line-clamp-2 ${usesVideoFrame ? 'text-[14px] font-bold leading-[1.35] tracking-normal' : isSpotifyAudioCard ? 'text-[13px] font-bold leading-[1.35] tracking-[-0.01em]' : 'text-[15px] font-black leading-[1.18] tracking-[-0.02em]'} ${isCorujaLibraryHub ? 'text-[#FFF4E3]' : 'text-brand-primary'}`}>
               {item.title}
             </h3>
@@ -1372,11 +1420,73 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                 {audioSupportingLine}
               </p>
             )}
-            {!isSpotifyAudioCard && (usesVideoFrame ? videoSupportingLine : mediaMetaLabel) && (
-              <p className={`${usesVideoFrame ? 'mt-0.5 line-clamp-1 text-[12px] font-medium leading-4 tracking-normal' : 'mt-1 line-clamp-1 text-[11px] font-semibold uppercase tracking-[0.13em]'} ${isCorujaLibraryHub ? 'text-[#FFB347]' : usesVideoFrame ? 'text-gray-500' : 'text-brand-primary/65'}`}>
-                {usesVideoFrame ? videoSupportingLine : mediaMetaLabel}
+            {!isSpotifyAudioCard && !usesVideoFrame && mediaMetaLabel && (
+              <p className={`mt-1 line-clamp-1 text-[11px] font-semibold uppercase tracking-[0.13em] ${isCorujaLibraryHub ? 'text-[#FFB347]' : 'text-brand-primary/65'}`}>
+                {mediaMetaLabel}
               </p>
             )}
+          </div>
+        </CardContainer>
+      );
+    }
+
+    if (isFormationsHub) {
+      const ILLUSTRATED_PALETTES = [
+        { bg: 'bg-violet-50', border: 'border-violet-200/60', badge: 'bg-violet-100 text-violet-700', gradient: 'from-violet-50' },
+        { bg: 'bg-rose-50', border: 'border-rose-200/60', badge: 'bg-rose-100 text-rose-700', gradient: 'from-rose-50' },
+        { bg: 'bg-amber-50', border: 'border-amber-200/60', badge: 'bg-amber-100 text-amber-700', gradient: 'from-amber-50' },
+        { bg: 'bg-sky-50', border: 'border-sky-200/60', badge: 'bg-sky-100 text-sky-700', gradient: 'from-sky-50' },
+        { bg: 'bg-emerald-50', border: 'border-emerald-200/60', badge: 'bg-emerald-100 text-emerald-700', gradient: 'from-emerald-50' },
+        { bg: 'bg-orange-50', border: 'border-orange-200/60', badge: 'bg-orange-100 text-orange-700', gradient: 'from-orange-50' },
+      ] as const;
+      const palette = ILLUSTRATED_PALETTES[itemIndex % ILLUSTRATED_PALETTES.length];
+      const PreviewIcon = getLibraryBadgeIcon(item);
+
+      return (
+        <CardContainer
+          key={`${item.id}-${itemIndex}`}
+          item={item}
+          onOpen={openItem}
+          className={`group rounded-[1.6rem] border overflow-hidden shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] ${palette.border} ${palette.bg}`}
+        >
+          <div className="relative flex flex-col min-h-[152px] p-4">
+            {/* Cover image — absolute right */}
+            <div className="absolute right-0 top-0 bottom-0 w-[42%] pointer-events-none select-none">
+              {item.coverImage ? (
+                <img src={item.coverImage} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center">
+                  <PreviewIcon size={44} className="opacity-[0.12]" />
+                </div>
+              )}
+              <div className={`absolute inset-0 bg-gradient-to-r ${palette.gradient} to-transparent`} />
+            </div>
+
+            {/* Left content */}
+            <div className="pr-[44%] flex flex-col flex-1 gap-2">
+              {item.eyebrow && (
+                <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] ${palette.badge}`}>
+                  {item.eyebrow}
+                </span>
+              )}
+              <h3 className="font-black text-gray-800 text-[1rem] leading-[1.2] tracking-[-0.02em] line-clamp-2">
+                {item.title}
+              </h3>
+              {item.description && (
+                <p className="text-xs text-gray-500 line-clamp-2 leading-5">
+                  {item.description}
+                </p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-900/8 pr-[44%]">
+              <span className="text-[11px] font-bold text-gray-500">{item.meta}</span>
+              <span className="inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-transform duration-150 group-hover:translate-x-0.5">
+                {item.ctaLabel}
+                <Icons.ChevronRight size={14} />
+              </span>
+            </div>
           </div>
         </CardContainer>
       );
@@ -1633,7 +1743,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
       />
 
       <div className={`flex-1 overflow-y-auto px-4 pb-8 md:px-8 md:pb-12 ${isCorujaLibraryHub ? 'relative z-10 pt-[88px] md:pt-8' : ''}`}>
-        <div className="mx-auto max-w-[78rem]">
+        <div>
           {isVideoHub ? (
             <>
               <div className={`mb-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] animate-fade-in-up ${isCorujaLibraryHub ? 'text-white/58' : 'text-brand-primary/55'}`}>

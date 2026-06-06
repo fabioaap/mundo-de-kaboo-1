@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Icons } from '../components/Icons';
 import { Collection, ScreenName, UserContentGrant, UserProfile } from '../types';
 import { api, clearCollectionsCache, getCachedCollectionsSync, getCachedProfileSync } from '../lib/api';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { TABS, LOGO_URL, formatSegmentLabel, getCharacterBgColor, getCharacterColor, getCharacterImageUrl } from '../constants';
+import { TABS, LOGO_URL, formatSegmentLabel, getCharacterBgColor, getCharacterColor, getCharacterImageUrl, SUITABLE_AGES_OPTIONS } from '../constants';
 import { canAccessCollection, formatAccessDate, getAccessStatusLabel, getDaysUntilAccessExpiry, getProfileAccessStatus } from '../lib/access';
 import { PageHeader } from '../components/PageHeader';
 import { Button, Input } from '../design-system';
@@ -144,17 +145,17 @@ const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, gra
 
   return (
     <div
-      className={`grid auto-rows-fr ${isCorujaTone
+      className={`grid ${isCorujaTone
         ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
           : usesCollectionLayout
-            ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
-          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} ${layoutSpacing.cardGridGap}`}
+            ? 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'} ${layoutSpacing.cardGridGap}`}
         style={{
           contain: 'layout style',
         }}
       >
       {collections.map((collection) => (
-        <div key={collection.id} className="h-full w-full">
+        <div key={collection.id} className="w-full max-w-[420px] sm:max-w-full mx-auto sm:mx-0">
           <Card3D
             collection={collection}
             onCollectionClick={onCollectionClick}
@@ -623,7 +624,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const [bnccPickerFilters, setBnccPickerFilters] = useState<BnccPickerFilters>(INITIAL_BNCC_PICKER_FILTERS);
   const [searchTerm, setSearchTerm] = useState(() => typeof params?.query === 'string' ? params.query : '');
   const [filterDrawerFocus, setFilterDrawerFocus] = useState<keyof FilterState | null>(null);
-  const [sortByAge, setSortByAge] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<'age' | 'schoolYear' | null>(null);
+  const [dropdownAnchor, setDropdownAnchor] = useState<{ x: number; y: number } | null>(null);
+  const isAgeValue = (v: string) => /^\d+\s*anos?$/i.test(v.trim());
 
   // User Profile State for Header - Initialize from cache
   const [profile, setProfile] = useState<UserProfile | null>(accessProfile || cachedProfile);
@@ -706,10 +709,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     ? 'px-[var(--space-page-x)] md:mx-auto md:w-full md:max-w-[78rem] md:px-0'
     : isCentralCoruja
       ? 'px-[var(--space-page-x)] md:px-[var(--space-page-x)]'
-      : 'px-4 sm:px-6 lg:px-8 xl:mx-auto xl:w-full xl:max-w-[68rem]';
+      : 'px-4 sm:px-6 lg:px-8';
   const desktopSkeletonHeaderPaddingClass = isCorujaPinnedShelfLayout
     ? 'hidden md:block shrink-0 md:mx-auto md:w-full md:max-w-[78rem] md:pt-[var(--space-page-header-top-desktop)] md:pb-[var(--space-page-inset-y)]'
-    : 'hidden md:block shrink-0 px-[var(--space-page-x-desktop)] pt-[var(--space-page-header-top-desktop)] pb-[var(--space-page-inset-y)] xl:mx-auto xl:w-full xl:max-w-[68rem]';
+    : 'hidden md:block shrink-0 px-[var(--space-page-x-desktop)] pt-[var(--space-page-header-top-desktop)] pb-[var(--space-page-inset-y)]';
   const corujaHeroLayerDepths = useMemo(() => (isMobile ? [0.8, 0.36] : [1.4, 0.6]), [isMobile]);
   const { containerRef: corujaHeroMotionContainerRef, setLayerRef: setCorujaHeroLayerRef } = useParallaxMotion({
     disabled: !isCorujaHeroImageLayout || prefersReducedMotion,
@@ -1084,7 +1087,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       characters: new Set<string>(),
       bncc: new Set<string>(),
       casel: new Set<string>(),
-      age: new Set<string>()
+      age: new Set<string>(),
+      suitable_ages: new Set<string>(),
     };
 
     groupedCollections.forEach(c => {
@@ -1092,6 +1096,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       c.bncc_skills?.forEach(x => opts.bncc.add(x));
       c.casel_competencies?.forEach(x => opts.casel.add(x));
       c.age_grade?.forEach(x => opts.age.add(x));
+      c.suitable_ages?.forEach(x => opts.suitable_ages.add(x));
     });
 
     return {
@@ -1106,6 +1111,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         if (indexB !== -1) return 1;
         return a.localeCompare(b, undefined, { numeric: true });
       }),
+      suitable_ages: Array.from(opts.suitable_ages).sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true })
+      ),
     };
   }, [groupedCollections]);
 
@@ -1221,23 +1229,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       }
 
       if (activeFilters.age.length > 0) {
-        const hasAge = c.age_grade?.some(age => activeFilters.age.includes(age));
-        if (!hasAge) return false;
+        const ageValues = activeFilters.age.filter(isAgeValue);
+        const schoolYearValues = activeFilters.age.filter(v => !isAgeValue(v));
+        const hasSchoolYear = schoolYearValues.length === 0 || c.age_grade?.some(age => schoolYearValues.includes(age));
+        const hasSuitableAge = ageValues.length === 0 || c.suitable_ages?.some(age => ageValues.includes(age));
+        if (!hasSchoolYear || !hasSuitableAge) return false;
       }
 
       return true;
     });
 
-    if (sortByAge) {
-      result.sort((a, b) => {
-        const numA = parseInt((Array.isArray(a.age_grade) ? a.age_grade[0] : a.age_grade) || '999', 10);
-        const numB = parseInt((Array.isArray(b.age_grade) ? b.age_grade[0] : b.age_grade) || '999', 10);
-        return numA - numB;
-      });
-    }
-
     return result;
-  }, [groupedCollections, userProgress, activeTab, activeFilters, normalizedSearchTerm, sortByAge]);
+  }, [groupedCollections, userProgress, activeTab, activeFilters, normalizedSearchTerm]);
 
   const searchBackdropCollections = useMemo(() => {
     const result = groupedCollections.map((collection) => ({
@@ -1245,16 +1248,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       progress: userProgress[collection.id] || undefined,
     })) as (Collection & { progress?: number })[];
 
-    if (sortByAge) {
-      result.sort((a, b) => {
-        const numA = parseInt((Array.isArray(a.age_grade) ? a.age_grade[0] : a.age_grade) || '999', 10);
-        const numB = parseInt((Array.isArray(b.age_grade) ? b.age_grade[0] : b.age_grade) || '999', 10);
-        return numA - numB;
-      });
-    }
-
     return result;
-  }, [groupedCollections, userProgress, sortByAge]);
+  }, [groupedCollections, userProgress]);
 
   const inProgressCollections = groupedCollections.filter(c => (userProgress[c.id] || 0) > 0);
 
@@ -1263,12 +1258,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       // Collection is locked — don't open details
       return;
     }
-    const isStandaloneBook = currentCollectionGroup === 'books' && isStandaloneReadableBook(collection);
-    if (isStandaloneBook) {
-      onNavigate('player_book', { collectionId: collection.id });
-      return;
-    }
-    // Open modal instead of navigating to details screen - stay on current screen
+    // Always open the modal so users can choose between read/listen/watch
     onNavigate(screenName, { ...baseHomeParams, collectionId: collection.id });
   };
 
@@ -1493,6 +1483,58 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     />
   );
 
+  const renderAgeDropdown = () => {
+    if (!openDropdown || !dropdownAnchor) return null;
+    const isAgeDropdown = openDropdown === 'age';
+    const opts = isAgeDropdown
+      ? SUITABLE_AGES_OPTIONS.map(o => o.value)
+      : availableOptions.age.filter(v => !isAgeValue(v));
+    if (opts.length === 0) return null;
+    return createPortal(
+      <>
+        <div className="fixed inset-0 z-[70]" onClick={() => setOpenDropdown(null)} />
+        <div
+          className="fixed z-[71] min-w-[180px] rounded-2xl bg-white p-3 shadow-[0_16px_40px_rgba(15,23,42,0.16)] ring-1 ring-slate-200"
+          style={{ left: dropdownAnchor.x, top: dropdownAnchor.y }}
+          onClick={e => e.stopPropagation()}
+        >
+          <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+            {isAgeDropdown ? 'Idade Adequada' : 'Ano Escolar'}
+          </p>
+          <div className="flex flex-col gap-1.5">
+            {opts.map(opt => {
+              const isActive = activeFilters.age.includes(opt);
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => toggleFilter('age', opt)}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-[12px] font-bold transition-all text-left ${isActive ? 'bg-brand-primary text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+                >
+                  <span className={`h-3.5 w-3.5 shrink-0 rounded-[4px] border-2 ${isActive ? 'border-white bg-white/30' : 'border-slate-300 bg-white'}`} />
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+          {activeFilters.age.some(v => isAgeDropdown ? isAgeValue(v) : !isAgeValue(v)) && (
+            <button
+              type="button"
+              onClick={() => {
+                const toRemove = activeFilters.age.filter(v => isAgeDropdown ? isAgeValue(v) : !isAgeValue(v));
+                toRemove.forEach(v => toggleFilter('age', v));
+              }}
+              className="mt-2 w-full rounded-xl py-1.5 text-[11px] font-bold text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              Limpar
+            </button>
+          )}
+        </div>
+      </>,
+      document.body
+    );
+  };
+
   const renderSegmentTabs = (tone: 'hero' | 'default' | 'kaboo-hero' = 'default') => (
     <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
       {TABS.map((tab) => {
@@ -1652,7 +1694,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
     return (
       <div className="space-y-3 md:space-y-4">
-        <div className="relative z-10 flex w-full flex-col gap-3 lg:max-w-[60rem] lg:flex-row lg:items-center">
+        <div className="relative z-10 flex w-full flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative min-w-0 flex-1">
             <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
               <Icons.Search size={18} />
@@ -1707,7 +1749,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
 
         {!isSearchExperience && (
-          <div className="relative z-20 flex flex-wrap gap-3 overflow-x-auto no-scrollbar pb-1 lg:max-w-[60rem] lg:overflow-visible">
+          <div className="relative z-20 flex flex-wrap gap-3 overflow-x-auto no-scrollbar pb-1 lg:overflow-visible">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -1790,7 +1832,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           {/* GRID SKELETON */}
           <div className="mt-6">
-            <div className={`grid ${currentCollectionGroup === 'kits' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} ${layoutSpacing.cardGridGap}`}>
+            <div className={`grid ${currentCollectionGroup === 'kits' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'} ${layoutSpacing.cardGridGap}`}>
               {[...Array(12)].map((_, i) => (
                 <div key={i} className="w-full animate-pulse">
                   <div className={`mb-3 overflow-hidden relative bg-gray-200 ${currentCollectionGroup === 'kits' ? 'rounded-[30px] aspect-[1.7/1]' : 'rounded-lg aspect-square'}`}></div>
@@ -1810,6 +1852,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   }
 
   return (
+    <>
     <div
       className={`flex flex-col min-h-full pb-24 md:pb-0 relative ${isCorujaHomeLayout ? 'bg-[#041b24]' : 'bg-white'}`}
       style={isCorujaHomeLayout
@@ -2112,7 +2155,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
                   <div className="mt-6">
                     <GridView
-                      key={`search-backdrop-${sortByAge ? 'age' : 'default'}`}
+                      key="search-backdrop"
                       collections={searchBackdropCollections}
                       onCollectionClick={handleCollectionClick}
                       grants={contentGrants}
@@ -2186,22 +2229,53 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                   )}
                 </div>
                 {!isCorujaHomeLayout && (
-                  <div className="flex items-center gap-1.5 rounded-full border border-gray-200/80 bg-white/90 px-2 py-1 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
-                    <button
-                      onClick={() => setSortByAge(prev => !prev)}
-                      className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${sortByAge
-                        ? isCorujaHomeLayout
-                          ? 'bg-brand-light text-white shadow-[0_10px_22px_rgba(93,30,118,0.3)]'
-                          : 'bg-brand-primary text-white shadow-sm'
-                        : isCorujaHomeLayout
-                          ? 'bg-white/10 text-white/80 hover:bg-white/14'
-                          : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                        }`}
-                      title="Ordenar por faixa etária"
-                    >
-                      <Icons.ArrowUpDown size={12} />
-                      Idade
-                    </button>
+                  <div className="relative flex items-center gap-1.5 rounded-full border border-gray-200/80 bg-white/90 px-2 py-1 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+                    {/* Chip Idade */}
+                    {(() => {
+                      const activeCount = activeFilters.age.filter(isAgeValue).length;
+                      const isOpen = openDropdown === 'age';
+                      return (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDropdownAnchor({ x: rect.left, y: rect.bottom + 6 });
+                              setOpenDropdown(isOpen ? null : 'age');
+                            }}
+                            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${activeCount > 0 || isOpen ? 'bg-brand-primary text-white shadow-sm' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                            title="Filtrar por idade"
+                          >
+                            <Icons.Baby size={12} />
+                            Idade Adequada
+                            {activeCount > 0 && <span className="opacity-80">{activeCount}</span>}
+                          </button>
+                        </>
+                      );
+                    })()}
+                    {/* Chip Ano Escolar */}
+                    {(() => {
+                      const syOpts = availableOptions.age.filter(v => !isAgeValue(v));
+                      const activeCount = activeFilters.age.filter(v => !isAgeValue(v)).length;
+                      const isOpen = openDropdown === 'schoolYear';
+                      return (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              if (syOpts.length === 0) return;
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDropdownAnchor({ x: rect.left, y: rect.bottom + 6 });
+                              setOpenDropdown(isOpen ? null : 'schoolYear');
+                            }}
+                            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${activeCount > 0 || isOpen ? 'bg-brand-primary text-white shadow-sm' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                            title="Filtrar por ano escolar"
+                          >
+                            <Icons.GraduationCap size={12} />
+                            Ano Escolar
+                            {activeCount > 0 && <span className="opacity-80">{activeCount}</span>}
+                          </button>
+                        </>
+                      );
+                    })()}
                     <span className={`inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full px-2 text-[11px] font-black ${isCorujaHomeLayout ? 'text-white/70 bg-white/10' : 'text-gray-400 bg-gray-50'}`}>
                       {filteredCollections.length}
                     </span>
@@ -2313,5 +2387,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
         </div>
       )}
     </div>
+    {renderAgeDropdown()}
+    </>
   );
 };

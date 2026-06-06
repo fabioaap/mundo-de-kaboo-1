@@ -5,7 +5,6 @@
 
 alter table public.collections
   add column if not exists collection_assets jsonb not null default '[]'::jsonb;
-
 update public.collections
 set collection_assets = coalesce(
   nullif(collection_assets, '[]'::jsonb),

@@ -8,7 +8,6 @@
 -- ============================================================
 
 BEGIN;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -20,7 +19,6 @@ BEGIN
   END IF;
 END
 $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -32,7 +30,6 @@ BEGIN
   END IF;
 END
 $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -44,7 +41,6 @@ BEGIN
   END IF;
 END
 $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -56,7 +52,6 @@ BEGIN
   END IF;
 END
 $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -68,7 +63,6 @@ BEGIN
   END IF;
 END
 $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -80,7 +74,6 @@ BEGIN
   END IF;
 END
 $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -92,7 +85,6 @@ BEGIN
   END IF;
 END
 $$;
-
 CREATE TABLE IF NOT EXISTS public.media_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   hub public.media_hub NOT NULL,
@@ -130,21 +122,16 @@ CREATE TABLE IF NOT EXISTS public.media_items (
     OR (provider = 'internal')
   )
 );
-
 CREATE INDEX IF NOT EXISTS idx_media_items_hub_status_published
   ON public.media_items (hub, status, published_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_media_items_provider_status
   ON public.media_items (provider, status);
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_media_items_storage_key
   ON public.media_items (storage_bucket, storage_path)
   WHERE storage_bucket IS NOT NULL AND storage_path IS NOT NULL;
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_media_items_collection_resource_id_unique
   ON public.media_items (collection_resource_id)
   WHERE collection_resource_id IS NOT NULL;
-
 CREATE TABLE IF NOT EXISTS public.media_collection_links (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   media_item_id UUID NOT NULL REFERENCES public.media_items(id) ON DELETE CASCADE,
@@ -154,13 +141,10 @@ CREATE TABLE IF NOT EXISTS public.media_collection_links (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (media_item_id, collection_id, link_type)
 );
-
 CREATE INDEX IF NOT EXISTS idx_media_collection_links_collection_id
   ON public.media_collection_links (collection_id, link_type);
-
 CREATE INDEX IF NOT EXISTS idx_media_collection_links_media_item_id
   ON public.media_collection_links (media_item_id);
-
 CREATE TABLE IF NOT EXISTS public.media_shelves (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   hub public.media_hub NOT NULL,
@@ -175,10 +159,8 @@ CREATE TABLE IF NOT EXISTS public.media_shelves (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_media_shelves_hub_published_order
   ON public.media_shelves (hub, is_published, order_index);
-
 CREATE TABLE IF NOT EXISTS public.media_shelf_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   shelf_id UUID NOT NULL REFERENCES public.media_shelves(id) ON DELETE CASCADE,
@@ -188,10 +170,8 @@ CREATE TABLE IF NOT EXISTS public.media_shelf_items (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (shelf_id, media_item_id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_media_shelf_items_shelf_id
   ON public.media_shelf_items (shelf_id, order_index);
-
 CREATE TABLE IF NOT EXISTS public.user_media_progress (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -205,13 +185,10 @@ CREATE TABLE IF NOT EXISTS public.user_media_progress (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT user_media_progress_user_media_item_key UNIQUE (user_id, media_item_id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_user_media_progress_user_id
   ON public.user_media_progress (user_id, last_played_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_user_media_progress_media_item_id
   ON public.user_media_progress (media_item_id);
-
 CREATE TABLE IF NOT EXISTS public.user_media_favorites (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -219,10 +196,8 @@ CREATE TABLE IF NOT EXISTS public.user_media_favorites (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT user_media_favorites_user_media_item_key UNIQUE (user_id, media_item_id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_user_media_favorites_user_id
   ON public.user_media_favorites (user_id, created_at DESC);
-
 CREATE TABLE IF NOT EXISTS public.media_link_health (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   media_item_id UUID NOT NULL REFERENCES public.media_items(id) ON DELETE CASCADE,
@@ -234,7 +209,6 @@ CREATE TABLE IF NOT EXISTS public.media_link_health (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT media_link_health_media_item_id_key UNIQUE (media_item_id)
 );
-
 CREATE OR REPLACE FUNCTION public.handle_media_updated_at()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -244,31 +218,26 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 DROP TRIGGER IF EXISTS set_media_items_updated_at ON public.media_items;
 CREATE TRIGGER set_media_items_updated_at
   BEFORE UPDATE ON public.media_items
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_media_updated_at();
-
 DROP TRIGGER IF EXISTS set_media_shelves_updated_at ON public.media_shelves;
 CREATE TRIGGER set_media_shelves_updated_at
   BEFORE UPDATE ON public.media_shelves
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_media_updated_at();
-
 DROP TRIGGER IF EXISTS set_user_media_progress_updated_at ON public.user_media_progress;
 CREATE TRIGGER set_user_media_progress_updated_at
   BEFORE UPDATE ON public.user_media_progress
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_media_updated_at();
-
 DROP TRIGGER IF EXISTS set_media_link_health_updated_at ON public.media_link_health;
 CREATE TRIGGER set_media_link_health_updated_at
   BEFORE UPDATE ON public.media_link_health
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_media_updated_at();
-
 ALTER TABLE public.media_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.media_collection_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.media_shelves ENABLE ROW LEVEL SECURITY;
@@ -276,7 +245,6 @@ ALTER TABLE public.media_shelf_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_media_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_media_favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.media_link_health ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Usuarios leem media items publicados" ON public.media_items;
 CREATE POLICY "Usuarios leem media items publicados"
   ON public.media_items FOR SELECT
@@ -315,7 +283,6 @@ CREATE POLICY "Usuarios leem media items publicados"
       )
     )
   );
-
 DROP POLICY IF EXISTS "Admins e editores gerenciam media items" ON public.media_items;
 CREATE POLICY "Admins e editores gerenciam media items"
   ON public.media_items FOR ALL
@@ -336,14 +303,12 @@ CREATE POLICY "Admins e editores gerenciam media items"
         AND profiles.role IN ('admin', 'editor')
     )
   );
-
 DROP POLICY IF EXISTS "Service role gerencia media items" ON public.media_items;
 CREATE POLICY "Service role gerencia media items"
   ON public.media_items FOR ALL
   TO service_role
   USING (true)
   WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Usuarios leem media collection links visiveis" ON public.media_collection_links;
 CREATE POLICY "Usuarios leem media collection links visiveis"
   ON public.media_collection_links FOR SELECT
@@ -356,7 +321,6 @@ CREATE POLICY "Usuarios leem media collection links visiveis"
         AND items.status = 'published'
     )
   );
-
 DROP POLICY IF EXISTS "Admins e editores gerenciam media collection links" ON public.media_collection_links;
 CREATE POLICY "Admins e editores gerenciam media collection links"
   ON public.media_collection_links FOR ALL
@@ -375,20 +339,17 @@ CREATE POLICY "Admins e editores gerenciam media collection links"
         AND profiles.role IN ('admin', 'editor')
     )
   );
-
 DROP POLICY IF EXISTS "Service role gerencia media collection links" ON public.media_collection_links;
 CREATE POLICY "Service role gerencia media collection links"
   ON public.media_collection_links FOR ALL
   TO service_role
   USING (true)
   WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Usuarios leem media shelves publicadas" ON public.media_shelves;
 CREATE POLICY "Usuarios leem media shelves publicadas"
   ON public.media_shelves FOR SELECT
   TO authenticated
   USING (is_published = true);
-
 DROP POLICY IF EXISTS "Admins e editores gerenciam media shelves" ON public.media_shelves;
 CREATE POLICY "Admins e editores gerenciam media shelves"
   ON public.media_shelves FOR ALL
@@ -407,14 +368,12 @@ CREATE POLICY "Admins e editores gerenciam media shelves"
         AND profiles.role IN ('admin', 'editor')
     )
   );
-
 DROP POLICY IF EXISTS "Service role gerencia media shelves" ON public.media_shelves;
 CREATE POLICY "Service role gerencia media shelves"
   ON public.media_shelves FOR ALL
   TO service_role
   USING (true)
   WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Usuarios leem media shelf items de shelves publicadas" ON public.media_shelf_items;
 CREATE POLICY "Usuarios leem media shelf items de shelves publicadas"
   ON public.media_shelf_items FOR SELECT
@@ -427,7 +386,6 @@ CREATE POLICY "Usuarios leem media shelf items de shelves publicadas"
         AND shelves.is_published = true
     )
   );
-
 DROP POLICY IF EXISTS "Admins e editores gerenciam media shelf items" ON public.media_shelf_items;
 CREATE POLICY "Admins e editores gerenciam media shelf items"
   ON public.media_shelf_items FOR ALL
@@ -446,20 +404,17 @@ CREATE POLICY "Admins e editores gerenciam media shelf items"
         AND profiles.role IN ('admin', 'editor')
     )
   );
-
 DROP POLICY IF EXISTS "Service role gerencia media shelf items" ON public.media_shelf_items;
 CREATE POLICY "Service role gerencia media shelf items"
   ON public.media_shelf_items FOR ALL
   TO service_role
   USING (true)
   WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Usuarios leem o proprio progresso de midia" ON public.user_media_progress;
 CREATE POLICY "Usuarios leem o proprio progresso de midia"
   ON public.user_media_progress FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
-
 DROP POLICY IF EXISTS "Usuarios inserem o proprio progresso de midia" ON public.user_media_progress;
 CREATE POLICY "Usuarios inserem o proprio progresso de midia"
   ON public.user_media_progress FOR INSERT
@@ -488,52 +443,44 @@ CREATE POLICY "Usuarios inserem o proprio progresso de midia"
         )
     )
   );
-
 DROP POLICY IF EXISTS "Usuarios atualizam o proprio progresso de midia" ON public.user_media_progress;
 CREATE POLICY "Usuarios atualizam o proprio progresso de midia"
   ON public.user_media_progress FOR UPDATE
   TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
-
 DROP POLICY IF EXISTS "Usuarios removem o proprio progresso de midia" ON public.user_media_progress;
 CREATE POLICY "Usuarios removem o proprio progresso de midia"
   ON public.user_media_progress FOR DELETE
   TO authenticated
   USING (user_id = auth.uid());
-
 DROP POLICY IF EXISTS "Service role gerencia user media progress" ON public.user_media_progress;
 CREATE POLICY "Service role gerencia user media progress"
   ON public.user_media_progress FOR ALL
   TO service_role
   USING (true)
   WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Usuarios leem os proprios favoritos de midia" ON public.user_media_favorites;
 CREATE POLICY "Usuarios leem os proprios favoritos de midia"
   ON public.user_media_favorites FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
-
 DROP POLICY IF EXISTS "Usuarios inserem os proprios favoritos de midia" ON public.user_media_favorites;
 CREATE POLICY "Usuarios inserem os proprios favoritos de midia"
   ON public.user_media_favorites FOR INSERT
   TO authenticated
   WITH CHECK (user_id = auth.uid());
-
 DROP POLICY IF EXISTS "Usuarios removem os proprios favoritos de midia" ON public.user_media_favorites;
 CREATE POLICY "Usuarios removem os proprios favoritos de midia"
   ON public.user_media_favorites FOR DELETE
   TO authenticated
   USING (user_id = auth.uid());
-
 DROP POLICY IF EXISTS "Service role gerencia user media favorites" ON public.user_media_favorites;
 CREATE POLICY "Service role gerencia user media favorites"
   ON public.user_media_favorites FOR ALL
   TO service_role
   USING (true)
   WITH CHECK (true);
-
 DROP POLICY IF EXISTS "Admins e editores leem media link health" ON public.media_link_health;
 CREATE POLICY "Admins e editores leem media link health"
   ON public.media_link_health FOR SELECT
@@ -545,7 +492,6 @@ CREATE POLICY "Admins e editores leem media link health"
         AND profiles.role IN ('admin', 'editor')
     )
   );
-
 DROP POLICY IF EXISTS "Admins e editores gerenciam media link health" ON public.media_link_health;
 CREATE POLICY "Admins e editores gerenciam media link health"
   ON public.media_link_health FOR ALL
@@ -564,14 +510,12 @@ CREATE POLICY "Admins e editores gerenciam media link health"
         AND profiles.role IN ('admin', 'editor')
     )
   );
-
 DROP POLICY IF EXISTS "Service role gerencia media link health" ON public.media_link_health;
 CREATE POLICY "Service role gerencia media link health"
   ON public.media_link_health FOR ALL
   TO service_role
   USING (true)
   WITH CHECK (true);
-
 COMMENT ON TABLE public.media_items IS 'Catálogo privado de mídia para hubs gerais como Videos e Musicas.';
 COMMENT ON COLUMN public.media_items.collection_resource_id IS 'Vínculo opcional com collection_resources para rollout brownfield.';
 COMMENT ON COLUMN public.media_items.storage_bucket IS 'Bucket privado do Supabase Storage.';
@@ -579,5 +523,4 @@ COMMENT ON COLUMN public.media_items.storage_path IS 'Caminho privado do objeto;
 COMMENT ON TABLE public.media_collection_links IS 'Relacionamento opcional entre item de mídia e coleção.';
 COMMENT ON TABLE public.user_media_progress IS 'Checkpoint de reprodução por usuário e item de mídia.';
 COMMENT ON TABLE public.user_media_favorites IS 'Favoritos de mídia por usuário.';
-
 COMMIT;

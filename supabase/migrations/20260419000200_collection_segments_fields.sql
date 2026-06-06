@@ -1,9 +1,7 @@
 alter table public.collections
   add column if not exists segments text[] not null default '{}';
-
 alter table public.collections
   add column if not exists primary_segment text;
-
 update public.collections
 set
   segments = case

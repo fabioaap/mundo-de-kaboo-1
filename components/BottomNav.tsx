@@ -41,9 +41,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
   const isCentralCoruja = brandSlug === 'central-coruja';
   const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
   const resolvedBrandName = brandName || 'Mundo de Kaboo';
-  const footerBrandLabel = `${resolvedBrandName} © 2025`;
+  const footerBrandLabel = `${resolvedBrandName} © ${new Date().getFullYear()}`;
 
-  const [isCollapsed, setIsCollapsed] = useState(() => {
+  const [isCollapsedState, setIsCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_SIDEBAR_COLLAPSED);
       return saved === 'true';
@@ -53,15 +53,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
   });
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_SIDEBAR_COLLAPSED, String(isCollapsed));
-    } catch (error) {
-      console.warn('Failed to save sidebar state:', error);
-    }
-  }, [isCollapsed]);
-
-  // Auto-collapse when entering the admin screen to give space to the secondary sidebar
+  // Auto-collapse when entering the admin screen (subsidebar opens) — NOT persisted
   useEffect(() => {
     if (currentScreen === 'admin') {
       setIsCollapsed(true);
@@ -69,9 +61,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     setIsMoreMenuOpen(false);
   }, [currentScreen]);
 
+  // Only persist USER-initiated toggles to localStorage
   const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
+    const next = !isCollapsedState;
+    setIsCollapsed(next);
+    try {
+      localStorage.setItem(STORAGE_SIDEBAR_COLLAPSED, String(next));
+    } catch (error) {
+      console.warn('Failed to save sidebar state:', error);
+    }
   };
+
+  const isCollapsed = isCollapsedState;
 
   const fallbackRole = !profile && (!isSupabaseConfigured || isDevMockSession())
     ? getMockCurrentUserRole()
@@ -260,7 +261,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
       <div className={`hidden md:flex flex-col h-screen shrink-0 z-50 transition-[width] duration-180 ease-out relative ${desktopShellClass} ${isCollapsed ? 'w-20 overflow-visible' : 'w-[268px] overflow-hidden'
         }`}>
 
-        {/* Toggle Button - always at top, on the right edge of sidebar */}
+        {/* Toggle Button - visible on all desktop screens */}
         <button
           onClick={toggleSidebar}
           className={`absolute ${desktopTogglePositionClass} flex items-center justify-center border rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-[transform,box-shadow,background-color,border-color] duration-150 z-20 ${desktopToggleClass}`}

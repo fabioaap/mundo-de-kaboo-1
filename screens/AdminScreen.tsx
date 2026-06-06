@@ -9,6 +9,8 @@ import { AdminCollectionsScreen, AdminCollectionsHandle } from './AdminCollectio
 import { AdminCharactersHandle, AdminCharactersScreen } from './AdminCharactersScreen';
 import { AdminWhiteLabelScreen } from './AdminWhiteLabelScreen';
 import { VouchersModule } from './VouchersModule';
+import { AdminFormationsScreen } from './AdminFormationsScreen';
+import { AdminMaterialsScreen } from './AdminMaterialsScreen';
 
 interface AdminScreenProps {
     onNavigate: (screen: ScreenName, params?: any) => void;
@@ -33,7 +35,7 @@ const MODULE_META: Record<AdminModule, { icon: React.FC<{ className?: string }>;
 const ALL_MODULES: AdminModule[] = ['collections', 'books', 'videos', 'music', 'formations', 'materials', 'users', 'characters', 'vouchers', 'white_label'];
 const EDITOR_MODULES: AdminModule[] = ['collections', 'books', 'videos', 'music', 'formations', 'materials', 'characters'];
 
-const COLLECTION_SCREEN_MODULES: AdminModule[] = ['collections', 'books', 'users', 'videos', 'music', 'formations', 'materials'];
+const COLLECTION_SCREEN_MODULES: AdminModule[] = ['collections', 'books', 'users', 'videos', 'music'];
 
 /* ─── Sidebar ──────────────────────────────────────────── */
 
@@ -187,8 +189,6 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack, in
             case 'users':
             case 'videos':
             case 'music':
-            case 'formations':
-            case 'materials':
                 // Delegate to legacy screen; pass the active tab so it opens the right one
                 return (
                     <AdminCollectionsScreen
@@ -202,6 +202,10 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack, in
                         initialLibraryArea={activeModule === 'collections' || activeModule === 'users' ? undefined : activeModule}
                     />
                 );
+            case 'formations':
+                return <AdminFormationsScreen onNavigate={onNavigate} onBack={onBack} />;
+            case 'materials':
+                return <AdminMaterialsScreen onNavigate={onNavigate} onBack={onBack} />;
             case 'vouchers':
                 return <VouchersModule />;
             case 'characters':

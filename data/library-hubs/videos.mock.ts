@@ -9,7 +9,7 @@ export const videosLibraryMock: LibraryHubData = {
     supportNote: 'Em vez de simular feed grande, a página valoriza o que já está pronto: desenho, Libras, como jogar, videoaula e um vídeo infantil que abre direto no player.',
     accentClassName: 'from-[#5D1F58] via-[#7C2C75] to-[#4EA8DE]',
     accentSoftClassName: 'border-[#d9c0d7] bg-[#fbf6fb] text-[#5D1F58]',
-    quickFilters: ['Desenho', 'Com Libras', 'Como jogar', 'Videoaula'],
+    quickFilters: ['Desenho Animado', 'Contação de Histórias', 'Formação', 'Com Libras', 'Como jogar', 'Videoaula'],
     statCards: [
         {
             id: 'available',

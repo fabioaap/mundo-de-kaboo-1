@@ -15,11 +15,13 @@ type CollectionAssetMeta = {
 
 export const COLLECTION_ASSET_META: Record<CollectionAssetCategory, CollectionAssetMeta> = {
     reading: { label: 'Leitura', mediaType: 'document', scope: 'primary' },
-    storytelling: { label: 'Áudio', mediaType: 'audio', scope: 'primary' },
+    storytelling: { label: 'Áudio Livro', mediaType: 'audio', scope: 'primary' },
     animation: { label: 'Desenho Animado', mediaType: 'video', scope: 'primary' },
     accessible_video: { label: 'Com Libras', mediaType: 'video', scope: 'primary' },
     how_to_play: { label: 'Como Jogar', mediaType: 'video', scope: 'library' },
     video_lesson: { label: 'Videoaula', mediaType: 'video', scope: 'library' },
+    formation: { label: 'Formação', mediaType: 'video', scope: 'library' },
+    story_video: { label: 'Contação de Histórias', mediaType: 'video', scope: 'primary' },
     teacher_guide: { label: 'Guia do Professor', mediaType: 'document', scope: 'library' },
     extra_material: { label: 'Material Extra', mediaType: 'document', scope: 'library' },
 };
@@ -29,17 +31,21 @@ const COLLECTION_ASSET_ORDER: CollectionAssetCategory[] = [
     'storytelling',
     'animation',
     'accessible_video',
+    'story_video',
     'how_to_play',
     'video_lesson',
+    'formation',
     'teacher_guide',
     'extra_material',
 ];
 
 const LEGACY_VIDEO_PRIORITY: CollectionAssetCategory[] = [
     'animation',
+    'story_video',
     'accessible_video',
     'how_to_play',
     'video_lesson',
+    'formation',
 ];
 
 const normalizeText = (value?: string | null): string => (value ?? '').trim();
@@ -213,6 +219,13 @@ const normalizeAsset = (
         description: normalizeText(asset.description) || null,
         scope: asset.scope ?? meta.scope,
         lyrics_url: normalizeText(asset.lyrics_url) || null,
+        // Preserve per-asset flags; undefined means "not set" (inherit / backward-compat default).
+        ...(asset.offline_available !== undefined && asset.offline_available !== null
+            ? { offline_available: asset.offline_available }
+            : {}),
+        ...(asset.is_published !== undefined && asset.is_published !== null
+            ? { is_published: asset.is_published }
+            : {}),
     };
 };
 
@@ -231,6 +244,9 @@ const mergeAssetCandidate = (
             description: normalizeText(current?.description) || candidate.description,
             scope: current?.scope ?? candidate.scope,
             lyrics_url: current?.lyrics_url ?? candidate.lyrics_url,
+            // Per-asset flags: prefer current (already-stored) value over candidate
+            offline_available: current?.offline_available ?? candidate.offline_available,
+            is_published: current?.is_published ?? candidate.is_published,
         },
         fallbackCategory ?? current?.category ?? candidate.category
     );

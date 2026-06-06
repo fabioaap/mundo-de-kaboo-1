@@ -4,7 +4,6 @@
 -- ============================================================
 
 BEGIN;
-
 -- ── 1. brands ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.brands (
     id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -15,7 +14,6 @@ CREATE TABLE IF NOT EXISTS public.brands (
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT brands_slug_unique UNIQUE (slug)
 );
-
 -- ── 2. brand_settings ─────────────────────────────────────
 -- Identidade visual, assets, menu config e versão publicada.
 CREATE TABLE IF NOT EXISTS public.brand_settings (
@@ -34,7 +32,6 @@ CREATE TABLE IF NOT EXISTS public.brand_settings (
     updated_at      timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT brand_settings_brand_id_unique UNIQUE (brand_id)
 );
-
 -- ── 3. feature_flags ──────────────────────────────────────
 -- Catálogo global de flags e defaults.
 CREATE TABLE IF NOT EXISTS public.feature_flags (
@@ -46,7 +43,6 @@ CREATE TABLE IF NOT EXISTS public.feature_flags (
     created_at      timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT feature_flags_key_unique UNIQUE (key)
 );
-
 -- ── 4. brand_feature_overrides ────────────────────────────
 -- Estado efetivo de cada flag por marca.
 CREATE TABLE IF NOT EXISTS public.brand_feature_overrides (
@@ -58,7 +54,6 @@ CREATE TABLE IF NOT EXISTS public.brand_feature_overrides (
     updated_at      timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT brand_feature_overrides_brand_flag_unique UNIQUE (brand_id, feature_flag_id)
 );
-
 -- ── 5. feature_flag_audit ─────────────────────────────────
 -- Trilha append-only de alterações de flags por marca.
 CREATE TABLE IF NOT EXISTS public.feature_flag_audit (
@@ -73,7 +68,6 @@ CREATE TABLE IF NOT EXISTS public.feature_flag_audit (
     changed_at      timestamptz NOT NULL DEFAULT now(),
     reason          text
 );
-
 -- ── 6. brand_admin_memberships ────────────────────────────
 -- Controla qual usuário pode gerenciar qual marca no admin.
 CREATE TABLE IF NOT EXISTS public.brand_admin_memberships (
@@ -83,23 +77,17 @@ CREATE TABLE IF NOT EXISTS public.brand_admin_memberships (
     created_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT brand_admin_memberships_brand_user_unique UNIQUE (brand_id, user_id)
 );
-
 -- ── Indexes ───────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_brand_settings_brand_id
     ON public.brand_settings (brand_id);
-
 CREATE INDEX IF NOT EXISTS idx_brand_feature_overrides_brand_id
     ON public.brand_feature_overrides (brand_id);
-
 CREATE INDEX IF NOT EXISTS idx_brand_feature_overrides_brand_flag
     ON public.brand_feature_overrides (brand_id, feature_flag_id);
-
 CREATE INDEX IF NOT EXISTS idx_feature_flag_audit_brand_id_changed_at
     ON public.feature_flag_audit (brand_id, changed_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_brand_admin_memberships_user_id
     ON public.brand_admin_memberships (user_id);
-
 -- ── RLS ───────────────────────────────────────────────────
 ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.brand_settings ENABLE ROW LEVEL SECURITY;
@@ -107,7 +95,6 @@ ALTER TABLE public.feature_flags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.brand_feature_overrides ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.feature_flag_audit ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.brand_admin_memberships ENABLE ROW LEVEL SECURITY;
-
 -- Helper: verifica se o usuário autenticado pode gerenciar a marca.
 CREATE OR REPLACE FUNCTION public.can_manage_brand(p_brand_id uuid)
 RETURNS boolean
@@ -124,37 +111,31 @@ AS $$
           AND p.role IN ('admin', 'editor')
     );
 $$;
-
 -- brands: leitura pública (slugs e nomes são públicos), escrita restrita.
 CREATE POLICY "brands_select_all"
     ON public.brands FOR SELECT
     TO authenticated, anon
     USING (is_active = true);
-
 CREATE POLICY "brands_manage"
     ON public.brands FOR ALL
     TO authenticated
     USING (public.can_manage_brand(id))
     WITH CHECK (public.can_manage_brand(id));
-
 -- brand_settings: idem.
 CREATE POLICY "brand_settings_select"
     ON public.brand_settings FOR SELECT
     TO authenticated, anon
     USING (EXISTS (SELECT 1 FROM public.brands b WHERE b.id = brand_id AND b.is_active));
-
 CREATE POLICY "brand_settings_manage"
     ON public.brand_settings FOR ALL
     TO authenticated
     USING (public.can_manage_brand(brand_id))
     WITH CHECK (public.can_manage_brand(brand_id));
-
 -- feature_flags: catálogo global, leitura livre.
 CREATE POLICY "feature_flags_select"
     ON public.feature_flags FOR SELECT
     TO authenticated, anon
     USING (true);
-
 CREATE POLICY "feature_flags_manage"
     ON public.feature_flags FOR ALL
     TO authenticated
@@ -164,30 +145,25 @@ CREATE POLICY "feature_flags_manage"
     WITH CHECK (EXISTS (
         SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
     ));
-
 -- brand_feature_overrides: leitura livre por override ativo.
 CREATE POLICY "brand_feature_overrides_select"
     ON public.brand_feature_overrides FOR SELECT
     TO authenticated, anon
     USING (true);
-
 CREATE POLICY "brand_feature_overrides_manage"
     ON public.brand_feature_overrides FOR ALL
     TO authenticated
     USING (public.can_manage_brand(brand_id))
     WITH CHECK (public.can_manage_brand(brand_id));
-
 -- feature_flag_audit: leitura por membros da marca.
 CREATE POLICY "feature_flag_audit_select"
     ON public.feature_flag_audit FOR SELECT
     TO authenticated
     USING (public.can_manage_brand(brand_id));
-
 CREATE POLICY "feature_flag_audit_insert"
     ON public.feature_flag_audit FOR INSERT
     TO authenticated
     WITH CHECK (public.can_manage_brand(brand_id));
-
 -- brand_admin_memberships: admin global pode gerenciar; membro pode se ver.
 CREATE POLICY "brand_admin_memberships_select"
     ON public.brand_admin_memberships FOR SELECT
@@ -195,7 +171,6 @@ CREATE POLICY "brand_admin_memberships_select"
     USING (user_id = auth.uid() OR EXISTS (
         SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
     ));
-
 CREATE POLICY "brand_admin_memberships_manage"
     ON public.brand_admin_memberships FOR ALL
     TO authenticated
@@ -205,7 +180,6 @@ CREATE POLICY "brand_admin_memberships_manage"
     WITH CHECK (EXISTS (
         SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
     ));
-
 -- ── RPC: get_brand_bootstrap ──────────────────────────────
 -- Retorna o contrato de bootstrap completo da marca em JSON.
 -- Seguro para chamada anônima — dados já filtrados por is_active.
@@ -287,7 +261,6 @@ BEGIN
     RETURN v_result;
 END;
 $$;
-
 -- ── RPC: set_brand_feature_flag ───────────────────────────
 -- Altera um flag de marca de forma transacional com auditoria obrigatória.
 -- Retorna a versão nova após a alteração.
@@ -371,14 +344,12 @@ BEGIN
     RETURN v_result;
 END;
 $$;
-
 -- ── Seed inicial: marcas canônicas ────────────────────────
 INSERT INTO public.brands (slug, name, is_active)
 VALUES
     ('kaboo',          'Mundo de Kaboo',  true),
     ('central-coruja', 'Central Coruja',  true)
 ON CONFLICT (slug) DO NOTHING;
-
 -- Settings iniciais da Kaboo.
 INSERT INTO public.brand_settings (brand_id, display_name, primary_color, light_color, bg_color, accent_color, menu_config, version)
 SELECT
@@ -392,47 +363,65 @@ SELECT
         {"key":"collections","label":"Coleções","route":"home","enabled":true,"order":10},
         {"key":"books","label":"Livros","route":"home","enabled":true,"order":20},
         {"key":"videos","label":"Vídeos","route":"videos","enabled":true,"order":30},
-        {"key":"music","label":"Áudios","route":"music","enabled":true,"order":40},
+        {"key":"music","label":"Músicas","route":"music","enabled":true,"order":40},
         {"key":"formations","label":"Formações","route":"formations","enabled":true,"order":50},
         {"key":"materials","label":"Materiais","route":"materials","enabled":true,"order":60}
     ]'::jsonb,
     1
 FROM public.brands b WHERE b.slug = 'kaboo'
 ON CONFLICT (brand_id) DO NOTHING;
-
 -- Settings iniciais da Central Coruja.
 INSERT INTO public.brand_settings (brand_id, display_name, primary_color, light_color, bg_color, accent_color, menu_config, version)
 SELECT
     b.id,
     'Central Coruja',
-    '#0C1A34',
-    '#5D1E76',
-    '#F8F4FF',
-    '#EA9A3B',
+    '#1B5E20',
+    '#388E3C',
+    '#F1F8E9',
+    '#F9A825',
     '[
         {"key":"collections","label":"Coleções","route":"home","enabled":true,"order":10},
         {"key":"books","label":"Livros","route":"home","enabled":true,"order":20},
         {"key":"videos","label":"Vídeos","route":"videos","enabled":true,"order":30},
-        {"key":"music","label":"Áudios","route":"music","enabled":true,"order":40},
+        {"key":"music","label":"Músicas","route":"music","enabled":false,"order":40},
         {"key":"formations","label":"Formações","route":"formations","enabled":true,"order":50},
         {"key":"materials","label":"Materiais","route":"materials","enabled":true,"order":60}
     ]'::jsonb,
     1
 FROM public.brands b WHERE b.slug = 'central-coruja'
 ON CONFLICT (brand_id) DO NOTHING;
-
 -- Catálogo inicial de feature flags canônicos.
 INSERT INTO public.feature_flags (key, description, default_enabled)
 VALUES
     ('menu.collections',  'Exibe a seção Coleções na nav',     true),
     ('menu.books',        'Exibe a seção Livros na nav',        true),
     ('menu.videos',       'Exibe a seção Vídeos na nav',        true),
-    ('menu.music',        'Exibe a seção Áudios na nav',        true),
+    ('menu.music',        'Exibe a seção Músicas na nav',       true),
     ('menu.formations',   'Exibe a seção Formações na nav',     true),
     ('menu.materials',    'Exibe a seção Materiais na nav',     true),
     ('hero.parallax',     'Ativa hero parallax na Home',        false),
     ('module.characters', 'Exibe a tela de personagens',        true),
     ('module.vouchers',   'Exibe módulo de vouchers no admin',  true)
 ON CONFLICT (key) DO NOTHING;
-
+-- Override Central Coruja: desabilita músicas, ativa parallax.
+INSERT INTO public.brand_feature_overrides (brand_id, feature_flag_id, enabled, config)
+SELECT
+    b.id,
+    ff.id,
+    false,
+    '{}'
+FROM public.brands b
+JOIN public.feature_flags ff ON ff.key = 'menu.music'
+WHERE b.slug = 'central-coruja'
+ON CONFLICT (brand_id, feature_flag_id) DO NOTHING;
+INSERT INTO public.brand_feature_overrides (brand_id, feature_flag_id, enabled, config)
+SELECT
+    b.id,
+    ff.id,
+    true,
+    '{"mode":"subtle"}'
+FROM public.brands b
+JOIN public.feature_flags ff ON ff.key = 'hero.parallax'
+WHERE b.slug = 'central-coruja'
+ON CONFLICT (brand_id, feature_flag_id) DO NOTHING;
 COMMIT;

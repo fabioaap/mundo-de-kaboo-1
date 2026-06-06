@@ -17,18 +17,14 @@ CREATE TABLE IF NOT EXISTS public.characters (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT characters_name_not_blank CHECK (btrim(name) <> '')
 );
-
 CREATE UNIQUE INDEX IF NOT EXISTS idx_characters_name_lower
   ON public.characters (lower(name));
-
 ALTER TABLE public.characters ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Autenticados leem personagens" ON public.characters;
 CREATE POLICY "Autenticados leem personagens"
   ON public.characters FOR SELECT
   TO authenticated
   USING (true);
-
 DROP POLICY IF EXISTS "Admins e editores gerenciam personagens" ON public.characters;
 CREATE POLICY "Admins e editores gerenciam personagens"
   ON public.characters FOR ALL
@@ -49,10 +45,8 @@ CREATE POLICY "Admins e editores gerenciam personagens"
         AND lower(COALESCE(p.role, 'viewer')) IN ('admin', 'editor')
     )
   );
-
 ALTER TABLE public.collections
   ADD COLUMN IF NOT EXISTS character_ids TEXT[] NOT NULL DEFAULT '{}'::text[];
-
 INSERT INTO public.characters (id, name, description, traits, aliases, image_url, status)
 VALUES
   ('kaboo', 'Kaboo', 'O protagonista curioso que adora aventuras e mistérios.', ARRAY['Curioso', 'Corajoso', 'Amigo'], ARRAY[]::text[], NULL, 'active'),
@@ -71,7 +65,6 @@ ON CONFLICT (id) DO UPDATE SET
   image_url = EXCLUDED.image_url,
   status = EXCLUDED.status,
   updated_at = NOW();
-
 UPDATE public.collections c
 SET character_ids = COALESCE(
   ARRAY(
@@ -94,7 +87,6 @@ SET character_ids = COALESCE(
 )
 WHERE COALESCE(array_length(c.character_ids, 1), 0) = 0
   AND COALESCE(array_length(c.characters, 1), 0) > 0;
-
 UPDATE storage.buckets
 SET allowed_mime_types = ARRAY[
   'image/png',

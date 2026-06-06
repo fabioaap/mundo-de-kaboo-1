@@ -140,6 +140,12 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
   const primaryReadingAsset = visiblePrimaryAssets.find((asset) => asset.category === 'reading')
     ?? primaryAssets.find((asset) => asset.category === 'reading')
     ?? null;
+  const bookAudiolivroAsset = !isKit
+    ? (primaryAssets.find((a) => a.category === 'storytelling' && a.is_published !== false) ?? null)
+    : null;
+  const bookVideoAsset = !isKit
+    ? (primaryAssets.find((a) => a.category === 'animation' && a.is_published !== false) ?? null)
+    : null;
   const libraryAssets = collectionAssets.filter((asset) => asset.scope === 'library');
   const hasLegacyExtraMaterials = (collection.extra_materials?.length ?? 0) > 0;
   const hasResources = libraryAssets.length > 0 || resources.length > 0 || hasLegacyExtraMaterials;
@@ -704,19 +710,47 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                 <p className="text-sm text-gray-500 mt-2 mb-4 italic">{collection.synopsis}</p>
               )}
 
-              {!isKit && (primaryReadingAsset || collection.pdf_url) && (
-                <div className="mb-8">
-                  <button
-                    type="button"
-                    onClick={handleStandaloneReadAction}
-                    aria-label="Ler livro"
-                    className="flex w-[168px] max-w-full min-h-[154px] flex-col items-start justify-between rounded-[30px] border border-brand-primary/10 bg-white px-5 py-4 text-left text-[#1F2940] shadow-[0_12px_24px_rgba(31,41,64,0.10),0_2px_6px_rgba(31,41,64,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(31,41,64,0.14),0_4px_10px_rgba(31,41,64,0.08)] active:translate-y-0 active:scale-[0.985]"
-                  >
-                    <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-brand-primary/15 bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
-                      <Icons.BookOpen size={24} />
-                    </span>
-                    <span className="text-[1.125rem] font-bold leading-none">Ler livro</span>
-                  </button>
+              {!isKit && (primaryReadingAsset || collection.pdf_url || bookAudiolivroAsset || bookVideoAsset) && (
+                <div className="mb-8 flex flex-wrap gap-4">
+                  {(primaryReadingAsset || collection.pdf_url) && (
+                    <button
+                      type="button"
+                      onClick={handleStandaloneReadAction}
+                      aria-label="Ler livro"
+                      className="flex w-[168px] max-w-full min-h-[154px] flex-col items-start justify-between rounded-[30px] border border-brand-primary/10 bg-white px-5 py-4 text-left text-[#1F2940] shadow-[0_12px_24px_rgba(31,41,64,0.10),0_2px_6px_rgba(31,41,64,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(31,41,64,0.14),0_4px_10px_rgba(31,41,64,0.08)] active:translate-y-0 active:scale-[0.985]"
+                    >
+                      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-brand-primary/15 bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
+                        <Icons.BookOpen size={24} />
+                      </span>
+                      <span className="text-[1.125rem] font-bold leading-none">Ler livro</span>
+                    </button>
+                  )}
+                  {bookAudiolivroAsset && (
+                    <button
+                      type="button"
+                      onClick={() => handlePrimaryAssetAction(bookAudiolivroAsset)}
+                      aria-label="Ouvir audiolivro"
+                      className="flex w-[168px] max-w-full min-h-[154px] flex-col items-start justify-between rounded-[30px] border border-brand-primary/10 bg-white px-5 py-4 text-left text-[#1F2940] shadow-[0_12px_24px_rgba(31,41,64,0.10),0_2px_6px_rgba(31,41,64,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(31,41,64,0.14),0_4px_10px_rgba(31,41,64,0.08)] active:translate-y-0 active:scale-[0.985]"
+                    >
+                      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-brand-primary/15 bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
+                        <Icons.Headphones size={24} />
+                      </span>
+                      <span className="text-[1.125rem] font-bold leading-none">Ouvir</span>
+                    </button>
+                  )}
+                  {bookVideoAsset && (
+                    <button
+                      type="button"
+                      onClick={() => handlePrimaryAssetAction(bookVideoAsset)}
+                      aria-label="Assistir vídeo do livro"
+                      className="flex w-[168px] max-w-full min-h-[154px] flex-col items-start justify-between rounded-[30px] border border-brand-primary/10 bg-white px-5 py-4 text-left text-[#1F2940] shadow-[0_12px_24px_rgba(31,41,64,0.10),0_2px_6px_rgba(31,41,64,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(31,41,64,0.14),0_4px_10px_rgba(31,41,64,0.08)] active:translate-y-0 active:scale-[0.985]"
+                    >
+                      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-brand-primary/15 bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
+                        <Icons.Play size={24} />
+                      </span>
+                      <span className="text-[1.125rem] font-bold leading-none">Assistir</span>
+                    </button>
+                  )}
                 </div>
               )}
 

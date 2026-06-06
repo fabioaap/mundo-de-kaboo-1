@@ -1021,6 +1021,22 @@ export const mockUpdateCollection = (id: string, updates: Partial<Collection>): 
     return clone(updated);
 };
 
+/** Update a single asset's is_published flag inside a mock collection's collection_assets array. */
+export const mockUpdateCollectionAsset = (collectionId: string, assetId: string, isPublished: boolean): boolean => {
+    const collections = getLiveCollections();
+    const idx = collections.findIndex(c => c.id === collectionId);
+    if (idx === -1) return false;
+    const collection = collections[idx];
+    const assets = collection.collection_assets ?? [];
+    const assetIdx = assets.findIndex(a => a.id === assetId);
+    if (assetIdx === -1) return false;
+    const updatedAssets = assets.map((a, i) => i === assetIdx ? { ...a, is_published: isPublished } : a);
+    const next = [...collections];
+    next[idx] = normalizeCollectionRecord({ ...collection, collection_assets: updatedAssets });
+    writeStoredCollections(next);
+    return true;
+};
+
 export const mockDeleteCollection = (id: string): boolean => {
     const collections = getLiveCollections();
     const next = collections.filter(c => c.id !== id);

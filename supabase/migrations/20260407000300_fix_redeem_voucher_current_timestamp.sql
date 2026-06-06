@@ -129,6 +129,5 @@ BEGIN
   );
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.redeem_voucher(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.redeem_voucher(TEXT) TO authenticated;

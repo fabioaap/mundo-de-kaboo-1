@@ -3,7 +3,6 @@
 -- Referência: public.profiles.role IN ('admin', 'editor')
 
 DROP POLICY IF EXISTS "Admins e editores gerenciam colecoes" ON public.collections;
-
 CREATE POLICY "Admins e editores gerenciam colecoes"
   ON public.collections FOR ALL
   TO authenticated

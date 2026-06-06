@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 
 const toSingular = (label: string) => {
   const map: Record<string, string> = {
@@ -27,7 +27,7 @@ import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { ColorPicker } from '../components/ColorPicker';
 import { CharacterAvatar } from '../components/CharacterAvatar';
-import { formatSegmentLabel, AVAILABLE_SEGMENTS, AGE_GRADE_OPTIONS, BNCC_OPTIONS, CASEL_OPTIONS } from '../constants';
+import { formatSegmentLabel, AVAILABLE_SEGMENTS, AGE_GRADE_OPTIONS, SUITABLE_AGES_OPTIONS, BNCC_OPTIONS, CASEL_OPTIONS } from '../constants';
 import useIsMobile from '../hooks/useIsMobile';
 import { placeholderImageUrl, isPlaceholderImageUrl } from '../lib/appPaths';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -104,6 +104,7 @@ const EMPTY_COLLECTION_FORM_DATA: CollectionFormData = {
   bncc_skills: [],
   casel_competencies: [],
   age_grade: [],
+  suitable_ages: [],
   extra_materials: [],
   collection_assets: [],
   offline_available: false,
@@ -181,9 +182,13 @@ const getDistinctVideoPreviewText = (item: LibraryAssetListItem) => {
   const normalizedTitle = normalizeSearchableText(item.displayTitle);
   const normalizedCollection = normalizeSearchableText(item.collection.title);
 
+  // Only suppress when the description IS the title or collection name verbatim.
+  // Suppress-by-contains was too aggressive: descriptions that merely mention the
+  // collection name (e.g. "Conheça as regras do jogo Descobertas que mudaram o mundo...")
+  // were being wiped out, making those cards appear blank.
   if (
-    (normalizedTitle && (normalizedTitle.includes(normalizedValue) || normalizedValue.includes(normalizedTitle)))
-    || (normalizedCollection && (normalizedCollection.includes(normalizedValue) || normalizedValue.includes(normalizedCollection)))
+    (normalizedTitle && normalizedTitle === normalizedValue)
+    || (normalizedCollection && normalizedCollection === normalizedValue)
   ) {
     return '';
   }
@@ -203,6 +208,8 @@ const getLibraryAssetIcon = (asset: CollectionAsset): keyof typeof Icons => {
     case 'accessible_video':
     case 'how_to_play':
     case 'video_lesson':
+    case 'formation':
+    case 'story_video':
       return 'Video';
     case 'reading':
       return 'BookOpen';
@@ -244,6 +251,7 @@ const buildCollectionFormData = (collection?: Partial<Collection>): CollectionFo
     bncc_skills: [...(normalizedCollection.bncc_skills || [])],
     casel_competencies: [...(normalizedCollection.casel_competencies || [])],
     age_grade: [...(normalizedCollection.age_grade || [])],
+    suitable_ages: [...(normalizedCollection.suitable_ages || [])],
     extra_materials: [...(normalizedCollection.extra_materials || [])],
     collection_assets: [...(normalizedCollection.collection_assets || [])],
     offline_available: normalizedCollection.offline_available ?? false,
@@ -256,8 +264,6 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     label: COLLECTION_ASSET_META.reading.label,
     folder: 'pdfs',
     accept: 'application/pdf',
-    urlLabel: 'Cole o link do arquivo PDF',
-    urlPlaceholder: 'https://...',
   },
   {
     category: 'storytelling',
@@ -267,8 +273,6 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     allowMetadata: true,
     titlePlaceholder: 'Ex.: A Cor do Sentir',
     descriptionPlaceholder: 'Descrição opcional desta música ou contação.',
-    urlLabel: 'Cole o link do arquivo de áudio',
-    urlPlaceholder: 'https://...',
   },
   {
     category: 'animation',
@@ -278,8 +282,6 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     allowMetadata: true,
     titlePlaceholder: 'Ex.: A Floresta Encantada',
     descriptionPlaceholder: 'Descrição opcional do vídeo animado.',
-    urlLabel: 'Cole o link do vídeo (YouTube, Vimeo ou URL direta)',
-    urlPlaceholder: 'https://www.youtube.com/watch?v=... ou https://...',
   },
   {
     category: 'accessible_video',
@@ -309,6 +311,24 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     descriptionPlaceholder: 'Descreva o conteúdo pedagógico desta videoaula.',
   },
   {
+    category: 'formation',
+    label: COLLECTION_ASSET_META.formation.label,
+    folder: 'video',
+    accept: 'video/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: Formação para educadores',
+    descriptionPlaceholder: 'Descreva o conteúdo formativo deste vídeo.',
+  },
+  {
+    category: 'story_video',
+    label: COLLECTION_ASSET_META.story_video.label,
+    folder: 'video',
+    accept: 'video/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: A história do Kaboo',
+    descriptionPlaceholder: 'Descreva a história contada neste vídeo.',
+  },
+  {
     category: 'teacher_guide',
     label: COLLECTION_ASSET_META.teacher_guide.label,
     folder: 'pdfs',
@@ -316,8 +336,6 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     allowMetadata: true,
     titlePlaceholder: 'Ex.: Guia do Professor',
     descriptionPlaceholder: 'Descreva brevemente o conteúdo do guia.',
-    urlLabel: 'Cole o link do arquivo PDF',
-    urlPlaceholder: 'https://...',
   },
 ];
 
@@ -331,13 +349,24 @@ const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
 
 const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
   books: ['reading'],
-  // Vídeos: 1 slot por item (animation = o vídeo em si).
-  // accessible_video e how_to_play são variantes dentro do Kit completo (Coleção).
-  videos: ['animation'],
+  // Vídeos: animação + contação + acessível + uso guiado + videoaula + formação.
+  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
   // Materiais = extra_material apenas; reading pertence exclusivamente a Livros.
   materials: ['extra_material'],
+};
+
+// Maps each asset category to a semantic media type label and color for the slot header badge.
+const SLOT_MEDIA_TYPE: Record<CollectionAssetCategory, { label: string; color: string }> = {
+  reading:        { label: 'Livro',     color: 'bg-blue-50 text-blue-600 border-blue-200' },
+  storytelling:   { label: 'Áudio Livro', color: 'bg-violet-50 text-violet-600 border-violet-200' },
+  animation:      { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
+  accessible_video: { label: 'Vídeo', color: 'bg-rose-50 text-rose-600 border-rose-200' },
+  how_to_play:    { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
+  video_lesson:   { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
+  teacher_guide:  { label: 'Material', color: 'bg-amber-50 text-amber-600 border-amber-200' },
+  extra_material: { label: 'Material', color: 'bg-amber-50 text-amber-600 border-amber-200' },
 };
 
 // Maps each asset category to a human-readable hint for the empty-state in the media picker.
@@ -354,7 +383,7 @@ const CATEGORY_REGISTER_HINT: Partial<Record<CollectionAssetCategory, string>> =
 
 const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
   books: ['reading'],
-  videos: ['animation'],
+  videos: ['animation', 'accessible_video', 'how_to_play'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
   // reading pertence exclusivamente a Livros; Materiais exibe apenas extra_material.
@@ -560,7 +589,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'identification' | 'media'>(defaultCollectionTab);
+  // In library-area registration mode, track which slot type the user selected
+  const [selectedLibrarySlot, setSelectedLibrarySlot] = useState<FixedMediaSlotCategory | null>(null);
+  const [showMediaTypeDropdown, setShowMediaTypeDropdown] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFetchingYoutubeData, setIsFetchingYoutubeData] = useState(false);
   const [availableCharacters, setAvailableCharacters] = useState<Character[]>([]);
 
   // Users state
@@ -592,11 +625,17 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const editUserRoleRef = useRef<HTMLDivElement>(null);
   const [originalFormData, setOriginalFormData] = useState<CollectionFormData | null>(null);
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  const [cascadeUnpublishConfirm, setCascadeUnpublishConfirm] = useState<{
+    affectedCollections: Collection[];
+    onConfirm: () => void;
+  } | null>(null);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const { toast, showToast, hideToast } = useToast();
   const [searchFilter, setSearchFilter] = useState('');
   const [levelFilter, setLevelFilter] = useState<'all' | 'Educação Infantil' | 'Fundamental I'>('all');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+  // Aba de status de publicação: separa conteúdos publicados de rascunhos (não publicados).
+  const [publishStatusFilter, setPublishStatusFilter] = useState<'published' | 'draft'>('published');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showLevelDropdown, setShowLevelDropdown] = useState(false);
 
@@ -604,16 +643,25 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [collectionToDelete, setCollectionToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [openActionsDropdown, setOpenActionsDropdown] = useState<string | null>(null);
+  const openActionsDropdownRef = useRef<string | null>(null);
+  // Wrapper that keeps ref and state in sync synchronously (ref is readable by native event handlers immediately)
+  const setOpenDropdown = useCallback((id: string | null) => {
+    openActionsDropdownRef.current = id;
+    setOpenActionsDropdown(id);
+  }, []);
 
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const levelDropdownRef = useRef<HTMLDivElement>(null);
+  const mediaTypeDropdownRef = useRef<HTMLDivElement>(null);
 
   const actionsDropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const mediaSectionRefs = useRef<Partial<Record<CollectionAssetCategory, HTMLDivElement | null>>>({});
   const extraMaterialsSectionRef = useRef<HTMLDivElement | null>(null);
   const [formData, setFormData] = useState<CollectionFormData>(() => createCollectionFormDataForCurrentFlow());
+  const [previewVideoItem, setPreviewVideoItem] = useState<LibraryAssetListItem | null>(null);
   const [highlightedAssetId, setHighlightedAssetId] = useState<string | null>(null);
   const [highlightedAssetCategory, setHighlightedAssetCategory] = useState<CollectionAssetCategory | null>(null);
+  const [slotSearchTerms, setSlotSearchTerms] = useState<Record<string, string>>({});
 
   const activeLibraryAreaLabel = initialLibraryArea ? LIBRARY_AREA_LABEL[initialLibraryArea] : null;
   const activeLibraryAreaUi = initialLibraryArea ? LIBRARY_AREA_UI_META[initialLibraryArea] : null;
@@ -633,8 +681,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     ? 'A tag Coleção é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme as mídias vinculadas nesta coleção.'
     : 'A tag Livro é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme as mídias vinculadas neste livro.';
   const synopsisPlaceholder = isCollectionsCatalogMode
-    ? 'Sinopse editorial da coleção (opcional)'
-    : 'Sinopse editorial do livro (opcional)';
+    ? 'Descrição editorial da coleção (opcional)'
+    : 'Descrição editorial do livro (opcional)';
   const themePlaceholder = isCollectionsCatalogMode ? 'Tema da coleção' : 'Tema do livro';
   const emptyCatalogMessage = isBooksCatalogMode
     ? 'Nenhum livro cadastrado ainda.'
@@ -659,8 +707,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
 
     if (isBooksCatalogMode) {
-      // Non-reading primary asset categories that identify a collection as belonging to another library area.
-      const NON_BOOK_PRIMARY: CollectionAssetCategory[] = ['animation', 'storytelling', 'teacher_guide', 'video_lesson', 'extra_material'];
+      // All categories that belong exclusively to the video/audio/formations/materials
+      // library areas — derived from LIBRARY_AREA_PRIMARY_SLOTS excluding 'books'.
+      const NON_BOOK_PRIMARY: CollectionAssetCategory[] = [
+        'animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation',
+        'storytelling',
+        'teacher_guide',
+        'extra_material',
+      ];
       return collections.filter((collection) => {
         if (collection.collection_type !== 'book') return false;
         const assets = collection.collection_assets ?? [];
@@ -668,7 +722,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         if (assets.some(a => a.category === 'reading' && a.url?.trim())) return true;
         // A collection created via another area (has only video/audio/etc. assets, no PDF) — exclude.
         if (assets.some(a => NON_BOOK_PRIMARY.includes(a.category) && a.url?.trim())) return false;
-        // No assets yet or only metadata without URLs — show as empty book.
+        // A cover auto-filled from a YouTube URL signals the collection was created via the
+        // video library area (setAssetDirectUrl auto-thumbnail), not as a book.
+        if ((collection.cover_image || '').includes('img.youtube.com')) return false;
+        // No assets yet or only metadata without URLs — show as empty book (new/draft).
         return true;
       });
     }
@@ -748,7 +805,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
             collection,
             asset,
             displayTitle,
-            previewText: (asset.description || '').trim() || (collection.theme || '').trim() || null,
+            previewText: (asset.description || '').trim() || (collection.description || '').trim() || (collection.theme || '').trim() || null,
             coverImage: resolvedCover,
             searchText: normalizeSearchableText(
               displayTitle,
@@ -788,6 +845,19 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
     return filtered;
   }, [libraryAssetItems, searchFilter, levelFilter, sortOrder]);
+
+  // Library-area listing after applying the publish-status tab (Publicados vs. Não publicados).
+  // In library-area mode, filter by the individual asset's is_published flag
+  // (undefined/null counts as published for backward-compat).
+  const visibleLibraryAssets = React.useMemo(
+    () =>
+      filteredLibraryAssets.filter((item) =>
+        publishStatusFilter === 'published'
+          ? item.asset.is_published !== false
+          : item.asset.is_published === false
+      ),
+    [filteredLibraryAssets, publishStatusFilter]
+  );
 
   const accessSummary = users.reduce((summary, user) => {
     const status = getProfileAccessStatus(user);
@@ -922,6 +992,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       primary_segment: inheritField(currentFormData.primary_segment, currentSelectedBook?.primary_segment, linkedBook?.primary_segment, ''),
       level: linkedBook?.level || currentFormData.level,
       age_grade: inheritField(currentFormData.age_grade, currentSelectedBook?.age_grade, linkedBook?.age_grade, [] as string[]),
+      suitable_ages: inheritField(currentFormData.suitable_ages, currentSelectedBook?.suitable_ages, linkedBook?.suitable_ages, [] as string[]),
       synopsis: inheritField(currentFormData.synopsis, currentSelectedBook?.synopsis ?? undefined, linkedBook?.synopsis ?? undefined, ''),
       theme: inheritField(currentFormData.theme, currentSelectedBook?.theme, linkedBook?.theme, ''),
       learning_objectives: inheritField(currentFormData.learning_objectives, currentSelectedBook?.learning_objectives, linkedBook?.learning_objectives, ''),
@@ -989,6 +1060,116 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     });
   };
 
+  const toggleReadingFromLibrary = (libraryItem: LibraryAssetListItem) => {
+    setFormData((currentFormData) => {
+      const readingAssets = currentFormData.collection_assets.filter((asset) => asset.category === 'reading');
+      const otherAssets = currentFormData.collection_assets.filter((asset) => asset.category !== 'reading');
+      const isAlreadyLinked = readingAssets.some((asset) => asset.url === libraryItem.asset.url);
+
+      const nextReadingAssets = isAlreadyLinked
+        ? readingAssets.filter((asset) => asset.url !== libraryItem.asset.url)
+        : [
+          ...readingAssets,
+          {
+            id: createAssetId('reading'),
+            category: 'reading' as const,
+            media_type: libraryItem.asset.media_type,
+            title: libraryItem.displayTitle,
+            url: libraryItem.asset.url.trim(),
+            description: libraryItem.asset.description?.trim() || null,
+            scope: COLLECTION_ASSET_META.reading.scope,
+            lyrics_url: libraryItem.asset.lyrics_url ?? null,
+            offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
+          },
+        ];
+
+      return buildNextFormFromAssets(currentFormData, [...otherAssets, ...nextReadingAssets]);
+    });
+  };
+
+  const toggleStorytellingFromLibrary = (libraryItem: LibraryAssetListItem) => {
+    setFormData((currentFormData) => {
+      const storytellingAssets = currentFormData.collection_assets.filter((asset) => asset.category === 'storytelling');
+      const otherAssets = currentFormData.collection_assets.filter((asset) => asset.category !== 'storytelling');
+      const isAlreadyLinked = storytellingAssets.some((asset) => asset.url === libraryItem.asset.url);
+
+      const nextStorytellingAssets = isAlreadyLinked
+        ? storytellingAssets.filter((asset) => asset.url !== libraryItem.asset.url)
+        : [
+          ...storytellingAssets,
+          {
+            id: createAssetId('storytelling'),
+            category: 'storytelling' as const,
+            media_type: libraryItem.asset.media_type,
+            title: libraryItem.displayTitle,
+            url: libraryItem.asset.url.trim(),
+            description: libraryItem.asset.description?.trim() || null,
+            scope: COLLECTION_ASSET_META.storytelling.scope,
+            lyrics_url: libraryItem.asset.lyrics_url ?? null,
+            offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
+          },
+        ];
+
+      return buildNextFormFromAssets(currentFormData, [...otherAssets, ...nextStorytellingAssets]);
+    });
+  };
+
+  const toggleAnimationFromLibrary = (libraryItem: LibraryAssetListItem) => {
+    setFormData((currentFormData) => {
+      const animationAssets = currentFormData.collection_assets.filter((asset) => asset.category === 'animation');
+      const otherAssets = currentFormData.collection_assets.filter((asset) => asset.category !== 'animation');
+      const isAlreadyLinked = animationAssets.some((asset) => asset.url === libraryItem.asset.url);
+
+      const nextAnimationAssets = isAlreadyLinked
+        ? animationAssets.filter((asset) => asset.url !== libraryItem.asset.url)
+        : [
+          ...animationAssets,
+          {
+            id: createAssetId('animation'),
+            category: 'animation' as const,
+            media_type: libraryItem.asset.media_type,
+            title: libraryItem.displayTitle,
+            url: libraryItem.asset.url.trim(),
+            description: libraryItem.asset.description?.trim() || null,
+            scope: COLLECTION_ASSET_META.animation.scope,
+            lyrics_url: libraryItem.asset.lyrics_url ?? null,
+            offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
+          },
+        ];
+
+      return buildNextFormFromAssets(currentFormData, [...otherAssets, ...nextAnimationAssets]);
+    });
+  };
+
+  const toggleCategoryAssetFromLibrary = (category: FixedMediaSlotCategory, libraryItem: LibraryAssetListItem) => {
+    setFormData((currentFormData) => {
+      const categoryAssets = currentFormData.collection_assets.filter((a) => a.category === category);
+      const otherAssets = currentFormData.collection_assets.filter((a) => a.category !== category);
+      const isAlreadyLinked = categoryAssets.some((a) => a.url === libraryItem.asset.url);
+      const nextCategoryAssets = isAlreadyLinked
+        ? categoryAssets.filter((a) => a.url !== libraryItem.asset.url)
+        : [
+            ...categoryAssets,
+            {
+              id: createAssetId(category),
+              category,
+              media_type: libraryItem.asset.media_type,
+              title: libraryItem.displayTitle,
+              url: libraryItem.asset.url.trim(),
+              description: libraryItem.asset.description?.trim() || null,
+              scope: COLLECTION_ASSET_META[category].scope,
+              lyrics_url: libraryItem.asset.lyrics_url ?? null,
+              offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
+            },
+          ];
+      return buildNextFormFromAssets(
+        currentFormData,
+        [...otherAssets, ...nextCategoryAssets],
+        category === 'reading' && !isAlreadyLinked ? { linkedBook: libraryItem.collection } : undefined
+      );
+    });
+  };
+
   const setAssetDirectUrl = (category: FixedMediaSlotCategory, url: string) => {
     setFormData((currentFormData) => {
       const currentAsset = currentFormData.collection_assets.find((asset) => asset.category === category);
@@ -1006,6 +1187,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
           scope: COLLECTION_ASSET_META[category].scope,
           lyrics_url: null,
           offline_available: false,
+          // Preserve existing flag when editing; default to false (draft) for new assets
+          is_published: currentAsset !== undefined ? currentAsset.is_published : false,
         });
       }
 
@@ -1025,6 +1208,52 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     });
   };
 
+  // In library-area mode the public card title comes from the primary library asset's
+  // `title` (see buildCollectionBackedLibraryItem → title: asset.title), not the
+  // collection title. So editing the title field must update BOTH the collection title
+  // and the title of every library-area primary asset, otherwise the edit never reflects
+  // on the storefront/admin cards.
+  const setLibraryAreaTitle = (title: string) => {
+    setFormData((currentFormData) => {
+      const primaryCategories = initialLibraryArea
+        ? LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea]
+        : [];
+      const nextAssets = currentFormData.collection_assets.map((asset) =>
+        primaryCategories.includes(asset.category) ? { ...asset, title } : asset
+      );
+      return { ...buildNextFormFromAssets(currentFormData, nextAssets), title };
+    });
+  };
+
+  // Paste a YouTube URL → set asset URL (and auto-thumbnail via setAssetDirectUrl),
+  // then fetch oEmbed to auto-fill title. oEmbed returns title + thumbnail_url only
+  // (no description — that requires the paid YouTube Data API v3).
+  const handleYoutubeUrlChange = async (url: string, category: FixedMediaSlotCategory) => {
+    setAssetDirectUrl(category, url);
+
+    if (!url.trim()) return;
+
+    const youtubeId =
+      url.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/i)?.[1] ??
+      url.match(/[?&]v=([A-Za-z0-9_-]{6,})/i)?.[1];
+    if (!youtubeId) return;
+
+    setIsFetchingYoutubeData(true);
+    try {
+      const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.title) {
+          setLibraryAreaTitle(data.title);
+        }
+      }
+    } catch {
+      // oEmbed failed — URL is still set, user fills title manually
+    } finally {
+      setIsFetchingYoutubeData(false);
+    }
+  };
+
   const setAssetOfflineAvailable = (category: FixedMediaSlotCategory, value: boolean) => {
     const currentAsset = getAssetByCategory(category);
     if (!currentAsset) {
@@ -1034,6 +1263,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       asset.category === category ? { ...asset, offline_available: value } : asset
     );
     updateFormWithAssets(updatedAssets);
+  };
+
+  const setAssetPublished = (category: FixedMediaSlotCategory, value: boolean) => {
+    setFormData((currentFormData) => {
+      const nextAssets = currentFormData.collection_assets.map((asset) =>
+        asset.category === category ? { ...asset, is_published: value } : asset
+      );
+      const nextForm = buildNextFormFromAssets(currentFormData, nextAssets);
+      return isLibraryAreaMode ? { ...nextForm, is_published: value } : nextForm;
+    });
   };
 
   const removeAsset = (category: FixedMediaSlotCategory) => {
@@ -1058,6 +1297,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       if (collection.id === editingId) continue;
       for (const asset of (collection.collection_assets ?? [])) {
         if (!asset.url?.trim()) continue;
+        if (asset.is_published === false) continue;
         const displayTitle = getLibraryAssetDisplayTitle(collection, asset);
         const collectionCover = getCollectionDisplayCover(collection) || collection.cover_image;
         const coverImage = collectionCover || CATEGORY_COVER_URL[asset.category] || placeholderImageUrl;
@@ -1068,7 +1308,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
           collection,
           asset,
           displayTitle,
-          previewText: (asset.description || '').trim() || (collection.theme || '').trim() || null,
+          previewText: (asset.description || '').trim() || (collection.description || '').trim() || (collection.theme || '').trim() || null,
           coverImage,
           searchText: normalizeSearchableText(
             displayTitle,
@@ -1226,6 +1466,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       if (levelDropdownRef.current && !levelDropdownRef.current.contains(event.target as Node)) {
         setShowLevelDropdown(false);
       }
+      if (mediaTypeDropdownRef.current && !mediaTypeDropdownRef.current.contains(event.target as Node)) {
+        setShowMediaTypeDropdown(false);
+      }
       if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
         setShowRoleDropdown(false);
       }
@@ -1233,23 +1476,22 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         setEditUserRoleDropdownOpen(false);
       }
 
-      // Close actions dropdowns
-      Object.keys(actionsDropdownRefs.current).forEach(key => {
-        const ref = actionsDropdownRefs.current[key];
-        if (ref && !ref.contains(event.target as Node)) {
-          setOpenActionsDropdown(null);
+      // Use ref (not state) to avoid stale closure — always reflects the latest open dropdown
+      const currentOpenId = openActionsDropdownRef.current;
+      if (currentOpenId) {
+        const openRef = actionsDropdownRefs.current[currentOpenId];
+        if (openRef && !openRef.contains(event.target as Node)) {
+          openActionsDropdownRef.current = null;
+          setOpenDropdown(null);
         }
-      });
+      }
     };
 
-    if (showSortDropdown || showLevelDropdown || openActionsDropdown || showRoleDropdown || editUserRoleDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showSortDropdown, showLevelDropdown, openActionsDropdown, showRoleDropdown, editUserRoleDropdownOpen]);
+  }, []);
 
   const checkPermission = async () => {
     setCheckingPermission(true);
@@ -1484,9 +1726,15 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       showToast('Apenas administradores podem excluir coleções.', 'error');
       return;
     }
+    const target = collections.find(c => c.id === id);
+    if (target?.is_published) {
+      showToast(`Despublique ${isBooksCatalogMode ? 'o livro' : 'a coleção'} antes de excluir.`, 'error');
+      setOpenDropdown(null);
+      return;
+    }
     setCollectionToDelete(id);
     setShowDeleteModal(true);
-    setOpenActionsDropdown(null);
+    setOpenDropdown(null);
   };
 
   const handleDeleteConfirm = async () => {
@@ -1541,6 +1789,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     return syncCollectionWithAssets(payload);
   };
 
+  const findCollectionsAffectedByUnpublish = (bookId: string, bookPdfUrl: string): Collection[] => {
+    return collections.filter(c => {
+      if (!c.is_published || c.id === bookId) return false;
+      const usesThisBook =
+        c.kit_book_ids?.includes(bookId) ||
+        c.collection_assets?.some(a => a.category === 'reading' && a.url === bookPdfUrl);
+      return usesThisBook;
+    });
+  };
+
   const handleSave = async () => {
     if (!formData.title) {
       showToast('Título é obrigatório.', 'error');
@@ -1559,6 +1817,35 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
     const normalizedDataToSave = buildCollectionPayload(effectiveFormData);
 
+    // Rule: book being unpublished → warn about affected published collections
+    if (isBooksCatalogMode && editingId && normalizedDataToSave.is_published === false && originalFormData?.is_published !== false) {
+      const bookPdfUrl = normalizedDataToSave.collection_assets?.find(a => a.category === 'reading')?.url?.trim() ?? '';
+      const affected = findCollectionsAffectedByUnpublish(editingId, bookPdfUrl);
+      if (affected.length > 0) {
+        setCascadeUnpublishConfirm({
+          affectedCollections: affected,
+          onConfirm: () => {
+            setCascadeUnpublishConfirm(null);
+            void executeSave(normalizedDataToSave, affected);
+          },
+        });
+        return;
+      }
+    }
+
+    // Rule: collection with no linked assets → auto-unpublish
+    if (isCollectionsCatalogMode && normalizedDataToSave.is_published === true) {
+      const hasAnyAsset = normalizedDataToSave.collection_assets?.some(a => a.url?.trim());
+      if (!hasAnyAsset) {
+        normalizedDataToSave.is_published = false;
+        showToast('Nenhuma mídia vinculada — coleção despublicada automaticamente.', 'warning' as any);
+      }
+    }
+
+    await executeSave(normalizedDataToSave);
+  };
+
+  const executeSave = async (normalizedDataToSave: Partial<Collection>, cascadeCollections: Collection[] = []) => {
     setIsSaving(true);
     let success = false;
     let errorMessage = '';
@@ -1603,12 +1890,18 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
 
     if (success) {
-      setOriginalFormData(createCollectionFormDataForCurrentFlow(normalizedDataToSave));
-      const hasNoMedia = !editingId && formData.collection_assets.filter(a => a.url?.trim()).length === 0;
-      const successMsg = hasNoMedia
-        ? `${contentEntityLabel} criado com sucesso! Adicione mídias na aba Mídias vinculadas.`
-        : (editingId ? `${contentEntityLabel} atualizado com sucesso!` : `${contentEntityLabel} criado com sucesso!`);
-      showToast(successMsg, 'success');
+      // Cascade-unpublish affected collections
+      if (cascadeCollections.length > 0) {
+        await Promise.all(cascadeCollections.map(c => api.updateCollection(c.id, { is_published: false })));
+        showToast(`${contentEntityLabel} despublicado. ${cascadeCollections.length} coleção(ões) despublicada(s) automaticamente.`, 'warning' as any);
+      } else {
+        setOriginalFormData(createCollectionFormDataForCurrentFlow(normalizedDataToSave));
+        const hasNoMedia = !editingId && formData.collection_assets.filter(a => a.url?.trim()).length === 0;
+        const successMsg = hasNoMedia
+          ? `${contentEntityLabel} criado com sucesso! Adicione mídias na aba Mídias vinculadas.`
+          : (editingId ? `${contentEntityLabel} atualizado com sucesso!` : `${contentEntityLabel} criado com sucesso!`);
+        showToast(successMsg, 'success');
+      }
       setEditingId(null);
       setShowCreateForm(false);
       setActiveTab(defaultCollectionTab);
@@ -1658,6 +1951,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     setFormData(createCollectionFormDataForCurrentFlow());
     setOriginalFormData(null);
     clearLibraryAssetFocus();
+    setSelectedLibrarySlot(null);
+    setShowMediaTypeDropdown(false);
   };
 
   const handleCancel = () => {
@@ -1744,8 +2039,44 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       });
     }
 
+    // Apply publish-status tab filter (Publicados vs. Não publicados)
+    filtered = filtered.filter((collection) =>
+      publishStatusFilter === 'published' ? collection.is_published : !collection.is_published
+    );
+
     return filtered;
   };
+
+  // Counts for the publish-status tabs, reflecting the active search/level filters
+  // (but NOT the publish filter itself, so both tab totals are always visible).
+  const publishStatusCounts = React.useMemo(() => {
+    let published = 0;
+    let draft = 0;
+    if (isAssetLibraryAreaMode) {
+      // In library-area mode, count by the individual asset's is_published flag.
+      for (const item of filteredLibraryAssets) {
+        if (item.asset.is_published !== false) published += 1;
+        else draft += 1;
+      }
+      return { published, draft };
+    }
+    let base = [...scopedCollections];
+    if (searchFilter.trim()) {
+      const searchLower = searchFilter.toLowerCase();
+      base = base.filter((collection) =>
+        collection.title?.toLowerCase().includes(searchLower) ||
+        collection.theme?.toLowerCase().includes(searchLower)
+      );
+    }
+    if (levelFilter !== 'all') {
+      base = base.filter((collection) => collection.level === levelFilter);
+    }
+    for (const collection of base) {
+      if (collection.is_published) published += 1;
+      else draft += 1;
+    }
+    return { published, draft };
+  }, [isAssetLibraryAreaMode, initialLibraryArea, filteredLibraryAssets, scopedCollections, searchFilter, levelFilter]);
 
   // Only show permission error if we've finished checking and user doesn't have permission
   if (!checkingPermission && !hasPermission) {
@@ -1956,18 +2287,53 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     )}
                   </div>
 
+                  {/* Abas de status: separa conteúdos publicados de rascunhos (não publicados) */}
+                  <div className="flex items-center gap-1 border-b border-gray-200">
+                    {([
+                      { key: 'published' as const, label: 'Publicados', count: publishStatusCounts.published },
+                      { key: 'draft' as const, label: 'Não publicados', count: publishStatusCounts.draft },
+                    ]).map((tab) => {
+                      const isActive = publishStatusFilter === tab.key;
+                      return (
+                        <button
+                          key={tab.key}
+                          onClick={() => setPublishStatusFilter(tab.key)}
+                          className={`relative px-4 py-2.5 -mb-px text-sm font-bold transition-colors ${isActive
+                            ? 'text-brand-primary'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            {tab.label}
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${isActive
+                              ? 'bg-brand-primary/10 text-brand-primary'
+                              : 'bg-gray-100 text-gray-500'
+                              }`}>
+                              {tab.count}
+                            </span>
+                          </span>
+                          {isActive && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary rounded-full" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   {/* Lista de conteúdo */}
                   {isAssetLibraryAreaMode ? (
-                    filteredLibraryAssets.length === 0 ? (
+                    visibleLibraryAssets.length === 0 ? (
                       <div className="text-center py-12">
                         {(() => {
                           const EmptyIcon = Icons[activeLibraryAreaUi?.icon || 'BookOpen'] as React.ElementType;
                           return <EmptyIcon size={48} className="mx-auto mb-4 text-gray-300" />;
                         })()}
                         <p className="text-gray-500 font-bold">
-                          {libraryAssetItems.length > 0
-                            ? activeLibraryAreaUi?.emptyMessage || 'Nenhum asset corresponde aos filtros.'
-                            : `Nenhum asset publicado em ${activeLibraryAreaLabel?.toLowerCase() || 'esta área'}.`}
+                          {libraryAssetItems.length === 0
+                            ? `Nenhum conteúdo em ${activeLibraryAreaLabel?.toLowerCase() || 'esta área'}.`
+                            : publishStatusFilter === 'draft'
+                              ? 'Nenhum conteúdo não publicado nesta aba.'
+                              : 'Nenhum conteúdo publicado nesta aba.'}
                         </p>
                         {libraryAssetItems.length > 0 && (searchFilter || levelFilter !== 'all' || sortOrder) && (
                           <button
@@ -1980,7 +2346,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       </div>
                     ) : (
                       <div className={`grid gap-4 md:gap-5 ${initialLibraryArea === 'music' ? 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}>
-                        {filteredLibraryAssets.map((item) => {
+                        {visibleLibraryAssets.map((item) => {
                           const CardIcon = Icons[item.iconName] as React.ElementType;
                           const isVideoAssetCard = item.asset.media_type === 'video';
                           const isAudioAssetCard = item.asset.media_type === 'audio';
@@ -1988,13 +2354,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                           return (
                             <div key={item.key} className="relative">
-                              {/* Publish status badge */}
+                              {/* Publish status badge — reflects the individual asset's status */}
                               <span className={`absolute top-2 left-2 z-20 pointer-events-none text-xs font-semibold px-2 py-0.5 rounded-full ${
-                                item.collection.is_published
+                                item.asset.is_published !== false
                                   ? 'bg-green-100 text-green-800'
                                   : 'bg-amber-100 text-amber-800'
                               }`}>
-                                {item.collection.is_published ? 'Publicado' : 'Rascunho'}
+                                {item.asset.is_published !== false ? 'Publicado' : 'Rascunho'}
                               </span>
 
                               {/* Actions dropdown */}
@@ -2008,7 +2374,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setOpenActionsDropdown(openActionsDropdown === item.collection.id ? null : item.collection.id);
+                                      setOpenDropdown(openActionsDropdown === item.collection.id ? null : item.collection.id);
                                     }}
                                     className="w-7 h-7 rounded-full bg-white/90 hover:bg-white border border-gray-200 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
                                     aria-label="Ações"
@@ -2026,7 +2392,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleLibraryAssetEdit(item);
-                                          setOpenActionsDropdown(null);
+                                          setOpenDropdown(null);
                                         }}
                                         className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl text-gray-700 hover:bg-gray-50 font-medium"
                                       >
@@ -2037,20 +2403,29 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                         type="button"
                                         onClick={async (e) => {
                                           e.stopPropagation();
-                                          if (item.collection.is_published) {
+                                          // In library-area mode, publish/unpublish the individual asset,
+                                          // not the whole collection. The collection kit stays on the vitrine.
+                                          const assetIsPublished = item.asset.is_published !== false;
+                                          setOpenDropdown(null);
+                                          try {
                                             // @ts-ignore
-                                            await api.unpublishCollection(item.collection.id);
-                                          } else {
-                                            // @ts-ignore
-                                            await api.publishCollection(item.collection.id);
+                                            const ok = assetIsPublished
+                                              ? await api.unpublishAsset(item.collection.id, item.asset.id)
+                                              : await api.publishAsset(item.collection.id, item.asset.id);
+                                            if (ok) {
+                                              showToast(assetIsPublished ? 'Conteúdo despublicado.' : 'Conteúdo publicado!', 'success');
+                                              await loadCollections(true);
+                                            } else {
+                                              showToast('Erro ao alterar status de publicação.', 'error');
+                                            }
+                                          } catch {
+                                            showToast('Erro ao alterar status de publicação.', 'error');
                                           }
-                                          setOpenActionsDropdown(null);
-                                          await loadCollections(true);
                                         }}
                                         onMouseDown={(e) => e.stopPropagation()}
                                         className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl text-gray-700 hover:bg-gray-50 font-medium"
                                       >
-                                        {item.collection.is_published
+                                        {item.asset.is_published !== false
                                           ? <><Icons.EyeOff size={16} /><span>Despublicar</span></>
                                           : <><Icons.Eye size={16} /><span>Publicar</span></>}
                                       </button>
@@ -2062,10 +2437,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             <button
                               type="button"
                               className={`group w-full border bg-white text-left transition-all active:scale-[0.99] ${isVideoAssetCard ? 'rounded-[18px] border-gray-200 p-4 shadow-sm hover:border-brand-primary/20 hover:shadow-md' : isAudioAssetCard ? 'rounded-[16px] border-brand-primary/10 p-3.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] hover:border-brand-primary/20 hover:shadow-[0_14px_24px_rgba(93,31,88,0.10)]' : 'rounded-2xl border-gray-200 p-5 shadow-sm hover:border-brand-primary/20 hover:shadow-md'}`}
-                              onClick={() => handleLibraryAssetEdit(item)}
+                              onClick={isVideoAssetCard ? undefined : () => handleLibraryAssetEdit(item)}
                             >
                               <div className={isVideoAssetCard || isAudioAssetCard ? 'space-y-3' : 'flex items-start gap-4'}>
-                                <div className={`relative overflow-hidden border shadow-sm ${isVideoAssetCard ? 'aspect-video w-full rounded-[12px] border-gray-100 bg-gray-100' : isAudioAssetCard ? 'aspect-square w-full rounded-[10px] border-brand-primary/10 bg-[linear-gradient(180deg,#fdf9fe,#f6eff8)]' : 'h-[88px] w-[88px] shrink-0 rounded-xl border-gray-100 bg-gray-100'}`}>
+                                <div
+                                  className={`relative overflow-hidden border shadow-sm ${isVideoAssetCard ? 'aspect-video w-full rounded-[12px] border-gray-100 bg-gray-100 cursor-pointer' : isAudioAssetCard ? 'aspect-square w-full rounded-[10px] border-brand-primary/10 bg-[linear-gradient(180deg,#fdf9fe,#f6eff8)]' : 'h-[88px] w-[88px] shrink-0 rounded-xl border-gray-100 bg-gray-100'}`}
+                                  onClick={isVideoAssetCard ? () => setPreviewVideoItem(item) : undefined}
+                                >
                                   {item.coverImage ? (
                                     <img
                                       src={item.coverImage}
@@ -2118,9 +2496,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     {item.displayTitle}
                                   </h3>
 
-                                  {item.displayTitle !== item.collection.title && (
+                                  {item.displayTitle.trim() !== item.collection.title.trim() && (
                                     <p className={`font-medium text-gray-500 line-clamp-1 ${isVideoAssetCard ? 'mt-1 text-[13px] leading-4' : isAudioAssetCard ? 'mt-1 text-[12px] leading-4' : 'mt-1 text-sm'}`}>
-                                      {item.collection.title}
+                                      {item.collection.title.trim()}
                                     </p>
                                   )}
 
@@ -2142,7 +2520,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                   </span>
                                 </div>
 
-                                <span className="inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-transform group-hover:translate-x-0.5">
+                                <span
+                                  onClick={isVideoAssetCard ? (e) => { e.stopPropagation(); handleLibraryAssetEdit(item); } : undefined}
+                                  className={`inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-transform group-hover:translate-x-0.5 ${isVideoAssetCard ? 'cursor-pointer' : ''}`}
+                                >
                                   Editar
                                   <Icons.ChevronRight size={16} />
                                 </span>
@@ -2157,7 +2538,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     <div className="text-center py-12">
                       <Icons.BookOpen size={48} className="mx-auto mb-4 text-gray-300" />
                       <p className="text-gray-500 font-bold">
-                        {scopedCollections.length > 0 ? emptyFilteredCollectionMessage : emptyCatalogMessage}
+                        {scopedCollections.length === 0
+                          ? emptyCatalogMessage
+                          : publishStatusCounts[publishStatusFilter] === 0
+                            ? (publishStatusFilter === 'draft'
+                              ? 'Nenhum conteúdo não publicado nesta aba.'
+                              : 'Nenhum conteúdo publicado nesta aba.')
+                            : emptyFilteredCollectionMessage}
                       </p>
                       {scopedCollections.length > 0 && (searchFilter || levelFilter !== 'all' || sortOrder) && (
                         <button
@@ -2186,7 +2573,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
-                                setOpenActionsDropdown(openActionsDropdown === collection.id ? null : collection.id);
+                                setOpenDropdown(openActionsDropdown === collection.id ? null : collection.id);
                               }}
                               className="w-8 h-8 rounded-full bg-white/90 hover:bg-white border border-gray-200 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
                               aria-label="Ações da coleção"
@@ -2217,7 +2604,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                       } else {
                                         handleEdit(collection);
                                       }
-                                      setOpenActionsDropdown(null);
+                                      setOpenDropdown(null);
                                     }}
                                     onMouseDown={(e) => {
                                       e.stopPropagation();
@@ -2228,14 +2615,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     <span>Editar</span>
                                   </button>
                                 )}
-                                {isAdminUser && (
+                                {isAdminUser && !collection.is_published && (
                                   <button
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       e.preventDefault();
                                       handleDeleteClick(collection.id);
-                                      setOpenActionsDropdown(null);
+                                      setOpenDropdown(null);
                                     }}
                                     onMouseDown={(e) => {
                                       e.stopPropagation();
@@ -2252,20 +2639,55 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     onClick={async (e) => {
                                       e.stopPropagation();
                                       e.preventDefault();
-                                      if (collection.is_published) {
-                                        // @ts-ignore
-                                        await api.unpublishCollection(collection.id);
-                                      } else {
-                                        // @ts-ignore
-                                        await api.publishCollection(collection.id);
+                                      const willUnpublish = collection.is_published;
+                                      setOpenDropdown(null);
+
+                                      if (willUnpublish && isBooksCatalogMode) {
+                                        const bookPdfUrl = collection.collection_assets?.find(a => a.category === 'reading')?.url?.trim() ?? '';
+                                        const affected = findCollectionsAffectedByUnpublish(collection.id, bookPdfUrl);
+                                        if (affected.length > 0) {
+                                          setCascadeUnpublishConfirm({
+                                            affectedCollections: affected,
+                                            onConfirm: async () => {
+                                              setCascadeUnpublishConfirm(null);
+                                              try {
+                                                // @ts-ignore
+                                                const ok = await api.unpublishCollection(collection.id);
+                                                if (ok) {
+                                                  await Promise.all(affected.map(c => api.updateCollection(c.id, { is_published: false })));
+                                                  showToast(`Livro despublicado. ${affected.length} coleção(ões) despublicada(s) automaticamente.`, 'warning' as any);
+                                                  await loadCollections(true);
+                                                }
+                                              } catch {
+                                                showToast('Erro ao despublicar.', 'error');
+                                              }
+                                            },
+                                          });
+                                          return;
+                                        }
                                       }
-                                      setOpenActionsDropdown(null);
-                                      await loadCollections(true);
+
+                                      try {
+                                        // @ts-ignore
+                                        const ok = willUnpublish
+                                          ? await api.unpublishCollection(collection.id)
+                                          : await api.publishCollection(collection.id);
+                                        if (ok) {
+                                          showToast(willUnpublish ? 'Coleção despublicada.' : 'Coleção publicada!', 'success');
+                                          await loadCollections(true);
+                                        } else {
+                                          showToast('Erro ao alterar status de publicação.', 'error');
+                                        }
+                                      } catch {
+                                        showToast('Erro ao alterar status de publicação.', 'error');
+                                      }
                                     }}
                                     onMouseDown={(e) => { e.stopPropagation(); }}
-                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-left hover:bg-gray-50"
+                                    className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl text-gray-700 hover:bg-gray-50 font-medium"
                                   >
-                                    {collection.is_published ? '🔒 Despublicar' : '🚀 Publicar'}
+                                    {collection.is_published
+                                      ? <><Icons.EyeOff size={16} /><span>Despublicar</span></>
+                                      : <><Icons.Eye size={16} /><span>Publicar</span></>}
                                   </button>
                                 )}
                               </div>
@@ -2340,7 +2762,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                   </h2>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                {isAdminUser && editingId && (
+                {isAdminUser && editingId && !formData.is_published && (
                   <button
                     type="button"
                     onClick={() => handleDeleteClick(editingId)}
@@ -2561,53 +2983,15 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     {/* Informações Pedagógicas */}
                     <div>
                       <h3 className="text-lg font-bold text-gray-800 mb-1">Informações Pedagógicas</h3>
-                      {isCollectionsCatalogMode && (
+                      {isCollectionsCatalogMode && linkedReadingBook && (
                         <p className="text-xs text-gray-500 mb-4">
-                          {linkedReadingBook
-                            ? <>Herdadas automaticamente do livro vinculado. Vá para <span className="font-semibold text-gray-700">Mídias vinculadas</span> para trocar o livro.</>
-                            : <>Vincule um livro na aba <span className="font-semibold text-gray-700">Mídias vinculadas</span> para preencher esses campos automaticamente.</>}
+                          Pré-preenchidas do livro vinculado — você pode editar diretamente aqui.
                         </p>
                       )}
                     </div>
 
-                    {/* When in collections mode with a linked book, show read-only inherited summary */}
-                    {isCollectionsCatalogMode && linkedReadingBook ? (
-                      <div className="rounded-2xl border border-gray-200 bg-gray-50 divide-y divide-gray-100 text-sm">
-                        {[
-                          {
-                            label: 'Segmento',
-                            value: (formData.segments || []).length > 0
-                              ? (formData.segments || []).join(', ')
-                              : formData.primary_segment || null,
-                          },
-                          { label: 'Ano Escolar', value: (formData.age_grade || []).join(', ') || null },
-                          { label: 'Sinopse', value: formData.synopsis || null },
-                          { label: 'Tema', value: formData.theme || null },
-                          { label: 'Objetivos de Aprendizado', value: formData.learning_objectives || null },
-                          {
-                            label: 'BNCC',
-                            value: (formData.bncc_skills || []).length > 0
-                              ? (formData.bncc_skills || []).join(' · ')
-                              : null,
-                          },
-                          {
-                            label: 'Casel',
-                            value: (formData.casel_competencies || []).length > 0
-                              ? (formData.casel_competencies || []).join(' · ')
-                              : null,
-                          },
-                        ].map(({ label, value }) => (
-                          <div key={label} className="flex gap-3 px-4 py-3">
-                            <span className="w-36 shrink-0 font-semibold text-gray-600">{label}</span>
-                            <span className={value ? 'text-gray-800' : 'italic text-gray-400'}>
-                              {value ?? 'Não preenchido no livro'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <>
-                        {/* Editable pedagogical fields (books mode, or collections without a linked book) */}
+                    <>
+                      {/* Editable pedagogical fields */}
                         <div>
                           <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
                           <div className="space-y-2">
@@ -2687,8 +3071,19 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         </div>
 
                         <div>
+                          <SearchableMultiSelect
+                            label="Idade Adequada"
+                            options={SUITABLE_AGES_OPTIONS}
+                            value={formData.suitable_ages || []}
+                            onChange={(vals) => setFormData({ ...formData, suitable_ages: vals })}
+                            placeholder="Selecionar idade(s)"
+                            searchPlaceholder="Pesquisar idade..."
+                          />
+                        </div>
+
+                        <div>
                           <div className="mb-2 flex items-center justify-between">
-                            <label className="block text-sm font-bold text-gray-700">Sinopse</label>
+                            <label className="block text-sm font-bold text-gray-700">Descrição</label>
                             <span className="text-xs text-gray-400">{(formData.synopsis || '').length}/500</span>
                           </div>
                           <textarea
@@ -2742,8 +3137,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             searchPlaceholder="Pesquisar competência..."
                           />
                         </div>
-                      </>
-                    )}
+                    </>
 
                     {/* Section heading: Conteúdo (books only) */}
                     {isBooksCatalogMode && (
@@ -2788,6 +3182,137 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         </div>
                       );
                     })()}
+
+                    {/* Audiolivro — só aparece na aba Dados quando isBooksCatalogMode */}
+                    {isBooksCatalogMode && (() => {
+                      const asset = getAssetByCategory('storytelling');
+                      const assetIsPublished = asset ? asset.is_published !== false : false;
+                      return (
+                        <div className="space-y-2">
+                          <p className="text-sm font-bold text-gray-800">Audiolivro</p>
+                          <p className="text-xs text-gray-500">Narração completa da obra. Não obrigatório.</p>
+                          <FileUpload
+                            label="Arquivo de Áudio ou Link"
+                            value={asset?.url || ''}
+                            onChange={(url) => {
+                              if (url) {
+                                setFormData((currentFormData) => {
+                                  const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'storytelling');
+                                  const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'storytelling');
+                                  nextAssets.push({
+                                    id: currentAsset?.id || createAssetId('storytelling'),
+                                    category: 'storytelling',
+                                    media_type: 'audio',
+                                    title: currentFormData.title || 'Audiolivro',
+                                    url: url.trim(),
+                                    description: null,
+                                    scope: COLLECTION_ASSET_META.storytelling.scope,
+                                    lyrics_url: null,
+                                    offline_available: false,
+                                    is_published: currentAsset?.is_published ?? false,
+                                  });
+                                  return buildNextFormFromAssets(currentFormData, nextAssets);
+                                });
+                              } else {
+                                removeAsset('storytelling');
+                              }
+                            }}
+                            folder="audio"
+                            accept="audio/*"
+                            collectionId={editingId || undefined}
+                          />
+                          {asset && (
+                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
+                              <div>
+                                <p className="text-sm font-bold text-gray-800">Publicar audiolivro</p>
+                                <p className="text-xs text-gray-500">
+                                  {assetIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setAssetPublished('storytelling', !assetIsPublished)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${assetIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
+                              >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${assetIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Vídeo do Livro — só aparece na aba Dados quando isBooksCatalogMode */}
+                    {isBooksCatalogMode && (() => {
+                      const asset = getAssetByCategory('animation');
+                      const assetIsPublished = asset ? asset.is_published !== false : false;
+                      return (
+                        <div className="space-y-2">
+                          <p className="text-sm font-bold text-gray-800">Vídeo do Livro</p>
+                          <p className="text-xs text-gray-500">Animação ou vídeocanção específica deste livro (opcional).</p>
+                          <div className="flex items-center gap-2 rounded-2xl bg-gray-50 px-4 py-3">
+                            <Icons.Link size={16} className="shrink-0 text-gray-400" />
+                            <input
+                              type="url"
+                              value={asset?.url || ''}
+                              onChange={(e) => {
+                                const url = e.target.value;
+                                if (url.trim()) {
+                                  setFormData((currentFormData) => {
+                                    const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'animation');
+                                    const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'animation');
+                                    nextAssets.push({
+                                      id: currentAsset?.id || createAssetId('animation'),
+                                      category: 'animation',
+                                      media_type: 'video',
+                                      title: currentFormData.title || 'Vídeo',
+                                      url: url.trim(),
+                                      description: null,
+                                      scope: COLLECTION_ASSET_META.animation.scope,
+                                      lyrics_url: null,
+                                      offline_available: false,
+                                      is_published: currentAsset?.is_published ?? false,
+                                    });
+                                    return buildNextFormFromAssets(currentFormData, nextAssets);
+                                  });
+                                } else {
+                                  removeAsset('animation');
+                                }
+                              }}
+                              placeholder="https://www.youtube.com/watch?v=..."
+                              className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
+                            />
+                            {asset?.url && (
+                              <button
+                                type="button"
+                                onClick={() => removeAsset('animation')}
+                                className="shrink-0 text-gray-400 hover:text-gray-600"
+                              >
+                                <Icons.X size={14} />
+                              </button>
+                            )}
+                          </div>
+                          {asset && (
+                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
+                              <div>
+                                <p className="text-sm font-bold text-gray-800">Publicar vídeo</p>
+                                <p className="text-xs text-gray-500">
+                                  {assetIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setAssetPublished('animation', !assetIsPublished)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${assetIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
+                              >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${assetIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     {!isBooksCatalogMode && (
                       <div className="flex justify-end pt-2">
                         <button
@@ -2821,15 +3346,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           </span>
                         </div>
                       )}
-                      {activeLibraryAreaLabel && editingId && (
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 mb-4 flex items-center gap-2">
-                          <Icons.BookOpen size={15} className="shrink-0 text-gray-400" />
-                            <span className="truncate">
-                              <span className="text-gray-500">{isBooksCatalogMode ? 'Livro: ' : 'Coleção: '}</span>
-                              <span className="font-bold text-gray-800">{formData.title || 'Sem título'}</span>
-                            </span>
-                          </div>
-                      )}
                       {highlightedAssetCategory && (
                         <div className="rounded-2xl border border-brand-primary/15 bg-white px-4 py-3 text-sm text-gray-700 mb-4 shadow-sm">
                           <span className="font-bold text-brand-primary">Asset selecionado:</span>{' '}
@@ -2842,12 +3358,44 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       {/* Mini-identificação: campos básicos visíveis no modo de área de biblioteca */}
                       {isLibraryAreaMode && (
                         <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-4">
+                          {/* YouTube URL first — auto-fills title + cover via oEmbed */}
+                          {initialLibraryArea === 'videos' && (() => {
+                            const videoSlots = FIXED_MEDIA_SLOTS.filter(s => (LIBRARY_AREA_PRIMARY_SLOTS['videos'] as readonly string[]).includes(s.category));
+                            const existingCat = videoSlots.find(s => !!getAssetByCategory(s.category as FixedMediaSlotCategory)?.url)?.category as FixedMediaSlotCategory | undefined;
+                            const activeCat: FixedMediaSlotCategory = selectedLibrarySlot ?? existingCat ?? videoSlots[0].category as FixedMediaSlotCategory;
+                            const currentVideoUrl = getAssetByCategory(activeCat)?.url || '';
+                            return (
+                              <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">
+                                  Link do YouTube <span className="text-red-500">*</span>
+                                </label>
+                                <div className="flex items-center gap-2 rounded-2xl bg-white px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-brand-primary">
+                                  <Icons.Link size={16} className="shrink-0 text-gray-400" />
+                                  <input
+                                    type="url"
+                                    value={currentVideoUrl}
+                                    onChange={(e) => handleYoutubeUrlChange(e.target.value, activeCat)}
+                                    placeholder="https://www.youtube.com/watch?v=..."
+                                    className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
+                                  />
+                                  {isFetchingYoutubeData && (
+                                    <span className="text-xs text-brand-primary font-medium animate-pulse shrink-0">Buscando...</span>
+                                  )}
+                                  {currentVideoUrl && !isFetchingYoutubeData && (
+                                    <button type="button" onClick={() => handleYoutubeUrlChange('', activeCat)} className="shrink-0 text-gray-400 hover:text-gray-600">
+                                      <Icons.X size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
                           <div>
                             <label className="block text-sm font-bold text-gray-700 mb-2">Título <span className="text-red-500">*</span></label>
                             <input
                               type="text"
                               value={formData.title}
-                              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                              onChange={(e) => setLibraryAreaTitle(e.target.value)}
                               className="w-full bg-white border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none shadow-sm"
                               placeholder={
                                 initialLibraryArea === 'music' ? 'Título da música'
@@ -2937,8 +3485,95 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         </div>
                       )}
 
+                      {/* In library-area registration mode with multiple slot types: URL first, then type selector */}
+                      {isLibraryAreaMode && (() => {
+                        const librarySlots = FIXED_MEDIA_SLOTS.filter((s) => LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea!].includes(s.category));
+                        if (librarySlots.length <= 1) return null;
+                        // When editing an existing item, detect the category from the existing asset;
+                        // when creating new or after an explicit user choice, use selectedLibrarySlot.
+                        const existingCategory = librarySlots.find((s) => !!getAssetByCategory(s.category)?.url)?.category;
+                        const activeCategory: FixedMediaSlotCategory = selectedLibrarySlot ?? existingCategory ?? librarySlots[0].category;
+                        const currentUrl = getAssetByCategory(activeCategory)?.url || '';
+                        return (
+                          <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-4">
+                            {/* Tipo de mídia */}
+                            <div className="relative" ref={mediaTypeDropdownRef}>
+                              <label className="block text-sm font-bold text-gray-800 mb-2">
+                                Tipo de mídia <span className="text-red-500">*</span>
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => setShowMediaTypeDropdown((v) => !v)}
+                                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 flex items-center justify-between gap-2 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-colors cursor-pointer"
+                              >
+                                <span>{librarySlots.find((s) => s.category === activeCategory)?.label ?? ''}</span>
+                                <Icons.ChevronDown size={16} className={`shrink-0 text-gray-400 transition-transform ${showMediaTypeDropdown ? 'rotate-180' : ''}`} />
+                              </button>
+                              {showMediaTypeDropdown && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                                  {librarySlots.map((s, idx) => (
+                                    <button
+                                      key={s.category}
+                                      type="button"
+                                      onClick={() => {
+                                        if (s.category !== activeCategory) {
+                                          const urlToMove = getAssetByCategory(activeCategory)?.url || '';
+                                          if (urlToMove) {
+                                            setAssetDirectUrl(activeCategory, '');
+                                            setAssetDirectUrl(s.category as FixedMediaSlotCategory, urlToMove);
+                                          }
+                                          setSelectedLibrarySlot(s.category as FixedMediaSlotCategory);
+                                        }
+                                        setShowMediaTypeDropdown(false);
+                                      }}
+                                      className={`w-full px-4 py-3 text-left text-sm flex items-center gap-3 transition-colors
+                                        ${idx === 0 ? 'rounded-t-2xl' : ''}
+                                        ${idx === librarySlots.length - 1 ? 'rounded-b-2xl' : ''}
+                                        ${s.category === activeCategory
+                                          ? 'bg-brand-primary/10 text-brand-primary font-bold'
+                                          : 'text-gray-700 hover:bg-gray-50 font-medium'
+                                        }`}
+                                    >
+                                      <span>{s.label}</span>
+                                      {s.category === activeCategory && <Icons.Check size={16} className="ml-auto" />}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Publicar conteúdo — só aparece quando há URL vinculada */}
+                            {currentUrl && (() => {
+                              const assetIsPublished = getAssetByCategory(activeCategory)?.is_published !== false;
+                              return (
+                                <div className="flex items-center justify-between pt-1">
+                                  <div>
+                                    <p className="text-sm font-bold text-gray-800">Publicar conteúdo</p>
+                                    <p className="text-xs text-gray-500">
+                                      {assetIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAssetPublished(activeCategory, !assetIsPublished)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${assetIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
+                                  >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${assetIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
+                                  </button>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        );
+                      })()}
+
                       {(isLibraryAreaMode
-                        ? FIXED_MEDIA_SLOTS.filter((s) => LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea!].includes(s.category))
+                        ? FIXED_MEDIA_SLOTS.filter((s) => {
+                            const slots = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea!];
+                            // Hide individual slots when a type-selector is shown (multiple slots in library area)
+                            if (slots.length > 1) return false;
+                            return slots.includes(s.category);
+                          })
                         : isBooksCatalogMode
                           ? FIXED_MEDIA_SLOTS.filter((s) => s.category === 'reading')
                           : FIXED_MEDIA_SLOTS
@@ -2949,9 +3584,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           ? libraryItems.find((item) => item.asset.url === asset.url) ?? null
                           : null;
                         const hasUnavailableSelection = Boolean(!isLibraryAreaMode && asset?.url && !selectedLibraryItem);
-                        const slotHelperText = slot.category === 'reading' && isCollectionsCatalogMode
-                          ? 'Escolha 1 livro. O vínculo da coleção é sincronizado automaticamente.'
-                          : 'Escolha 1 opção já cadastrada.';
+                        const slotHelperText = isCollectionsCatalogMode
+                          ? slot.category === 'reading'
+                            ? 'Escolha quantos livros quiser. O vínculo da coleção é sincronizado automaticamente.'
+                            : 'Escolha quantas mídias quiser.'
+                          : isLibraryAreaMode
+                            ? 'Cole o link do YouTube ou do arquivo.'
+                            : 'Escolha 1 opção já cadastrada.';
                         const isHighlightedSlot = highlightedAssetCategory === slot.category
                           || (highlightedAssetId ? asset?.id === highlightedAssetId : false);
 
@@ -2964,11 +3603,20 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             <div className="flex items-start justify-between gap-3">
                               {!(isBooksCatalogMode && slot.category === 'reading') && (
                                 <div>
-                                  <p className="text-sm font-bold text-gray-800">{slot.label}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-bold text-gray-800">{slot.label}</p>
+                                    {SLOT_MEDIA_TYPE[slot.category] && (
+                                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${SLOT_MEDIA_TYPE[slot.category].color}`}>
+                                        {SLOT_MEDIA_TYPE[slot.category].label}
+                                      </span>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-gray-500 mt-1">{slotHelperText}</p>
                                 </div>
                               )}
-                              {asset?.url && (
+                              {(isCollectionsCatalogMode
+                                ? formData.collection_assets.some((a) => a.category === slot.category && a.url?.trim())
+                                : asset?.url) && (
                                 <button
                                   type="button"
                                   onClick={() => removeAsset(slot.category)}
@@ -2978,6 +3626,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 </button>
                               )}
                             </div>
+
+
 
                             {hasUnavailableSelection && asset && !(isBooksCatalogMode && slot.category === 'reading') && (
                               <div className="flex items-start gap-3 rounded-2xl border border-brand-primary/20 bg-brand-primary/5 px-4 py-3">
@@ -2990,7 +3640,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 <div className="min-w-0 flex-1">
                                   <p className="text-sm font-bold text-brand-primary truncate">{asset.title || slot.label}</p>
                                   <p className="text-xs text-gray-500 mt-1">
-                                    Esta mídia já estava vinculada, mas não está disponível na biblioteca para nova seleção.
+                                    Esta mídia foi despublicada ou removida. Selecione outra ou republique o original para restaurar a coleção.
                                   </p>
                                 </div>
                               </div>
@@ -3027,165 +3677,167 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 accept="application/pdf"
                                 collectionId={editingId || undefined}
                               />
-                            ) : isLibraryAreaMode ? null : libraryItems.length === 0 ? (
+                            ) : isLibraryAreaMode ? (
+                              /* Registration mode: URL input field for this slot */
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-brand-primary focus-within:border-transparent">
+                                  <Icons.Link size={16} className="shrink-0 text-gray-400" />
+                                  <input
+                                    type="url"
+                                    value={asset?.url || ''}
+                                    onChange={(e) => setAssetDirectUrl(slot.category, e.target.value)}
+                                    placeholder={
+                                      slot.category === 'storytelling'
+                                        ? 'Cole o link do áudio...'
+                                        : slot.category === 'teacher_guide'
+                                          ? 'Cole o link do guia do professor...'
+                                          : slot.category === 'video_lesson'
+                                            ? 'Cole o link da videoaula (YouTube)...'
+                                            : 'Cole o link do vídeo (YouTube)...'
+                                    }
+                                    className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
+                                  />
+                                  {asset?.url && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setAssetDirectUrl(slot.category, '')}
+                                      className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                                      aria-label="Limpar URL"
+                                    >
+                                      <Icons.X size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                                {asset?.url && (
+                                  <>
+                                    <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                      <Icons.Check size={12} />
+                                      URL vinculada
+                                    </p>
+                                    {/* Publicar conteúdo */}
+                                    {(() => {
+                                      const slotIsPublished = asset.is_published !== false;
+                                      return (
+                                        <div className="flex items-center justify-between pt-1">
+                                          <div>
+                                            <p className="text-sm font-bold text-gray-800">Publicar conteúdo</p>
+                                            <p className="text-xs text-gray-500">
+                                              {slotIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+                                            </p>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => setAssetPublished(slot.category, !slotIsPublished)}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${slotIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
+                                          >
+                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${slotIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
+                                          </button>
+                                        </div>
+                                      );
+                                    })()}
+                                  </>
+                                )}
+                              </div>
+                            ) : libraryItems.length === 0 ? (
                               <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-center space-y-1">
-                                <p className="text-sm text-gray-400 font-medium">Nenhuma mídia cadastrada</p>
+                                <p className="text-sm text-gray-400 font-medium">Nenhuma mídia publicada</p>
                                 <p className="text-xs text-gray-400">
                                   {CATEGORY_REGISTER_HINT[slot.category]
-                                    ? `Registre mídias ${CATEGORY_REGISTER_HINT[slot.category]} antes de vincular.`
-                                    : 'Nenhuma mídia disponível para vincular.'}
+                                    ? `Cadastre e publique mídias ${CATEGORY_REGISTER_HINT[slot.category]} para que apareçam aqui.`
+                                    : 'Nenhuma mídia publicada disponível para vincular.'}
                                 </p>
                               </div>
-                            ) : (
-                              <div role="radiogroup" aria-label={slot.label} className="grid gap-3 md:grid-cols-2 max-h-[32rem] overflow-y-auto pr-1">
-                                {libraryItems.map((libraryItem) => {
-                                  const isSelected = asset?.url === libraryItem.asset.url;
-                                  return (
-                                    <button
-                                      key={libraryItem.key}
-                                      type="button"
-                                      role="radio"
-                                      aria-checked={isSelected}
-                                      onClick={() => linkAssetFromLibrary(slot.category, libraryItem)}
-                                      className={`w-full overflow-hidden rounded-[22px] border text-left transition-all active:scale-[0.99] ${
-                                        isSelected
-                                          ? 'border-brand-primary bg-brand-primary/10 shadow-sm ring-2 ring-brand-primary/10'
-                                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                                       }`}
-                                     >
-                                      <div className="flex gap-3 p-3">
-                                        <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
-                                          <img
-                                            src={libraryItem.coverImage}
-                                            alt=""
-                                            aria-hidden="true"
-                                            className="h-full w-full object-cover"
-                                          />
-                                          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/55 to-transparent" />
-                                        </div>
+                            ) : (() => {
+                              const isMultiSelect = isCollectionsCatalogMode;
+                              const slotAssets = formData.collection_assets.filter((a) => a.category === slot.category);
+                              const slotSearch = slotSearchTerms[slot.category] ?? '';
+                              const filteredLibraryItems = slotSearch.trim()
+                                ? libraryItems.filter(item =>
+                                    item.displayTitle.toLowerCase().includes(slotSearch.toLowerCase()) ||
+                                    item.collection.title.toLowerCase().includes(slotSearch.toLowerCase()) ||
+                                    item.searchText.toLowerCase().includes(slotSearch.toLowerCase())
+                                  )
+                                : libraryItems;
+                              return (
+                                <div className="space-y-2">
+                                  <div className="relative">
+                                    <Icons.Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                      type="text"
+                                      value={slotSearch}
+                                      onChange={e => setSlotSearchTerms(prev => ({ ...prev, [slot.category]: e.target.value }))}
+                                      placeholder={`Buscar ${slot.label.toLowerCase()}...`}
+                                      className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-8 pr-8 text-sm text-gray-700 placeholder-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                                    />
+                                    {slotSearch && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setSlotSearchTerms(prev => ({ ...prev, [slot.category]: '' }))}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
+                                      >
+                                        <Icons.X size={14} />
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div role={isMultiSelect ? "group" : "radiogroup"} aria-label={slot.label} className="flex flex-col gap-2 max-h-[32rem] overflow-y-auto pr-1">
+                                  {filteredLibraryItems.length === 0 && slotSearch.trim() ? (
+                                    <p className="py-4 text-center text-sm text-gray-400">Nenhum resultado para "{slotSearch}"</p>
+                                  ) : filteredLibraryItems.map((libraryItem) => {
+                                    const isSelected = isMultiSelect
+                                      ? slotAssets.some((a) => a.url === libraryItem.asset.url)
+                                      : asset?.url === libraryItem.asset.url;
+                                    return (
+                                      <button
+                                        key={libraryItem.key}
+                                        type="button"
+                                        role={isMultiSelect ? "checkbox" : "radio"}
+                                        aria-checked={isSelected}
+                                        onClick={() => isMultiSelect ? toggleCategoryAssetFromLibrary(slot.category, libraryItem) : linkAssetFromLibrary(slot.category, libraryItem)}
+                                        className={`w-full rounded-lg border text-left transition-all active:scale-[0.98] ${
+                                          isSelected
+                                            ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
+                                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                         }`}
+                                       >
+                                        <div className="flex items-stretch gap-3">
+                                          <div className="w-12 shrink-0 overflow-hidden rounded-l-lg bg-gray-100">
+                                            <img
+                                              src={libraryItem.coverImage}
+                                              alt=""
+                                              aria-hidden="true"
+                                              className="h-full w-full object-cover"
+                                              style={{ minHeight: '64px' }}
+                                            />
+                                          </div>
 
-                                        <div className="min-w-0 flex-1">
-                                          <div className="flex items-start justify-between gap-2">
+                                          <div className="min-w-0 flex-1 flex items-center justify-between gap-2 py-3 pr-3">
                                             <div className="min-w-0">
-                                              <p className={`text-sm font-bold truncate ${isSelected ? 'text-brand-primary' : 'text-gray-800'}`}>
+                                              <p className={`text-sm font-semibold truncate ${isSelected ? 'text-brand-primary' : 'text-gray-800'}`}>
                                                 {libraryItem.displayTitle}
                                               </p>
-                                              <p className="text-xs text-gray-500 truncate mt-1">{libraryItem.collection.title}</p>
+                                              <p className="text-xs text-gray-500 truncate">{libraryItem.collection.title}</p>
                                             </div>
-                                            <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-brand-primary bg-brand-primary' : 'border-gray-300 bg-white'}`}>
-                                              <span className={`h-2.5 w-2.5 rounded-full ${isSelected ? 'bg-white' : 'bg-transparent'}`} />
-                                            </span>
-                                          </div>
-
-                                          {libraryItem.previewText && (
-                                            <p className="mt-2 line-clamp-2 text-xs text-gray-500">
-                                              {libraryItem.previewText}
-                                            </p>
-                                          )}
-
-                                          <div className="mt-3 flex flex-wrap gap-2">
-                                            <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-2 py-1 text-[11px] font-bold text-gray-600">
-                                              {libraryItem.levelLabel}
-                                            </span>
+                                            {isMultiSelect ? (
+                                              <span className={`flex-none flex h-4 w-4 items-center justify-center rounded border ${isSelected ? 'border-brand-primary bg-brand-primary text-white' : 'border-gray-300 bg-white text-transparent'}`}>
+                                                <Icons.Check size={10} />
+                                              </span>
+                                            ) : (
+                                              <span className={`flex-none flex h-4 w-4 items-center justify-center rounded-full border ${isSelected ? 'border-brand-primary bg-brand-primary' : 'border-gray-300 bg-white'}`}>
+                                                <span className={`h-2 w-2 rounded-full ${isSelected ? 'bg-white' : 'bg-transparent'}`} />
+                                              </span>
+                                            )}
                                           </div>
                                         </div>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-
-                            {/* Upload de arquivo local para áudio */}
-                            {slot.category === 'storytelling' && slot.accept?.startsWith('audio') && (
-                              <FileUpload
-                                label="Fazer upload de arquivo de áudio"
-                                value={asset?.url || ''}
-                                onChange={(url) => {
-                                  if (url) {
-                                    setFormData((currentFormData) => {
-                                      const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'storytelling');
-                                      const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'storytelling');
-                                      nextAssets.push({
-                                        id: currentAsset?.id || createAssetId('storytelling'),
-                                        category: 'storytelling',
-                                        media_type: 'audio',
-                                        title: currentFormData.title || 'Áudio',
-                                        url: url.trim(),
-                                        description: null,
-                                        scope: COLLECTION_ASSET_META.storytelling.scope,
-                                        lyrics_url: null,
-                                        offline_available: true,
-                                      });
-                                      return buildNextFormFromAssets(currentFormData, nextAssets);
-                                    });
-                                  } else {
-                                    removeAsset('storytelling');
-                                  }
-                                }}
-                                folder="audio"
-                                accept="audio/*"
-                                collectionId={editingId || undefined}
-                                showAsIcon={true}
-                                onFile={async (file) => {
-                                  // Tentar extrair imagem de capa do áudio automaticamente
-                                  setFormData((currentFormData) => {
-                                    const hasCover = currentFormData.cover_image &&
-                                      currentFormData.cover_image !== '' &&
-                                      !isPlaceholderImageUrl(currentFormData.cover_image);
-                                    if (hasCover) return currentFormData;
-                                    // Kick off async extraction without blocking render
-                                    extractAudioCoverArt(file).then(async (coverFile) => {
-                                      if (!coverFile) return;
-                                      const result = await uploadFile(coverFile, 'covers', editingId || undefined);
-                                      if (result.url) {
-                                        setFormData((prev) => {
-                                          const stillNoCover = !prev.cover_image ||
-                                            prev.cover_image === '' ||
-                                            isPlaceholderImageUrl(prev.cover_image);
-                                          if (!stillNoCover) return prev;
-                                          return { ...prev, cover_image: result.url! };
-                                        });
-                                      }
-                                    });
-                                    return currentFormData;
-                                  });
-                                }}
-                              />
-                            )}
-
-                            {/* Direct URL input when slot has urlLabel (hidden for audio categories) */}
-                            {slot.urlLabel && slot.category !== 'music' && slot.category !== 'storytelling' && (
-                              <div className="space-y-1">
-                                <label className="text-xs font-bold text-gray-700">{slot.urlLabel}</label>
-                                <input
-                                  type="url"
-                                  value={slot.category === 'storytelling' ? '' : (asset?.url || '')}
-                                  onChange={(e) => setAssetDirectUrl(slot.category, e.target.value)}
-                                  placeholder={slot.urlPlaceholder || 'https://...'}
-                                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm placeholder-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
-                                />
-                              </div>
-                            )}
-
-                            {/* Offline toggle for linked asset */}
-                            {asset?.url && (
-                              <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-bold text-gray-800">Disponível offline</p>
-                                  <p className="text-xs text-gray-500 mt-0.5">Permite download deste arquivo para uso sem internet. Não funciona com YouTube.</p>
+                                      </button>
+                                    );
+                                  })}
+                                  </div>
                                 </div>
-                                <button
-                                  type="button"
-                                  role="switch"
-                                  aria-checked={asset.offline_available !== false}
-                                  onClick={() => setAssetOfflineAvailable(slot.category, asset.offline_available !== true ? true : false)}
-                                  className={`ml-4 relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 ${asset.offline_available !== false ? 'bg-brand-primary' : 'bg-gray-200'}`}
-                                >
-                                  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${asset.offline_available !== false ? 'translate-x-5' : 'translate-x-0'}`} />
-                                </button>
-                              </div>
-                            )}
+                              );
+                            })()}
+
+
+
                           </div>
                         );
                       })}
@@ -3247,9 +3899,40 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                   Registre materiais na área de Materiais antes de vincular.
                                 </p>
                               </div>
-                            ) : (
-                              <div className="grid gap-3 md:grid-cols-2 max-h-[32rem] overflow-y-auto pr-1">
-                                {extraLibItems.map((libraryItem) => {
+                            ) : (() => {
+                              const extraSearch = slotSearchTerms['extra_material'] ?? '';
+                              const filteredExtraItems = extraSearch.trim()
+                                ? extraLibItems.filter(item =>
+                                    item.displayTitle.toLowerCase().includes(extraSearch.toLowerCase()) ||
+                                    item.collection.title.toLowerCase().includes(extraSearch.toLowerCase()) ||
+                                    item.searchText.toLowerCase().includes(extraSearch.toLowerCase())
+                                  )
+                                : extraLibItems;
+                              return (
+                              <div className="space-y-2">
+                                <div className="relative">
+                                  <Icons.Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                  <input
+                                    type="text"
+                                    value={extraSearch}
+                                    onChange={e => setSlotSearchTerms(prev => ({ ...prev, 'extra_material': e.target.value }))}
+                                    placeholder="Buscar materiais..."
+                                    className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-8 pr-8 text-sm text-gray-700 placeholder-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                                  />
+                                  {extraSearch && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSlotSearchTerms(prev => ({ ...prev, 'extra_material': '' }))}
+                                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
+                                    >
+                                      <Icons.X size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                              <div className="flex flex-col gap-2 max-h-[32rem] overflow-y-auto pr-1">
+                                {filteredExtraItems.length === 0 && extraSearch.trim() ? (
+                                  <p className="py-4 text-center text-sm text-gray-400">Nenhum resultado para "{extraSearch}"</p>
+                                ) : filteredExtraItems.map((libraryItem) => {
                                   const isLinked = linkedUrls.has(libraryItem.asset.url);
                                   return (
                                     <button
@@ -3258,54 +3941,42 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                       role="checkbox"
                                       aria-checked={isLinked}
                                       onClick={() => toggleExtraMaterialFromLibrary(libraryItem)}
-                                      className={`w-full overflow-hidden rounded-[22px] border text-left transition-all active:scale-[0.99] ${
+                                      className={`w-full rounded-lg border text-left transition-all active:scale-[0.98] ${
                                         isLinked
-                                          ? 'border-brand-primary bg-brand-primary/10 shadow-sm ring-2 ring-brand-primary/10'
+                                          ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
                                           : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                                        }`}
                                      >
-                                      <div className="flex gap-3 p-3">
-                                        <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+                                      <div className="flex items-stretch gap-3">
+                                        <div className="w-12 shrink-0 overflow-hidden rounded-l-lg bg-gray-100">
                                           <img
                                             src={libraryItem.coverImage}
                                             alt=""
                                             aria-hidden="true"
                                             className="h-full w-full object-cover"
+                                            style={{ minHeight: '64px' }}
                                           />
-                                          <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/55 to-transparent" />
                                         </div>
 
-                                        <div className="min-w-0 flex-1">
-                                          <div className="flex items-start justify-between gap-2">
-                                            <div className="min-w-0">
-                                              <p className={`text-sm font-bold truncate ${isLinked ? 'text-brand-primary' : 'text-gray-800'}`}>
-                                                {libraryItem.displayTitle}
-                                              </p>
-                                              <p className="text-xs text-gray-500 truncate mt-1">{libraryItem.collection.title}</p>
-                                            </div>
-                                            <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border ${isLinked ? 'border-brand-primary bg-brand-primary text-white' : 'border-gray-300 bg-white text-transparent'}`}>
-                                              <Icons.Check size={12} />
-                                            </span>
-                                          </div>
-
-                                          {libraryItem.previewText && (
-                                            <p className="mt-2 line-clamp-2 text-xs text-gray-500">
-                                              {libraryItem.previewText}
+                                        <div className="min-w-0 flex-1 flex items-center justify-between gap-2 py-3 pr-3">
+                                          <div className="min-w-0">
+                                            <p className={`text-sm font-semibold truncate ${isLinked ? 'text-brand-primary' : 'text-gray-800'}`}>
+                                              {libraryItem.displayTitle}
                                             </p>
-                                          )}
-
-                                          <div className="mt-3 flex flex-wrap gap-2">
-                                            <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-2 py-1 text-[11px] font-bold text-gray-600">
-                                              {libraryItem.levelLabel}
-                                            </span>
+                                            <p className="text-xs text-gray-500 truncate">{libraryItem.collection.title}</p>
                                           </div>
+                                          <span className={`flex-none flex h-4 w-4 items-center justify-center rounded border ${isLinked ? 'border-brand-primary bg-brand-primary text-white' : 'border-gray-300 bg-white text-transparent'}`}>
+                                            <Icons.Check size={10} />
+                                          </span>
                                         </div>
                                       </div>
                                     </button>
                                   );
                                 })}
                               </div>
-                            )}
+                              </div>
+                            );
+                            })()}
                           </div>
                         );
                       })()}
@@ -3860,6 +4531,118 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
           }
         }}
       />
+
+      {/* Cascade unpublish confirmation */}
+      {cascadeUnpublishConfirm && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setCascadeUnpublishConfirm(null)} />
+          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                <Icons.AlertTriangle size={20} className="text-amber-600" />
+              </div>
+              <div>
+                <h2 className="text-base font-black text-gray-900">Despublicar livro</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Este livro está vinculado a {cascadeUnpublishConfirm.affectedCollections.length === 1 ? '1 coleção publicada' : `${cascadeUnpublishConfirm.affectedCollections.length} coleções publicadas`}. Ao despublicá-lo, as coleções abaixo serão despublicadas automaticamente:
+                </p>
+              </div>
+            </div>
+            <ul className="max-h-40 overflow-y-auto rounded-2xl bg-gray-50 px-4 py-3 space-y-1">
+              {cascadeUnpublishConfirm.affectedCollections.map(c => (
+                <li key={c.id} className="flex items-center gap-2 text-sm text-gray-700">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                  {c.title}
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setCascadeUnpublishConfirm(null)}
+                className="flex-1 rounded-2xl border border-gray-200 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={cascadeUnpublishConfirm.onConfirm}
+                className="flex-1 rounded-2xl bg-amber-500 py-2.5 text-sm font-bold text-white hover:bg-amber-600 transition-colors"
+              >
+                Confirmar e despublicar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video preview modal */}
+      {previewVideoItem && (() => {
+        const previewUrl = previewVideoItem.asset.url;
+        const ytMatch = previewUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^&?/\s]+)/);
+        const ytId = ytMatch ? ytMatch[1] : null;
+        return (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            onClick={() => setPreviewVideoItem(null)}
+          >
+            <div
+              className="relative w-full max-w-3xl mx-4 rounded-2xl overflow-hidden bg-black shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setPreviewVideoItem(null)}
+                className="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                aria-label="Fechar"
+              >
+                <Icons.X size={18} />
+              </button>
+
+              <div className="aspect-video w-full bg-black">
+                {ytId ? (
+                  <iframe
+                    src={`https://www.youtube.com/embed/${ytId}?autoplay=1&playsinline=1&rel=0`}
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                    className="h-full w-full"
+                    title={previewVideoItem.displayTitle}
+                  />
+                ) : (
+                  <video
+                    src={previewUrl}
+                    controls
+                    autoPlay
+                    className="h-full w-full"
+                  />
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-4 bg-gray-900 px-4 py-3">
+                <div className="min-w-0">
+                  <div className="mb-1">
+                    <span className="inline-flex items-center rounded-full bg-brand-primary/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-brand-primary/90">
+                      {COLLECTION_ASSET_META[previewVideoItem.asset.category].label}
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-white line-clamp-1">{previewVideoItem.displayTitle}</p>
+                  {previewVideoItem.displayTitle !== previewVideoItem.collection.title && (
+                    <p className="text-xs text-gray-400 line-clamp-1">{previewVideoItem.collection.title}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setPreviewVideoItem(null); handleLibraryAssetEdit(previewVideoItem); }}
+                  className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-brand-primary px-3 py-2 text-xs font-bold text-white hover:bg-brand-primary/90 transition-colors"
+                >
+                  <Icons.Edit size={13} />
+                  Editar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 });

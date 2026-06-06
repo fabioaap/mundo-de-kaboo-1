@@ -61,7 +61,7 @@ export const ExtraToolsScreen: React.FC<ExtraToolsScreenProps> = ({ collection, 
 
       {/* DESKTOP: RIGHT SIDE (Content) / MOBILE: BOTTOM CARD */}
       <div className="flex-1 overflow-y-auto z-10 no-scrollbar bg-white rounded-t-[2.5rem] md:rounded-none mt-0 relative shadow-[0_-10px_40px_rgba(0,0,0,0.05)] md:shadow-none md:h-full">
-          <div className="pt-16 px-6 pb-24 md:p-12 md:max-w-4xl md:mx-auto">
+          <div className="pt-16 px-6 pb-24 md:p-12">
             
             <h1 className="text-2xl md:text-3xl font-black text-gray-800 mb-2">{presentationCopy.materialsTitle}</h1>
             <p className="text-gray-500 mb-8">{presentationCopy.materialsDescription}</p>

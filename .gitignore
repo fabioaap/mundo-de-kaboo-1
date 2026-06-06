@@ -66,3 +66,6 @@ Thumbs.db
 .aiox-core/local/
 .claude/settings.local.json
 .aiox/install-log.txt
+
+# Backups de dados reais (nunca commitar)
+supabase/backups/

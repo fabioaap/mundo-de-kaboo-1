@@ -60,7 +60,7 @@ export const CharactersScreen: React.FC<CharactersScreenProps> = ({ onNavigate }
             <p className="text-sm text-gray-500 mt-2">Cadastre personagens no módulo administrativo para alimentá-los aqui.</p>
           </div>
         ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {characters.map((char) => {
             const colorClasses = getCharacterColor(char.name);
             const bgClass = colorClasses.split(' ').find(c => c.startsWith('bg-')) || 'bg-gray-100';

@@ -65,6 +65,7 @@ import {
   validateMockVoucher,
   mockCreateCollection,
   mockUpdateCollection,
+  mockUpdateCollectionAsset,
   mockDeleteCollection,
   getMockCollectionsLive,
   getMockCollectionByIdLive,
@@ -80,6 +81,11 @@ import { getCollectionDisplayCover, normalizeSingleKitBookIds } from './collecti
 
 // Cache management for collections
 const COLLECTIONS_CACHE_KEY = 'kaboo_collections_cache';
+// Max age for the collections cache. The cache is explicitly cleared on writes
+// (createCollection/updateCollection/etc.) within the same tab, but sessionStorage is
+// per-tab: a vitrine open in a separate tab never sees that clear and would otherwise
+// serve stale content indefinitely. A short TTL lets stale reads self-heal.
+const COLLECTIONS_CACHE_TTL_MS = 60_000;
 const PROFILE_CACHE_KEY = 'kaboo_profile_cache';
 const SESSION_KEY = 'kaboo_session_id';
 
@@ -295,7 +301,7 @@ const extractMissingColumnName = (error: unknown): string | null => {
 };
 
 const STRIPPABLE_COLLECTION_COLUMNS = new Set([
-  'character_ids', 'offline_available', 'description',
+  'character_ids', 'offline_available',
 ]);
 
 const isMissingRelationError = (error: unknown, relationName: string): boolean => {
@@ -438,6 +444,11 @@ const buildCollectionBackedDescription = (hub: MediaHub, collection: Collection,
     return explicitDescription;
   }
 
+  const collectionDescription = collection.description?.trim();
+  if (collectionDescription) {
+    return collectionDescription;
+  }
+
   const theme = collection.theme?.trim();
   if (theme) {
     return theme;
@@ -563,7 +574,9 @@ const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]
   return collections
     .filter((collection) => !excludeBookCollections || collection.collection_type !== 'book')
     .flatMap((collection) => (collection.collection_assets ?? [])
-      .filter((asset) => allowedCategories.includes(asset.category))
+      // On the public storefront, hide assets that were explicitly unpublished (is_published=false).
+      // undefined/null means published (backward-compat with assets created before per-asset flags).
+      .filter((asset) => allowedCategories.includes(asset.category) && asset.is_published !== false)
       .map((asset) => ({ collection, asset })))
     .sort((left, right) => {
       const categoryDiff = allowedCategories.indexOf(left.asset.category) - allowedCategories.indexOf(right.asset.category);
@@ -1128,6 +1141,12 @@ const getCachedCollections = (): Collection[] | null => {
     if (!cached) return null;
 
     const parsed = JSON.parse(cached);
+    // Expire stale cache by age so edits made in another tab/context surface without a
+    // manual reload (the timestamp was always stored but never enforced).
+    if (typeof parsed.timestamp === 'number' && Date.now() - parsed.timestamp > COLLECTIONS_CACHE_TTL_MS) {
+      sessionStorage.removeItem(getCollectionsCacheKey());
+      return null;
+    }
     // Verify it's from the current session
     if (parsed.sessionId === getSessionId()) {
       const hydratedCollections = filterCollectionsForBrand(
@@ -1644,8 +1663,11 @@ export const api = {
    * @param forceRefresh - If true, bypass cache and fetch from server
    */
   async getCollections(forceRefresh: boolean = false, adminMode: boolean = false): Promise<Collection[]> {
-    // Check cache first (unless force refresh)
-    if (!forceRefresh) {
+    // Check cache first (unless force refresh or admin mode).
+    // Admin mode MUST bypass the cache because the vitrine cache only stores published
+    // collections; reading it in admin mode would make unpublished items appear as published
+    // after the user visits the public storefront.
+    if (!forceRefresh && !adminMode) {
       const cached = getCachedCollections();
       if (cached) {
         await loadRemoteCharacters();
@@ -2493,13 +2515,25 @@ export const api = {
       if (updated) clearCollectionsCache();
       return !!updated;
     }
-    const { error } = await supabase
-      .from('collections')
-      .update({ is_published: true, published_at: new Date().toISOString() })
-      .eq('id', id);
-    if (error) { logger.error('publishCollection error', error); return false; }
-    clearCollectionsCache();
-    return true;
+    try {
+      const { data, error } = await supabase
+        .from('collections')
+        .update({ is_published: true, published_at: new Date().toISOString() })
+        .eq('id', id)
+        .select('id');
+      if (error) { logger.error('publishCollection error', error); return false; }
+      // PostgREST returns no error when RLS blocks the write — it just affects 0 rows.
+      // Treat 0 rows as a failure so the UI surfaces an honest error instead of a fake success.
+      if (!data || data.length === 0) {
+        logger.error('publishCollection: 0 rows updated (RLS denied or id not found)', id);
+        return false;
+      }
+      clearCollectionsCache();
+      return true;
+    } catch (err) {
+      logger.error('publishCollection exception', err);
+      return false;
+    }
   },
 
   /**
@@ -2511,13 +2545,78 @@ export const api = {
       if (updated) clearCollectionsCache();
       return !!updated;
     }
-    const { error } = await supabase
-      .from('collections')
-      .update({ is_published: false, published_at: null })
-      .eq('id', id);
-    if (error) { logger.error('unpublishCollection error', error); return false; }
-    clearCollectionsCache();
-    return true;
+    try {
+      const { data, error } = await supabase
+        .from('collections')
+        .update({ is_published: false, published_at: null })
+        .eq('id', id)
+        .select('id');
+      if (error) { logger.error('unpublishCollection error', error); return false; }
+      // PostgREST returns no error when RLS blocks the write — it just affects 0 rows.
+      // Treat 0 rows as a failure so the UI surfaces an honest error instead of a fake success.
+      if (!data || data.length === 0) {
+        logger.error('unpublishCollection: 0 rows updated (RLS denied or id not found)', id);
+        return false;
+      }
+      clearCollectionsCache();
+      return true;
+    } catch (err) {
+      logger.error('unpublishCollection exception', err);
+      return false;
+    }
+  },
+
+  /**
+   * Publish a single asset within a collection (sets asset.is_published = true).
+   * This does NOT affect other assets or the collection-level is_published flag.
+   */
+  async publishAsset(collectionId: string, assetId: string): Promise<boolean> {
+    if (!isSupabaseConfigured || devMockSession) {
+      const ok = mockUpdateCollectionAsset(collectionId, assetId, true);
+      if (ok) clearCollectionsCache();
+      return ok;
+    }
+    try {
+      const { data, error } = await supabase.rpc('set_collection_asset_published', {
+        p_collection_id: collectionId,
+        p_asset_id: assetId,
+        p_is_published: true,
+      });
+      if (error) { logger.error('publishAsset error', error); return false; }
+      if (!data) { logger.error('publishAsset: RLS denied or asset not found', collectionId, assetId); return false; }
+      clearCollectionsCache();
+      return true;
+    } catch (err) {
+      logger.error('publishAsset exception', err);
+      return false;
+    }
+  },
+
+  /**
+   * Unpublish a single asset within a collection (sets asset.is_published = false).
+   * The parent collection and other assets are NOT affected — the collection kit may
+   * remain visible in the Coleções screen; only this asset is hidden from its hub.
+   */
+  async unpublishAsset(collectionId: string, assetId: string): Promise<boolean> {
+    if (!isSupabaseConfigured || devMockSession) {
+      const ok = mockUpdateCollectionAsset(collectionId, assetId, false);
+      if (ok) clearCollectionsCache();
+      return ok;
+    }
+    try {
+      const { data, error } = await supabase.rpc('set_collection_asset_published', {
+        p_collection_id: collectionId,
+        p_asset_id: assetId,
+        p_is_published: false,
+      });
+      if (error) { logger.error('unpublishAsset error', error); return false; }
+      if (!data) { logger.error('unpublishAsset: RLS denied or asset not found', collectionId, assetId); return false; }
+      clearCollectionsCache();
+      return true;
+    } catch (err) {
+      logger.error('unpublishAsset exception', err);
+      return false;
+    }
   },
 
   /**
@@ -2931,5 +3030,131 @@ export const api = {
 
     const grants = await this.getUserContentGrants();
     return grants.some(g => g.collection_id === collectionId);
+  },
+
+  // ── Formations ────────────────────────────────────────────
+
+  async getFormations(adminMode: boolean = false): Promise<import('../types').Formation[]> {
+    if (!isSupabaseConfigured || isDevMockSession()) return [];
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) return [];
+
+    let query = supabase.from('formations').select('*').eq('brand_id', activeBrandId).order('created_at', { ascending: false });
+    if (!adminMode) query = query.eq('is_published', true);
+
+    const { data, error } = await query;
+    if (error) { logger.error('getFormations error:', error); return []; }
+    return (data ?? []) as import('../types').Formation[];
+  },
+
+  async getFormationById(id: string): Promise<import('../types').Formation | null> {
+    if (!isSupabaseConfigured || isDevMockSession()) return null;
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) return null;
+
+    const { data, error } = await supabase.from('formations').select('*').eq('id', id).eq('brand_id', activeBrandId).single();
+    if (error) { logger.error('getFormationById error:', error); return null; }
+    return data as import('../types').Formation | null;
+  },
+
+  async createFormation(formation: Omit<import('../types').Formation, 'id' | 'created_at' | 'updated_at'>): Promise<import('../types').Formation | null> {
+    if (!isSupabaseConfigured || isDevMockSession()) return null;
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) { logger.error('createFormation: no active brand'); return null; }
+
+    const { data, error } = await supabase.from('formations').insert({ ...formation, brand_id: activeBrandId }).select().single();
+    if (error) { logger.error('createFormation error:', error); return null; }
+    return data as import('../types').Formation;
+  },
+
+  async updateFormation(id: string, updates: Partial<import('../types').Formation>): Promise<import('../types').Formation | null> {
+    if (!isSupabaseConfigured || isDevMockSession()) return null;
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) return null;
+
+    const { data, error } = await supabase.from('formations').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id).eq('brand_id', activeBrandId).select().single();
+    if (error) { logger.error('updateFormation error:', error); return null; }
+    return data as import('../types').Formation;
+  },
+
+  async deleteFormation(id: string): Promise<boolean> {
+    if (!isSupabaseConfigured || isDevMockSession()) return false;
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) return false;
+
+    const { error } = await supabase.from('formations').delete().eq('id', id).eq('brand_id', activeBrandId);
+    if (error) { logger.error('deleteFormation error:', error); return false; }
+    return true;
+  },
+
+  async publishFormation(id: string): Promise<import('../types').Formation | null> {
+    return this.updateFormation(id, { is_published: true, published_at: new Date().toISOString() });
+  },
+
+  async unpublishFormation(id: string): Promise<import('../types').Formation | null> {
+    return this.updateFormation(id, { is_published: false, published_at: null });
+  },
+
+  // ── Materials ─────────────────────────────────────────────
+
+  async getMaterials(adminMode: boolean = false): Promise<import('../types').Material[]> {
+    if (!isSupabaseConfigured || isDevMockSession()) return [];
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) return [];
+
+    let query = supabase.from('materials').select('*').eq('brand_id', activeBrandId).order('created_at', { ascending: false });
+    if (!adminMode) query = query.eq('is_published', true);
+
+    const { data, error } = await query;
+    if (error) { logger.error('getMaterials error:', error); return []; }
+    return (data ?? []) as import('../types').Material[];
+  },
+
+  async getMaterialById(id: string): Promise<import('../types').Material | null> {
+    if (!isSupabaseConfigured || isDevMockSession()) return null;
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) return null;
+
+    const { data, error } = await supabase.from('materials').select('*').eq('id', id).eq('brand_id', activeBrandId).single();
+    if (error) { logger.error('getMaterialById error:', error); return null; }
+    return data as import('../types').Material | null;
+  },
+
+  async createMaterial(material: Omit<import('../types').Material, 'id' | 'created_at' | 'updated_at'>): Promise<import('../types').Material | null> {
+    if (!isSupabaseConfigured || isDevMockSession()) return null;
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) { logger.error('createMaterial: no active brand'); return null; }
+
+    const { data, error } = await supabase.from('materials').insert({ ...material, brand_id: activeBrandId }).select().single();
+    if (error) { logger.error('createMaterial error:', error); return null; }
+    return data as import('../types').Material;
+  },
+
+  async updateMaterial(id: string, updates: Partial<import('../types').Material>): Promise<import('../types').Material | null> {
+    if (!isSupabaseConfigured || isDevMockSession()) return null;
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) return null;
+
+    const { data, error } = await supabase.from('materials').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id).eq('brand_id', activeBrandId).select().single();
+    if (error) { logger.error('updateMaterial error:', error); return null; }
+    return data as import('../types').Material;
+  },
+
+  async deleteMaterial(id: string): Promise<boolean> {
+    if (!isSupabaseConfigured || isDevMockSession()) return false;
+    const activeBrandId = await resolveActiveBrandId();
+    if (!activeBrandId) return false;
+
+    const { error } = await supabase.from('materials').delete().eq('id', id).eq('brand_id', activeBrandId);
+    if (error) { logger.error('deleteMaterial error:', error); return false; }
+    return true;
+  },
+
+  async publishMaterial(id: string): Promise<import('../types').Material | null> {
+    return this.updateMaterial(id, { is_published: true, published_at: new Date().toISOString() });
+  },
+
+  async unpublishMaterial(id: string): Promise<import('../types').Material | null> {
+    return this.updateMaterial(id, { is_published: false, published_at: null });
   },
 };

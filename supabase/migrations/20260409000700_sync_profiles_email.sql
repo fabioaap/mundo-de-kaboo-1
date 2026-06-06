@@ -27,17 +27,14 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 -- ─── Trigger em auth.users ──────────────────────────────────────────────────
 -- O schema auth requer SECURITY DEFINER e search_path explícito para ser
 -- seguro contra privilege escalation (ver aviso do Supabase Linter).
 DROP TRIGGER IF EXISTS on_auth_user_email_changed ON auth.users;
-
 CREATE TRIGGER on_auth_user_email_changed
   AFTER UPDATE OF email ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.sync_profiles_email();
-
 -- ─── Back-fill: corrige registros já existentes com email desatualizado ─────
 UPDATE public.profiles p
 SET

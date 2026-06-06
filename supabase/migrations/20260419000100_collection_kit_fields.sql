@@ -1,19 +1,14 @@
 alter table public.collections
   add column if not exists collection_type text default 'book';
-
 alter table public.collections
   add column if not exists kit_cover_image text;
-
 alter table public.collections
   add column if not exists kit_book_ids text[] not null default '{}';
-
 update public.collections
 set collection_type = coalesce(nullif(collection_type, ''), 'book')
 where collection_type is null or collection_type = '';
-
 alter table public.collections
   alter column collection_type set default 'book';
-
 do $$
 begin
   if not exists (
@@ -28,6 +23,5 @@ begin
   end if;
 end
 $$;
-
 alter table public.collections
   validate constraint collections_collection_type_check;

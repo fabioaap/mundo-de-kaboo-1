@@ -14,7 +14,6 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS voucher_id UUID;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS access_starts_at TIMESTAMPTZ;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS access_expires_at TIMESTAMPTZ;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS access_status TEXT DEFAULT 'active';
-
 UPDATE public.profiles
 SET
   full_name = COALESCE(full_name, name),
@@ -26,9 +25,7 @@ SET
       ELSE 'active'
     END
   );
-
 ALTER TABLE public.profiles ALTER COLUMN role SET DEFAULT 'viewer';
-
 -- ------------------------------------------------------------
 -- Tabela de vouchers
 -- ------------------------------------------------------------
@@ -43,12 +40,9 @@ CREATE TABLE IF NOT EXISTS public.vouchers (
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_vouchers_code_upper ON public.vouchers ((UPPER(code)));
 CREATE INDEX IF NOT EXISTS idx_vouchers_consumed_by_user_id ON public.vouchers (consumed_by_user_id);
-
 ALTER TABLE public.vouchers ENABLE ROW LEVEL SECURITY;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -62,7 +56,6 @@ BEGIN
   END IF;
 END
 $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -80,9 +73,7 @@ BEGIN
   END IF;
 END
 $$;
-
 REVOKE ALL ON TABLE public.vouchers FROM anon, authenticated;
-
 -- ------------------------------------------------------------
 -- Trigger de novos usuarios com status pendente de voucher
 -- ------------------------------------------------------------
@@ -119,7 +110,6 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
 -- ------------------------------------------------------------
 -- Funcao RPC: validar voucher sem consumi-lo
 -- ------------------------------------------------------------
@@ -196,7 +186,6 @@ BEGIN
   );
 END;
 $$;
-
 -- ------------------------------------------------------------
 -- Funcao RPC: resgatar voucher para o usuario autenticado
 -- ------------------------------------------------------------
@@ -213,7 +202,7 @@ DECLARE
   profile_record public.profiles%ROWTYPE;
   base_expiration TIMESTAMPTZ;
   next_expiration TIMESTAMPTZ;
-  current_ts TIMESTAMPTZ := NOW();
+  current_time TIMESTAMPTZ := NOW();
 BEGIN
   IF current_user_id IS NULL THEN
     RETURN jsonb_build_object(
@@ -256,7 +245,7 @@ BEGIN
   END IF;
 
   IF voucher_record.status = 'expired'
-    OR (voucher_record.expires_at IS NOT NULL AND voucher_record.expires_at < current_ts) THEN
+    OR (voucher_record.expires_at IS NOT NULL AND voucher_record.expires_at < current_time) THEN
     RETURN jsonb_build_object(
       'success', false,
       'code', 'voucher_expired',
@@ -284,30 +273,30 @@ BEGIN
       auth.jwt() ->> 'email',
       'viewer',
       'pending_voucher',
-      current_ts,
-      current_ts
+      current_time,
+      current_time
     )
     RETURNING * INTO profile_record;
   END IF;
 
-  base_expiration := GREATEST(COALESCE(profile_record.access_expires_at, current_ts), current_ts);
+  base_expiration := GREATEST(COALESCE(profile_record.access_expires_at, current_time), current_time);
   next_expiration := base_expiration + make_interval(months => voucher_record.duration_months);
 
   UPDATE public.profiles
   SET
     voucher_id = voucher_record.id,
-    access_starts_at = COALESCE(profile_record.access_starts_at, current_ts),
+    access_starts_at = COALESCE(profile_record.access_starts_at, current_time),
     access_expires_at = next_expiration,
     access_status = 'active',
-    updated_at = current_ts
+    updated_at = current_time
   WHERE id = current_user_id;
 
   UPDATE public.vouchers
   SET
     status = 'redeemed',
     consumed_by_user_id = current_user_id,
-    consumed_at = current_ts,
-    updated_at = current_ts
+    consumed_at = current_time,
+    updated_at = current_time
   WHERE id = voucher_record.id;
 
   RETURN jsonb_build_object(
@@ -319,16 +308,14 @@ BEGIN
       'duration_months', voucher_record.duration_months,
       'status', 'redeemed',
       'expires_at', voucher_record.expires_at,
-      'consumed_at', current_ts,
+      'consumed_at', current_time,
       'consumed_by_user_id', current_user_id
     ),
     'access_expires_at', next_expiration
   );
 END;
 $$;
-
 REVOKE ALL ON FUNCTION public.validate_voucher(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.validate_voucher(TEXT) TO anon, authenticated;
-
 REVOKE ALL ON FUNCTION public.redeem_voucher(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.redeem_voucher(TEXT) TO authenticated;

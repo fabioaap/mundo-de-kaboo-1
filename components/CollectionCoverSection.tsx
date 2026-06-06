@@ -288,12 +288,6 @@ export const CollectionCoverSection: React.FC<CollectionCoverSectionProps> = ({
               transform: 'translateZ(20px)',
             }}
           />
-          <div
-            className={`absolute top-3 left-3 whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-[0.16em] border backdrop-blur-sm ${collectionTypeMeta.coverClassName}`}
-            style={{ transform: 'translateZ(30px)' }}
-          >
-            {collectionTypeLabel}
-          </div>
           {/* Light reflection effect - moves based on tilt */}
           <div
             className="absolute inset-0 pointer-events-none"

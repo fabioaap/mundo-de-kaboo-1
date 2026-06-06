@@ -8,7 +8,6 @@ set
     (select id::text from public.collections where title = 'Papa e o Plano Furado' limit 1)
   ], null::text)
 where title = 'Kaboo e a Carta Misteriosa';
-
 update public.collections
 set
   collection_type = 'kit',
@@ -19,7 +18,6 @@ set
     (select id::text from public.collections where title = 'Papa e o Plano Furado' limit 1)
   ], null::text)
 where title = 'Mensageiro e a Canção Certa';
-
 update public.collections
 set
   collection_type = 'kit',
@@ -29,7 +27,6 @@ set
     (select id::text from public.collections where title = 'Gaio e a Hora de Voar Alto' limit 1)
   ], null::text)
 where title = 'Baratinha e Baratão no Labirinto do Eco';
-
 update public.collections
 set
   collection_type = 'kit',

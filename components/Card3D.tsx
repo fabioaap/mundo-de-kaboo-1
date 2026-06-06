@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Collection } from '../types';
 import { Icons } from './Icons';
 import useIsMobile from '../hooks/useIsMobile';
@@ -85,7 +86,7 @@ const COLLECTION_FORMAT_META: Record<
   }
 > = {
   reading: {
-    label: 'Leitura',
+    label: 'Livro',
     Icon: Icons.BookOpen,
     toneClassName: 'bg-slate-900 text-white',
   },
@@ -100,7 +101,7 @@ const COLLECTION_FORMAT_META: Record<
     toneClassName: 'bg-[#7C2D12] text-white',
   },
   materials: {
-    label: 'Materiais',
+    label: 'Material',
     Icon: Icons.FileText,
     toneClassName: 'bg-[#14532D] text-white',
   },
@@ -140,58 +141,74 @@ type CollectionCardLayout = {
   footerPaddingRight: number;
   visibleFormatLimit: number;
   summaryClampClassName: string;
+  bodyMarginTop: string;
+  pillsMarginTop: string;
 };
 
 const getCollectionCardLayout = (cardWidth: number, isMobile: boolean): CollectionCardLayout => {
   const resolvedWidth = cardWidth > 0 ? cardWidth : (isMobile ? 343 : 320);
 
   if (isMobile) {
-    const stackWidth = clampNumber(resolvedWidth * 0.30, 100, 126);
+    const nominalCardHeight = Math.round(resolvedWidth / 2.0);
+    const stackInset = 8;
+    const effectiveStackSize = nominalCardHeight - stackInset * 2;
     return {
-      aspectRatio: '1.85 / 1',
-      stackWidth,
-      stackRight: 6,
-      stackPosition: 'bottom',
-      headerPaddingRight: stackWidth + 8,
-      bodyPaddingRight: stackWidth + 12,
-      footerPaddingRight: stackWidth - 8,
+      aspectRatio: '2.0 / 1',
+      stackWidth: effectiveStackSize,
+      stackRight: stackInset,
+      stackPosition: 'center',
+      headerPaddingRight: effectiveStackSize + stackInset,
+      bodyPaddingRight: effectiveStackSize + stackInset,
+      footerPaddingRight: Math.max(0, effectiveStackSize + stackInset - 12),
       visibleFormatLimit: 2,
       summaryClampClassName: 'line-clamp-2',
+      bodyMarginTop: 'mt-3',
+      pillsMarginTop: 'mt-auto',
     };
   }
 
-  if (resolvedWidth < 360) {
-    const stackWidth = clampNumber(resolvedWidth * 0.42, 118, 148);
+  if (resolvedWidth < 280) {
+    const nominalCardHeight = Math.round(resolvedWidth / 0.88);
+    const stackInset = 6;
+    const effectiveStackSize = Math.min(Math.round(resolvedWidth * 0.42), nominalCardHeight - stackInset * 2);
     return {
       aspectRatio: '0.88 / 1',
-      stackWidth,
-      stackRight: 6,
-      stackPosition: 'bottom',
+      stackWidth: effectiveStackSize,
+      stackRight: stackInset,
+      stackPosition: 'center',
       headerPaddingRight: 8,
       bodyPaddingRight: 8,
       footerPaddingRight: 8,
       visibleFormatLimit: 2,
       summaryClampClassName: 'line-clamp-2',
+      bodyMarginTop: 'mt-3',
+      pillsMarginTop: 'mt-3',
     };
   }
 
-  const stackWidth = clampNumber(resolvedWidth * 0.49, 172, 220);
+  const nominalCardHeight = Math.round(resolvedWidth / 2.3);
+  const stackInset = 10; // breathing room from card edges
+  const effectiveStackSize = nominalCardHeight - stackInset * 2;
   return {
-    aspectRatio: '1.6 / 1',
-    stackWidth,
-    stackRight: 8,
+    aspectRatio: '2.3 / 1',
+    stackWidth: effectiveStackSize,
+    stackRight: stackInset,
     stackPosition: 'center',
-    headerPaddingRight: Math.max(126, stackWidth - 4),
-    bodyPaddingRight: Math.max(120, stackWidth),
-    footerPaddingRight: Math.max(108, stackWidth - 12),
+    headerPaddingRight: effectiveStackSize + stackInset,
+    bodyPaddingRight: effectiveStackSize + stackInset,
+    footerPaddingRight: Math.max(0, effectiveStackSize + stackInset - 12),
     visibleFormatLimit: 3,
     summaryClampClassName: 'line-clamp-3',
+    bodyMarginTop: 'mt-2',
+    pillsMarginTop: 'mt-auto',
   };
 };
 
 export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, locked, tone = 'default' }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [tagPopover, setTagPopover] = useState<{ x: number; y: number; tags: { key: string; label: string; className: string }[] } | null>(null);
   const { ref: cardRef, width: cardWidth } = useRefSize();
+  const { ref: titleRef, height: titleHeight } = useRefSize();
   const isMobile = useIsMobile();
   const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
   const collectionTypeMeta = getCollectionTypeMeta(collection);
@@ -202,11 +219,28 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
   const collectionHeroCover = displayCoverImage || collection.cover_image?.trim() || '';
   const formatKinds = getCollectionFormatKinds(collection);
   const collectionCardLayout = getCollectionCardLayout(cardWidth, isMobile);
-  const visibleFormatKinds = formatKinds.slice(0, collectionCardLayout.visibleFormatLimit);
   const linkedBooksCount = normalizeSingleKitBookIds(collection.kit_book_ids).length;
-  const kitContentSummary = collection.theme?.trim()
-    || collection.synopsis?.trim()
+  const kitContentSummary = collection.synopsis?.trim()
+    || (collection.description as string | undefined)?.trim()
+    || collection.theme?.trim()
     || collectionTypeMeta.detailSummary;
+  // Algoritmo de diagramação: a descrição preenche todo o espaço livre entre título e tags,
+  // escalando de mobile a 4K. Calcula a altura do card pela largura medida + aspect ratio,
+  // subtrai o título medido e o "chrome" fixo (paddings, tags, separador, footer), e converte em linhas.
+  const DESC_LINE_HEIGHT_PX = 20; // 13px × 1.5
+  // Teto de altura: em telas grandes (4K) o card largo ficaria alto demais p/ o texto preencher,
+  // deixando vão em branco. Limitar a altura encolhe a capa (full-height) e elimina o espaço vazio.
+  const COLLECTION_CARD_MAX_HEIGHT = 196;
+  const cardAspectNum = parseFloat(collectionCardLayout.aspectRatio) || 1;
+  const cardHeightPx = cardWidth > 0
+    ? Math.min(cardWidth / cardAspectNum, COLLECTION_CARD_MAX_HEIGHT)
+    : 0;
+  // Espaço vertical consumido por tudo que não é a descrição (estimado, levemente generoso p/ não cortar).
+  const descChromePx = isMobile ? 78 : 82;
+  const descAvailablePx = cardHeightPx - descChromePx - titleHeight;
+  const descMaxLines = cardHeightPx > 0
+    ? Math.min(12, Math.max(1, Math.floor(descAvailablePx / DESC_LINE_HEIGHT_PX)))
+    : 2;
   const coverBadgeLabel = isCentralCorujaTone
     ? collectionTypeMeta.shortLabel
     : collection.level
@@ -297,6 +331,18 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
     setTilt({ x: rotateX, y: rotateY });
   };
 
+  // Fecha o popover de tags ao rolar ou redimensionar (coords ficariam defasadas)
+  useEffect(() => {
+    if (!tagPopover) return;
+    const close = () => setTagPopover(null);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [tagPopover]);
+
   const handleMouseLeave = () => {
     // Only reset on desktop
     if (!isMobile) {
@@ -310,7 +356,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
     <div
       key={collection.id}
       onClick={() => onCollectionClick(collection)}
-      className="cursor-pointer touch-manipulation flex h-full flex-col w-full"
+      className="cursor-pointer touch-manipulation flex flex-col w-full"
       style={{
         touchAction: 'pan-y',
         WebkitTapHighlightColor: 'transparent',
@@ -321,7 +367,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         className={`overflow-hidden relative group w-full ${isCentralCorujaTone
           ? 'mb-3 rounded-[28px] bg-transparent shadow-none'
           : isCollectionCard
-            ? 'rounded-[30px] bg-white shadow-[0_28px_60px_rgba(15,23,42,0.12)]'
+            ? 'rounded-lg bg-white shadow-[0_28px_60px_rgba(15,23,42,0.12)]'
             : 'mb-3 rounded-lg shadow-md shadow-gray-100'}`}
         style={{
           ...(isActive && { WebkitMaskImage: '-webkit-radial-gradient(white, black)' }),
@@ -336,6 +382,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
           aspectRatio: isCentralCorujaTone ? '0.78 / 1' : isCollectionCard ? collectionCardLayout.aspectRatio : '1 / 1',
           width: '100%',
           height: 'auto',
+          ...(isCollectionCard && { maxHeight: `${COLLECTION_CARD_MAX_HEIGHT}px` }),
         }}
         onMouseMove={!isMobile ? handleMouseMove : undefined}
         onMouseLeave={!isMobile ? handleMouseLeave : undefined}
@@ -363,6 +410,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         )}
         {isCollectionCard && (
           <>
+            {/* Gradient backgrounds */}
             <div
               className="absolute inset-0"
               style={{
@@ -378,150 +426,135 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
               }}
             />
 
+            {/* Cover image — right side, full height */}
             <div
-              className={collectionCardLayout.stackPosition === 'bottom'
-                ? 'absolute bottom-3 right-0'
-                : 'absolute top-1/2 -translate-y-1/2'}
-              style={{
-                right: `${collectionCardLayout.stackRight}px`,
-                width: `${collectionCardLayout.stackWidth}px`,
-              }}
+              className="absolute right-0 top-0 bottom-0 w-[40%] overflow-hidden rounded-r-lg"
+              style={{ transform: 'translateZ(16px)' }}
             >
-              <div className="relative aspect-square w-full" style={{ transform: 'translateZ(24px)' }}>
-                <div
-                  className="absolute left-[3%] top-[29%] w-[62%] aspect-square overflow-hidden rounded-[26px] border border-white/25 shadow-[0_22px_46px_rgba(15,23,42,0.14)]"
-                  style={{
-                    background: `linear-gradient(165deg, ${toRgba(themeColor, 0.9)} 0%, rgba(15,23,42,0.94) 100%)`,
-                    transform: 'rotate(-12deg)',
-                  }}
-                >
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.16)_0%,transparent_100%)]" />
-                </div>
-                <div
-                  className="absolute left-[14%] top-[10%] w-[68%] aspect-square overflow-hidden rounded-[26px] border border-slate-200/85 bg-white/94 p-3.5 shadow-[0_24px_44px_rgba(15,23,42,0.16)]"
-                  style={{ transform: 'rotate(5deg)' }}
-                >
-                  <div
-                    className="flex h-full flex-col justify-between rounded-[18px] border border-dashed p-2.5"
-                    style={{
-                      borderColor: toRgba(themeColor, 0.2),
-                      background: `linear-gradient(180deg, rgba(255,255,255,0.98) 0%, ${toRgba(themeColor, 0.07)} 100%)`,
-                    }}
-                  >
-                    <div
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-2xl"
-                      style={{
-                        backgroundColor: toRgba(themeColor, 0.12),
-                        color: toRgba(themeColor, 0.84),
-                      }}
-                    >
-                      <Icons.Grid size={14} />
-                    </div>
-                    <div>
-                      <p
-                        className="text-[8px] font-black uppercase tracking-[0.18em]"
-                        style={{ color: toRgba(themeColor, 0.82) }}
-                      >
-                        {formatKinds.length > 0 ? `${formatKinds.length} formatos` : 'Coleção'}
-                      </p>
-                      <div className="mt-2 space-y-1.5">
-                        <div
-                          className="h-2 rounded-full"
-                          style={{ width: '84%', backgroundColor: toRgba(themeColor, 0.22) }}
-                        />
-                        <div className="h-2 w-3/5 rounded-full bg-slate-200" />
-                        <div
-                          className="h-2 rounded-full"
-                          style={{ width: linkedBooksCount > 0 ? '72%' : '48%', backgroundColor: toRgba(themeColor, 0.12) }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute right-0 top-[1%] w-[82%] aspect-square overflow-hidden rounded-[30px] border border-white/75 bg-white shadow-[0_34px_62px_rgba(15,23,42,0.24)]">
-                  <img
-                    src={collectionHeroCover}
-                    alt={collection.title}
-                    className="h-full w-full object-cover bg-slate-100"
-                    loading="lazy"
-                    decoding="async"
-                    style={{
-                      transform: 'translateZ(28px)',
-                      objectPosition: 'center top',
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,transparent_48%,rgba(15,23,42,0.2)_100%)]" />
-                </div>
-              </div>
+              <img
+                src={collectionHeroCover}
+                alt={collection.title}
+                className="h-full w-full object-cover bg-slate-100"
+                loading="lazy"
+                decoding="async"
+                style={{ objectPosition: 'center top' }}
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.28)_0%,transparent_32%)]" />
             </div>
 
-            <div className="relative z-10 flex h-full flex-col px-4 pb-3.5 pt-3.5 sm:px-5 sm:pb-5 sm:pt-5">
-              <div
-                className="flex items-start justify-between gap-3"
-                style={{ paddingRight: `${collectionCardLayout.headerPaddingRight}px` }}
-              >
-                <span
-                  className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em]"
-                  style={{
-                    backgroundColor: toRgba(themeColor, 0.08),
-                    borderColor: toRgba(themeColor, 0.18),
-                    color: toRgba(themeColor, 0.9),
-                  }}
-                >
-                  <Icons.Grid size={12} />
-                  Coleção
-                </span>
-              </div>
-
-              <div
-                className="mt-3 sm:mt-4"
-                style={{ paddingRight: `${collectionCardLayout.bodyPaddingRight}px` }}
-              >
-                <h3 className="text-base font-black leading-tight text-slate-900 sm:text-lg md:text-[1.1rem] line-clamp-2">
-                  {collection.title}
-                </h3>
-                {kitContentSummary && (
-                  <p className={`mt-2 text-xs font-medium leading-relaxed text-slate-600 sm:text-sm ${collectionCardLayout.summaryClampClassName}`}>
-                    {kitContentSummary}
-                  </p>
-                )}
-              </div>
-
-              <div
-                className="mt-auto"
-                style={{ paddingRight: `${collectionCardLayout.footerPaddingRight}px` }}
-              >
-                <div className="flex flex-wrap gap-1">
-                  {visibleFormatKinds.map((formatKind) => {
-                    const { Icon, label, toneClassName } = COLLECTION_FORMAT_META[formatKind];
-                    return (
-                      <span
-                        key={formatKind}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold shadow-sm ${toneClassName}`}
-                      >
-                        <Icon size={13} />
-                        {label}
-                      </span>
-                    );
-                  })}
+            {/* Content — left side */}
+            <div
+              className="relative z-10 flex h-full flex-col px-3.5 pb-2 pt-2.5 sm:px-4 sm:pb-2.5 sm:pt-3"
+              style={{ paddingRight: '44%' }}
+            >
+              {/* Body: título + descrição (preenche o espaço livre) + tags */}
+              <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+                <div ref={titleRef} className="shrink-0">
+                  <h3 className="text-sm font-black leading-tight text-slate-900 sm:text-[0.95rem] line-clamp-2">
+                    {collection.title}
+                  </h3>
                 </div>
 
-                {progress > 0 && (
-                  <div className="mt-3 sm:mt-4 rounded-[18px] border border-white/80 bg-white/86 p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-                    <div className="flex items-center gap-3">
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${progress}%`,
-                            background: `linear-gradient(90deg, ${themeColor} 0%, ${toRgba(themeColor, 0.55)} 100%)`,
+                {/* Área da descrição: cresce p/ ocupar o vão entre título e tags; nº de linhas calculado p/ preencher */}
+                <div className="mt-0.5 min-h-0 flex-1 overflow-hidden">
+                  {kitContentSummary && (
+                    <p
+                      className="text-[13px] font-medium text-slate-500"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitBoxOrient: 'vertical',
+                        WebkitLineClamp: String(descMaxLines),
+                        overflow: 'hidden',
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {kitContentSummary}
+                    </p>
+                  )}
+                </div>
+
+                {/* Tags — max 2 visíveis + chip "+N" com popover */}
+                {(() => {
+                  const segmentTags = (collection.segments && collection.segments.length > 0)
+                    ? collection.segments.map(formatSegmentLabel)
+                    : collection.level
+                      ? [formatSegmentLabel(collection.level)]
+                      : [];
+                  const allTags = [
+                    ...formatKinds.map((kind) => ({
+                      key: `fmt-${kind}`,
+                      label: COLLECTION_FORMAT_META[kind].label,
+                      className: COLLECTION_FORMAT_META[kind].toneClassName,
+                    })),
+                    ...segmentTags.map((seg) => ({
+                      key: `seg-${seg}`,
+                      label: seg,
+                      className: 'bg-slate-100 text-slate-600 border border-slate-200',
+                    })),
+                  ];
+                  if (allTags.length === 0) return null;
+                  const MAX_VISIBLE = 2;
+                  const visible = allTags.slice(0, MAX_VISIBLE);
+                  const hidden = allTags.slice(MAX_VISIBLE);
+                  return (
+                    <div className="mt-1.5 flex shrink-0 flex-nowrap items-center gap-1">
+                      {visible.map((tag) => (
+                        <span
+                          key={tag.key}
+                          className={`inline-flex shrink-0 items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold whitespace-nowrap ${tag.className}`}
+                        >
+                          {tag.label}
+                        </span>
+                      ))}
+                      {hidden.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (tagPopover) {
+                              setTagPopover(null);
+                              return;
+                            }
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setTagPopover({ x: rect.left, y: rect.bottom + 4, tags: hidden });
                           }}
-                        />
-                      </div>
-                      <span className="text-[11px] font-black uppercase tracking-[0.14em]" style={{ color: toRgba(themeColor, 0.9) }}>
-                        {progress >= 100 ? 'Pronta' : `${progress}%`}
-                      </span>
+                          className="inline-flex shrink-0 items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-slate-900/85 text-white whitespace-nowrap"
+                          aria-label={`Mais ${hidden.length} tag${hidden.length > 1 ? 's' : ''}`}
+                        >
+                          +{hidden.length}
+                        </button>
+                      )}
                     </div>
+                  );
+                })()}
+              </div>
+
+              {/* Separator */}
+              <div className="my-1.5 border-t border-slate-200/60" />
+
+              {/* Footer: CTA + progress */}
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold text-white shrink-0"
+                  style={{ backgroundColor: toRgba(themeColor, 0.88) }}
+                >
+                  Explorar
+                  <Icons.ChevronRight size={10} />
+                </span>
+                {progress > 0 && (
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${progress}%`,
+                          background: `linear-gradient(90deg, ${themeColor} 0%, ${toRgba(themeColor, 0.55)} 100%)`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-black shrink-0" style={{ color: toRgba(themeColor, 0.88) }}>
+                      {progress >= 100 ? '✓' : `${progress}%`}
+                    </span>
                   </div>
                 )}
               </div>
@@ -542,17 +575,6 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
             />
           )
         )}
-        <div
-          className={`absolute border ${isCentralCorujaTone
-            ? 'left-3 top-3 max-w-[calc(100%-4rem)] truncate rounded-full border-brand-accent/40 bg-brand-accent px-3 py-1.5 text-[10px] text-white shadow-[0_12px_22px_rgba(62,28,4,0.28)]'
-            : isCollectionCard
-              ? 'left-4 top-4 hidden'
-              : `top-2 left-2 whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] ${collectionTypeMeta.coverClassName}`
-            } font-black uppercase tracking-[0.14em]`}
-          style={{ transform: 'translateZ(30px)' }}
-        >
-          {isCentralCorujaTone ? coverBadgeLabel : collectionTypeMeta.shortLabel}
-        </div>
 
         {(isCentralCorujaTone || isCollectionCard) && (locked || progress > 0) && (
           <div
@@ -688,11 +710,12 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         </h3>
       )}
 
-      {!isCentralCorujaTone && !isCollectionCard && collection.theme && collection.theme.trim() !== '' && (
-        <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">
-          {collection.theme}
-        </p>
-      )}
+      {!isCentralCorujaTone && !isCollectionCard && (() => {
+        const bookSummary = collection.synopsis?.trim() || (collection.description as string | undefined)?.trim() || collection.theme?.trim();
+        return bookSummary ? (
+          <p className="text-xs text-gray-500 line-clamp-1 mb-2 font-medium">{bookSummary}</p>
+        ) : null;
+      })()}
 
       {isCentralCorujaTone && collection.title && (
         <h3 className="mb-1 text-[0.95rem] font-black leading-tight text-[#FFF4E3] line-clamp-2">
@@ -711,6 +734,31 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
           <div className="h-1.5 w-1.5 rounded-full bg-brand-light" />
           Em andamento
         </div>
+      )}
+
+      {/* Popover das tags extras (renderizado via portal p/ escapar do overflow-hidden do card) */}
+      {tagPopover && createPortal(
+        <>
+          <div
+            className="fixed inset-0 z-[60]"
+            onClick={(e) => { e.stopPropagation(); setTagPopover(null); }}
+          />
+          <div
+            className="fixed z-[61] flex max-w-[200px] flex-col items-start gap-1 rounded-xl bg-white p-2 shadow-[0_12px_32px_rgba(15,23,42,0.18)] ring-1 ring-slate-200"
+            style={{ left: tagPopover.x, top: tagPopover.y }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {tagPopover.tags.map((tag) => (
+              <span
+                key={tag.key}
+                className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold whitespace-nowrap ${tag.className}`}
+              >
+                {tag.label}
+              </span>
+            ))}
+          </div>
+        </>,
+        document.body
       )}
     </div>
   );

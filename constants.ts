@@ -134,6 +134,25 @@ export const AVAILABLE_SEGMENTS = [
 ] as const;
 
 // ---------------------------------------------------------------------------
+// OPÇÕES DE IDADE ADEQUADA
+// ---------------------------------------------------------------------------
+export const SUITABLE_AGES_OPTIONS = [
+  { value: '0 anos',  label: '0 anos',  group: 'Bebês' },
+  { value: '1 ano',   label: '1 ano',   group: 'Bebês' },
+  { value: '2 anos',  label: '2 anos',  group: 'Bebês' },
+  { value: '3 anos',  label: '3 anos',  group: 'Primeira Infância' },
+  { value: '4 anos',  label: '4 anos',  group: 'Primeira Infância' },
+  { value: '5 anos',  label: '5 anos',  group: 'Primeira Infância' },
+  { value: '6 anos',  label: '6 anos',  group: 'Infância' },
+  { value: '7 anos',  label: '7 anos',  group: 'Infância' },
+  { value: '8 anos',  label: '8 anos',  group: 'Infância' },
+  { value: '9 anos',  label: '9 anos',  group: 'Infância' },
+  { value: '10 anos', label: '10 anos', group: 'Infância' },
+  { value: '11 anos', label: '11 anos', group: 'Pré-adolescência' },
+  { value: '12 anos', label: '12 anos', group: 'Pré-adolescência' },
+];
+
+// ---------------------------------------------------------------------------
 // OPÇÕES DE ANO ESCOLAR
 // ---------------------------------------------------------------------------
 export const AGE_GRADE_OPTIONS = [

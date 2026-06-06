@@ -115,6 +115,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const [showMobileDetails, setShowMobileDetails] = useState(false);
   const [showMobileUtilitySheet, setShowMobileUtilitySheet] = useState(false);
   const [showDesktopRelated, setShowDesktopRelated] = useState(false);
+  // When true, renders the YouTube-style page layout (video + info + related side by side).
+  // When false, renders the fullscreen landscape overlay.
+  // Default true so the player opens in page mode; click "Expandir" to go fullscreen.
+  const [isPlayerCollapsed, setIsPlayerCollapsed] = useState(true);
   const [isCompactHeightViewport, setIsCompactHeightViewport] = useState(false);
   const [playerState, setPlayerState] = useState<PlayerState>('loading');
 
@@ -122,6 +126,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const controlsContainerRef = useRef<HTMLDivElement>(null);
   const controlsTimeoutRef = useRef<any>(null);
+  // YouTube postMessage control
+  const ytIframeRef = useRef<HTMLIFrameElement>(null);
+  const ytPrevCtRef = useRef<number>(-1); // track previous currentTime to infer playing state
   const lastSavedAtRef = useRef(0);
   const lastSavedPositionRef = useRef(0);
   const saveInFlightRef = useRef(false);
@@ -133,6 +140,11 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const isMobile = useIsMobile();
   const isLandscape = useOrientation();
   const isMobilePortrait = isMobile && !isLandscape;
+  // Desktop page mode: player is "collapsed" (not fullscreen) on a non-mobile device
+  const isDesktopPage = isPlayerCollapsed && !isMobile;
+  // Unified YouTube-style page layout: mobile portrait OR desktop page mode
+  const isYouTubePage = isMobilePortrait || isDesktopPage;
+  // isPlayerCollapsed is desktop-only — mobile landscape layout is purely device-driven
   const isMobileLandscape = isLandscape && (isMobile || isCompactHeightViewport);
   const currentPlayerLayout = getVideoPlayerLayout(isMobilePortrait, isMobileLandscape);
   const previousPlayerContextRef = useRef({
@@ -144,7 +156,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const youtubeVideoId = getYouTubeVideoId(resolvedVideoUrl);
   const isYouTubeSource = Boolean(youtubeVideoId);
   const youtubeEmbedUrl = youtubeVideoId
-    ? `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&playsinline=1&rel=0`
+    ? `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&playsinline=1&rel=0&enablejsapi=1&controls=0`
     : null;
   const {
     isAvailable: canDownloadOffline,
@@ -174,6 +186,102 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       document.body.style.overflow = previousOverflow;
     };
   }, []);
+
+  // YouTube: postMessage for commands; YT.Player for registration + callbacks; window.message for infoDelivery
+  const ytPostMessage = useCallback((func: string, args: any[] = []) => {
+    ytIframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func, args }),
+      '*'
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!isYouTubeSource) return;
+
+    // Listen for infoDelivery events (currentTime, duration, playerState)
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.data) return;
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data.event === 'infoDelivery' && data.info) {
+          const { playerState: ps, currentTime: ct, duration: dur } = data.info;
+          if (typeof ct === 'number') {
+            setCurrentTime(ct);
+            // Infer playing state from time progression:
+            // YouTube only sends infoDelivery while playing, and
+            // playerState is only included when the state CHANGES.
+            // So if currentTime moved forward, the video is playing.
+            if (ct !== ytPrevCtRef.current && ytPrevCtRef.current >= 0) {
+              setIsPlaying(true);
+              setPlayerState('playing');
+              setIsLoading(false);
+            }
+            ytPrevCtRef.current = ct;
+          }
+          if (typeof dur === 'number' && dur > 0) setDuration(dur);
+          if (typeof ps === 'number') {
+            if (ps === 1) { setIsPlaying(true); setPlayerState('playing'); setIsLoading(false); }
+            else if (ps === 2) {
+              setIsPlaying(false); setPlayerState('paused');
+              ytPrevCtRef.current = -1; // reset: previne re-ativar isPlaying por infoDelivery tardio após pause
+            }
+            else if (ps === 0) {
+              setIsPlaying(false); setPlayerState('ended');
+              ytPrevCtRef.current = -1; // reset: mesma razão para o estado ended
+            }
+          }
+        }
+      } catch { /* ignore non-YouTube messages */ }
+    };
+    window.addEventListener('message', handleMessage);
+
+    // Register with YT.Player to activate two-way communication (enables infoDelivery events).
+    // NOTE: YT.Player methods like playVideo() are unavailable in this API version;
+    // we use postMessage commands instead. The constructor is only needed for registration.
+    const registerYTPlayer = () => {
+      if (!ytIframeRef.current) return;
+      const win = window as any;
+      if (!win.YT?.Player) return;
+      new win.YT.Player(ytIframeRef.current, {
+        events: {
+          onReady: () => { setIsLoading(false); setPlayerState('playing'); setIsPlaying(true); },
+          onStateChange: (e: any) => {
+            const s = e?.data;
+            if (s === 1) { setIsPlaying(true); setPlayerState('playing'); setIsLoading(false); }
+            else if (s === 2) { setIsPlaying(false); setPlayerState('paused'); }
+            else if (s === 0) { setIsPlaying(false); setPlayerState('ended'); }
+          },
+        },
+      });
+    };
+
+    const win = window as any;
+    if (win.YT?.Player) {
+      registerYTPlayer();
+    } else {
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const script = document.createElement('script');
+        script.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(script);
+      }
+      const prev = win.onYouTubeIframeAPIReady;
+      win.onYouTubeIframeAPIReady = () => { prev?.(); registerYTPlayer(); };
+    }
+
+    // Fallback: mark as playing after 2s if onReady doesn't fire (autoplay=1)
+    const loadingTimer = setTimeout(() => {
+      setIsLoading(false);
+      setPlayerState('playing');
+      setIsPlaying(true);
+    }, 2000);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearTimeout(loadingTimer);
+      // Do NOT destroy the YT.Player — it would remove the iframe from the DOM.
+      // React manages the iframe lifecycle; we just drop our references.
+    };
+  }, [isYouTubeSource, youtubeVideoId]);
 
   useEffect(() => {
     const checkCompactHeightViewport = () => {
@@ -288,7 +396,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const resetControlsTimeout = () => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    if (shouldAutoHideVideoPlayerControls(isPlaying, isMobilePortrait)) {
+    // YouTube iframe captures mouse events — we can't detect hover over the video area,
+    // so auto-hide would leave the user with no way to bring controls back.
+    if (shouldAutoHideVideoPlayerControls(isPlaying, isMobilePortrait) && !isYouTubeSource) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
       }, 3000);
@@ -300,7 +410,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       clearTimeout(controlsTimeoutRef.current);
     }
 
-    if (!shouldAutoHideVideoPlayerControls(isPlaying, isMobilePortrait)) {
+    if (!shouldAutoHideVideoPlayerControls(isPlaying, isMobilePortrait) || isYouTubeSource) {
       return;
     }
 
@@ -392,7 +502,11 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const togglePlay = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     resetControlsTimeout();
-    if (isYouTubeSource) return;
+    if (isYouTubeSource) {
+      if (isPlaying) ytPostMessage('pauseVideo');
+      else ytPostMessage('playVideo');
+      return;
+    }
     if (!videoRef.current) return;
     try {
       setPlayError(null);
@@ -457,8 +571,12 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     resetControlsTimeout();
-    if (isYouTubeSource) return;
     const time = Number(e.target.value);
+    if (isYouTubeSource) {
+      ytPostMessage('seekTo', [time, true]);
+      setCurrentTime(time);
+      return;
+    }
     if (videoRef.current) {
       videoRef.current.currentTime = time;
       setCurrentTime(time);
@@ -484,7 +602,11 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     resetControlsTimeout();
-    if (isYouTubeSource) return;
+    if (isYouTubeSource) {
+      if (isMuted) { ytPostMessage('unMute'); setIsMuted(false); }
+      else { ytPostMessage('mute'); setIsMuted(true); }
+      return;
+    }
     if (videoRef.current) {
       const newMutedState = !isMuted;
       videoRef.current.muted = newMutedState;
@@ -500,7 +622,12 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
   const skip = (seconds: number) => {
     resetControlsTimeout();
-    if (isYouTubeSource) return;
+    if (isYouTubeSource) {
+      const newTime = Math.min(Math.max(currentTime + seconds, 0), duration);
+      ytPostMessage('seekTo', [newTime, true]);
+      setCurrentTime(newTime);
+      return;
+    }
     if (videoRef.current) {
       videoRef.current.currentTime = Math.min(Math.max(videoRef.current.currentTime + seconds, 0), duration);
     }
@@ -509,13 +636,15 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const toggleSpeed = (e: React.MouseEvent) => {
     e.stopPropagation();
     resetControlsTimeout();
-    if (isYouTubeSource) return;
     let newRate = 1.0;
     if (playbackRate === 1.0) newRate = 1.5;
     else if (playbackRate === 1.5) newRate = 2.0;
     else newRate = 1.0;
-
     setPlaybackRate(newRate);
+    if (isYouTubeSource) {
+      ytPostMessage('setPlaybackRate', [newRate]);
+      return;
+    }
     if (videoRef.current) videoRef.current.playbackRate = newRate;
   };
 
@@ -801,26 +930,19 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     ? `${relatedItems.length} vídeo${relatedItems.length > 1 ? 's' : ''} na fila`
     : 'Sem vídeos na fila';
 
-  if (isMobilePortrait) {
-    const visibleMobileQueueItems = showMobileQueue ? relatedItems : relatedItems.slice(0, 2);
-    const portraitTransportButtonClass = 'flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-[28px] border border-white/14 bg-black/28 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_28px_rgba(0,0,0,0.22)] backdrop-blur-md transition-colors hover:bg-black/36';
-    const portraitPlayButtonClass = 'flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-[30px] border border-white/18 bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_18px_30px_rgba(0,0,0,0.2)] backdrop-blur-md transition-colors hover:bg-white/[0.16]';
-    const portraitActionButtonClass = 'flex min-h-[64px] flex-col items-center justify-center gap-1.5 rounded-[24px] border border-white/14 bg-black/24 px-2 text-center text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_22px_rgba(0,0,0,0.18)] backdrop-blur-md transition-colors hover:bg-black/32';
-    const portraitCompactActionClass = 'inline-flex h-[60px] items-center gap-3 rounded-[24px] border border-white/14 bg-black/24 px-4 text-left text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_22px_rgba(0,0,0,0.18)] backdrop-blur-md transition-colors hover:bg-black/32';
-    const portraitContinuationCardClass = 'mt-4 flex w-full items-center gap-3 rounded-[28px] border border-white/14 bg-white/[0.075] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_28px_rgba(0,0,0,0.2)] backdrop-blur-md transition-colors hover:bg-white/[0.11]';
-    const portraitQueueCardClass = 'flex w-full items-center gap-3 rounded-[24px] border border-white/14 bg-white/[0.075] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_22px_rgba(0,0,0,0.16)] backdrop-blur-md transition-colors hover:bg-white/[0.11]';
-
+  if (isYouTubePage) {
     return (
       <div
         ref={containerRef}
-        className="fixed inset-0 z-50 overflow-y-auto bg-black text-white"
+        className="fixed inset-0 z-50 overflow-y-auto bg-[#0f0f0f] text-white"
         role="dialog"
         aria-modal="true"
         aria-label="Player de vídeo"
-        onTouchStart={resetControlsTimeout}
       >
-        <div className="min-h-full pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <header className="sticky top-0 z-30 border-b border-white/10 bg-black/80 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md">
+        <div className="min-h-full pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+
+          {/* ── Sticky header ── */}
+          <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-[#0f0f0f]/95 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -870,470 +992,418 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
             </div>
           </header>
 
-          <div className="px-4 pt-4">
-            <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-black shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
-              <div className="aspect-video">
-                {youtubeEmbedUrl ? (
-                  <iframe
-                    src={youtubeEmbedUrl}
-                    title={resolvedTitle || 'Vídeo do YouTube'}
-                    className="h-full w-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    onLoad={() => { setIsLoading(false); setPlayerState('playing'); }}
-                  />
-                ) : resolvedVideoUrl ? (
-                  <video
-                    ref={videoRef}
-                    src={resolvedVideoUrl}
-                    className="h-full w-full bg-black object-contain"
-                    playsInline
-                    onClick={(event) => { event.stopPropagation(); togglePlay(); }}
-                    onTimeUpdate={handleTimeUpdate}
-                    onLoadedData={handleLoadedData}
-                    onWaiting={() => { setIsLoading(true); }}
-                    onPlaying={() => { setIsLoading(false); setPlayerState('playing'); }}
-                    onPause={() => {
-                      setIsPlaying(false);
-                      setPlayerState('paused');
-                      maybeSaveProgress(true);
-                    }}
-                    onError={() => {
-                      setIsLoading(false);
-                      setIsPlaying(false);
-                      setPlayError('Não foi possível carregar o vídeo nesta conexão.');
-                      const isPersistent = retryCountRef.current >= 2;
-                      setPlayerState(isPersistent ? 'error_persistent' : 'error');
-                    }}
-                    onEnded={() => {
-                      setIsPlaying(false);
-                      setPlayerState('ended');
-                      setShowControls(true);
-                      maybeSaveProgress(true);
-                    }}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center px-6">
-                    <div className="max-w-md rounded-2xl border border-white/15 bg-black/50 p-6 text-center backdrop-blur-sm">
-                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-white/70">Transmissão indisponível</p>
-                      <h2 className="mt-3 text-lg font-black text-white">Não conseguimos carregar este vídeo agora</h2>
-                      <p className="mt-2 text-sm text-white/80">
-                        Você pode voltar para a biblioteca ou seguir para outro conteúdo relacionado.
-                      </p>
-                      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          {/* ── Content: responsive YouTube-style layout ── */}
+          <div className="mx-auto max-w-screen-xl lg:px-6 lg:py-5">
+            <div className="flex flex-col lg:flex-row lg:gap-6 lg:items-start">
+
+              {/* ── Left column: video card + info ── */}
+              <div className="min-w-0 flex-1">
+
+                {/* Video card */}
+                <div className="overflow-hidden bg-black lg:rounded-xl">
+
+                  {/* Video area — 16:9 */}
+                  <div className="relative aspect-video">
+                    {youtubeEmbedUrl ? (
+                      <iframe
+                        ref={ytIframeRef}
+                        src={youtubeEmbedUrl}
+                        title={resolvedTitle || 'Vídeo do YouTube'}
+                        className="h-full w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        onLoad={() => { setIsLoading(false); setPlayerState('playing'); }}
+                      />
+                    ) : resolvedVideoUrl ? (
+                      <video
+                        ref={videoRef}
+                        src={resolvedVideoUrl}
+                        className="h-full w-full bg-black object-contain"
+                        playsInline
+                        onClick={(event) => { event.stopPropagation(); togglePlay(); }}
+                        onTimeUpdate={handleTimeUpdate}
+                        onLoadedData={handleLoadedData}
+                        onWaiting={() => { setIsLoading(true); }}
+                        onPlaying={() => { setIsLoading(false); setPlayerState('playing'); }}
+                        onPause={() => {
+                          setIsPlaying(false);
+                          setPlayerState('paused');
+                          maybeSaveProgress(true);
+                        }}
+                        onError={() => {
+                          setIsLoading(false);
+                          setIsPlaying(false);
+                          setPlayError('Não foi possível carregar o vídeo nesta conexão.');
+                          const isPersistent = retryCountRef.current >= 2;
+                          setPlayerState(isPersistent ? 'error_persistent' : 'error');
+                        }}
+                        onEnded={() => {
+                          setIsPlaying(false);
+                          setPlayerState('ended');
+                          setShowControls(true);
+                          maybeSaveProgress(true);
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center px-6">
+                        <div className="max-w-md rounded-2xl border border-white/15 bg-black/50 p-6 text-center backdrop-blur-sm">
+                          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-white/70">Transmissão indisponível</p>
+                          <h2 className="mt-3 text-lg font-black text-white">Não conseguimos carregar este vídeo agora</h2>
+                          <p className="mt-2 text-sm text-white/80">
+                            Você pode voltar para a biblioteca ou seguir para outro conteúdo relacionado.
+                          </p>
+                          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={handleBack}
+                              className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-white/20"
+                            >
+                              Voltar para biblioteca
+                            </button>
+                            {leadRelatedItem && (
+                              <button
+                                type="button"
+                                onClick={() => openRelatedItem(leadRelatedItem)}
+                                className="rounded-xl border border-white/20 bg-brand-primary/80 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-primary"
+                              >
+                                Tentar próximo vídeo
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Center play/pause — native video only (YouTube has its own UI) */}
+                    {resolvedVideoUrl && !isYouTubeSource && playerState !== 'ended' && playerState !== 'error_persistent' && (
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                         <button
                           type="button"
-                          onClick={handleBack}
-                          className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-white/20"
+                          onClick={(event) => togglePlay(event)}
+                          className="pointer-events-auto inline-flex h-20 w-20 items-center justify-center rounded-full border border-white/25 bg-black/28 text-white shadow-[0_20px_36px_rgba(0,0,0,0.35)] backdrop-blur-md transition-transform active:scale-95"
+                          aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
                         >
-                          Voltar para biblioteca
+                          {isPlaying ? (
+                            <Icons.Pause size={34} fill="currentColor" strokeWidth={2} />
+                          ) : (
+                            <Icons.Play size={34} fill="currentColor" strokeWidth={2} className="ml-1" />
+                          )}
                         </button>
-                        {leadRelatedItem && (
+                      </div>
+                    )}
+
+                    {/* Loading spinner */}
+                    {isLoading && (resolvedVideoUrl || youtubeEmbedUrl) && (
+                      <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+                        <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white"></div>
+                      </div>
+                    )}
+
+                    {/* Ended overlay */}
+                    {playerState === 'ended' && (
+                      <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="overlay-ended-title-page"
+                        className="absolute inset-0 z-20 flex items-center justify-center bg-black/75 px-4 text-center backdrop-blur-sm"
+                      >
+                        <div className="flex max-w-xs flex-col items-center gap-4">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/40 bg-white/10 backdrop-blur-md">
+                            <Icons.Check size={32} className="text-white" strokeWidth={2.5} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60">Concluído</p>
+                            <h2 id="overlay-ended-title-page" className="mt-1 text-xl font-black text-white">{resolvedTitle}</h2>
+                          </div>
+                          <div className="flex flex-wrap items-center justify-center gap-2">
+                            <button
+                              ref={endedFocusRef}
+                              autoFocus
+                              type="button"
+                              onClick={() => {
+                                if (videoRef.current) {
+                                  videoRef.current.currentTime = 0;
+                                  videoRef.current.play().then(() => {
+                                    setIsPlaying(true);
+                                    setPlayerState('playing');
+                                    retryCountRef.current = 0;
+                                  }).catch(() => undefined);
+                                }
+                              }}
+                              className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/25 active:scale-95"
+                            >
+                              <Icons.RotateCw size={15} /> Assistir de novo
+                            </button>
+                            {leadRelatedItem && (
+                              <button
+                                type="button"
+                                onClick={() => openRelatedItem(leadRelatedItem)}
+                                className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-black transition-colors hover:bg-white/90 active:scale-95"
+                              >
+                                <Icons.ChevronRight size={15} />
+                                <span className="max-w-[150px] truncate">{leadRelatedItem.title}</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Error persistent overlay */}
+                    {playerState === 'error_persistent' && (
+                      <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="overlay-error-title-page"
+                        className="absolute inset-0 z-20 flex items-center justify-center bg-black/80 px-4 text-center backdrop-blur-sm"
+                      >
+                        <div className="w-full max-w-sm rounded-2xl border border-red-400/30 bg-red-900/60 p-6 backdrop-blur-md shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+                          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-red-400/40 bg-red-500/20">
+                            <Icons.AlertCircle size={28} className="text-red-300" />
+                          </div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-300/80">Falha persistente</p>
+                          <h2 id="overlay-error-title-page" className="mt-2 text-lg font-black text-white">Não foi possível carregar o vídeo</h2>
+                          <p className="mt-2 text-sm text-white/70">
+                            Verifique sua conexão e tente novamente, ou acesse outro conteúdo.
+                          </p>
+                          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                            <button
+                              ref={errorPersistentFocusRef}
+                              autoFocus
+                              type="button"
+                              onClick={() => {
+                                retryCountRef.current = 0;
+                                setPlayerState('loading');
+                                retryPlayback();
+                              }}
+                              className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/25 active:scale-95"
+                            >
+                              <Icons.RotateCw size={15} /> Tentar novamente
+                            </button>
+                            {leadRelatedItem && (
+                              <button
+                                type="button"
+                                onClick={() => openRelatedItem(leadRelatedItem)}
+                                className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-black transition-colors hover:bg-white/90 active:scale-95"
+                              >
+                                <Icons.ChevronRight size={15} />
+                                <span className="max-w-[150px] truncate">{leadRelatedItem.title}</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>{/* end video area */}
+
+                  {/* Controls bar — always visible, sits below the video in document flow */}
+                  <div className="border-t border-white/[0.08] bg-black px-4 pb-4 pt-3">
+
+                    {/* Error banners */}
+                    {playError && (
+                      <div className="mb-3 rounded-xl border border-red-300/35 bg-red-500/20 px-4 py-3 text-sm text-white">
+                        <p>{playError}</p>
+                        {resolvedVideoUrl && (
                           <button
                             type="button"
-                            onClick={() => openRelatedItem(leadRelatedItem)}
-                            className="rounded-xl border border-white/20 bg-brand-primary/80 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-primary"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              retryPlayback();
+                            }}
+                            className="mt-2 rounded-lg border border-white/35 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white"
                           >
-                            Tentar próximo vídeo
+                            Tentar novamente
                           </button>
                         )}
                       </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {!isYouTubeSource && resolvedVideoUrl && playerState !== 'ended' && playerState !== 'error_persistent' && (
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={(event) => togglePlay(event)}
-                    className="pointer-events-auto inline-flex h-20 w-20 items-center justify-center rounded-full border border-white/25 bg-black/28 text-white shadow-[0_20px_36px_rgba(0,0,0,0.35)] backdrop-blur-md transition-transform active:scale-95"
-                    aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
-                  >
-                    {isPlaying ? (
-                      <Icons.Pause size={34} fill="currentColor" strokeWidth={2} />
-                    ) : (
-                      <Icons.Play size={34} fill="currentColor" strokeWidth={2} className="ml-1" />
                     )}
-                  </button>
-                </div>
-              )}
 
-              {isLoading && (resolvedVideoUrl || youtubeEmbedUrl) && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-                  <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white"></div>
-                </div>
-              )}
+                    {offlineDownloadError && (
+                      <div className="mb-3 rounded-xl border border-red-300/35 bg-red-500/20 px-4 py-3 text-sm text-white">
+                        <p>{offlineDownloadError}</p>
+                      </div>
+                    )}
 
-              {playerState === 'ended' && (
-                <div
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="overlay-ended-title-mobile"
-                  className="absolute inset-0 z-20 flex items-center justify-center bg-black/75 px-4 text-center backdrop-blur-sm"
-                >
-                  <div className="flex max-w-xs flex-col items-center gap-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/40 bg-white/10 backdrop-blur-md">
-                      <Icons.Check size={32} className="text-white" strokeWidth={2.5} />
+                    {/* Seekbar */}
+                    <div className="flex items-center gap-2.5 text-[11px] font-bold text-white/85">
+                      <span className="tabular-nums">{formatTime(currentTime)}</span>
+                      <div className="relative flex h-5 flex-1 items-center">
+                        <input
+                          type="range"
+                          min={0}
+                          max={duration || 100}
+                          value={currentTime}
+                          onChange={handleSeek}
+                          onMouseUp={handleSeekEnd}
+                          onTouchEnd={handleSeekEnd}
+                          className="relative z-20 h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-white/30 focus:outline-none"
+                          style={{
+                            background: `linear-gradient(to right, ${themeColor} ${progressPercent}%, rgba(255,255,255,0.3) ${progressPercent}%)`
+                          }}
+                        />
+                      </div>
+                      <span className="tabular-nums text-white/60">-{formatTime(remainingTime)}</span>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60">Concluído</p>
-                      <h2 id="overlay-ended-title-mobile" className="mt-1 text-xl font-black text-white">{resolvedTitle}</h2>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                      <button
-                        ref={endedFocusRef}
-                        autoFocus
-                        type="button"
-                        onClick={() => {
-                          if (videoRef.current) {
-                            videoRef.current.currentTime = 0;
-                            videoRef.current.play().then(() => {
-                              setIsPlaying(true);
-                              setPlayerState('playing');
-                              retryCountRef.current = 0;
-                            }).catch(() => undefined);
-                          }
-                        }}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/25 active:scale-95"
-                      >
-                        <Icons.RotateCw size={15} /> Assistir de novo
-                      </button>
-                      {leadRelatedItem && (
+
+                    {/* Controls row */}
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center gap-1">
                         <button
                           type="button"
-                          onClick={() => openRelatedItem(leadRelatedItem)}
-                          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-black transition-colors hover:bg-white/90 active:scale-95"
+                          onClick={() => skip(-10)}
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white/85 transition-colors hover:bg-white/10 active:scale-95"
+                          aria-label="Voltar 10 segundos"
                         >
-                          <Icons.ChevronRight size={15} />
-                          <span className="max-w-[150px] truncate">{leadRelatedItem.title}</span>
+                          <SkipTenGlyph direction="back" size={22} />
                         </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+                        <button
+                          type="button"
+                          onClick={(event) => togglePlay(event)}
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/[0.08] text-white transition-colors hover:bg-white/[0.16] active:scale-95"
+                          aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
+                        >
+                          {isPlaying ? (
+                            <Icons.Pause size={22} fill="currentColor" />
+                          ) : (
+                            <Icons.Play size={22} fill="currentColor" className="ml-0.5" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => skip(10)}
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white/85 transition-colors hover:bg-white/10 active:scale-95"
+                          aria-label="Avançar 10 segundos"
+                        >
+                          <SkipTenGlyph direction="forward" size={22} />
+                        </button>
+                        <span className="ml-2 tabular-nums text-xs text-white/50">
+                          {formatTime(currentTime)} / {formatTime(duration)}
+                        </span>
+                      </div>
 
-              {playerState === 'error_persistent' && (
-                <div
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="overlay-error-title-mobile"
-                  className="absolute inset-0 z-20 flex items-center justify-center bg-black/80 px-4 text-center backdrop-blur-sm"
-                >
-                  <div className="w-full max-w-sm rounded-2xl border border-red-400/30 bg-red-900/60 p-6 backdrop-blur-md shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-red-400/40 bg-red-500/20">
-                      <Icons.AlertCircle size={28} className="text-red-300" />
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={toggleMute}
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white/85 transition-colors hover:bg-white/10 active:scale-95"
+                          aria-label={isMuted || volume === 0 ? 'Ativar som' : 'Silenciar'}
+                        >
+                          {isMuted || volume === 0 ? <Icons.VolumeX size={18} /> : <Icons.Volume2 size={18} />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={toggleSpeed}
+                          className="inline-flex h-10 min-w-[40px] items-center justify-center rounded-lg px-1 text-xs font-black tabular-nums text-white/85 transition-colors hover:bg-white/10 active:scale-95"
+                          aria-label={`Velocidade: ${playbackRate}x`}
+                        >
+                          {playbackRate}×
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsPlayerCollapsed(false)}
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white/85 transition-colors hover:bg-white/10 active:scale-95"
+                          title="Expandir para tela cheia"
+                          aria-label="Expandir para tela cheia"
+                        >
+                          <Icons.Maximize size={18} />
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-300/80">Falha persistente</p>
-                    <h2 id="overlay-error-title-mobile" className="mt-2 text-lg font-black text-white">Não foi possível carregar o vídeo</h2>
-                    <p className="mt-2 text-sm text-white/70">
-                      Verifique sua conexão e tente novamente, ou acesse outro conteúdo.
+                  </div>{/* end controls bar */}
+                </div>{/* end video card */}
+
+                {/* Title + meta + description */}
+                <div className="mt-5 space-y-3 px-4 lg:px-0">
+                  <div>
+                    <h2 className="text-base font-black leading-snug text-white lg:text-lg">
+                      {resolvedTitle}
+                    </h2>
+                    <p className="mt-1 text-sm text-white/50">{collection.title}</p>
+                  </div>
+
+                  {itemDescription && (
+                    <div className="rounded-xl bg-white/[0.06] px-4 py-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/45">Descrição</p>
+                      <p className="mt-2 text-sm leading-6 text-white/80">{itemDescription}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Related videos — mobile only (hidden on lg+, shown in sidebar there) */}
+                {relatedItems.length > 0 && (
+                  <div className="mt-6 px-4 pb-2 lg:hidden">
+                    <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/50">
+                      Próximos vídeos
                     </p>
-                    <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                      <button
-                        ref={errorPersistentFocusRef}
-                        autoFocus
-                        type="button"
-                        onClick={() => {
-                          retryCountRef.current = 0;
-                          setPlayerState('loading');
-                          retryPlayback();
-                        }}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/25 active:scale-95"
-                      >
-                        <Icons.RotateCw size={15} /> Tentar novamente
-                      </button>
-                      {leadRelatedItem && (
+                    <div className="space-y-2">
+                      {relatedItems.map((item) => (
                         <button
+                          key={item.id}
                           type="button"
-                          onClick={() => openRelatedItem(leadRelatedItem)}
-                          className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-black transition-colors hover:bg-white/90 active:scale-95"
+                          onClick={() => openRelatedItem(item)}
+                          className="flex w-full items-center gap-3 rounded-2xl border border-white/[0.1] bg-white/[0.04] p-3 text-left transition-colors hover:bg-white/[0.08] active:scale-[0.99]"
                         >
-                          <Icons.ChevronRight size={15} />
-                          <span className="max-w-[150px] truncate">{leadRelatedItem.title}</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-3 px-4 pt-4">
-            {playError && (
-              <div className={`${panelChromeClass} border-red-300/35 bg-red-500/82 px-4 py-3 text-sm text-white`}>
-                <p>{playError}</p>
-                {resolvedVideoUrl && (
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      retryPlayback();
-                    }}
-                    className="mt-2 rounded-lg border border-white/35 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white"
-                  >
-                    Tentar novamente
-                  </button>
-                )}
-              </div>
-            )}
-
-            {offlineDownloadError && (
-              <div className={`${panelChromeClass} border-red-300/35 bg-red-500/82 px-4 py-3 text-sm text-white`}>
-                <p>{offlineDownloadError}</p>
-              </div>
-            )}
-
-            {!isYouTubeSource ? (
-              <section className={`${panelChromeClass} p-4`}>
-                <div className="flex items-center gap-2.5 text-[11px] font-bold text-white/85">
-                  <span className="tabular-nums">{formatTime(currentTime)}</span>
-                  <div className="relative flex h-5 flex-1 items-center">
-                    <input
-                      type="range"
-                      min={0}
-                      max={duration || 100}
-                      value={currentTime}
-                      onChange={handleSeek}
-                      onMouseUp={handleSeekEnd}
-                      onTouchEnd={handleSeekEnd}
-                      className="relative z-20 h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-white/30 focus:outline-none"
-                      style={{
-                        background: `linear-gradient(to right, ${themeColor} ${progressPercent}%, rgba(255,255,255,0.3) ${progressPercent}%)`
-                      }}
-                    />
-                  </div>
-                  <span className="tabular-nums text-white/70">-{formatTime(remainingTime)}</span>
-                </div>
-
-                <div className="mt-4 grid grid-cols-3 gap-3.5">
-                  <button
-                    type="button"
-                    onClick={() => skip(-10)}
-                    className={portraitTransportButtonClass}
-                    aria-label="Voltar 10 segundos"
-                  >
-                    <SkipTenGlyph direction="back" size={30} />
-                    <span className="text-[13px] font-black tracking-[-0.03em] text-white/88">10s</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(event) => togglePlay(event)}
-                    className={portraitPlayButtonClass}
-                    aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
-                  >
-                    {isPlaying ? <Icons.Pause size={26} fill="currentColor" /> : <Icons.Play size={26} fill="currentColor" className="ml-0.5" />}
-                    <span className="text-[13px] font-black tracking-[-0.03em] text-white/92">{isPlaying ? 'Pausar' : 'Play'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => skip(10)}
-                    className={portraitTransportButtonClass}
-                    aria-label="Avançar 10 segundos"
-                  >
-                    <SkipTenGlyph direction="forward" size={30} />
-                    <span className="text-[13px] font-black tracking-[-0.03em] text-white/88">10s</span>
-                  </button>
-                </div>
-
-                <div className="mt-3.5 flex items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={toggleFullscreen}
-                    className={`${portraitCompactActionClass} min-w-0 flex-1`}
-                  >
-                    {isFullscreen ? <Icons.Minimize size={20} /> : <Icons.Maximize size={20} />}
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase tracking-[0.12em] text-white/58">Prioritário</p>
-                      <p className="mt-0.5 text-[14px] font-black tracking-[-0.03em] text-white">Tela cheia</p>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={toggleMobileUtilitySheet}
-                    className={`${portraitCompactActionClass} min-w-0 flex-[1.25] justify-between ${showMobileUtilitySheet ? 'border-white/26 bg-white/[0.12]' : ''}`}
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Icons.Settings size={20} />
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-black uppercase tracking-[0.12em] text-white/58">Secundário</p>
-                        <p className="mt-0.5 truncate text-[14px] font-black tracking-[-0.03em] text-white">
-                          {showMobileUtilitySheet ? 'Ocultar extras' : 'Mais controles'}
-                        </p>
-                      </div>
-                    </div>
-                    <Icons.ChevronDown size={18} className={`shrink-0 transition-transform ${showMobileUtilitySheet ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
-
-                {showMobileUtilitySheet && (
-                  <section className={`${panelChromeClass} mt-3.5 p-4`}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/58">Controles extras</p>
-                        <p className="mt-1 text-sm text-white/70">
-                          Som, velocidade, descrição e fila ficam escondidos até você precisar.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={toggleMobileUtilitySheet}
-                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/16 bg-white/[0.08] text-white/80 transition-colors hover:bg-white/[0.14]"
-                        aria-label="Fechar controles extras"
-                      >
-                        <Icons.X size={16} />
-                      </button>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-2 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={toggleMute}
-                        className={portraitActionButtonClass}
-                      >
-                        {isMuted || volume === 0 ? <Icons.VolumeX size={19} /> : <Icons.Volume2 size={19} />}
-                        <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white/82">Som</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={toggleSpeed}
-                        className={portraitActionButtonClass}
-                      >
-                        <span className="text-[17px] font-black tracking-[-0.04em]">{playbackRate}x</span>
-                        <span className="text-[10px] font-black uppercase tracking-[0.12em] text-white/82">Veloc.</span>
-                      </button>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {itemDescription && (
-                        <button
-                          type="button"
-                          onClick={toggleMobileDetailsPanel}
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-black uppercase tracking-[0.1em] transition-colors ${showMobileDetails
-                              ? 'border-white/30 bg-white/[0.14] text-white'
-                              : 'border-white/14 bg-white/[0.07] text-white/78 hover:bg-white/[0.11]'
-                            }`}
-                        >
-                          <Icons.FileText size={14} />
-                          Descrição
-                        </button>
-                      )}
-                      {relatedItems.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={toggleMobileQueuePanel}
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] font-black uppercase tracking-[0.1em] transition-colors ${showMobileQueue
-                              ? 'border-white/30 bg-white/[0.14] text-white'
-                              : 'border-white/14 bg-white/[0.07] text-white/78 hover:bg-white/[0.11]'
-                            }`}
-                        >
-                          <Icons.Video size={14} />
-                          Fila
-                        </button>
-                      )}
-                    </div>
-
-                    {!showMobileDetails && !showMobileQueue && (
-                      <p className="mt-3 rounded-2xl border border-white/12 bg-white/[0.04] px-3 py-3 text-sm leading-6 text-white/60">
-                        O player ficou focado no essencial. Abra a descrição ou a fila só quando precisar consultar.
-                      </p>
-                    )}
-
-                    {showMobileDetails && itemDescription && (
-                      <div className="mt-3 rounded-[24px] border border-white/12 bg-white/[0.05] p-4">
-                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/58">Descrição</p>
-                        <p className="mt-2 text-sm leading-6 text-white/85">{itemDescription}</p>
-                      </div>
-                    )}
-
-                    {showMobileQueue && (
-                      <div className="mt-3 rounded-[24px] border border-white/12 bg-white/[0.05] p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/58">Próximos vídeos</p>
-                            <p className="mt-1 text-sm font-bold text-white">
-                              {relatedItems.length > 0 ? relatedItemsQueueLabel : 'Sem vídeos relacionados'}
-                            </p>
+                          <div
+                            className="relative h-[54px] w-[96px] shrink-0 overflow-hidden rounded-xl bg-white/10"
+                            style={item.thumbnailUrl ? {
+                              backgroundImage: `url(${item.thumbnailUrl})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            } : undefined}
+                          >
+                            <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/72 text-white">
+                              <Icons.Play size={8} className="ml-0.5 fill-current stroke-none" />
+                            </span>
                           </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="line-clamp-2 text-[13px] font-bold leading-5 text-white">{item.title}</p>
+                            <p className="mt-0.5 text-[11px] text-white/50">{item.collectionTitle ?? collection.title}</p>
+                          </div>
+                          <Icons.ChevronRight size={16} className="shrink-0 text-white/45" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>{/* end left column */}
+
+              {/* ── Right column: related videos — desktop only ── */}
+              {relatedItems.length > 0 && (
+                <aside className="hidden lg:block w-[360px] shrink-0">
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/50">
+                    Próximos vídeos
+                  </p>
+                  <div className="space-y-1">
+                    {relatedItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => openRelatedItem(item)}
+                        className="flex w-full items-start gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-white/[0.07] active:bg-white/[0.04]"
+                      >
+                        <div
+                          className="relative h-[94px] w-[168px] shrink-0 overflow-hidden rounded-lg bg-white/10"
+                          style={item.thumbnailUrl ? {
+                            backgroundImage: `url(${item.thumbnailUrl})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                          } : undefined}
+                        >
+                          <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/72 text-white">
+                            <Icons.Play size={8} className="ml-0.5 fill-current stroke-none" />
+                          </span>
                         </div>
+                        <div className="min-w-0 flex-1 pt-0.5">
+                          <p className="line-clamp-2 text-[13px] font-bold leading-5 text-white">{item.title}</p>
+                          <p className="mt-1 text-[11px] font-medium text-white/50">{item.collectionTitle ?? collection.title}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </aside>
+              )}
 
-                        {relatedItems.length === 0 ? (
-                          <p className="mt-3 rounded-2xl border border-white/12 bg-white/[0.05] px-3 py-3 text-sm text-white/65">
-                            Não há outros vídeos disponíveis para esta trilha agora.
-                          </p>
-                        ) : (
-                          <div className="mt-3 space-y-2">
-                            {visibleMobileQueueItems.map((item) => (
-                              <button
-                                key={item.id}
-                                type="button"
-                                onClick={() => openRelatedItem(item)}
-                                className={portraitQueueCardClass}
-                              >
-                                <div
-                                  className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-white/16 bg-white/8 shadow-[0_8px_16px_rgba(0,0,0,0.14)]"
-                                  style={item.thumbnailUrl ? {
-                                    backgroundImage: `url(${item.thumbnailUrl})`,
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
-                                  } : undefined}
-                                >
-                                  <span className="absolute bottom-1 left-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/72 text-white shadow-[0_4px_10px_rgba(0,0,0,0.24)]">
-                                    <Icons.Play size={8} className="ml-0.5 fill-current stroke-none" />
-                                  </span>
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <p className="line-clamp-2 text-[15px] font-black leading-5 tracking-[-0.03em] text-white">{item.title}</p>
-                                  <p className="mt-0.5 text-[13px] text-white/58">{item.collectionTitle ?? collection.title}</p>
-                                </div>
-                                <Icons.ChevronRight size={16} className="shrink-0 text-white/62" />
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </section>
-                )}
-
-                {leadRelatedItem && (
-                  <button
-                    type="button"
-                    onClick={() => openRelatedItem(leadRelatedItem)}
-                    className={portraitContinuationCardClass}
-                  >
-                    <div
-                      className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-white/16 bg-white/8 shadow-[0_10px_18px_rgba(0,0,0,0.16)]"
-                      style={leadRelatedItem.thumbnailUrl ? {
-                        backgroundImage: `url(${leadRelatedItem.thumbnailUrl})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                      } : undefined}
-                    >
-                      <span className="absolute bottom-1 left-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/72 text-white shadow-[0_4px_10px_rgba(0,0,0,0.28)]">
-                        <Icons.Play size={9} className="ml-0.5 fill-current stroke-none" />
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/58">Próximo vídeo</p>
-                      <p className="mt-1 truncate text-[15px] font-black tracking-[-0.03em] text-white">{leadRelatedItem.title}</p>
-                      <p className="truncate text-[13px] text-white/58">{leadRelatedItem.collectionTitle ?? collection.title}</p>
-                    </div>
-                    <Icons.ChevronRight size={18} className="shrink-0 text-white/62" />
-                  </button>
-                )}
-              </section>
-            ) : (
-              <section className={`${panelChromeClass} p-4 text-sm text-white/80`}>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Controles</p>
-                <p className="mt-2 leading-6">
-                  Reprodução via YouTube. Use os controles nativos do vídeo para avançar, pausar, ajustar som e tela cheia.
-                </p>
-              </section>
-            )}
+            </div>
           </div>
         </div>
 
@@ -1362,26 +1432,26 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden group"
-      style={{
-        '--player-sidebar-width': '340px',
-        '--player-edge-gap': '24px',
-        '--player-right-rail': 'calc(var(--player-sidebar-width) + var(--player-edge-gap) * 2)',
-        '--player-dock-right': desktopDockRightPadding,
-      } as React.CSSProperties}
+      className="fixed inset-0 z-50 bg-black flex overflow-hidden"
       role="dialog"
       aria-modal="true"
       aria-label="Player de vídeo"
-      onMouseMove={resetControlsTimeout}
-      onTouchStart={resetControlsTimeout}
-      onClick={toggleControlsVisibility}
     >
-      {/* Dark overlay to darken background */}
-      <div className="absolute inset-0 bg-black/10 z-0" />
+      {/* ── Video area: fills all space to the left of the sidebar ── */}
+      <div
+        className="relative flex-1 min-w-0 group"
+        onMouseMove={resetControlsTimeout}
+        onTouchStart={resetControlsTimeout}
+        onClick={toggleControlsVisibility}
+      >
+
+      {/* Dark overlay to darken background — purely decorative, must not intercept clicks */}
+      <div className="absolute inset-0 bg-black/10 z-0 pointer-events-none" />
 
       {/* Video Element */}
       {youtubeEmbedUrl ? (
         <iframe
+          ref={ytIframeRef}
           src={youtubeEmbedUrl}
           title={resolvedTitle || 'Vídeo do YouTube'}
           className="h-full w-full"
@@ -1576,14 +1646,16 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       <div className={`absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 transition-opacity duration-300 pointer-events-none ${showControls ? 'opacity-100' : 'opacity-0'}`} />
 
       {/* Controls Container — hidden behind modal overlays */}
+      {/* For YouTube sources the whole overlay is pointer-events-none so clicks reach the iframe;
+          only the top bar gets pointer-events-auto so navigation buttons still work. */}
       <div
         ref={controlsContainerRef}
         aria-hidden={overlayActive}
-        className={`absolute inset-0 flex flex-col justify-between p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] transition-opacity duration-300 md:p-6 lg:pr-[var(--player-dock-right)] ${overlayActive ? 'opacity-0 pointer-events-none' : showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`absolute inset-0 flex flex-col justify-between p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] transition-opacity duration-300 md:p-6 ${overlayActive ? 'opacity-0 pointer-events-none' : showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'} ${isYouTubeSource ? 'pointer-events-none' : ''}`}
       >
 
         {/* Top Bar */}
-        <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+        <div className={`flex items-center justify-between ${isYouTubeSource ? 'pointer-events-auto' : ''}`} onClick={(e) => e.stopPropagation()}>
           <button
             onClick={handleBack}
             className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30"
@@ -1640,10 +1712,11 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 event.stopPropagation();
                 setShowDesktopRelated((prev) => !prev);
               }}
-              aria-label={showDesktopRelated ? 'Ocultar relacionados' : 'Mostrar relacionados'}
+              aria-label={showDesktopRelated ? 'Ocultar informações' : 'Ver descrição e relacionados'}
               className="hidden h-10 items-center gap-1.5 rounded-full border border-white/25 bg-black/30 px-3 text-[11px] font-bold text-white/90 transition-colors hover:bg-black/45 lg:inline-flex"
             >
-              {showDesktopRelated ? 'Ocultar' : 'Relacionados'}
+              <Icons.FileText size={13} />
+              {showDesktopRelated ? 'Ocultar' : 'Info'}
               <Icons.ChevronRight size={13} className={`transition-transform ${showDesktopRelated ? 'rotate-180' : ''}`} />
             </button>
           </div>
@@ -1655,24 +1728,14 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           </div>
         )}
 
-        {!isYouTubeSource && (
+        {(
           <>
-            {/* Center Play Button */}
+            {/* Center Play Button — skip buttons live only in the bottom dock (YouTube reference pattern) */}
             <div
-              className="absolute left-1/2 top-1/2 flex items-center gap-12"
+              className={`absolute left-1/2 top-1/2 ${isYouTubeSource ? 'pointer-events-auto' : ''}`}
               style={{ transform: mobilePortraitCenterTransform }}
               onClick={(e) => e.stopPropagation()}
             >
-              <button
-                onClick={() => skip(-10)}
-                className="text-white/70 hover:text-white transition-colors p-4 rounded-full hover:bg-white/10 active:scale-95 hidden md:block"
-              >
-                <div className="flex flex-col items-center">
-                  <Icons.SkipBack size={32} />
-                  <span className="text-[10px] font-bold">-10s</span>
-                </div>
-              </button>
-
               <button
                 onClick={(e) => togglePlay(e)}
                 className="w-20 h-20 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
@@ -1684,22 +1747,12 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                   <Icons.Play size={36} fill="currentColor" strokeWidth={2} className="ml-1" />
                 )}
               </button>
-
-              <button
-                onClick={() => skip(10)}
-                className="text-white/70 hover:text-white transition-colors p-4 rounded-full hover:bg-white/10 active:scale-95 hidden md:block"
-              >
-                <div className="flex flex-col items-center">
-                  <Icons.SkipForward size={32} />
-                  <span className="text-[10px] font-bold">+10s</span>
-                </div>
-              </button>
             </div>
 
             {/* Bottom Control Dock */}
-            <div className="w-full flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+            <div className={`w-full flex flex-col gap-2 ${isYouTubeSource ? 'pointer-events-auto' : ''}`} onClick={(e) => e.stopPropagation()}>
               {playError && (
-                <div className="mx-auto w-full max-w-[min(100%,980px)] lg:max-w-none lg:ml-0 lg:mr-[var(--player-dock-right)]">
+                <div className="mx-auto w-full max-w-[min(100%,980px)] lg:max-w-none">
                   <div role="alert" className="rounded-2xl border border-red-300/35 bg-red-500/82 px-4 py-3 text-sm text-white backdrop-blur-md shadow-[0_14px_26px_rgba(0,0,0,0.28)]">
                     <p>{playError}</p>
                     {resolvedVideoUrl && (
@@ -1719,14 +1772,14 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
               )}
 
               {offlineDownloadError && (
-                <div className="mx-auto w-full max-w-[min(100%,980px)] lg:max-w-none lg:ml-0 lg:mr-[var(--player-dock-right)]">
+                <div className="mx-auto w-full max-w-[min(100%,980px)] lg:max-w-none">
                   <div role="alert" className="rounded-2xl border border-red-300/35 bg-red-500/82 px-4 py-3 text-sm text-white backdrop-blur-md shadow-[0_14px_26px_rgba(0,0,0,0.28)]">
                     <p>{offlineDownloadError}</p>
                   </div>
                 </div>
               )}
 
-              <div className="mx-auto w-full max-w-[min(100%,980px)] lg:max-w-none lg:ml-0 lg:mr-[var(--player-dock-right)]">
+              <div className="mx-auto w-full max-w-[min(100%,980px)] lg:max-w-none">
                 <div className={`${panelChromeClass} px-3 pb-3 pt-2 md:px-4`}>
                   <div className="flex items-center gap-2.5 text-[11px] font-bold text-white/85 md:text-xs">
                     <span className="tabular-nums">{formatTime(currentTime)}</span>
@@ -1811,11 +1864,12 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                         </button>
                       )}
                       <button
-                        onClick={toggleFullscreen}
+                        onClick={() => setIsPlayerCollapsed(true)}
                         className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/8 text-white/90 transition-colors hover:bg-white/14"
-                        title="Tela cheia (F)"
+                        title="Retrair player"
+                        aria-label="Retrair player"
                       >
-                        {isFullscreen ? <Icons.Minimize size={18} /> : <Icons.Maximize size={18} />}
+                        <Icons.Minimize size={18} />
                       </button>
                       {isMobileLandscape && (
                         <button
@@ -1953,16 +2007,8 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 </section>
               )}
 
-              {itemDescription && (
-                <section className="pointer-events-auto mx-auto hidden w-full max-w-[min(100%,980px)] lg:block lg:max-w-none lg:ml-0 lg:mr-[var(--player-dock-right)]">
-                  <div className={`${panelChromeClass} p-4`}>
-                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Descrição</p>
-                    <p className="mt-2 max-h-[68px] overflow-y-auto pr-1 text-sm leading-6 text-white/90">
-                      {itemDescription}
-                    </p>
-                  </div>
-                </section>
-              )}
+              {/* Description was removed from the dock — it lives in the Info sidebar now.
+                  A description here would push the video up when the text is long. */}
 
               {leadRelatedItem && shouldRenderInlineNextVideoCard(isMobilePortrait, isMobileLandscape) && (
                 <button
@@ -1981,18 +2027,30 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           </>
         )}
 
-        {isYouTubeSource && (
-          <div className="pointer-events-auto mx-auto mb-2 w-full max-w-[min(100%,980px)] rounded-2xl border border-white/20 bg-black/55 px-4 py-3 text-xs text-white/80 backdrop-blur-md">
-            Reprodução via YouTube: use os controles nativos do vídeo.
+      </div>{/* end controls container */}
+
+      </div>{/* end video area wrapper */}
+
+      {/* ── Info sidebar — flex sibling of the video area, NOT overlapping ── */}
+      {showDesktopRelated && (
+      <aside className={`hidden lg:flex w-[340px] shrink-0 flex-col overflow-y-auto border-l border-white/10 bg-black/70 backdrop-blur-md`}>
+        <div className="border-b border-white/10 px-4 py-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Informações</p>
+          <h2 className="mt-1 text-sm font-black text-white">{resolvedTitle}</h2>
+        </div>
+
+        {itemDescription && (
+          <div className="border-b border-white/10 px-4 py-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/55">Descrição</p>
+            <p className="mt-2 text-sm leading-6 text-white/85">{itemDescription}</p>
           </div>
         )}
-      </div>
 
-      <aside className={`pointer-events-auto absolute bottom-6 right-[var(--player-edge-gap)] top-24 z-30 hidden w-[var(--player-sidebar-width)] flex-col overflow-hidden ${panelChromeClass} lg:flex ${showDesktopRelated ? '' : 'opacity-0 pointer-events-none translate-x-4'}`}>
-        <div className="border-b border-white/10 px-4 py-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos</p>
-          <h2 className="mt-1 text-sm font-black text-white">Relacionados</h2>
-        </div>
+        {relatedItems.length > 0 && (
+          <div className="px-4 pb-2 pt-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos</p>
+          </div>
+        )}
 
         <div className="flex-1 space-y-2 overflow-y-auto p-3">
           {relatedItems.length === 0 && (
@@ -2029,6 +2087,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           ))}
         </div>
       </aside>
+      )}{/* end Info sidebar */}
 
       <section className={`pointer-events-auto absolute left-4 right-4 z-30 rounded-2xl border border-white/15 bg-black/55 p-3 backdrop-blur-md transition-all duration-300 lg:hidden ${isMobileLandscape ? 'opacity-0 pointer-events-none hidden' : showMobileQueue ? 'bottom-4 max-h-[52vh]' : isMobilePortrait ? 'bottom-4 max-h-[112px]' : 'bottom-20 max-h-[72px]'}`} onClick={(event) => event.stopPropagation()}>
         <div className="mb-2 flex items-center justify-between px-0.5">

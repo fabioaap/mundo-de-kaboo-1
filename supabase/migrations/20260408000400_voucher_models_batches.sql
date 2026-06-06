@@ -19,9 +19,7 @@ CREATE TABLE IF NOT EXISTS public.voucher_models (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 ALTER TABLE public.voucher_models ENABLE ROW LEVEL SECURITY;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -35,9 +33,7 @@ BEGIN
       USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 REVOKE ALL ON TABLE public.voucher_models FROM anon, authenticated;
-
 -- ------------------------------------------------------------
 -- Tabela: voucher_model_items (itens do catalogo no modelo)
 -- ------------------------------------------------------------
@@ -48,9 +44,7 @@ CREATE TABLE IF NOT EXISTS public.voucher_model_items (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (model_id, collection_id)
 );
-
 ALTER TABLE public.voucher_model_items ENABLE ROW LEVEL SECURITY;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -64,9 +58,7 @@ BEGIN
       USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 REVOKE ALL ON TABLE public.voucher_model_items FROM anon, authenticated;
-
 -- ------------------------------------------------------------
 -- Tabela: voucher_batches (lote de emissao)
 -- ------------------------------------------------------------
@@ -90,11 +82,8 @@ CREATE TABLE IF NOT EXISTS public.voucher_batches (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_voucher_batches_model_id ON public.voucher_batches (model_id);
-
 ALTER TABLE public.voucher_batches ENABLE ROW LEVEL SECURITY;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -108,18 +97,14 @@ BEGIN
       USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 REVOKE ALL ON TABLE public.voucher_batches FROM anon, authenticated;
-
 -- ------------------------------------------------------------
 -- Evolução da tabela vouchers: vincular a modelo e lote
 -- ------------------------------------------------------------
 ALTER TABLE public.vouchers ADD COLUMN IF NOT EXISTS model_id UUID REFERENCES public.voucher_models(id) ON DELETE SET NULL;
 ALTER TABLE public.vouchers ADD COLUMN IF NOT EXISTS batch_id UUID REFERENCES public.voucher_batches(id) ON DELETE SET NULL;
-
 CREATE INDEX IF NOT EXISTS idx_vouchers_model_id ON public.vouchers (model_id);
 CREATE INDEX IF NOT EXISTS idx_vouchers_batch_id ON public.vouchers (batch_id);
-
 -- ------------------------------------------------------------
 -- Tabela: user_content_grants (permissão de conteúdo por usuario)
 -- ------------------------------------------------------------
@@ -132,12 +117,9 @@ CREATE TABLE IF NOT EXISTS public.user_content_grants (
   expires_at        TIMESTAMPTZ,
   UNIQUE (user_id, collection_id, voucher_id)
 );
-
 CREATE INDEX IF NOT EXISTS idx_user_content_grants_user_id ON public.user_content_grants (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_content_grants_collection_id ON public.user_content_grants (collection_id);
-
 ALTER TABLE public.user_content_grants ENABLE ROW LEVEL SECURITY;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -151,7 +133,6 @@ BEGIN
       USING (user_id = auth.uid());
   END IF;
 END $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -165,7 +146,6 @@ BEGIN
       USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 -- ------------------------------------------------------------
 -- Tabela: audit_log (trilha de auditoria operacional)
 -- ------------------------------------------------------------
@@ -178,12 +158,9 @@ CREATE TABLE IF NOT EXISTS public.audit_log (
   details           JSONB       DEFAULT '{}'::jsonb,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
 CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON public.audit_log (entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_actor ON public.audit_log (actor_id);
-
 ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -197,5 +174,4 @@ BEGIN
       USING (true) WITH CHECK (true);
   END IF;
 END $$;
-
 REVOKE ALL ON TABLE public.audit_log FROM anon, authenticated;

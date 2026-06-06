@@ -26,7 +26,6 @@ SET
   public = EXCLUDED.public,
   file_size_limit = EXCLUDED.file_size_limit,
   allowed_mime_types = EXCLUDED.allowed_mime_types;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -43,7 +42,6 @@ BEGIN
   END IF;
 END
 $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -68,7 +66,6 @@ BEGIN
   END IF;
 END
 $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -102,7 +99,6 @@ BEGIN
   END IF;
 END
 $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -127,7 +123,6 @@ BEGIN
   END IF;
 END
 $$;
-
 DO $$
 BEGIN
   IF NOT EXISTS (

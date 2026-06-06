@@ -133,6 +133,8 @@ export type CollectionAssetCategory =
   | 'accessible_video'
   | 'how_to_play'
   | 'video_lesson'
+  | 'formation'
+  | 'story_video'
   | 'teacher_guide'
   | 'extra_material';
 
@@ -147,6 +149,12 @@ export interface CollectionAsset {
   lyrics_url?: string | null;
   /** Per-asset download flag. null/undefined = inherits collection-level offline_available. */
   offline_available?: boolean | null;
+  /**
+   * Per-asset publish flag. undefined/null = published (backward-compat with assets created before
+   * per-asset publishing was introduced). false = explicitly hidden from the public storefront
+   * while the parent collection may remain published.
+   */
+  is_published?: boolean | null;
 }
 
 export interface Collection {
@@ -179,12 +187,14 @@ export interface Collection {
 // Extend Collection with new pedagogical fields
 export interface Collection {
   theme?: string;
+  description?: string | null;
   learning_objectives?: string;
   characters?: string[];
   character_ids?: string[];
   bncc_skills?: string[];
   casel_competencies?: string[];
   age_grade?: string[]; // New field: Idade-série
+  suitable_ages?: string[]; // Idade adequada (ex: "3 anos", "4 anos")
   extra_materials?: string[]; // New field: Materiais Extras (array of file URLs)
   collection_assets?: CollectionAsset[];
   offline_available?: boolean | null;
@@ -201,6 +211,51 @@ export interface CentralMaterial {
   preview_type: CentralMaterialPreviewType;
   url: string;
   cta_label?: string | null;
+}
+
+export type FormationLevel = 'Iniciante' | 'Intermediário' | 'Avançado';
+
+export type MaterialAssetType = 'pdf' | 'video' | 'audio';
+
+export interface FormationAsset {
+  type: MaterialAssetType;
+  url: string;
+  title: string;
+  description?: string | null;
+}
+
+export interface Formation {
+  id: string;
+  title: string;
+  description?: string | null;
+  cover_image?: string | null;
+  level?: FormationLevel | null;
+  tags?: string[];
+  steps_count?: number;
+  duration_label?: string | null;
+  related_collection_ids?: string[];
+  assets?: FormationAsset[];
+  is_published?: boolean;
+  published_at?: string | null;
+  brand_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Material {
+  id: string;
+  title: string;
+  description?: string | null;
+  cover_image?: string | null;
+  asset_url?: string | null;
+  asset_type?: MaterialAssetType;
+  tags?: string[];
+  related_collection_ids?: string[];
+  is_published?: boolean;
+  published_at?: string | null;
+  brand_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type MediaHub = 'videos' | 'music' | 'formations' | 'materials';
