@@ -42,6 +42,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   onBack,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1.0);
@@ -615,6 +616,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
             setIsPlaying(false);
             maybeSaveProgress(true);
           }}
+          onWaiting={() => setIsBuffering(true)}
+          onCanPlay={() => setIsBuffering(false)}
         />
       )}
 
@@ -893,7 +896,11 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                 aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}
               >
                 <span className={playButtonSurfaceClass}>
-                  {isPlaying ? (
+                  {isBuffering ? (
+                    <svg className="animate-spin" width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" d="M12 2a10 10 0 0 1 10 10" />
+                    </svg>
+                  ) : isPlaying ? (
                     <Icons.Pause size={32} fill="currentColor" strokeWidth={2} />
                   ) : (
                     <Icons.Play size={32} fill="currentColor" strokeWidth={2} className="ml-1" />

@@ -217,10 +217,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
           <button
             onClick={() => setIsMoreMenuOpen((open) => !open)}
             aria-label={isMoreMenuOpen ? 'Fechar menu' : 'Abrir mais opções'}
-            className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-[background-color,transform] duration-150 ${isMoreItemActive || isMoreMenuOpen ? 'bg-brand-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
+            className={`relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl transition-[background-color,transform] duration-150 ${isMoreItemActive || isMoreMenuOpen ? 'bg-brand-primary/[0.07]' : 'hover:bg-gray-50 active:scale-[0.98]'}`}
           >
             <div className={`rounded-xl p-2 transition-colors ${isMoreItemActive || isMoreMenuOpen ? 'bg-brand-primary/12' : 'bg-transparent'}`}>
               <Icons.MoreHorizontal size={22} className={`transition-colors ${isMoreItemActive || isMoreMenuOpen ? 'text-brand-primary stroke-[2.8px]' : 'text-gray-400 stroke-[2px]'}`} />
+              {mobileMoreNavItems.length > 0 && !isMoreMenuOpen && (
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-primary text-[9px] font-bold text-white pointer-events-none">
+                  {mobileMoreNavItems.length}
+                </span>
+              )}
             </div>
             <span className={`text-[10px] font-bold leading-none ${isMoreItemActive || isMoreMenuOpen ? 'text-brand-primary' : 'text-gray-400'}`}>
               Mais

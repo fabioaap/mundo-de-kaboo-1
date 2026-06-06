@@ -764,11 +764,29 @@ const App: React.FC = () => {
       }
     }
 
+    let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+    if (isSupabaseConfigured && accessProfile.id) {
+      realtimeChannel = supabase
+        .channel('access-watch')
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${accessProfile.id}`,
+        }, () => {
+          void refreshAccessProfile();
+        })
+        .subscribe();
+    }
+
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
       if (expiryTimeoutId !== null) {
         window.clearTimeout(expiryTimeoutId);
+      }
+      if (realtimeChannel) {
+        void supabase.removeChannel(realtimeChannel);
       }
     };
   }, [sessionChecked, accessProfile?.id, accessProfile?.access_status, accessProfile?.access_expires_at, navState.currentScreen]);

@@ -144,7 +144,11 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
 
     const description = useMemo(() => {
         if (status === 'pending_voucher') {
-            return 'Sua conta foi criada, mas ainda precisa de um codigo de acesso para liberar a plataforma.';
+            const hasCachedCode = Boolean(getPendingSignupVoucher());
+            if (hasCachedCode) {
+                return 'Sua conta foi criada, mas ainda precisa de um codigo de acesso para liberar a plataforma.';
+            }
+            return 'Você confirmou seu e-mail! Insira o código do voucher que você usou no cadastro para liberar seu acesso.';
         }
 
         if (profile?.access_expires_at) {

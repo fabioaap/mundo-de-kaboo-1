@@ -18,7 +18,8 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const [error, setError] = useState<string | null>(null);
   const [forcePortrait, setForcePortrait] = useState(false);
   const flipbookRef = useRef<any>(null);
-  const [currentPage, setCurrentPage] = useState(0);
+  const readingKey = `kaboo_reading_${collection.id}_page`;
+  const [currentPage, setCurrentPage] = useState(() => parseInt(localStorage.getItem(readingKey) ?? '0', 10));
   const [totalPages, setTotalPages] = useState(0);
   const themeColor = collection.color_theme || '#5D1F58';
   const isLandscape = useOrientation();
@@ -353,6 +354,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             onPageChange={(currentPage, totalPages) => {
               setCurrentPage(currentPage);
               setTotalPages(totalPages);
+              localStorage.setItem(readingKey, String(currentPage));
             }}
           />
         )}

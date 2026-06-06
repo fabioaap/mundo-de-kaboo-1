@@ -34,6 +34,8 @@ export interface Voucher {
   consumed_by_user_id?: string | null;
   consumed_by_name?: string | null;
   consumed_by_email?: string | null;
+  batch_id?: string | null;
+  model_id?: string | null;
 }
 
 export interface VoucherValidationResult {

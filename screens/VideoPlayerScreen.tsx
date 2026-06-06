@@ -994,7 +994,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
           {/* ── Content: responsive YouTube-style layout ── */}
           <div className="mx-auto max-w-screen-xl lg:px-6 lg:py-5">
-            <div className="flex flex-col lg:flex-row lg:gap-6 lg:items-start">
+            <div className="flex flex-col md:flex-row md:gap-6 md:items-start">
 
               {/* ── Left column: video card + info ── */}
               <div className="min-w-0 flex-1">
@@ -1369,7 +1369,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
               {/* ── Right column: related videos — desktop only ── */}
               {relatedItems.length > 0 && (
-                <aside className="hidden lg:block w-[360px] shrink-0">
+                <aside className="hidden md:block w-[360px] shrink-0">
                   <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/50">
                     Próximos vídeos
                   </p>

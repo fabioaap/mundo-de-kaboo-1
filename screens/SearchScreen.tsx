@@ -2,7 +2,7 @@
 import { Icons } from '../components/Icons';
 import { api } from '../lib/api';
 import { getCollectionDisplayCover } from '../lib/collectionPresentation';
-import { ScreenName, Collection } from '../types';
+import { ScreenName, Collection, Formation, Material } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { CharacterAvatar } from '../components/CharacterAvatar';
 import { layoutSpacing } from '../design-system/layout/spacing';
@@ -15,6 +15,8 @@ interface SearchScreenProps {
 export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [formations, setFormations] = useState<Formation[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,11 +31,16 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
   }, [params]);
 
   useEffect(() => {
-    // Fetch all collections on mount to allow instant filtering and tag extraction
-    api.getCollections()
-      .then(data => {
-        setCollections(data);
-        extractTags(data);
+    Promise.all([
+      api.getCollections(),
+      api.getFormations(),
+      api.getMaterials(),
+    ])
+      .then(([cols, forms, mats]) => {
+        setCollections(cols);
+        setFormations(forms.filter(f => f.is_published !== false));
+        setMaterials(mats.filter(m => m.is_published !== false));
+        extractTags(cols);
         setLoading(false);
       })
       .catch(() => {
@@ -67,7 +74,27 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
       .toLowerCase();
   };
 
-  // Derived filtered list with robust matching
+  // Derived filtered lists with robust matching
+  const filteredFormations = searchTerm
+    ? formations.filter(f => {
+      const term = normalizeSearch(searchTerm);
+      const title = normalizeSearch(f.title);
+      const desc = normalizeSearch(f.description || '');
+      const tags = f.tags ? f.tags.map(t => normalizeSearch(t)).join(' ') : '';
+      return title.includes(term) || desc.includes(term) || tags.includes(term);
+    })
+    : [];
+
+  const filteredMaterials = searchTerm
+    ? materials.filter(m => {
+      const term = normalizeSearch(searchTerm);
+      const title = normalizeSearch(m.title);
+      const desc = normalizeSearch(m.description || '');
+      const tags = m.tags ? m.tags.map(t => normalizeSearch(t)).join(' ') : '';
+      return title.includes(term) || desc.includes(term) || tags.includes(term);
+    })
+    : [];
+
   const filteredCollections = searchTerm
     ? collections.filter(c => {
       const term = normalizeSearch(searchTerm);
@@ -129,49 +156,107 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate, params }
           <div className="text-center py-10 text-red-500">{error}</div>
         ) : searchTerm ? (
           /* Results List -> Grid on Desktop */
-          <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
-              {filteredCollections.length} {filteredCollections.length === 1 ? 'Resultado encontrado' : 'Resultados encontrados'}
+          <div className="space-y-6 pt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Total count */}
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wide">
+              {filteredCollections.length + filteredFormations.length + filteredMaterials.length}{' '}
+              {filteredCollections.length + filteredFormations.length + filteredMaterials.length === 1 ? 'Resultado encontrado' : 'Resultados encontrados'}
             </h2>
 
-            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${layoutSpacing.cardGridGap}`}>
-              {filteredCollections.map((collection) => {
-                const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
+            {/* Coleções */}
+            {filteredCollections.length > 0 && (
+              <div>
+                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Icons.BookOpen size={14} className="text-brand-primary" /> Coleções ({filteredCollections.length})
+                </h3>
+                <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${layoutSpacing.cardGridGap}`}>
+                  {filteredCollections.map((collection) => {
+                    const displayCoverImage = getCollectionDisplayCover(collection) || collection.cover_image;
+                    return (
+                      <div
+                        key={collection.id}
+                        onClick={() => onNavigate('search', { collectionId: collection.id })}
+                        className="flex gap-4 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-primary/20 transition-all active:scale-98 cursor-pointer"
+                      >
+                        <img src={displayCoverImage} alt={collection.title} className="w-16 h-16 rounded-xl object-cover bg-gray-200 shrink-0" />
+                        <div className="flex-1 flex flex-col justify-center">
+                          <h4 className="font-bold text-gray-800 text-sm mb-1 leading-tight">{collection.title}</h4>
+                          <div className="flex mt-1 gap-1 flex-wrap">
+                            <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md font-bold uppercase">{collection.level}</span>
+                            {searchTerm && collection.bncc_skills?.some(s => normalizeSearch(s).includes(normalizeSearch(searchTerm))) && (
+                              <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-md font-bold uppercase">BNCC</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center text-gray-300"><Icons.ChevronLeft className="rotate-180" size={20} /></div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-                return (
-                  <div
-                    key={collection.id}
-                    onClick={() => onNavigate('search', { collectionId: collection.id })}
-                    className="flex gap-4 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-brand-primary/20 transition-all active:scale-98 cursor-pointer h-full"
-                  >
-                    <img
-                      src={displayCoverImage}
-                      alt={collection.title}
-                      className="w-16 h-16 rounded-xl object-cover bg-gray-200 shrink-0"
-                    />
-                    <div className="flex-1 flex flex-col justify-center">
-                      <h3 className="font-bold text-gray-800 text-sm mb-1 leading-tight">{collection.title}</h3>
-                      <div className="flex mt-1 gap-1 flex-wrap">
-                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md font-bold uppercase">
-                          {collection.level}
-                        </span>
-                        {/* Show a matched BNCC skill as a badge if found in search */}
-                        {searchTerm && collection.bncc_skills?.some(s => normalizeSearch(s).includes(normalizeSearch(searchTerm))) && (
-                          <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-md font-bold uppercase">
-                            BNCC
-                          </span>
+            {/* Formações */}
+            {filteredFormations.length > 0 && (
+              <div>
+                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Icons.GraduationCap size={14} className="text-orange-500" /> Formações ({filteredFormations.length})
+                </h3>
+                <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${layoutSpacing.cardGridGap}`}>
+                  {filteredFormations.map((formation) => (
+                    <div
+                      key={formation.id}
+                      onClick={() => onNavigate('formations')}
+                      className="flex gap-4 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-300/40 transition-all active:scale-98 cursor-pointer"
+                    >
+                      {formation.cover_image
+                        ? <img src={formation.cover_image} alt={formation.title} className="w-16 h-16 rounded-xl object-cover bg-gray-200 shrink-0" />
+                        : <div className="w-16 h-16 rounded-xl bg-orange-50 flex items-center justify-center shrink-0"><Icons.GraduationCap size={24} className="text-orange-400" /></div>
+                      }
+                      <div className="flex-1 flex flex-col justify-center">
+                        <h4 className="font-bold text-gray-800 text-sm mb-1 leading-tight">{formation.title}</h4>
+                        {formation.level && (
+                          <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-md font-bold uppercase w-fit">{formation.level}</span>
                         )}
                       </div>
+                      <div className="flex items-center text-gray-300"><Icons.ChevronLeft className="rotate-180" size={20} /></div>
                     </div>
-                    <div className="flex items-center text-gray-300">
-                      <Icons.ChevronLeft className="rotate-180" size={20} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-            {filteredCollections.length === 0 && (
+            {/* Materiais */}
+            {filteredMaterials.length > 0 && (
+              <div>
+                <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Icons.FileText size={14} className="text-blue-500" /> Materiais ({filteredMaterials.length})
+                </h3>
+                <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${layoutSpacing.cardGridGap}`}>
+                  {filteredMaterials.map((material) => (
+                    <div
+                      key={material.id}
+                      onClick={() => onNavigate('materials')}
+                      className="flex gap-4 p-3 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-300/40 transition-all active:scale-98 cursor-pointer"
+                    >
+                      {material.cover_image
+                        ? <img src={material.cover_image} alt={material.title} className="w-16 h-16 rounded-xl object-cover bg-gray-200 shrink-0" />
+                        : <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center shrink-0"><Icons.FileText size={24} className="text-blue-400" /></div>
+                      }
+                      <div className="flex-1 flex flex-col justify-center">
+                        <h4 className="font-bold text-gray-800 text-sm mb-1 leading-tight">{material.title}</h4>
+                        {material.asset_type && (
+                          <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md font-bold uppercase w-fit">{material.asset_type}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center text-gray-300"><Icons.ChevronLeft className="rotate-180" size={20} /></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {filteredCollections.length === 0 && filteredFormations.length === 0 && filteredMaterials.length === 0 && (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
                   <Icons.Search size={32} />

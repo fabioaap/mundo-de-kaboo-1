@@ -7,6 +7,9 @@ import { VouchersOnboardingBanner } from '../components/VouchersOnboardingBanner
 import { useToast } from '../hooks/useToast';
 import { isAdmin } from '../lib/auth';
 import { getCollectionDisplayCover } from '../lib/collectionPresentation';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { useBrandConfig } from '../hooks/useBrandConfig';
+import * as apiVouchers from '../lib/apiVouchers';
 import {
     VoucherModel,
     VoucherBatch,
@@ -154,6 +157,7 @@ const ModelsListView: React.FC<{
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<VoucherModelStatus | 'all'>('all');
     const [isAdminUser, setIsAdminUser] = useState(false);
+    const [loadingModels, setLoadingModels] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(() => {
         try {
             return localStorage.getItem(VOUCHERS_ONBOARDING_STORAGE_KEY) === null;
@@ -161,8 +165,19 @@ const ModelsListView: React.FC<{
             return true;
         }
     });
+    const { brand } = useBrandConfig();
 
-    useEffect(() => { setModels(getVoucherModels()); }, []);
+    useEffect(() => {
+        if (!isSupabaseConfigured) {
+            setModels(getVoucherModels());
+            return;
+        }
+        setLoadingModels(true);
+        apiVouchers.getVoucherModels(brand.id)
+            .then(setModels)
+            .catch(() => setModels([]))
+            .finally(() => setLoadingModels(false));
+    }, [brand.id]);
     useEffect(() => { isAdmin().then(setIsAdminUser); }, []);
 
     const dismissOnboarding = () => {
@@ -193,6 +208,10 @@ const ModelsListView: React.FC<{
 
     const hasModels = models.length > 0;
     const hasActiveModelFilters = search.trim().length > 0 || statusFilter !== 'all';
+
+    if (loadingModels) {
+        return <div className="p-6 text-center text-gray-400 text-sm">Carregando modelos...</div>;
+    }
 
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -314,46 +333,69 @@ const ModelDetailView: React.FC<{
     const [batches, setBatches] = useState<VoucherBatch[]>([]);
     const [audit, setAudit] = useState<AuditLogEntry[]>([]);
     const { toast, showToast, hideToast } = useToast();
+    const { brand } = useBrandConfig();
 
     const reload = () => {
-        const m = getVoucherModelById(modelId);
-        setModel(m);
-        setBatches(getVoucherBatches(modelId));
-        setAudit(getAuditLog('voucher_model', modelId));
+        if (!isSupabaseConfigured) {
+            setModel(getVoucherModelById(modelId));
+            setBatches(getVoucherBatches(modelId));
+            setAudit(getAuditLog('voucher_model', modelId));
+            return;
+        }
+        apiVouchers.getVoucherModelById(modelId).then(setModel).catch(() => setModel(null));
+        apiVouchers.getVoucherBatches(brand.id, modelId).then(setBatches).catch(() => setBatches([]));
+        apiVouchers.getAuditLog(brand.id).then((entries) =>
+            setAudit(entries.filter((e) => e.entity_id === modelId))
+        ).catch(() => setAudit([]));
     };
 
-    useEffect(reload, [modelId]);
+    useEffect(reload, [modelId, brand.id]);
 
     if (!model) return <div className="p-6 text-center text-gray-400">Modelo não encontrado.</div>;
 
-    const handleArchive = () => {
-        updateVoucherModel(model.id, { status: 'archived' });
+    const handleArchive = async () => {
+        if (isSupabaseConfigured) {
+            await apiVouchers.updateVoucherModel(model.id, { status: 'archived' }).catch(() => null);
+        } else {
+            updateVoucherModel(model.id, { status: 'archived' });
+        }
         showToast('Modelo arquivado.', 'success');
         reload();
     };
 
-    const handleActivate = () => {
+    const handleActivate = async () => {
         if (!model.items || model.items.length === 0) {
             showToast('Adicione ao menos um item para ativar.', 'error');
             return;
         }
-        updateVoucherModel(model.id, { status: 'active' });
+        if (isSupabaseConfigured) {
+            await apiVouchers.updateVoucherModel(model.id, { status: 'active' }).catch(() => null);
+        } else {
+            updateVoucherModel(model.id, { status: 'active' });
+        }
         showToast('Modelo ativado.', 'success');
         reload();
     };
 
     const handleDuplicate = () => {
         const items = model.items || [];
-        createVoucherModel({
+        const dupData = {
             name: `${model.name} (cópia)`,
             description: model.description || undefined,
             package_type: model.package_type,
             duration_months: model.duration_months,
             redeem_by: model.redeem_by,
-            status: 'draft',
+            status: 'draft' as const,
             collection_ids: items.map(i => i.collection_id),
-        });
-        showToast('Modelo duplicado como rascunho.', 'success');
+        };
+        if (isSupabaseConfigured) {
+            apiVouchers.createVoucherModel(brand.id, dupData).then(() => {
+                showToast('Modelo duplicado como rascunho.', 'success');
+            }).catch(() => showToast('Erro ao duplicar modelo.', 'error'));
+        } else {
+            createVoucherModel(dupData);
+            showToast('Modelo duplicado como rascunho.', 'success');
+        }
     };
 
     return (
@@ -496,32 +538,42 @@ const ModelWizard: React.FC<{
     const canProceedStep1 = name.trim().length >= 3 && durationError === null;
     const canSubmitModel = canFinish && durationError === null;
 
-    const handleSave = (status: VoucherModelStatus) => {
-        const data: {
-            name: string;
-            description?: string;
-            package_type: VoucherPackageType;
-            duration_months: VoucherDurationMonths;
-            redeem_by: string | null;
-            status: VoucherModelStatus;
-            collection_ids: string[];
-        } = {
+    const { brand: wizardBrand } = useBrandConfig();
+    const [savingWizard, setSavingWizard] = useState(false);
+
+    const handleSave = async (status: VoucherModelStatus) => {
+        const data = {
             name: name.trim(),
             description: description.trim() || undefined,
             package_type: packageType,
-            duration_months: resolvedDurationMonths,
+            duration_months: resolvedDurationMonths as VoucherDurationMonths,
             redeem_by: redeemBy ? new Date(redeemBy + 'T23:59:59Z').toISOString() : null,
             status,
             collection_ids: Array.from(selectedIds),
         };
 
-        let model: VoucherModel | null;
-        if (editId) {
-            model = updateVoucherModel(editId, data);
+        if (isSupabaseConfigured) {
+            setSavingWizard(true);
+            try {
+                if (editId) {
+                    await apiVouchers.updateVoucherModel(editId, data);
+                    onDone(editId);
+                } else {
+                    const created = await apiVouchers.createVoucherModel(wizardBrand.id, data);
+                    onDone(created.id);
+                }
+            } catch {
+                setSavingWizard(false);
+            }
         } else {
-            model = createVoucherModel(data);
+            let model: VoucherModel | null;
+            if (editId) {
+                model = updateVoucherModel(editId, data);
+            } else {
+                model = createVoucherModel(data);
+            }
+            if (model) onDone(model.id);
         }
-        if (model) onDone(model.id);
     };
 
     return (
@@ -728,8 +780,8 @@ const ModelWizard: React.FC<{
                     <div className="flex flex-wrap justify-between gap-2 pt-2">
                         <Button onClick={() => setStep(2)} variant="secondary">← Voltar</Button>
                         <div className="flex gap-2">
-                            <Button onClick={() => handleSave('draft')} variant="secondary" disabled={!canSubmitModel}>Salvar rascunho</Button>
-                            <Button onClick={() => handleSave('active')} disabled={!canSubmitModel}>Salvar e ativar</Button>
+                            <Button onClick={() => void handleSave('draft')} variant="secondary" disabled={!canSubmitModel || savingWizard}>{savingWizard ? 'Salvando...' : 'Salvar rascunho'}</Button>
+                            <Button onClick={() => void handleSave('active')} disabled={!canSubmitModel || savingWizard}>{savingWizard ? 'Salvando...' : 'Salvar e ativar'}</Button>
                         </div>
                     </div>
                 </div>
@@ -747,11 +799,29 @@ const EmitBatchModal: React.FC<{
     onClose: () => void;
     onDone: (batchId: string) => void;
 }> = ({ modelId, onClose, onDone }) => {
-    const model = getVoucherModelById(modelId);
+    const [model, setModel] = useState<VoucherModel | null>(() =>
+        isSupabaseConfigured ? null : getVoucherModelById(modelId)
+    );
+    const [loadingModel, setLoadingModel] = useState(isSupabaseConfigured);
     const [quantityInput, setQuantityInput] = useState('100');
     const [label, setLabel] = useState('');
     const [loading, setLoading] = useState(false);
+    const [emitError, setEmitError] = useState<string | null>(null);
 
+    useEffect(() => {
+        if (!isSupabaseConfigured) return;
+        apiVouchers.getVoucherModelById(modelId)
+            .then((m) => { setModel(m); setLoadingModel(false); })
+            .catch(() => setLoadingModel(false));
+    }, [modelId]);
+
+    if (loadingModel) {
+        return (
+            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl p-8 text-center text-gray-400 text-sm">Carregando modelo...</div>
+            </div>
+        );
+    }
     if (!model) return null;
     const pkg = PACKAGE_LABELS[model.package_type];
     const normalizedQuantityInput = quantityInput.trim();
@@ -760,12 +830,23 @@ const EmitBatchModal: React.FC<{
         ? null
         : `Informe um número inteiro entre ${MIN_VOUCHER_BATCH_QUANTITY} e ${MAX_VOUCHER_BATCH_QUANTITY}.`;
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (quantityError) return;
         setLoading(true);
-        const batch = createVoucherBatch(model.id, quantity, label || undefined);
-        setLoading(false);
-        if (batch) onDone(batch.id);
+        setEmitError(null);
+        try {
+            if (isSupabaseConfigured) {
+                const batchId = await apiVouchers.emitVoucherBatch(model.id, quantity, label || undefined);
+                onDone(batchId);
+            } else {
+                const batch = createVoucherBatch(model.id, quantity, label || undefined);
+                setLoading(false);
+                if (batch) onDone(batch.id);
+            }
+        } catch (err) {
+            setEmitError(err instanceof Error ? err.message : 'Erro ao emitir lote.');
+            setLoading(false);
+        }
     };
 
     return (
@@ -808,9 +889,15 @@ const EmitBatchModal: React.FC<{
                         : `⚠️ Ao confirmar, o sistema irá gerar ${quantity} códigos únicos e congelar o snapshot deste modelo para o lote. Esta ação não pode ser desfeita.`}
                 </div>
 
+                {emitError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 mb-4">
+                        Erro: {emitError}
+                    </div>
+                )}
+
                 <div className="flex justify-end gap-2">
                     <Button onClick={onClose} variant="secondary">Cancelar</Button>
-                    <Button onClick={handleConfirm} disabled={loading || quantityError !== null}>
+                    <Button onClick={() => void handleConfirm()} disabled={loading || quantityError !== null}>
                         {loading ? 'Gerando...' : 'Confirmar emissão'}
                     </Button>
                 </div>
@@ -829,8 +916,14 @@ const BatchesListView: React.FC<{
     const [batches, setBatches] = useState<VoucherBatch[]>([]);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<VoucherBatchStatus | 'all'>('all');
+    const { brand } = useBrandConfig();
 
-    useEffect(() => { setBatches(getVoucherBatches()); }, []);
+    useEffect(() => {
+        if (!isSupabaseConfigured) { setBatches(getVoucherBatches()); return; }
+        apiVouchers.getVoucherBatches(brand.id)
+            .then(setBatches)
+            .catch(() => setBatches([]));
+    }, [brand.id]);
 
     const filtered = useMemo(() => {
         return batches.filter(b => {
@@ -1175,9 +1268,15 @@ const CodesListView: React.FC = () => {
     const [page, setPage] = useState(0);
     const PAGE_SIZE = 50;
     const { toast, showToast, hideToast } = useToast();
+    const { brand } = useBrandConfig();
 
-    const reloadCodes = () => { setCodes(getAllMockVoucherCodes()); };
-    useEffect(reloadCodes, []);
+    const reloadCodes = () => {
+        if (!isSupabaseConfigured) { setCodes(getAllMockVoucherCodes()); return; }
+        apiVouchers.getVoucherCodes(brand.id)
+            .then(setCodes)
+            .catch(() => setCodes([]));
+    };
+    useEffect(reloadCodes, [brand.id]);
     useEffect(() => { setPage(0); }, [search, statusFilter]);
 
     const filtered = useMemo(() => {
@@ -1204,10 +1303,16 @@ const CodesListView: React.FC = () => {
     const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
     const handleDisableCode = (reason: string) => {
-        if (disablingCodeId) {
-            disableVoucherCode(disablingCodeId, reason);
-            setDisablingCodeId(null);
-            setSelectedCodeId(null);
+        if (!disablingCodeId) return;
+        const targetId = disablingCodeId;
+        setDisablingCodeId(null);
+        setSelectedCodeId(null);
+        if (isSupabaseConfigured) {
+            apiVouchers.disableVoucherCode(targetId)
+                .then(() => { showToast('Voucher desativado.', 'success'); reloadCodes(); })
+                .catch(() => showToast('Erro ao desativar voucher.', 'error'));
+        } else {
+            disableVoucherCode(targetId, reason);
             showToast('Voucher desativado.', 'success');
             reloadCodes();
         }
@@ -1488,8 +1593,14 @@ const AuditListView: React.FC = () => {
     const [entityFilter, setEntityFilter] = useState<string>('all');
     const [page, setPage] = useState(0);
     const PAGE_SIZE = 25;
+    const { brand } = useBrandConfig();
 
-    useEffect(() => { setEntries(getAuditLog()); }, []);
+    useEffect(() => {
+        if (!isSupabaseConfigured) { setEntries(getAuditLog()); return; }
+        apiVouchers.getAuditLog(brand.id)
+            .then(setEntries)
+            .catch(() => setEntries([]));
+    }, [brand.id]);
 
     const filtered = useMemo(() => {
         if (entityFilter === 'all') return entries;

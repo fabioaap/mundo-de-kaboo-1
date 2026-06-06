@@ -14,4 +14,6 @@ Esta seção reúne os documentos de roadmap, backlog e PRDs relacionados ao pro
 - [PRD — Gestão Administrativa de Vouchers por Conteúdo](./prd-vouchers-por-conteudo)
 - [Plano de Validação QA — v1.2](./qa-validation-plan-v1.2)
 
+- [Backlog — Gaps dos Testes de Usabilidade MVP (2026-06-06)](./backlog-gaps-testes-usabilidade-2026-06-06)
+
 Use estes documentos como fonte única para o planejamento e acompanhamento das entregas. Atualize os arquivos originais quando houver mudanças de escopo ou progresso nas sprints.
