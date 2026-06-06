@@ -49,8 +49,10 @@ const getVoucherCollectionCover = (collection?: { cover_image?: string | null; k
 const PACKAGE_LABELS: Record<VoucherPackageType, { icon: string; label: string }> = {
     book: { icon: '📖', label: 'Livro' },
     collection: { icon: '📚', label: 'Coleção' },
-    kit: { icon: '📦', label: 'Kit' },
-    curated_set: { icon: '🎁', label: 'Conjunto curado' },
+    video: { icon: '🎬', label: 'Vídeo' },
+    audio: { icon: '🎵', label: 'Áudio' },
+    formation: { icon: '🎓', label: 'Formação' },
+    material: { icon: '📄', label: 'Material' },
 };
 
 const MODEL_STATUS_CLASSES: Record<VoucherModelStatus, string> = {

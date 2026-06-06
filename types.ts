@@ -353,7 +353,7 @@ export interface ToggleMediaFavoriteResult {
 
 // ── Voucher Models, Batches & Grants ──────────────────────
 
-export type VoucherPackageType = 'book' | 'collection' | 'kit' | 'curated_set';
+export type VoucherPackageType = 'book' | 'collection' | 'video' | 'audio' | 'formation' | 'material';
 
 export type VoucherModelStatus = 'draft' | 'active' | 'archived';
 
