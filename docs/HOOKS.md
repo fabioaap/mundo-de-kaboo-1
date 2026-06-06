@@ -1,6 +1,6 @@
 # Documentação de React Hooks Customizados
 
-**Atualizado em**: 05/06/2026, 02:29:15
+**Atualizado em**: 06/06/2026, 16:31:58
 
 ## Índice
 

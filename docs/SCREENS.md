@@ -1,18 +1,20 @@
 # Documentação de Telas (Screens)
 
-**Atualizado em**: 05/06/2026, 02:29:15
+**Atualizado em**: 06/06/2026, 16:31:58
 
 ## Resumo
 
-- **Total de telas**: 24
+- **Total de telas**: 26
 - **Telas protegidas**: 0
-- **Telas públicas**: 24
+- **Telas públicas**: 26
 
 ## Telas Públicas
 
 - **AccessExpiredScreen** (`screens/AccessExpiredScreen.tsx`)
 - **AdminCharactersScreen** (`screens/AdminCharactersScreen.tsx`)
 - **AdminCollectionsScreen** (`screens/AdminCollectionsScreen.tsx`)
+- **AdminFormationsScreen** (`screens/AdminFormationsScreen.tsx`)
+- **AdminMaterialsScreen** (`screens/AdminMaterialsScreen.tsx`)
 - **AdminScreen** (`screens/AdminScreen.tsx`)
 - **AdminWhiteLabelScreen** (`screens/AdminWhiteLabelScreen.tsx`)
 - **AudioPlayerScreen** (`screens/AudioPlayerScreen.tsx`)
