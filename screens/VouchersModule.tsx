@@ -165,7 +165,7 @@ const ModelsListView: React.FC<{
             return true;
         }
     });
-    const { brand } = useBrandConfig();
+    const brand = useBrandConfig().bootstrap.brand;
 
     useEffect(() => {
         if (!isSupabaseConfigured) {
@@ -333,7 +333,7 @@ const ModelDetailView: React.FC<{
     const [batches, setBatches] = useState<VoucherBatch[]>([]);
     const [audit, setAudit] = useState<AuditLogEntry[]>([]);
     const { toast, showToast, hideToast } = useToast();
-    const { brand } = useBrandConfig();
+    const brand = useBrandConfig().bootstrap.brand;
 
     const reload = () => {
         if (!isSupabaseConfigured) {
@@ -538,7 +538,7 @@ const ModelWizard: React.FC<{
     const canProceedStep1 = name.trim().length >= 3 && durationError === null;
     const canSubmitModel = canFinish && durationError === null;
 
-    const { brand: wizardBrand } = useBrandConfig();
+    const wizardBrand = useBrandConfig().bootstrap.brand;
     const [savingWizard, setSavingWizard] = useState(false);
 
     const handleSave = async (status: VoucherModelStatus) => {
@@ -916,7 +916,7 @@ const BatchesListView: React.FC<{
     const [batches, setBatches] = useState<VoucherBatch[]>([]);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<VoucherBatchStatus | 'all'>('all');
-    const { brand } = useBrandConfig();
+    const brand = useBrandConfig().bootstrap.brand;
 
     useEffect(() => {
         if (!isSupabaseConfigured) { setBatches(getVoucherBatches()); return; }
@@ -1268,7 +1268,7 @@ const CodesListView: React.FC = () => {
     const [page, setPage] = useState(0);
     const PAGE_SIZE = 50;
     const { toast, showToast, hideToast } = useToast();
-    const { brand } = useBrandConfig();
+    const brand = useBrandConfig().bootstrap.brand;
 
     const reloadCodes = () => {
         if (!isSupabaseConfigured) { setCodes(getAllMockVoucherCodes()); return; }
@@ -1593,7 +1593,7 @@ const AuditListView: React.FC = () => {
     const [entityFilter, setEntityFilter] = useState<string>('all');
     const [page, setPage] = useState(0);
     const PAGE_SIZE = 25;
-    const { brand } = useBrandConfig();
+    const brand = useBrandConfig().bootstrap.brand;
 
     useEffect(() => {
         if (!isSupabaseConfigured) { setEntries(getAuditLog()); return; }
