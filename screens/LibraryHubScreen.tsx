@@ -688,7 +688,7 @@ const CardContainer: React.FC<{
   onOpen: (item: LibraryMockItem) => void;
   children: React.ReactNode;
 }> = ({ item, className, onOpen, children }) => {
-  if (!item.collectionId && !item.assetUrl) {
+  if (!item.collectionId && !item.assetUrl && !item.assetType) {
     return <article className={className}>{children}</article>;
   }
 
