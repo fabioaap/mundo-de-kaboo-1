@@ -1159,8 +1159,11 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
 
   const openItem = async (item: LibraryMockItem) => {
     const fallbackCollectionId = item.collectionId || FALLBACK_LIBRARY_COLLECTION_ID;
+    // Abre janela em branco ANTES do await para preservar o gesto do usuário.
+    // Não usar noopener aqui: no Chrome moderno window.open com noopener retorna null,
+    // impossibilitando a navegação posterior via pendingDocumentWindow.location.href.
     const pendingDocumentWindow = item.assetType === 'pdf' && !item.assetUrl
-      ? window.open('', '_blank', 'noopener,noreferrer')
+      ? window.open('', '_blank')
       : null;
     const shouldResolvePlayback = item.assetType === 'audio'
       || item.assetType === 'video'
