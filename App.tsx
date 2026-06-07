@@ -1214,18 +1214,17 @@ const App: React.FC = () => {
       case 'my_data':
         return <MyDataScreen onBack={() => navigate('profile')} />;
 
-      case 'player_audio':
-        if (!currentCollection) {
-          return (
-            <div className="flex flex-col items-center justify-center h-screen bg-brand-primary/90">
-              <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-8" />
-              <button onClick={goBack} className="text-white/70 text-sm hover:text-white transition-colors">Voltar</button>
-            </div>
-          );
-        }
+      case 'player_audio': {
+        // Mesmo padrão do player_video: fallback mínimo para itens do hub de biblioteca.
+        const audioPlayerCollection = currentCollection ?? ({
+          id: currentParams?.collectionId ?? '',
+          title: currentParams?.assetTitle ?? '',
+          cover_image: '',
+          level: 'Educação Infantil',
+        } as Collection);
         return (
           <AudioPlayerScreen
-            collection={currentCollection}
+            collection={audioPlayerCollection}
             mediaItemId={currentParams?.mediaItemId}
             assetUrl={currentParams?.assetUrl}
             assetTitle={currentParams?.assetTitle}
@@ -1235,6 +1234,7 @@ const App: React.FC = () => {
             onBack={goBack}
           />
         );
+      }
 
       case 'player_book':
         if (!currentCollection) {
@@ -1287,18 +1287,19 @@ const App: React.FC = () => {
           </React.Suspense>
         );
 
-      case 'player_video':
-        if (!currentCollection) {
-          return (
-            <div className="flex flex-col items-center justify-center h-screen bg-gray-900">
-              <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-8" />
-              <button onClick={goBack} className="text-white/70 text-sm hover:text-white transition-colors">Voltar</button>
-            </div>
-          );
-        }
+      case 'player_video': {
+        // Para itens standalone do hub de biblioteca, currentCollection pode ser null
+        // porque FALLBACK_LIBRARY_COLLECTION_ID não aponta para uma collection real no BD.
+        // Usamos um fallback mínimo — todos os dados reais vêm de assetUrl/mediaItemId.
+        const videoPlayerCollection = currentCollection ?? ({
+          id: currentParams?.collectionId ?? '',
+          title: currentParams?.assetTitle ?? '',
+          cover_image: '',
+          level: 'Educação Infantil',
+        } as Collection);
         return (
           <VideoPlayerScreen
-            collection={currentCollection}
+            collection={videoPlayerCollection}
             mediaItemId={currentParams?.mediaItemId}
             assetUrl={currentParams?.assetUrl}
             assetTitle={currentParams?.assetTitle}
@@ -1307,6 +1308,7 @@ const App: React.FC = () => {
             onBack={goBack}
           />
         );
+      }
 
       case 'tools':
         if (!currentCollection) {
