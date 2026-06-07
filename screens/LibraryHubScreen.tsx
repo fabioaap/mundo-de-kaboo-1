@@ -1992,7 +1992,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                     musicGridClassName,
                     musicEmptyStateMessage,
                     {
-                      compactMode: compactActiveFilter === 'Todos' && sortedCompactItems.length <= 10,
+                      compactMode: sortedCompactItems.length <= 10,
                       flatItems: sortedCompactItems,
                     },
                   )

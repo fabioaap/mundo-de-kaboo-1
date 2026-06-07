@@ -3681,66 +3681,97 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 collectionId={editingId || undefined}
                               />
                             ) : isLibraryAreaMode ? (
-                              /* Registration mode: URL input field for this slot */
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-brand-primary focus-within:border-transparent">
-                                  <Icons.Link size={16} className="shrink-0 text-gray-400" />
-                                  <input
-                                    type="url"
+                              slot.category === 'storytelling' ? (
+                                /* Áudio: FileUpload (suporta upload de arquivo + URL) */
+                                <div className="space-y-2">
+                                  <FileUpload
+                                    label="Arquivo de Áudio ou Link"
                                     value={asset?.url || ''}
-                                    onChange={(e) => setAssetDirectUrl(slot.category, e.target.value)}
-                                    placeholder={
-                                      slot.category === 'storytelling'
-                                        ? 'Cole o link do áudio...'
-                                        : slot.category === 'teacher_guide'
+                                    onChange={(url) => setAssetDirectUrl(slot.category, url)}
+                                    folder="audio"
+                                    accept="audio/*"
+                                    collectionId={editingId || undefined}
+                                  />
+                                  {asset?.url && (() => {
+                                    const slotIsPublished = asset.is_published !== false;
+                                    return (
+                                      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
+                                        <div>
+                                          <p className="text-sm font-bold text-gray-800">Publicar conteúdo</p>
+                                          <p className="text-xs text-gray-500">
+                                            {slotIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+                                          </p>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => setAssetPublished(slot.category, !slotIsPublished)}
+                                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${slotIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
+                                        >
+                                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${slotIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
+                                        </button>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              ) : (
+                                /* Registration mode: URL input field for non-audio slots */
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-brand-primary focus-within:border-transparent">
+                                    <Icons.Link size={16} className="shrink-0 text-gray-400" />
+                                    <input
+                                      type="url"
+                                      value={asset?.url || ''}
+                                      onChange={(e) => setAssetDirectUrl(slot.category, e.target.value)}
+                                      placeholder={
+                                        slot.category === 'teacher_guide'
                                           ? 'Cole o link do guia do professor...'
                                           : slot.category === 'video_lesson'
                                             ? 'Cole o link da videoaula (YouTube)...'
                                             : 'Cole o link do vídeo (YouTube)...'
-                                    }
-                                    className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
-                                  />
+                                      }
+                                      className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
+                                    />
+                                    {asset?.url && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setAssetDirectUrl(slot.category, '')}
+                                        className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                                        aria-label="Limpar URL"
+                                      >
+                                        <Icons.X size={14} />
+                                      </button>
+                                    )}
+                                  </div>
                                   {asset?.url && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setAssetDirectUrl(slot.category, '')}
-                                      className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-                                      aria-label="Limpar URL"
-                                    >
-                                      <Icons.X size={14} />
-                                    </button>
+                                    <>
+                                      <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                        <Icons.Check size={12} />
+                                        URL vinculada
+                                      </p>
+                                      {(() => {
+                                        const slotIsPublished = asset.is_published !== false;
+                                        return (
+                                          <div className="flex items-center justify-between pt-1">
+                                            <div>
+                                              <p className="text-sm font-bold text-gray-800">Publicar conteúdo</p>
+                                              <p className="text-xs text-gray-500">
+                                                {slotIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+                                              </p>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => setAssetPublished(slot.category, !slotIsPublished)}
+                                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${slotIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
+                                            >
+                                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${slotIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
+                                            </button>
+                                          </div>
+                                        );
+                                      })()}
+                                    </>
                                   )}
                                 </div>
-                                {asset?.url && (
-                                  <>
-                                    <p className="text-xs text-green-600 font-medium flex items-center gap-1">
-                                      <Icons.Check size={12} />
-                                      URL vinculada
-                                    </p>
-                                    {/* Publicar conteúdo */}
-                                    {(() => {
-                                      const slotIsPublished = asset.is_published !== false;
-                                      return (
-                                        <div className="flex items-center justify-between pt-1">
-                                          <div>
-                                            <p className="text-sm font-bold text-gray-800">Publicar conteúdo</p>
-                                            <p className="text-xs text-gray-500">
-                                              {slotIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
-                                            </p>
-                                          </div>
-                                          <button
-                                            type="button"
-                                            onClick={() => setAssetPublished(slot.category, !slotIsPublished)}
-                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${slotIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
-                                          >
-                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${slotIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
-                                          </button>
-                                        </div>
-                                      );
-                                    })()}
-                                  </>
-                                )}
-                              </div>
+                              )
                             ) : libraryItems.length === 0 ? (
                               <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-center space-y-1">
                                 <p className="text-sm text-gray-400 font-medium">Nenhuma mídia publicada</p>
