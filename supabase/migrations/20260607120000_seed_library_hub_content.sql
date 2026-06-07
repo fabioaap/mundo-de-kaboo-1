@@ -39,12 +39,12 @@ INSERT INTO media_items (
   'videos', 'video', 'youtube', 'active_subscription',
   'Gaio e o Vento da Coragem, vídeo da coleção',
   'video-gaio-vento-coragem',
-  'Coleção disponível',
+  'Vídeo real',
   'Uma entrada forte para abrir a biblioteca com um vídeo que já existe no catálogo infantil e abre direto no player, sem camadas artificiais.',
   'published', 1,
   'https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/video/33efdbb5-abed-4037-9eed-bb7017d19f7a/1769203911843-r8hqd9p-Gaio_e_vento_da_coragem_OK.mov',
   'video/quicktime', NULL,
-  '{"eyebrow":"Vídeo disponível","chips":["Educação Infantil","Coragem","Vídeo real"],"ctaLabel":"Abrir coleção","coverImage":"/mock/covers/gaio-vento-coragem.png"}',
+  '{"eyebrow":"Vídeo disponível","chips":["Educação Infantil"],"ctaLabel":"Abrir coleção","coverImage":"/mock/covers/gaio-vento-coragem.png"}',
   NOW(), NOW(), NOW()
 ),
 
@@ -54,12 +54,12 @@ INSERT INTO media_items (
   'videos', 'video', 'youtube', 'active_subscription',
   'Kaboo e a Carta Misteriosa, desenho animado',
   'video-kaboo-carta-animado',
-  'Entrada principal',
+  'Animação',
   'A versão animada abre a área com um conteúdo infantil claro, reconhecível e já pronto para reprodução.',
   'published', 0,
   'https://kaboo.dev/content/pending',
   'video/mp4', NULL,
-  '{"eyebrow":"Desenho","chips":["Infantil","Animação"],"ctaLabel":"Abrir coleção","coverImage":"/mock/covers/kaboo-carta-misteriosa.png"}',
+  '{"eyebrow":"Desenho","chips":["Infantil"],"ctaLabel":"Abrir coleção","coverImage":"/mock/covers/kaboo-carta-misteriosa.png"}',
   NOW(), NOW(), NOW()
 ),
 
@@ -69,12 +69,12 @@ INSERT INTO media_items (
   'videos', 'video', 'youtube', 'active_subscription',
   'Versão com Libras de Kaboo e a Carta Misteriosa',
   'video-kaboo-carta-libras',
-  'Abertura inclusiva',
+  'Libras',
   'Uma porta de entrada acessível que já mostra a biblioteca como espaço de uso real, não como promessa futura.',
   'published', 0,
   'https://kaboo.dev/content/pending',
   'video/mp4', NULL,
-  '{"eyebrow":"Acessível","chips":["Inclusão","Acessível"],"ctaLabel":"Ver coleção","coverImage":"/mock/covers/kaboo-carta-misteriosa-kit.svg"}',
+  '{"eyebrow":"Acessível","chips":["Acessível"],"ctaLabel":"Ver coleção","coverImage":"/mock/covers/kaboo-carta-misteriosa-kit.svg"}',
   NOW(), NOW(), NOW()
 ),
 
@@ -84,12 +84,12 @@ INSERT INTO media_items (
   'videos', 'video', 'youtube', 'active_subscription',
   'Como jogar com a coleção sem quebrar o ritmo',
   'video-kaboo-como-jogar',
-  'Prático para hoje',
+  'Como jogar',
   'Vídeo curto para o adulto entender como conduzir a experiência sem transformar a área em tutorial pesado.',
   'published', 0,
   'https://kaboo.dev/content/pending',
   'video/mp4', NULL,
-  '{"eyebrow":"Uso guiado","chips":["Professor","Roda"],"ctaLabel":"Abrir coleção","coverImage":"/mock/covers/kaboo-carta-misteriosa.png"}',
+  '{"eyebrow":"Uso guiado","chips":["Professor"],"ctaLabel":"Abrir coleção","coverImage":"/mock/covers/kaboo-carta-misteriosa.png"}',
   NOW(), NOW(), NOW()
 ),
 
@@ -99,12 +99,12 @@ INSERT INTO media_items (
   'videos', 'video', 'youtube', 'active_subscription',
   'Kaboo e a Carta Misteriosa, videoaula de apoio',
   'video-kaboo-carta-videoaula',
-  'Apoio ao adulto',
+  'Videoaula',
   'Uma peça com cara de repertório pedagógico, útil para preparar a conversa antes ou depois da leitura.',
   'published', 0,
   'https://kaboo.dev/content/pending',
   'video/mp4', NULL,
-  '{"eyebrow":"Mediação","chips":["Professor","Mediação"],"ctaLabel":"Abrir coleção","coverImage":"/mock/covers/kaboo-carta-misteriosa.png"}',
+  '{"eyebrow":"Mediação","chips":["Professor"],"ctaLabel":"Abrir coleção","coverImage":"/mock/covers/kaboo-carta-misteriosa.png"}',
   NOW(), NOW(), NOW()
 ),
 

@@ -953,7 +953,7 @@ const toMediaItemCard = (
     isFavorite: options?.favoriteIds?.has(item.id) ?? false,
     progressPercent: progress?.progressPercent ?? 0,
     lastPositionSeconds: progress?.lastPositionSeconds,
-    badges: [],
+    badges: (item.metadata as Record<string, unknown>)?.chips as string[] ?? [],
   };
 };
 
