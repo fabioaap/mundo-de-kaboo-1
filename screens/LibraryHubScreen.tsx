@@ -922,7 +922,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
       };
     }
 
-    setMediaDrivenItems(mockFlattenedItems);
+    setMediaDrivenItems([]);
     setMediaHubData(null);
     setMediaSourceStatus('loading');
 
@@ -931,46 +931,28 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
         .then((response) => {
           if (!isActive) return;
           const nextItems = flattenMediaHubResponseToLibraryItems(response);
-          if (nextItems.length > 0) {
-            setMediaDrivenItems(nextItems);
-            setMediaHubData(response);
-            setMediaSourceStatus('ready');
-            return;
-          }
-          if (mockFlattenedItems.length === 0) {
-            setMediaDrivenItems([]);
-            setMediaHubData(response);
-            setMediaSourceStatus('ready');
-            return;
-          }
-          setMediaDrivenItems(mockFlattenedItems);
-          setMediaHubData(null);
-          setMediaSourceStatus('fallback');
+          setMediaDrivenItems(nextItems);
+          setMediaHubData(nextItems.length > 0 ? response : null);
+          setMediaSourceStatus('ready');
         })
         .catch(() => {
           if (!isActive) return;
-          if (mockFlattenedItems.length === 0) {
-            setMediaDrivenItems([]);
-            setMediaHubData(null);
-            setMediaSourceStatus('ready');
-            return;
-          }
-          setMediaDrivenItems(mockFlattenedItems);
+          setMediaDrivenItems([]);
           setMediaHubData(null);
-          setMediaSourceStatus('fallback');
+          setMediaSourceStatus('ready');
         });
     };
 
     loadItems().catch(() => {
       if (!isActive) return;
-      setMediaDrivenItems(mockFlattenedItems.length > 0 ? mockFlattenedItems : []);
-      setMediaSourceStatus(mockFlattenedItems.length > 0 ? 'fallback' : 'ready');
+      setMediaDrivenItems([]);
+      setMediaSourceStatus('ready');
     });
 
     return () => {
       isActive = false;
     };
-  }, [mockFlattenedItems, screen, shouldUseMediaApi]);
+  }, [screen, shouldUseMediaApi]);
 
   const videoLibraryItems = isVideoHub
     ? (shouldUseMediaApi ? mediaDrivenItems : mockFlattenedItems)
@@ -2057,11 +2039,6 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                         Atualizando catálogo de áudios.
                       </p>
                     )}
-                    {isMusicHub && mediaSourceStatus === 'fallback' && (
-                      <p className={`mt-1 text-xs font-semibold ${isCorujaLibraryHub ? 'text-white/68' : 'text-amber-700'}`}>
-                        Exibindo catálogo de apoio enquanto os dados remotos não respondem.
-                      </p>
-                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
                     <button
@@ -2083,7 +2060,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                   </div>
                 </div>
 
-                {isMusicHub && shouldUseMediaApi && mediaSourceStatus !== 'fallback'
+                {isMusicHub && shouldUseMediaApi
                   ? renderMediaRailBlocks(
                     isCorujaLibraryHub
                       ? corujaMediaCardClass

@@ -1792,9 +1792,7 @@ export const api = {
   async getMediaHub(hub: MediaHub): Promise<MediaHubResponse> {
     const collections = await this.getCollections();
     const collectionBackedResponse = buildCollectionBackedMediaHubResponse(hub, collections);
-    const staticFallbackResponse = _activeBrandSlugForApi === 'kaboo'
-      ? buildMockMediaHubResponse(hub)
-      : buildEmptyMediaHubResponse(hub);
+    const staticFallbackResponse = buildEmptyMediaHubResponse(hub);
     const preferredFallbackResponse = getMediaHubResponseCount(collectionBackedResponse) > 0
       ? collectionBackedResponse
       : staticFallbackResponse;
