@@ -511,6 +511,64 @@ export const generateBatchXlsx = (batchId: string): Blob | null => {
     return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 };
 
+/** Generate CSV from already-loaded batch + voucher data (works with both mock and Supabase). */
+export const generateCsvFromData = (batch: VoucherBatch, vouchers: Voucher[]): string => {
+    const snap = batch.model_snapshot;
+    const headers = [
+        'batch_id', 'batch_name', 'export_version', 'row_number',
+        'voucher_code', 'model_name', 'package_type',
+        'content_summary', 'content_count', 'duration_months',
+        'redeem_by_date', 'generated_at', 'status',
+        'consumed_by_name', 'consumed_by_email',
+    ];
+    const contentSummary = snap.items.map((i: { title: string }) => i.title).join('; ');
+    const rows = vouchers.map((v, i) => [
+        batch.id,
+        batch.label || '',
+        '01',
+        String(i + 1),
+        v.code,
+        snap.name,
+        snap.package_type,
+        contentSummary,
+        String(snap.items.length),
+        String(snap.duration_months),
+        snap.redeem_by || '',
+        v.expires_at || batch.created_at,
+        v.status,
+        v.consumed_by_name || '',
+        v.consumed_by_email || '',
+    ].join(','));
+    return [headers.join(','), ...rows].join('\n');
+};
+
+/** Generate XLSX from already-loaded batch + voucher data (works with both mock and Supabase). */
+export const generateXlsxFromData = (batch: VoucherBatch, vouchers: Voucher[]): Blob | null => {
+    const snap = batch.model_snapshot;
+    const contentSummary = snap.items.map((i: { title: string }) => i.title).join('; ');
+    const rows = vouchers.map((v, i) => ({
+        'Lote': batch.id,
+        'Nome Lote': batch.label || '',
+        'Nº': i + 1,
+        'Código': v.code,
+        'Modelo': snap.name,
+        'Tipo Pacote': snap.package_type,
+        'Conteúdos': contentSummary,
+        'Qtd Conteúdos': snap.items.length,
+        'Duração (meses)': snap.duration_months,
+        'Validade': snap.redeem_by || '',
+        'Gerado em': v.expires_at || batch.created_at,
+        'Status': v.status,
+        'Resgatado por': v.consumed_by_name || '',
+        'E-mail': v.consumed_by_email || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Códigos');
+    const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+};
+
 // ── User Content Grants (T01 + T04) ─────────────────────
 const GRANTS_KEY = 'kaboo_mock_user_content_grants';
 

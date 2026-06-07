@@ -31,8 +31,8 @@ import {
     getBatchVouchers,
     getAllMockVoucherCodes,
     getAuditLog,
-    generateBatchCsv,
-    generateBatchXlsx,
+    generateCsvFromData,
+    generateXlsxFromData,
     disableVoucherCode,
     isValidVoucherBatchQuantity,
     MIN_VOUCHER_BATCH_QUANTITY,
@@ -503,20 +503,41 @@ const ModelWizard: React.FC<{
             .catch(() => setCollections([]))
             .finally(() => setLoadingCollections(false));
     }, []);
-    const existing = editId ? getVoucherModelById(editId) : null;
-    const hasCustomExistingDuration = existing ? !DURATION_OPTIONS.includes(existing.duration_months) : false;
+
+    // Load existing model — sync from mock (fallback) or async from Supabase
+    const mockExisting = editId && !isSupabaseConfigured ? getVoucherModelById(editId) : null;
+    const [loadingExisting, setLoadingExisting] = useState(Boolean(editId && isSupabaseConfigured));
 
     const [step, setStep] = useState(1);
-    const [name, setName] = useState(existing?.name || '');
-    const [description, setDescription] = useState(existing?.description || '');
-    const [packageType, setPackageType] = useState<VoucherPackageType>(existing?.package_type || 'book');
-    const [durationMonths, setDurationMonths] = useState<VoucherDurationMonths>(existing?.duration_months || 6);
-    const [durationMode, setDurationMode] = useState<'preset' | 'custom'>(hasCustomExistingDuration ? 'custom' : 'preset');
-    const [customDurationInput, setCustomDurationInput] = useState(hasCustomExistingDuration ? String(existing?.duration_months ?? '') : '');
-    const [redeemBy, setRedeemBy] = useState(existing?.redeem_by ? existing.redeem_by.substring(0, 10) : '');
+    const [name, setName] = useState(mockExisting?.name || '');
+    const [description, setDescription] = useState(mockExisting?.description || '');
+    const [packageType, setPackageType] = useState<VoucherPackageType>(mockExisting?.package_type || 'book');
+    const [durationMonths, setDurationMonths] = useState<VoucherDurationMonths>(mockExisting?.duration_months || 6);
+    const [durationMode, setDurationMode] = useState<'preset' | 'custom'>(!DURATION_OPTIONS.includes(mockExisting?.duration_months ?? 6) && mockExisting ? 'custom' : 'preset');
+    const [customDurationInput, setCustomDurationInput] = useState(mockExisting && !DURATION_OPTIONS.includes(mockExisting.duration_months) ? String(mockExisting.duration_months) : '');
+    const [redeemBy, setRedeemBy] = useState(mockExisting?.redeem_by ? mockExisting.redeem_by.substring(0, 10) : '');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(
-        new Set(existing?.items?.map(i => i.collection_id) || [])
+        new Set(mockExisting?.items?.map(i => i.collection_id) || [])
     );
+
+    useEffect(() => {
+        if (!editId || !isSupabaseConfigured) return;
+        apiVouchers.getVoucherModelById(editId)
+            .then(m => {
+                if (!m) return;
+                setName(m.name || '');
+                setDescription(m.description || '');
+                setPackageType(m.package_type || 'book');
+                setDurationMonths(m.duration_months || 6);
+                const hasCustom = !DURATION_OPTIONS.includes(m.duration_months);
+                setDurationMode(hasCustom ? 'custom' : 'preset');
+                if (hasCustom) setCustomDurationInput(String(m.duration_months));
+                setRedeemBy(m.redeem_by ? m.redeem_by.substring(0, 10) : '');
+                setSelectedIds(new Set(m.items?.map(i => i.collection_id) || []));
+            })
+            .catch(() => {})
+            .finally(() => setLoadingExisting(false));
+    }, [editId]);
     const [contentSearch, setContentSearch] = useState('');
     const [levelFilter, setLevelFilter] = useState<string>('all');
 
@@ -585,6 +606,12 @@ const ModelWizard: React.FC<{
             if (model) onDone(model.id);
         }
     };
+
+    if (loadingExisting) {
+        return (
+            <div className="p-8 text-center text-gray-400 text-sm">Carregando modelo...</div>
+        );
+    }
 
     return (
         <div className="p-4 md:p-6 max-w-3xl mx-auto pb-32 md:pb-6">
@@ -1045,13 +1072,23 @@ const BatchDetailView: React.FC<{
     const [disablingVoucherId, setDisablingVoucherId] = useState<string | null>(null);
     const [cancellingBatch, setCancellingBatch] = useState(false);
     const { toast, showToast, hideToast } = useToast();
+    const brand = useBrandConfig().bootstrap.brand;
 
-    const reload = () => {
-        setBatch(getVoucherBatches().find(b => b.id === batchId) || null);
-        setVouchers(getBatchVouchers(batchId));
+    const reload = async () => {
+        if (isSupabaseConfigured) {
+            const [allBatches, batchVouchers] = await Promise.all([
+                apiVouchers.getVoucherBatches(brand.id),
+                apiVouchers.getBatchVouchers(batchId),
+            ]);
+            setBatch(allBatches.find(b => b.id === batchId) || null);
+            setVouchers(batchVouchers);
+        } else {
+            setBatch(getVoucherBatches().find(b => b.id === batchId) || null);
+            setVouchers(getBatchVouchers(batchId));
+        }
     };
 
-    useEffect(reload, [batchId]);
+    useEffect(() => { void reload(); }, [batchId]);
 
     if (!batch) return <div className="p-6 text-center text-gray-400">Lote não encontrado.</div>;
 
@@ -1071,52 +1108,81 @@ const BatchDetailView: React.FC<{
         URL.revokeObjectURL(url);
     };
 
-    const handleExport = () => {
-        const csv = generateBatchCsv(batchId);
+    const handleExport = async () => {
+        if (!batch) return;
+        const csv = generateCsvFromData(batch, vouchers);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         downloadBlob(blob, `${fileBaseName}.csv`);
-
-        updateBatchStatus(batchId, 'exported', { exported_at: new Date().toISOString() });
+        const now = new Date().toISOString();
+        if (isSupabaseConfigured) {
+            await apiVouchers.updateBatchStatus(batchId, 'exported', { exported_at: now }).catch(() => null);
+        } else {
+            updateBatchStatus(batchId, 'exported', { exported_at: now });
+        }
         showToast('CSV exportado e lote marcado como exportado.', 'success');
-        reload();
+        void reload();
     };
 
-    const handleExportXlsx = () => {
-        const blob = generateBatchXlsx(batchId);
+    const handleExportXlsx = async () => {
+        if (!batch) return;
+        const blob = generateXlsxFromData(batch, vouchers);
         if (!blob) { showToast('Erro ao gerar XLSX.', 'error'); return; }
         downloadBlob(blob, `${fileBaseName}.xlsx`);
-
-        updateBatchStatus(batchId, 'exported', { exported_at: new Date().toISOString() });
+        const now = new Date().toISOString();
+        if (isSupabaseConfigured) {
+            await apiVouchers.updateBatchStatus(batchId, 'exported', { exported_at: now }).catch(() => null);
+        } else {
+            updateBatchStatus(batchId, 'exported', { exported_at: now });
+        }
         showToast('Excel exportado e lote marcado como exportado.', 'success');
-        reload();
+        void reload();
     };
 
-    const handleMarkSent = () => {
-        updateBatchStatus(batchId, 'sent', { sent_at: new Date().toISOString() });
+    const handleMarkSent = async () => {
+        const now = new Date().toISOString();
+        if (isSupabaseConfigured) {
+            await apiVouchers.updateBatchStatus(batchId, 'sent', { sent_at: now }).catch(() => null);
+        } else {
+            updateBatchStatus(batchId, 'sent', { sent_at: now });
+        }
         showToast('Lote marcado como enviado.', 'success');
-        reload();
+        void reload();
     };
 
-    const handleMarkConfirmed = () => {
-        updateBatchStatus(batchId, 'confirmed', { confirmed_at: new Date().toISOString() });
+    const handleMarkConfirmed = async () => {
+        const now = new Date().toISOString();
+        if (isSupabaseConfigured) {
+            await apiVouchers.updateBatchStatus(batchId, 'confirmed', { confirmed_at: now }).catch(() => null);
+        } else {
+            updateBatchStatus(batchId, 'confirmed', { confirmed_at: now });
+        }
         showToast('Lote marcado como confirmado.', 'success');
-        reload();
+        void reload();
     };
 
-    const handleCancelBatch = (reason: string) => {
-        updateBatchStatus(batchId, 'cancelled', { cancelled_at: new Date().toISOString(), cancel_reason: reason });
+    const handleCancelBatch = async (reason: string) => {
+        const now = new Date().toISOString();
+        if (isSupabaseConfigured) {
+            await apiVouchers.updateBatchStatus(batchId, 'cancelled', { cancelled_at: now, cancel_reason: reason }).catch(() => null);
+        } else {
+            updateBatchStatus(batchId, 'cancelled', { cancelled_at: now, cancel_reason: reason });
+        }
         setCancellingBatch(false);
         showToast('Lote cancelado.', 'success');
-        reload();
+        void reload();
     };
 
-    const handleDisableVoucher = (reason: string) => {
-        if (disablingVoucherId) {
-            disableVoucherCode(disablingVoucherId, reason);
-            setDisablingVoucherId(null);
-            showToast('Voucher desativado.', 'success');
-            reload();
+    const handleDisableVoucher = async (reason: string) => {
+        if (!disablingVoucherId) return;
+        const targetId = disablingVoucherId;
+        setDisablingVoucherId(null);
+        if (isSupabaseConfigured) {
+            await apiVouchers.disableVoucherCode(targetId).catch(() => null);
+        } else {
+            disableVoucherCode(targetId, reason);
         }
+        showToast('Voucher desativado.', 'success');
+        void reload();
     };
 
     return (
@@ -1277,10 +1343,12 @@ const BatchDetailView: React.FC<{
 
 const CodesListView: React.FC = () => {
     const [codes, setCodes] = useState<(Voucher & { batch_id?: string; model_id?: string })[]>([]);
+    const [batches, setBatches] = useState<VoucherBatch[]>([]);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [selectedCodeId, setSelectedCodeId] = useState<string | null>(null);
     const [disablingCodeId, setDisablingCodeId] = useState<string | null>(null);
+    const [codeAudit, setCodeAudit] = useState<AuditLogEntry[]>([]);
     const [page, setPage] = useState(0);
     const PAGE_SIZE = 50;
     const { toast, showToast, hideToast } = useToast();
@@ -1293,7 +1361,23 @@ const CodesListView: React.FC = () => {
             .catch(() => setCodes([]));
     };
     useEffect(reloadCodes, [brand.id]);
+    useEffect(() => {
+        if (!isSupabaseConfigured) return;
+        apiVouchers.getVoucherBatches(brand.id)
+            .then(setBatches)
+            .catch(() => setBatches([]));
+    }, [brand.id]);
     useEffect(() => { setPage(0); }, [search, statusFilter]);
+    useEffect(() => {
+        if (!selectedCodeId) { setCodeAudit([]); return; }
+        if (!isSupabaseConfigured) {
+            setCodeAudit(getAuditLog('voucher', selectedCodeId));
+            return;
+        }
+        apiVouchers.getAuditLogForEntity(selectedCodeId)
+            .then(setCodeAudit)
+            .catch(() => setCodeAudit([]));
+    }, [selectedCodeId]);
 
     const filtered = useMemo(() => {
         return codes.filter(v => {
@@ -1311,9 +1395,9 @@ const CodesListView: React.FC = () => {
 
     const selectedCode = selectedCodeId ? codes.find(v => v.id === selectedCodeId) || null : null;
     const selectedBatchInfo = selectedCode?.batch_id
-        ? getVoucherBatches().find(b => b.id === selectedCode.batch_id) || null
+        ? (isSupabaseConfigured ? batches : getVoucherBatches()).find(b => b.id === selectedCode.batch_id) || null
         : null;
-    const selectedCodeAudit = selectedCodeId ? getAuditLog('voucher', selectedCodeId) : [];
+    const selectedCodeAudit = codeAudit;
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);

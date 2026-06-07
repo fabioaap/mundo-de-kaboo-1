@@ -5,6 +5,7 @@ import { supabase } from './supabase';
 import {
     AuditLogEntry,
     VoucherBatch,
+    VoucherBatchStatus,
     VoucherModel,
     VoucherModelStatus,
     VoucherPackageType,
@@ -239,4 +240,42 @@ export async function disableVoucherCode(voucherId: string): Promise<void> {
         .update({ status: 'disabled', updated_at: new Date().toISOString() })
         .eq('id', voucherId);
     if (error) throw error;
+}
+
+export async function getBatchVouchers(batchId: string): Promise<Voucher[]> {
+    const { data, error } = await supabase
+        .from('vouchers')
+        .select('*')
+        .eq('batch_id', batchId)
+        .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as unknown as Voucher[];
+}
+
+export async function updateBatchStatus(
+    batchId: string,
+    status: VoucherBatchStatus,
+    extra?: Partial<Pick<VoucherBatch,
+        'exported_at' | 'exported_by' |
+        'sent_at' | 'sent_by' | 'sent_to' |
+        'confirmed_at' |
+        'cancelled_at' | 'cancelled_by' | 'cancel_reason'
+    >>
+): Promise<void> {
+    const { error } = await supabase
+        .from('voucher_batches')
+        .update({ status, updated_at: new Date().toISOString(), ...(extra ?? {}) })
+        .eq('id', batchId);
+    if (error) throw error;
+}
+
+export async function getAuditLogForEntity(entityId: string): Promise<AuditLogEntry[]> {
+    const { data, error } = await supabase
+        .from('audit_log')
+        .select('*')
+        .eq('entity_id', entityId)
+        .order('created_at', { ascending: false })
+        .limit(100);
+    if (error) throw error;
+    return (data ?? []) as unknown as AuditLogEntry[];
 }
