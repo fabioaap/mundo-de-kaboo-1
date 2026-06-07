@@ -2450,13 +2450,24 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 </div>
                               </div>
 
-                              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
-                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
-                                  {item.levelLabel}
-                                </span>
-                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
-                                  {item.asset.media_type === 'audio' ? 'Áudio' : item.asset.media_type === 'video' ? 'Vídeo' : 'Documento'}
-                                </span>
+                              <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                    {item.levelLabel}
+                                  </span>
+                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                    {item.asset.media_type === 'audio' ? 'Áudio' : item.asset.media_type === 'video' ? 'Vídeo' : 'Documento'}
+                                  </span>
+                                </div>
+                                {hasPermission && (
+                                  <span
+                                    onClick={(e) => { e.stopPropagation(); handleLibraryAssetEdit(item); }}
+                                    className="inline-flex items-center gap-1 text-sm font-bold text-brand-primary cursor-pointer transition-transform group-hover:translate-x-0.5 shrink-0"
+                                  >
+                                    Editar
+                                    <Icons.ChevronRight size={16} />
+                                  </span>
+                                )}
                               </div>
                             </button>
                             </div>
@@ -2626,7 +2637,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         );
 
                         return (
-                          <div key={collection.id} className="relative h-full w-full">
+                          <div key={collection.id} className="relative h-full w-full flex flex-col">
                             <div className="absolute right-4 top-4 z-20">
                               {actionsButton}
                             </div>
@@ -2644,7 +2655,20 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               collection={collection}
                               tone="default"
                               onCollectionClick={() => {
-                                if (hasUnsavedChanges()) {
+                                const pdfAsset = collection.collection_assets?.find(a => a.category === 'reading' && a.url?.trim());
+                                if (pdfAsset) {
+                                  setPreviewLibraryItem({
+                                    key: `${collection.id}_reading`,
+                                    collection,
+                                    asset: pdfAsset,
+                                    displayTitle: collection.title || 'Livro',
+                                    previewText: collection.description || null,
+                                    coverImage: collection.cover_image || '',
+                                    searchText: collection.title || '',
+                                    levelLabel: collection.level || '',
+                                    iconName: 'BookOpen',
+                                  });
+                                } else if (hasUnsavedChanges()) {
                                   setPendingAction(() => () => handleEdit(collection));
                                   setShowUnsavedChangesModal(true);
                                 } else {
@@ -2652,6 +2676,28 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 }
                               }}
                             />
+
+                            {/* Footer com botão Editar */}
+                            {hasPermission && (
+                              <div className="mt-2 flex items-center justify-end px-1">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (hasUnsavedChanges()) {
+                                      setPendingAction(() => () => handleEdit(collection));
+                                      setShowUnsavedChangesModal(true);
+                                    } else {
+                                      handleEdit(collection);
+                                    }
+                                  }}
+                                  className="inline-flex items-center gap-1 text-sm font-bold text-brand-primary hover:underline transition-all"
+                                >
+                                  Editar
+                                  <Icons.ChevronRight size={16} />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
