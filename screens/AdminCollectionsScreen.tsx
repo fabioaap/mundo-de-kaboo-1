@@ -659,6 +659,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const extraMaterialsSectionRef = useRef<HTMLDivElement | null>(null);
   const [formData, setFormData] = useState<CollectionFormData>(() => createCollectionFormDataForCurrentFlow());
   const [previewVideoItem, setPreviewVideoItem] = useState<LibraryAssetListItem | null>(null);
+  const [previewLibraryItem, setPreviewLibraryItem] = useState<LibraryAssetListItem | null>(null);
   const [highlightedAssetId, setHighlightedAssetId] = useState<string | null>(null);
   const [highlightedAssetCategory, setHighlightedAssetCategory] = useState<CollectionAssetCategory | null>(null);
   const [slotSearchTerms, setSlotSearchTerms] = useState<Record<string, string>>({});
@@ -2363,81 +2364,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 {item.asset.is_published !== false ? 'Publicado' : 'Rascunho'}
                               </span>
 
-                              {/* Actions dropdown */}
-                              {isAdminUser && (
-                                <div
-                                  className="absolute top-2 right-2 z-20"
-                                  ref={(el) => { actionsDropdownRefs.current[item.collection.id] = el; }}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setOpenDropdown(openActionsDropdown === item.collection.id ? null : item.collection.id);
-                                    }}
-                                    className="w-7 h-7 rounded-full bg-white/90 hover:bg-white border border-gray-200 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
-                                    aria-label="Ações"
-                                  >
-                                    <Icons.MoreHorizontal size={16} className="text-gray-600" />
-                                  </button>
-                                  {openActionsDropdown === item.collection.id && (
-                                    <div
-                                      className="absolute top-full right-0 mt-2 w-44 bg-white rounded-2xl shadow-xl border border-gray-100 z-[100] animate-fade-in-up origin-top-right actions-dropdown"
-                                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
-                                      onMouseDown={(e) => e.stopPropagation()}
-                                    >
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleLibraryAssetEdit(item);
-                                          setOpenDropdown(null);
-                                        }}
-                                        className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl text-gray-700 hover:bg-gray-50 font-medium"
-                                      >
-                                        <Icons.Edit size={16} />
-                                        <span>Editar</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          // In library-area mode, publish/unpublish the individual asset,
-                                          // not the whole collection. The collection kit stays on the vitrine.
-                                          const assetIsPublished = item.asset.is_published !== false;
-                                          setOpenDropdown(null);
-                                          try {
-                                            // @ts-ignore
-                                            const ok = assetIsPublished
-                                              ? await api.unpublishAsset(item.collection.id, item.asset.id)
-                                              : await api.publishAsset(item.collection.id, item.asset.id);
-                                            if (ok) {
-                                              showToast(assetIsPublished ? 'Conteúdo despublicado.' : 'Conteúdo publicado!', 'success');
-                                              await loadCollections(true);
-                                            } else {
-                                              showToast('Erro ao alterar status de publicação.', 'error');
-                                            }
-                                          } catch {
-                                            showToast('Erro ao alterar status de publicação.', 'error');
-                                          }
-                                        }}
-                                        onMouseDown={(e) => e.stopPropagation()}
-                                        className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors last:rounded-b-2xl text-gray-700 hover:bg-gray-50 font-medium"
-                                      >
-                                        {item.asset.is_published !== false
-                                          ? <><Icons.EyeOff size={16} /><span>Despublicar</span></>
-                                          : <><Icons.Eye size={16} /><span>Publicar</span></>}
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
+                              {/* Actions moved to preview modal */}
 
                             <button
                               type="button"
                               className={`group w-full border bg-white text-left transition-all active:scale-[0.99] ${isVideoAssetCard ? 'rounded-[18px] border-gray-200 p-4 shadow-sm hover:border-brand-primary/20 hover:shadow-md' : isAudioAssetCard ? 'rounded-[16px] border-brand-primary/10 p-3.5 shadow-[0_10px_24px_rgba(93,31,88,0.05)] hover:border-brand-primary/20 hover:shadow-[0_14px_24px_rgba(93,31,88,0.10)]' : 'rounded-2xl border-gray-200 p-5 shadow-sm hover:border-brand-primary/20 hover:shadow-md'}`}
-                              onClick={isVideoAssetCard ? undefined : () => handleLibraryAssetEdit(item)}
+                              onClick={isVideoAssetCard ? undefined : () => setPreviewLibraryItem(item)}
                             >
                               <div className={isVideoAssetCard || isAudioAssetCard ? 'space-y-3' : 'flex items-start gap-4'}>
                                 <div
@@ -2478,6 +2410,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                       </span>
                                     </span>
                                   )}
+
+                                  {!isVideoAssetCard && !isAudioAssetCard && (
+                                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-primary text-white opacity-0 scale-95 shadow-[0_14px_26px_rgba(93,31,88,0.28)] transition-all duration-200 group-hover:opacity-100 group-hover:scale-100">
+                                        <Icons.Eye size={18} />
+                                      </span>
+                                    </span>
+                                  )}
                                 </div>
 
                                 <div className={`min-w-0 ${isVideoAssetCard ? 'flex min-h-[68px] flex-col' : isAudioAssetCard ? 'flex min-h-[56px] flex-col px-1 pb-1' : 'flex-1'}`}>
@@ -2510,22 +2450,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 </div>
                               </div>
 
-                              <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
-                                    {item.levelLabel}
-                                  </span>
-                                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
-                                    {item.asset.media_type === 'audio' ? 'Áudio' : item.asset.media_type === 'video' ? 'Vídeo' : 'Documento'}
-                                  </span>
-                                </div>
-
-                                <span
-                                  onClick={isVideoAssetCard ? (e) => { e.stopPropagation(); handleLibraryAssetEdit(item); } : undefined}
-                                  className={`inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-transform group-hover:translate-x-0.5 ${isVideoAssetCard ? 'cursor-pointer' : ''}`}
-                                >
-                                  Editar
-                                  <Icons.ChevronRight size={16} />
+                              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                  {item.levelLabel}
+                                </span>
+                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-600">
+                                  {item.asset.media_type === 'audio' ? 'Áudio' : item.asset.media_type === 'video' ? 'Vídeo' : 'Documento'}
                                 </span>
                               </div>
                             </button>
@@ -4576,6 +4506,132 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         </div>
       )}
 
+      {/* Content preview modal — PDF, Áudio, Documento */}
+      {previewLibraryItem && (() => {
+        const { asset, collection, displayTitle } = previewLibraryItem;
+        const isAudio = asset.media_type === 'audio';
+        const assetIsPublished = asset.is_published !== false;
+
+        const handlePublishToggle = async () => {
+          try {
+            // @ts-ignore
+            const ok = assetIsPublished
+              ? await api.unpublishAsset(collection.id, asset.id)
+              : await api.publishAsset(collection.id, asset.id);
+            if (ok) {
+              showToast(assetIsPublished ? 'Conteúdo despublicado.' : 'Conteúdo publicado!', 'success');
+              setPreviewLibraryItem((prev) =>
+                prev ? { ...prev, asset: { ...prev.asset, is_published: !assetIsPublished } } : null
+              );
+              loadCollections(true);
+            } else {
+              showToast('Erro ao alterar status de publicação.', 'error');
+            }
+          } catch {
+            showToast('Erro ao alterar status de publicação.', 'error');
+          }
+        };
+
+        return (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            onClick={() => setPreviewLibraryItem(null)}
+          >
+            <div
+              className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div className="min-w-0">
+                  <span className="text-[10px] font-black uppercase tracking-[0.14em] text-brand-primary">
+                    {COLLECTION_ASSET_META[asset.category].label}
+                  </span>
+                  <h2 className="text-base font-bold text-gray-900 line-clamp-1">{displayTitle}</h2>
+                  {displayTitle !== collection.title && (
+                    <p className="text-xs text-gray-500 line-clamp-1">{collection.title}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPreviewLibraryItem(null)}
+                  className="ml-4 shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                  aria-label="Fechar"
+                >
+                  <Icons.X size={16} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-5">
+                {isAudio && asset.url ? (
+                  <div className="flex items-center justify-center py-10 bg-[radial-gradient(circle_at_top_left,rgba(93,31,88,0.1),transparent_50%),linear-gradient(180deg,#fdf9fe,#f2ebf6)] rounded-2xl">
+                    <audio controls className="w-full max-w-lg" src={asset.url} />
+                  </div>
+                ) : asset.url ? (
+                  <iframe
+                    src={asset.url}
+                    className="w-full rounded-xl border border-gray-200"
+                    style={{ height: '60vh' }}
+                    title={displayTitle}
+                  />
+                ) : (
+                  <p className="text-center text-gray-400 py-12">Nenhum arquivo vinculado.</p>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between gap-4 px-5 py-4 border-t border-gray-100 bg-gray-50 rounded-b-3xl">
+                {/* Publicar/Despublicar — editores e admins */}
+                {hasPermission ? (
+                  <button
+                    type="button"
+                    onClick={handlePublishToggle}
+                    className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
+                      assetIsPublished
+                        ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                        : 'bg-green-50 text-green-700 hover:bg-green-100'
+                    }`}
+                  >
+                    {assetIsPublished
+                      ? <><Icons.EyeOff size={14} /> Despublicar</>
+                      : <><Icons.Eye size={14} /> Publicar</>}
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2">
+                  {/* Excluir — admin only, somente se não publicado */}
+                  {isAdminUser && !assetIsPublished && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewLibraryItem(null);
+                        handleLibraryAssetEdit(previewLibraryItem);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100 transition-colors"
+                    >
+                      <Icons.Trash2 size={13} />
+                      Excluir
+                    </button>
+                  )}
+                  {/* Editar — editores e admins */}
+                  {hasPermission && (
+                    <button
+                      type="button"
+                      onClick={() => { setPreviewLibraryItem(null); handleLibraryAssetEdit(previewLibraryItem); }}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-brand-primary px-3 py-2 text-xs font-bold text-white hover:bg-brand-primary/90 transition-colors"
+                    >
+                      <Icons.Edit size={13} />
+                      Editar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Video preview modal */}
       {previewVideoItem && (() => {
         const previewUrl = previewVideoItem.asset.url;
@@ -4630,14 +4686,49 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     <p className="text-xs text-gray-400 line-clamp-1">{previewVideoItem.collection.title}</p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => { setPreviewVideoItem(null); handleLibraryAssetEdit(previewVideoItem); }}
-                  className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-brand-primary px-3 py-2 text-xs font-bold text-white hover:bg-brand-primary/90 transition-colors"
-                >
-                  <Icons.Edit size={13} />
-                  Editar
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {hasPermission && (() => {
+                    const videoIsPublished = previewVideoItem.asset.is_published !== false;
+                    return (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            // @ts-ignore
+                            const ok = videoIsPublished
+                              ? await api.unpublishAsset(previewVideoItem.collection.id, previewVideoItem.asset.id)
+                              : await api.publishAsset(previewVideoItem.collection.id, previewVideoItem.asset.id);
+                            if (ok) {
+                              showToast(videoIsPublished ? 'Vídeo despublicado.' : 'Vídeo publicado!', 'success');
+                              loadCollections(true);
+                            } else {
+                              showToast('Erro ao alterar status de publicação.', 'error');
+                            }
+                          } catch {
+                            showToast('Erro ao alterar status de publicação.', 'error');
+                          }
+                        }}
+                        className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
+                          videoIsPublished
+                            ? 'bg-white/10 text-white/80 hover:bg-white/20'
+                            : 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
+                        }`}
+                      >
+                        {videoIsPublished
+                          ? <><Icons.EyeOff size={13} /> Despublicar</>
+                          : <><Icons.Eye size={13} /> Publicar</>}
+                      </button>
+                    );
+                  })()}
+                  <button
+                    type="button"
+                    onClick={() => { setPreviewVideoItem(null); handleLibraryAssetEdit(previewVideoItem); }}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-brand-primary px-3 py-2 text-xs font-bold text-white hover:bg-brand-primary/90 transition-colors"
+                  >
+                    <Icons.Edit size={13} />
+                    Editar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
