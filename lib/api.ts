@@ -408,34 +408,8 @@ const buildCollectionBackedAssetType = (asset: CollectionAsset): LibraryMockItem
   return 'pdf';
 };
 
-const getCollectionBackedShelfMeta = (hub: MediaHub): { title: string; description: string } => {
-  switch (hub) {
-    case 'videos':
-      return {
-        title: 'Publicados via coleções',
-        description: 'Vídeos disponibilizados diretamente pelo editor de coleções.',
-      };
-    case 'music':
-      return {
-        title: 'Faixas vinculadas às coleções',
-        description: 'Áudios publicados a partir do acervo das coleções.',
-      };
-    case 'formations':
-      return {
-        title: 'Percursos aplicados',
-        description: 'Guias e videoaulas vinculados às coleções publicadas.',
-      };
-    case 'materials':
-      return {
-        title: 'Materiais para abrir agora',
-        description: 'PDFs e apoios extras publicados dentro das coleções.',
-      };
-    default:
-      return {
-        title: 'Catálogo',
-        description: 'Itens publicados nesta biblioteca.',
-      };
-  }
+const getCollectionBackedShelfMeta = (_hub: MediaHub): { title: string; description: string } => {
+  return { title: '', description: '' };
 };
 
 const buildCollectionBackedDescription = (hub: MediaHub, collection: Collection, asset: CollectionAsset): string => {
@@ -1897,8 +1871,8 @@ export const api = {
         id: `${hub}-all-items`,
         hub,
         type: 'rail',
-        title: 'Catálogo',
-        description: 'Itens publicados desta biblioteca.',
+        title: '',
+        description: '',
         items: itemRows.map((item) => toMediaItemCard(item, { progressByItemId, favoriteIds })),
       }];
 

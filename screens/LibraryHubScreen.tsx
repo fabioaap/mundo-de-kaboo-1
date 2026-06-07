@@ -1552,118 +1552,42 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
       flatItems?: LibraryMockItem[];
     },
   ) => {
+    // Compact mode: lista plana de items (usado quando há poucos itens)
     if (options?.compactMode) {
       const flatItems = options.flatItems ?? [];
-
       if (flatItems.length > 0) {
         return (
-          <section className="mt-3">
-            <div className="mb-3 flex items-start justify-between gap-3 px-1">
-              <div>
-                <h3 className={`text-[0.98rem] font-black tracking-[-0.03em] ${isCorujaLibraryHub ? 'text-[#FFB347]' : 'text-brand-primary'}`}>
-                  Todos os conteúdos ({flatItems.length})
-                </h3>
-                <p className={`mt-1 text-[12px] leading-5 ${isCorujaLibraryHub ? 'text-white/68' : 'text-gray-500'}`}>
-                  Ordenado por relevância pedagógica, use filtros para refinar.
-                </p>
-              </div>
-            </div>
-
-            <div className={`grid gap-3 ${gridClassName}`}>
-              {flatItems.map((item, itemIndex) => renderLibraryGridCard(item, itemIndex, cardClassName))}
-            </div>
-          </section>
+          <div className={`mt-3 grid gap-3 ${gridClassName}`}>
+            {flatItems.map((item, itemIndex) => renderLibraryGridCard(item, itemIndex, cardClassName))}
+          </div>
         );
       }
-
       return (
         <div className={`mt-4 rounded-[1.35rem] px-5 py-8 text-center ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 shadow-[0_16px_34px_rgba(4,27,36,0.18)] backdrop-blur-xl' : 'border border-dashed border-brand-primary/18 bg-white/90 shadow-sm'}`}>
           <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaLibraryHub ? 'text-white/55' : 'text-brand-primary/55'}`}>Nenhum resultado</p>
-          <p className={`mt-2 text-sm leading-6 ${isCorujaLibraryHub ? 'text-white/72' : 'text-gray-500'}`}>
-            {emptyTitle}
-          </p>
+          <p className={`mt-2 text-sm leading-6 ${isCorujaLibraryHub ? 'text-white/72' : 'text-gray-500'}`}>{emptyTitle}</p>
         </div>
       );
     }
 
-    if (mediaHeroItem) {
+    // Coleta todos os items: hero primeiro, depois todos os rails, sem headers de seção
+    const allItems: LibraryMockItem[] = [
+      ...(mediaHeroItem ? [mediaHeroItem] : []),
+      ...mediaRailSections.flatMap((shelf) => shelf.items),
+    ];
+
+    if (allItems.length > 0) {
       return (
-        <>
-          <section className="mt-3">
-            <div className="mb-4 flex items-center justify-between gap-3 px-1">
-              <div>
-                <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaLibraryHub ? 'text-white/58' : 'text-brand-primary/60'}`}>Em destaque</p>
-                <h3 className={`mt-1 text-[1rem] font-black tracking-[-0.03em] ${isCorujaLibraryHub ? 'text-[#FFB347]' : 'text-brand-primary'}`}>Destaque da semana</h3>
-              </div>
-              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 text-white/82 shadow-[0_8px_16px_rgba(4,27,36,0.16)]' : 'border border-brand-primary/12 bg-white/80 text-brand-primary/75 shadow-sm'}`}>
-                {isCorujaLibraryHub ? `Curadoria ${brandDisplayName}` : 'Curadoria Kaboo'}
-              </span>
-            </div>
-
-            <div className={`grid gap-3 ${gridClassName}`}>
-              {renderLibraryGridCard(mediaHeroItem, 0, cardClassName)}
-            </div>
-          </section>
-
-          {mediaRailSections.map((shelf) => (
-            <section key={shelf.id} className="mt-6">
-              <div className="mb-3 flex items-start justify-between gap-3 px-1">
-                <div>
-                  <h3 className={`text-[0.98rem] font-black tracking-[-0.03em] ${isCorujaLibraryHub ? 'text-[#FFB347]' : 'text-brand-primary'}`}>{shelf.title}</h3>
-                  {shelf.description && (
-                    <p className={`mt-1 text-[12px] leading-5 ${isCorujaLibraryHub ? 'text-white/68' : 'text-gray-500'}`}>{shelf.description}</p>
-                  )}
-                </div>
-                {shelf.type === 'continue_watching' && (
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 text-white/82 shadow-[0_8px_16px_rgba(4,27,36,0.16)]' : 'border border-brand-primary/10 bg-brand-primary/[0.08] text-brand-primary shadow-sm'}`}>
-                    {isMusicHub ? 'Continue ouvindo' : 'Continue assistindo'}
-                  </span>
-                )}
-              </div>
-
-              <div className={`grid gap-3 ${gridClassName}`}>
-                {shelf.items.map((item, itemIndex) => renderLibraryGridCard(item, itemIndex, cardClassName))}
-              </div>
-            </section>
-          ))}
-        </>
-      );
-    }
-
-    if (mediaRailSections.length > 0) {
-      return (
-        <>
-          {mediaRailSections.map((shelf) => (
-            <section key={shelf.id} className="mt-6">
-              <div className="mb-3 flex items-start justify-between gap-3 px-1">
-                <div>
-                  <h3 className={`text-[0.98rem] font-black tracking-[-0.03em] ${isCorujaLibraryHub ? 'text-[#FFB347]' : 'text-brand-primary'}`}>{shelf.title}</h3>
-                  {shelf.description && (
-                    <p className={`mt-1 text-[12px] leading-5 ${isCorujaLibraryHub ? 'text-white/68' : 'text-gray-500'}`}>{shelf.description}</p>
-                  )}
-                </div>
-                {shelf.type === 'continue_watching' && (
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 text-white/82 shadow-[0_8px_16px_rgba(4,27,36,0.16)]' : 'border border-brand-primary/10 bg-brand-primary/[0.08] text-brand-primary shadow-sm'}`}>
-                    {isMusicHub ? 'Continue ouvindo' : 'Continue assistindo'}
-                  </span>
-                )}
-              </div>
-
-              <div className={`grid gap-3 ${gridClassName}`}>
-                {shelf.items.map((item, itemIndex) => renderLibraryGridCard(item, itemIndex, cardClassName))}
-              </div>
-            </section>
-          ))}
-        </>
+        <div className={`mt-3 grid gap-3 ${gridClassName}`}>
+          {allItems.map((item, itemIndex) => renderLibraryGridCard(item, itemIndex, cardClassName))}
+        </div>
       );
     }
 
     return (
       <div className={`mt-4 rounded-[1.35rem] px-5 py-8 text-center ${isCorujaLibraryHub ? 'border border-white/12 bg-white/10 shadow-[0_16px_34px_rgba(4,27,36,0.18)] backdrop-blur-xl' : 'border border-dashed border-brand-primary/18 bg-white/90 shadow-sm'}`}>
         <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${isCorujaLibraryHub ? 'text-white/55' : 'text-brand-primary/55'}`}>Nenhum resultado</p>
-        <p className={`mt-2 text-sm leading-6 ${isCorujaLibraryHub ? 'text-white/72' : 'text-gray-500'}`}>
-          {emptyTitle}
-        </p>
+        <p className={`mt-2 text-sm leading-6 ${isCorujaLibraryHub ? 'text-white/72' : 'text-gray-500'}`}>{emptyTitle}</p>
       </div>
     );
   };
