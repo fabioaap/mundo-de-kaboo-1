@@ -106,6 +106,7 @@ const sidebars: SidebarsConfig = {
         'roadmap/checklist-go-live-v1-3',
         'roadmap/prd-vouchers-por-conteudo',
         'roadmap/qa-validation-plan-v1.2',
+        'roadmap/backlog-remocao-mocks-vitrine',
       ],
     },
     'contributing',
