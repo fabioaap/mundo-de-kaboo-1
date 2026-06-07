@@ -4603,14 +4603,28 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     <p className="text-xs text-gray-500 line-clamp-1">{collection.title}</p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setPreviewLibraryItem(null)}
-                  className="ml-4 shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
-                  aria-label="Fechar"
-                >
-                  <Icons.X size={16} />
-                </button>
+                <div className="ml-4 shrink-0 flex items-center gap-2">
+                  {!isAudio && asset.url && (
+                    <a
+                      href={asset.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-8 items-center gap-1.5 rounded-full bg-gray-100 px-3 text-xs font-bold text-gray-600 hover:bg-gray-200 transition-colors"
+                      title="Abrir em nova aba"
+                    >
+                      <Icons.ExternalLink size={13} />
+                      <span className="hidden sm:inline">Abrir</span>
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setPreviewLibraryItem(null)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                    aria-label="Fechar"
+                  >
+                    <Icons.X size={16} />
+                  </button>
+                </div>
               </div>
 
               {/* Content */}
@@ -4620,14 +4634,28 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     <audio controls className="w-full max-w-lg" src={asset.url} />
                   </div>
                 ) : asset.url ? (
-                  <iframe
-                    src={asset.url}
-                    className="w-full rounded-xl border border-gray-200"
-                    style={{ height: '60vh' }}
-                    title={displayTitle}
-                  />
+                  (() => {
+                    // Normaliza URLs do Google Drive: /view → /preview (embeddable)
+                    const embedUrl = asset.url
+                      .replace(/drive\.google\.com\/file\/d\/([^/?#]+)\/view(\?[^#]*)?/,
+                        'drive.google.com/file/d/$1/preview')
+                      .replace(/drive\.google\.com\/open\?id=([^&]+)/,
+                        'drive.google.com/file/d/$1/preview');
+                    return (
+                      <iframe
+                        src={embedUrl}
+                        className="w-full rounded-xl border border-gray-200 bg-gray-50"
+                        style={{ height: '62vh' }}
+                        title={displayTitle}
+                        allow="fullscreen"
+                      />
+                    );
+                  })()
                 ) : (
-                  <p className="text-center text-gray-400 py-12">Nenhum arquivo vinculado.</p>
+                  <div className="flex flex-col items-center justify-center py-14 text-center">
+                    <Icons.FileText size={40} className="text-gray-300 mb-3" />
+                    <p className="text-sm text-gray-400">Nenhum arquivo vinculado.</p>
+                  </div>
                 )}
               </div>
 
