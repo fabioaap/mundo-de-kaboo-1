@@ -309,10 +309,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
         </button>
 
         {/* Nav Items */}
-        {/* min-h-0 + overflow-y-auto: on short viewports the nav list scrolls
-            internally instead of pushing the footer (user chip + version) below
-            the fold, where the sidebar's overflow-hidden would clip it. */}
-        <div className={`relative z-10 flex-1 min-h-0 overflow-y-auto space-y-4 py-4 transition-[padding] duration-180 ease-out ${desktopSectionPaddingClass}`}>
+        <div className={`relative z-10 flex-1 space-y-4 py-4 transition-[padding] duration-180 ease-out ${desktopSectionPaddingClass}`}>
           {desktopNavSections.map((section, sectionIndex) => (
             <div key={`${section.title}-${sectionIndex}`} className={`space-y-2 ${sectionIndex > 0 ? `pt-4 border-t ${desktopSectionDividerClass}` : ''}`}>
               {!isCollapsed && section.title && (
