@@ -254,8 +254,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </div>
         )}
 
-        {/* File Upload Button - Show when no file is uploaded */}
-        {!value && (
+        {/* File Upload Button - Always visible for non-image types */}
+        {!isImage && (
           <div className="flex items-center gap-2">
             <label
               htmlFor={resolvedInputId}
@@ -270,7 +270,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               ) : (
                 <>
                   <Icons.Upload size={18} />
-                  <span>Fazer Upload</span>
+                  <span>{value ? 'Substituir arquivo' : 'Fazer Upload'}</span>
                 </>
               )}
             </label>
