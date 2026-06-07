@@ -2638,10 +2638,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                         return (
                           <div key={collection.id} className="relative h-full w-full flex flex-col">
-                            <div className="absolute right-4 top-4 z-20">
-                              {actionsButton}
-                            </div>
-
                             {/* Badge de status no card */}
                             <span className={`absolute top-2 left-2 z-20 text-xs font-semibold px-2 py-0.5 rounded-full ${
                               collection.is_published
