@@ -1807,10 +1807,6 @@ export const api = {
       return preferredFallbackResponse;
     }
 
-    if (hub === 'formations' || hub === 'materials') {
-      return preferredFallbackResponse;
-    }
-
     const { data: items, error: itemsError } = await supabase
       .from('media_items')
       .select('*')

@@ -927,22 +927,6 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
     setMediaSourceStatus('loading');
 
     const loadItems = async () => {
-      if (screen === 'formations') {
-        const formations = await api.getFormations(false);
-        if (!isActive) return;
-        setMediaDrivenItems(formations.map(formationToLibraryItem));
-        setMediaSourceStatus('ready');
-        return;
-      }
-
-      if (screen === 'materials') {
-        const materials = await api.getMaterials(false);
-        if (!isActive) return;
-        setMediaDrivenItems(materials.map(materialToLibraryItem));
-        setMediaSourceStatus('ready');
-        return;
-      }
-
       api.getMediaHub(screen as MediaHub)
         .then((response) => {
           if (!isActive) return;
