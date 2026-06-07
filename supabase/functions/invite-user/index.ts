@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     // Verifica papel do caller usando adminClient (bypassa RLS)
     const { data: callerProfile, error: profileErr } = await adminClient
       .from('profiles')
-      .select('role')
+      .select('role, brand_id')
       .eq('id', caller.id)
       .single();
 
@@ -62,6 +62,12 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Busca as brand memberships do caller para replicar ao novo usuário
+    const { data: callerMemberships } = await adminClient
+      .from('brand_admin_memberships')
+      .select('brand_id')
+      .eq('user_id', caller.id);
 
     // Parse do body
     const { email, full_name, role, redirect_to, password } = await req.json();
@@ -164,6 +170,7 @@ Deno.serve(async (req) => {
       access_starts_at: isOperationalRole ? new Date().toISOString() : null,
       access_expires_at: null,
       voucher_id: null,
+      brand_id: isOperationalRole ? (callerProfile.brand_id ?? null) : null,
       updated_at: new Date().toISOString(),
     });
 
@@ -172,6 +179,24 @@ Deno.serve(async (req) => {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Para admins/editors: insere nas mesmas brand_admin_memberships do caller
+    if (isOperationalRole && callerMemberships && callerMemberships.length > 0) {
+      const membershipRows = callerMemberships.map((m: { brand_id: string }) => ({
+        user_id: createdUser.id,
+        brand_id: m.brand_id,
+      }));
+      const { error: membershipError } = await adminClient
+        .from('brand_admin_memberships')
+        .upsert(membershipRows, { onConflict: 'user_id,brand_id' });
+
+      if (membershipError) {
+        return new Response(JSON.stringify({ success: false, error: membershipError.message }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     return new Response(
