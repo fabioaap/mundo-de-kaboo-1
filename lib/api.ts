@@ -1887,8 +1887,14 @@ export const api = {
       },
     };
 
-    const mergedResponse = mergeMediaHubResponses(remoteResponse, collectionBackedResponse);
-    return getMediaHubResponseCount(mergedResponse) > 0 ? mergedResponse : staticFallbackResponse;
+    // When Supabase media_items has data, it is the authoritative catalog.
+    // Do NOT merge with collection-backed items — they would duplicate content
+    // because their dedup keys differ structurally (collection prefix vs. none).
+    // Collection-backed path is a fallback only for when media_items is empty.
+    if (getMediaHubResponseCount(remoteResponse) > 0) {
+      return remoteResponse;
+    }
+    return getMediaHubResponseCount(collectionBackedResponse) > 0 ? collectionBackedResponse : staticFallbackResponse;
   },
 
   async getMediaItem(mediaItemId: string): Promise<MediaItemDetail | null> {
