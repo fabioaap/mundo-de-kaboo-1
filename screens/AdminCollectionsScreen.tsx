@@ -1810,10 +1810,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     const linkedReadingSource = readingAssetUrl
       ? (mediaLibraryByCategory.reading ?? []).find((item) => item.asset.url === readingAssetUrl)?.collection ?? null
       : null;
+    // Only re-sync the linked book (and inherit its fields) when the kit actually
+    // has a reading asset to derive from. Passing the option with a null linkedBook
+    // would WIPE kit_book_ids — including books linked directly on seed/legacy kits
+    // that have no reading asset — leaving them empty and unpublishable. Adding or
+    // removing a book already keeps kit_book_ids in sync interactively, so when
+    // there is no derived book we preserve the existing selection here.
     const effectiveFormData = buildNextFormFromAssets(
       formData,
       formData.collection_assets,
-      isCollectionsCatalogMode ? { linkedBook: linkedReadingSource } : undefined
+      isCollectionsCatalogMode && linkedReadingSource ? { linkedBook: linkedReadingSource } : undefined
     );
 
     const normalizedDataToSave = buildCollectionPayload(effectiveFormData);
@@ -1834,12 +1840,19 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       }
     }
 
-    // Rule: collection with no linked assets → auto-unpublish
+    // Rule: collection with no linked content → auto-unpublish.
+    // Content = linked media assets, OR (for kits) aggregated books via
+    // kit_book_ids, OR a legacy media url. Previously only collection_assets
+    // were counted, so a kit whose content is a book (kit_book_ids) was treated
+    // as "empty" and could never be published.
     if (isCollectionsCatalogMode && normalizedDataToSave.is_published === true) {
-      const hasAnyAsset = normalizedDataToSave.collection_assets?.some(a => a.url?.trim());
-      if (!hasAnyAsset) {
+      const hasLinkedAsset = normalizedDataToSave.collection_assets?.some(a => a.url?.trim());
+      const hasKitBooks = (normalizedDataToSave.kit_book_ids?.length ?? 0) > 0;
+      const hasLegacyMedia = [normalizedDataToSave.audio_url, normalizedDataToSave.pdf_url, normalizedDataToSave.video_url]
+        .some((u) => u?.trim());
+      if (!hasLinkedAsset && !hasKitBooks && !hasLegacyMedia) {
         normalizedDataToSave.is_published = false;
-        showToast('Nenhuma mídia vinculada — coleção despublicada automaticamente.', 'warning' as any);
+        showToast('Nenhuma mídia ou livro vinculado — coleção despublicada automaticamente.', 'warning' as any);
       }
     }
 
