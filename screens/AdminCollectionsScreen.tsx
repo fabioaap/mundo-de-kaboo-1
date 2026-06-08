@@ -1852,7 +1852,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         .some((u) => u?.trim());
       if (!hasLinkedAsset && !hasKitBooks && !hasLegacyMedia) {
         normalizedDataToSave.is_published = false;
-        showToast('Nenhuma mídia ou livro vinculado — coleção despublicada automaticamente.', 'warning' as any);
+        showToast('Para publicar, vincule um livro ou mídia na aba "Mídias vinculadas". Salvo como rascunho por enquanto.', 'warning' as any);
       }
     }
 
@@ -2844,6 +2844,22 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         }`} />
                       </button>
                     </div>
+
+                    {/* Aviso: coleção sem conteúdo não pode ser publicada */}
+                    {isCollectionsCatalogMode && formData.is_published && (() => {
+                      const hasContent = formData.collection_assets?.some((a) => a.url?.trim())
+                        || (formData.kit_book_ids?.length ?? 0) > 0
+                        || [formData.audio_url, formData.pdf_url, formData.video_url].some((u) => u?.trim());
+                      if (hasContent) return null;
+                      return (
+                        <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                          <Icons.AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-500" />
+                          <p className="text-xs leading-5 text-amber-800">
+                            Esta coleção ainda não tem livro nem mídia vinculada. Vincule um conteúdo na aba <span className="font-bold">Mídias vinculadas</span> para poder publicá-la — sem isso, ela volta para rascunho ao salvar.
+                          </p>
+                        </div>
+                      );
+                    })()}
 
                     {/* Capa principal e cor base do card */}
                     <div className="rounded-2xl border border-brand-primary/10 bg-brand-primary/[0.04] p-4">
