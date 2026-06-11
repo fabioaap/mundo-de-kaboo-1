@@ -34,7 +34,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollectionCharacters } from '../lib/characters';
 import { COLLECTION_ASSET_META, inferCollectionAssets, promoteCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
-import { getCollectionDisplayCover, getCollectionTypeMeta, isStandaloneReadableBook, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
+import { extractSourceCollectionId, getCollectionDisplayCover, getCollectionTypeMeta, getLibraryAssetCoverImage, getYoutubeThumbnail, isStandaloneReadableBook, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
 import { VideoFramePicker } from '../components/VideoFramePicker';
 import { extractAudioCoverArt } from '../lib/extractAudioCoverArt';
 import { uploadFile } from '../lib/storage';
@@ -220,10 +220,19 @@ const getLibraryAssetIcon = (asset: CollectionAsset): keyof typeof Icons => {
   }
 };
 
+// Generic labels that come from the media_type or category and are never a real
+// content title. If asset.title equals one of these, fall back to collection.title.
+const GENERIC_ASSET_TITLE_LABELS = new Set([
+  'Áudio', 'Audio', 'Vídeo', 'Video', 'Música', 'Musica', 'Material',
+  'Documento', 'Formação', 'Formacao', 'Leitura',
+]);
+
 const getLibraryAssetDisplayTitle = (collection: Collection, asset: CollectionAsset) => {
   const normalizedTitle = (asset.title || '').trim();
   const defaultLabel = COLLECTION_ASSET_META[asset.category].label;
+  const isGenericPlaceholder = GENERIC_ASSET_TITLE_LABELS.has(normalizedTitle);
   const shouldUseCollectionTitle = !normalizedTitle
+    || isGenericPlaceholder
     || (normalizedTitle === defaultLabel && ['reading', 'storytelling', 'animation', 'accessible_video'].includes(asset.category));
 
   if (shouldUseCollectionTitle && collection.title?.trim()) {
@@ -657,6 +666,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const actionsDropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const mediaSectionRefs = useRef<Partial<Record<CollectionAssetCategory, HTMLDivElement | null>>>({});
   const extraMaterialsSectionRef = useRef<HTMLDivElement | null>(null);
+  const drawerBodyRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState<CollectionFormData>(() => createCollectionFormDataForCurrentFlow());
   const [previewVideoItem, setPreviewVideoItem] = useState<LibraryAssetListItem | null>(null);
   const [previewLibraryItem, setPreviewLibraryItem] = useState<LibraryAssetListItem | null>(null);
@@ -762,6 +772,17 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     return () => window.clearTimeout(timer);
   }, [activeTab, editingId, highlightedAssetCategory, highlightedAssetId]);
 
+  // Scroll drawer back to top whenever a different item is opened for editing
+  // (or a new-item form is opened). Without this, the drawer keeps the scroll
+  // position of the previous item and opens mid-page / at the bottom.
+  useEffect(() => {
+    if (!editingId && !showCreateForm) return;
+    const timer = window.setTimeout(() => {
+      drawerBodyRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [editingId, showCreateForm]);
+
   // NOTE: When initialLibraryArea is set (e.g. "Vídeos" sidebar item), we now show a
   // direct asset list first. Clicking any card opens the owning collection on the
   // 'media' tab and highlights the selected asset for editing.
@@ -778,6 +799,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     // Para que a listagem seja útil, só mostramos assets primários quando a
     // coleção os declarou explicitamente via collection_assets.
     const PRIMARY_LEGACY_CATEGORIES: CollectionAssetCategory[] = ['reading', 'storytelling', 'animation'];
+
+    // Owner-collection lookup so a media linked into a kit can show the cover of
+    // the collection that owns the file (id in the storage URL) instead of the
+    // kit's cover. See getLibraryAssetCoverImage.
+    const collectionsById = new Map(collections.map((item) => [item.id, item]));
 
     return collections.flatMap((collection) => {
       const explicitCategories = new Set(
@@ -797,9 +823,15 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
           return true;
         })
         .map((asset) => {
-          const displayTitle = getLibraryAssetDisplayTitle(collection, asset);
-          const collectionCover = getCollectionDisplayCover(collection) || collection.cover_image;
-          const resolvedCover = collectionCover || CATEGORY_COVER_URL[asset.category] || placeholderImageUrl;
+          // In library-area mode the user-facing title is always collection.title
+          // (set via the "Título" field). asset.title may be stale/different due to
+          // legacy data or a YouTube oEmbed auto-fill that was never corrected.
+          const displayTitle = (isAssetLibraryAreaMode && collection.title?.trim())
+            ? collection.title.trim()
+            : getLibraryAssetDisplayTitle(collection, asset);
+          const resolvedCover = getLibraryAssetCoverImage(asset, collection, collectionsById)
+            || CATEGORY_COVER_URL[asset.category]
+            || placeholderImageUrl;
 
           return {
             key: `${collection.id}:${asset.id}`,
@@ -1276,12 +1308,64 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     });
   };
 
+  /**
+   * Canonical setter for the collection-level publish flag.
+   *
+   * In library-area mode (videos, music, materials…) `is_published` lives on
+   * each primary asset inside `collection_assets`, NOT only on formData.
+   * Always use THIS function — never write `setFormData(prev => ({ ...prev, is_published: … }))`
+   * directly, or the asset flags will drift out of sync and the change won't persist.
+   */
+  const setCollectionPublished = (value: boolean) => {
+    setFormData((prev) => {
+      if (initialLibraryArea && initialLibraryArea !== 'books') {
+        const primaryCats = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
+        const nextAssets = prev.collection_assets.map(a =>
+          primaryCats.includes(a.category) ? { ...a, is_published: value } : a
+        );
+        return { ...buildNextFormFromAssets(prev, nextAssets), is_published: value };
+      }
+      return { ...prev, is_published: value };
+    });
+  };
+
+  /**
+   * Canonical setter for the per-material "available for download" flag.
+   *
+   * HARD RULE: videos are never downloadable, so this only ever writes the flag on
+   * NON-video primary assets. Mirrors setCollectionPublished's dual-storage handling.
+   */
+  const setCollectionDownloadAvailable = (value: boolean) => {
+    setFormData((prev) => {
+      if (initialLibraryArea && initialLibraryArea !== 'books') {
+        const primaryCats = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
+        const nextAssets = prev.collection_assets.map((a) =>
+          primaryCats.includes(a.category) && a.media_type !== 'video'
+            ? { ...a, download_available: value }
+            : a
+        );
+        return buildNextFormFromAssets(prev, nextAssets);
+      }
+      return prev;
+    });
+  };
+
   const removeAsset = (category: FixedMediaSlotCategory) => {
     setFormData((currentFormData) => {
       const nextAssets = currentFormData.collection_assets.filter((asset) => asset.category !== category);
       return buildNextFormFromAssets(currentFormData, nextAssets, category === 'reading' ? { linkedBook: null } : undefined);
     });
   };
+
+  // Non-video primary materials in the current library area (download toggle applies to these).
+  const downloadablePrimaryAssets = (initialLibraryArea && initialLibraryArea !== 'books')
+    ? formData.collection_assets.filter((a) =>
+        LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea].includes(a.category)
+        && a.media_type !== 'video'
+        && (a.url || '').trim())
+    : [];
+  const hasDownloadableMaterial = downloadablePrimaryAssets.length > 0;
+  const collectionDownloadAvailable = downloadablePrimaryAssets.every((a) => a.download_available !== false);
 
   const extraMaterialAssets = formData.collection_assets.filter((asset) => asset.category === 'extra_material');
   const isExtraMaterialsHighlighted = highlightedAssetCategory === 'extra_material'
@@ -1294,14 +1378,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   // Used by the linked-media picker to let the user associate existing assets.
   const mediaLibraryByCategory = React.useMemo(() => {
     const byCategory: Partial<Record<CollectionAssetCategory, LibraryAssetListItem[]>> = {};
+    const collectionsById = new Map(collections.map((item) => [item.id, item]));
     for (const collection of collections) {
       if (collection.id === editingId) continue;
       for (const asset of (collection.collection_assets ?? [])) {
         if (!asset.url?.trim()) continue;
         if (asset.is_published === false) continue;
         const displayTitle = getLibraryAssetDisplayTitle(collection, asset);
-        const collectionCover = getCollectionDisplayCover(collection) || collection.cover_image;
-        const coverImage = collectionCover || CATEGORY_COVER_URL[asset.category] || placeholderImageUrl;
+        const coverImage = getLibraryAssetCoverImage(asset, collection, collectionsById)
+          || CATEGORY_COVER_URL[asset.category]
+          || placeholderImageUrl;
 
         if (!byCategory[asset.category]) byCategory[asset.category] = [];
         byCategory[asset.category]!.push({
@@ -1688,17 +1774,40 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     collection: Collection,
     options?: { focusCategory?: CollectionAssetCategory; focusAssetId?: string | null }
   ) => {
-    const initialData = createCollectionFormDataForCurrentFlow({
+    let initialData = createCollectionFormDataForCurrentFlow({
       ...collection,
       collection_assets: inferCollectionAssets(collection),
     });
+
+    // Data-sync guard: in library-area mode, old DB records may have asset.title set
+    // to a generic media-type label (e.g. "Áudio") instead of the real content title.
+    // Silently promote asset.title to collection.title on load so that the next save
+    // writes the correct value — and so the title field in the form shows correctly.
+    if (isAssetLibraryAreaMode && initialLibraryArea && initialLibraryArea !== 'books' && initialData.title) {
+      const primaryCats = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
+      const fixedAssets = initialData.collection_assets.map((a) => {
+        if (!primaryCats.includes(a.category)) return a;
+        const assetTitle = (a.title || '').trim();
+        if (!assetTitle || GENERIC_ASSET_TITLE_LABELS.has(assetTitle)) {
+          return { ...a, title: initialData.title };
+        }
+        return a;
+      });
+      if (fixedAssets.some((a, i) => a !== initialData.collection_assets[i])) {
+        initialData = { ...initialData, collection_assets: fixedAssets };
+      }
+    }
+
     setShowCreateForm(false);
     setEditingId(collection.id);
     setActiveTab(defaultCollectionTab);
     setFormData(initialData);
     setOriginalFormData(initialData);
-    setHighlightedAssetCategory(options?.focusCategory ?? null);
-    setHighlightedAssetId(options?.focusAssetId ?? null);
+    // In library-area mode the drawer is short and always starts at the top.
+    // Highlight-scrolling would override the scroll-to-top effect and send the
+    // user to the bottom of the form. Skip it — the ring glow is enough feedback.
+    setHighlightedAssetCategory(isAssetLibraryAreaMode ? null : (options?.focusCategory ?? null));
+    setHighlightedAssetId(isAssetLibraryAreaMode ? null : (options?.focusAssetId ?? null));
   };
 
   const handleEdit = (collection: Collection) => {
@@ -1859,13 +1968,49 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     await executeSave(normalizedDataToSave);
   };
 
+  /**
+   * Promotes any /temp/ assets to permanent collectionId-scoped paths and
+   * re-derives the legacy URL fields (audio_url/pdf_url/video_url/extra_materials)
+   * EXCLUSIVELY from the promoted assets.
+   *
+   * Clearing the legacy fields before syncCollectionWithAssets is critical: otherwise
+   * inferCollectionAssets would see two different URLs for the same primary category
+   * (the old temp-path URL still in the legacy field + the new permanent URL in the
+   * asset) and emit TWO assets → the duplication bug. Used by BOTH the create and the
+   * edit branches so the two paths can never drift apart.
+   */
+  const promoteAndSync = async (
+    collectionId: string,
+    data: Partial<Collection>,
+  ): Promise<Partial<Collection>> => {
+    const incoming = data.collection_assets ?? [];
+    const promoted = await promoteCollectionAssets(collectionId, incoming);
+    const changed = promoted.some((asset, index) => asset.url !== incoming[index]?.url);
+    if (!changed) {
+      return data;
+    }
+    return syncCollectionWithAssets({
+      ...data,
+      collection_assets: promoted,
+      audio_url: '',
+      pdf_url: '',
+      video_url: '',
+      extra_materials: [],
+    });
+  };
+
   const executeSave = async (normalizedDataToSave: Partial<Collection>, cascadeCollections: Collection[] = []) => {
     setIsSaving(true);
     let success = false;
     let errorMessage = '';
 
     if (editingId) {
-      const updated = await api.updateCollection(editingId, normalizedDataToSave);
+      // Promote any newly-uploaded /temp/ files to permanent paths and re-derive
+      // legacy URL fields BEFORE persisting, mirroring the create branch. Without
+      // this, replacing a file on edit would leave a /temp/ URL that can later
+      // re-materialize as a duplicate asset.
+      const toSave = await promoteAndSync(editingId, normalizedDataToSave);
+      const updated = await api.updateCollection(editingId, toSave);
       success = !!updated;
       if (!success) {
         errorMessage = `Erro ao atualizar ${contentEntityLabelLower}. Verifique suas permissões e tente novamente.`;
@@ -1877,14 +2022,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         if (!success) {
           errorMessage = `Erro ao criar ${contentEntityLabelLower}. Verifique suas permissões e tente novamente.`;
         } else if (created) {
-          // Promote any temp/ assets to permanent collectionId-scoped paths
-          const originalAssets = created.collection_assets ?? [];
-          const promotedAssets = await promoteCollectionAssets(created.id, originalAssets);
-          const hasChanges = promotedAssets.some((a, i) => a.url !== originalAssets[i]?.url);
-          if (hasChanges) {
-            const synced = syncCollectionWithAssets({ ...created, collection_assets: promotedAssets });
+          // Promote any temp/ assets to permanent collectionId-scoped paths and
+          // re-derive legacy fields (shared with the edit branch via promoteAndSync).
+          const synced = await promoteAndSync(created.id, created);
+          if (synced !== created) {
             await api.updateCollection(created.id, {
-              collection_assets: promotedAssets,
+              collection_assets: synced.collection_assets,
               audio_url: synced.audio_url,
               pdf_url: synced.pdf_url,
               video_url: synced.video_url,
@@ -2359,7 +2502,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         )}
                       </div>
                     ) : (
-                      <div className={`grid gap-4 md:gap-5 ${initialLibraryArea === 'music' ? 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}>
+                      <div className={`grid gap-4 md:gap-5 ${initialLibraryArea === 'music' || initialLibraryArea === 'videos' ? 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}>
                         {visibleLibraryAssets.map((item) => {
                           const CardIcon = Icons[item.iconName] as React.ElementType;
                           const isVideoAssetCard = item.asset.media_type === 'video';
@@ -2511,8 +2654,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     </div>
                   ) : (
                     <div
-                      className={`grid auto-rows-fr gap-4 md:gap-6 ${isBooksCatalogMode ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : ''}`}
-                      style={isBooksCatalogMode ? undefined : { gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 24.75rem), 1fr))' }}
+                      className="grid auto-rows-fr gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
                     >
                       {getFilteredAndSortedCollections().map((collection) => {
                         const actionsButton = (
@@ -2660,25 +2802,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               {collection.is_published ? 'Publicado' : 'Rascunho'}
                             </span>
 
-                            <div className="relative group/book">
+                            <div className="relative">
                               <Card3D
-                              collection={collection}
+                              collection={isCollectionsCatalogMode ? { ...collection, kit_cover_image: null } : collection}
                               tone="default"
                               onCollectionClick={() => {
-                                const pdfAsset = collection.collection_assets?.find(a => a.category === 'reading' && a.url?.trim());
-                                if (pdfAsset) {
-                                  setPreviewLibraryItem({
-                                    key: `${collection.id}_reading`,
-                                    collection,
-                                    asset: pdfAsset,
-                                    displayTitle: collection.title || 'Livro',
-                                    previewText: collection.description || null,
-                                    coverImage: collection.cover_image || '',
-                                    searchText: collection.title || '',
-                                    levelLabel: collection.level || '',
-                                    iconName: 'BookOpen',
-                                  });
-                                } else if (hasUnsavedChanges()) {
+                                if (hasUnsavedChanges()) {
                                   setPendingAction(() => () => handleEdit(collection));
                                   setShowUnsavedChangesModal(true);
                                 } else {
@@ -2686,13 +2815,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 }
                               }}
                             />
-                              {/* Hover overlay "Ler" */}
-                              <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 group-hover/book:opacity-100 transition-all duration-200">
-                                <span className="flex items-center gap-2 rounded-full bg-brand-primary px-5 py-2.5 text-sm font-bold text-white shadow-[0_14px_26px_rgba(93,31,88,0.35)] scale-90 group-hover/book:scale-100 transition-transform duration-200">
-                                  <Icons.BookOpen size={16} />
-                                  Ler
-                                </span>
-                              </div>
                             </div>
 
                             {/* Footer com botão Editar */}
@@ -2797,7 +2919,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
             )}
 
             {/* Scrollable form body */}
-            <div className="flex-1 overflow-y-auto px-6 pb-4 pt-4">
+            <div ref={drawerBodyRef} className="flex-1 overflow-y-auto px-6 pb-4 pt-4">
               <div className="space-y-6">
                 {/* Tab: Dados da Coleção */}
                 {!isLibraryAreaMode && activeTab === 'identification' && (
@@ -2825,38 +2947,37 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     </div>
 
                     {/* Toggle de publicação */}
-                    <div className="flex items-center justify-between mt-4 p-3 rounded-lg bg-gray-50 border border-gray-200">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Status de publicação</p>
-                        <p className="text-xs text-gray-500">
-                          {formData.is_published ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, is_published: !prev.is_published }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          formData.is_published ? 'bg-green-500' : 'bg-gray-300'
-                        }`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                          formData.is_published ? 'translate-x-6' : 'translate-x-1'
-                        }`} />
-                      </button>
-                    </div>
-
-                    {/* Aviso: coleção sem conteúdo não pode ser publicada */}
-                    {isCollectionsCatalogMode && formData.is_published && (() => {
-                      const hasContent = formData.collection_assets?.some((a) => a.url?.trim())
+                    {(() => {
+                      const hasContent = !isCollectionsCatalogMode
+                        || formData.collection_assets?.some((a) => a.url?.trim())
                         || (formData.kit_book_ids?.length ?? 0) > 0
                         || [formData.audio_url, formData.pdf_url, formData.video_url].some((u) => u?.trim());
-                      if (hasContent) return null;
+                      const publishBlocked = isCollectionsCatalogMode && !hasContent;
                       return (
-                        <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-                          <Icons.AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-500" />
-                          <p className="text-xs leading-5 text-amber-800">
-                            Esta coleção ainda não tem livro nem mídia vinculada. Vincule um conteúdo na aba <span className="font-bold">Mídias vinculadas</span> para poder publicá-la — sem isso, ela volta para rascunho ao salvar.
-                          </p>
+                        <div className="flex items-center justify-between mt-4 p-3 rounded-lg bg-gray-50 border border-gray-200">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Status de publicação</p>
+                            <p className={`text-xs ${publishBlocked ? 'text-amber-600' : 'text-gray-500'}`}>
+                              {publishBlocked
+                                ? 'Vincule um livro ou mídia para poder publicar'
+                                : formData.is_published ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={publishBlocked}
+                            onClick={() => !publishBlocked && setCollectionPublished(!formData.is_published)}
+                            title={publishBlocked ? 'Vincule um livro ou mídia na aba "Mídias vinculadas" para poder publicar' : undefined}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              publishBlocked
+                                ? 'bg-gray-200 cursor-not-allowed opacity-60'
+                                : formData.is_published ? 'bg-green-500' : 'bg-gray-300'
+                            }`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                              formData.is_published && !publishBlocked ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                          </button>
                         </div>
                       );
                     })()}
@@ -3416,6 +3537,45 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             />
                           </div>
 
+                          {/* Status de publicação */}
+                          <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-200">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Status de publicação</p>
+                              <p className="text-xs text-gray-500">
+                                {formData.is_published ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setCollectionPublished(!formData.is_published)}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.is_published ? 'bg-green-500' : 'bg-gray-300'}`}
+                            >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${formData.is_published ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                          </div>
+
+                          {/* Disponível para download — só para materiais que NÃO são vídeo
+                              (vídeo nunca pode ser baixado, então o toggle nem aparece). */}
+                          {hasDownloadableMaterial && (
+                            <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-200">
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">Disponível para download</p>
+                                <p className="text-xs text-gray-500">
+                                  {collectionDownloadAvailable
+                                    ? 'O usuário pode baixar este material'
+                                    : 'Somente visualização — sem botão de download'}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setCollectionDownloadAvailable(!collectionDownloadAvailable)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${collectionDownloadAvailable ? 'bg-green-500' : 'bg-gray-300'}`}
+                              >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${collectionDownloadAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
+                              </button>
+                            </div>
+                          )}
+
                           {/* Segmento — campo obrigatório oculto na aba de identificação em modo biblioteca */}
                           <div>
                             <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
@@ -3439,38 +3599,105 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                           <div className="grid grid-cols-2 gap-4 items-start">
                             <div>
-                              <FileUpload
-                                label="Imagem de Capa"
-                                value={formData.cover_image || placeholderImageUrl}
-                                onChange={(url) => setFormData({ ...formData, cover_image: url })}
-                                folder="covers"
-                                accept="image/*"
-                                collectionId={editingId || undefined}
-                                hideUrlInput={true}
-                                inputId={`library-cover-upload-${initialLibraryArea ?? 'default'}`}
-                              />
-                              {/* Aviso de imagem padrão para não-vídeos */}
-                              {initialLibraryArea !== 'videos' && isPlaceholderImageUrl(formData.cover_image || placeholderImageUrl) && (
-                                <p className="text-xs text-amber-600 mt-1">Usando imagem padrão. Recomendamos adicionar uma capa personalizada.</p>
-                              )}
-                              {/* Frame picker: only for videos when cover is still placeholder */}
-                              {initialLibraryArea === 'videos' &&
-                                isPlaceholderImageUrl(formData.cover_image || placeholderImageUrl) &&
-                                (() => {
-                                  const videoAsset = formData.collection_assets.find(
-                                    (a) => a.category === 'animation' && a.url
+                              {(() => {
+                                // Na área de biblioteca, "Imagem de Capa" grava em
+                                // collection.cover_image — ou seja, é a capa da coleção/kit DONO,
+                                // não da mídia (capa de mídia e de coleção são o mesmo campo).
+                                // Quando a mídia tem capa própria derivável, mostramos ela
+                                // (display only) e escondemos o upload, para não exibir nem
+                                // sobrescrever a capa da coleção. Fix estrutural (capa por-mídia)
+                                // está no backlog "Capa por Mídia".
+                                const area = initialLibraryArea;
+                                const primarySlots = area ? LIBRARY_AREA_PRIMARY_SLOTS[area] : [];
+                                const mediaAsset = area && area !== 'books'
+                                  ? formData.collection_assets.find((a) => a.url && primarySlots.includes(a.category))
+                                  : undefined;
+
+                                // 1) Vídeo do YouTube → miniatura do próprio vídeo.
+                                const youtubeThumb = mediaAsset && mediaAsset.media_type === 'video'
+                                  ? getYoutubeThumbnail(mediaAsset.url)
+                                  : '';
+                                if (youtubeThumb) {
+                                  return (
+                                    <div>
+                                      <label className="block text-sm font-bold text-gray-700 mb-2">Imagem de Capa</label>
+                                      <img
+                                        src={youtubeThumb}
+                                        alt=""
+                                        aria-hidden="true"
+                                        className="w-full aspect-video rounded-xl border border-gray-200 bg-gray-100 object-cover"
+                                      />
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Capa automática do YouTube — vídeos do YouTube sempre usam a miniatura do próprio vídeo.
+                                      </p>
+                                    </div>
                                   );
-                                  return videoAsset ? (
-                                    <VideoFramePicker
-                                      videoUrl={videoAsset.url}
+                                }
+
+                                // 2) Mídia REUSADA (o arquivo pertence a outra coleção): mostra a
+                                //    capa da coleção de origem e esconde o upload, para não
+                                //    sobrescrever a capa da coleção/kit que está sendo editada.
+                                const sourceId = mediaAsset ? extractSourceCollectionId(mediaAsset.url) : '';
+                                if (sourceId && editingId && sourceId !== editingId) {
+                                  const sourceCollection = collections.find((c) => c.id === sourceId);
+                                  const sourceCover = sourceCollection
+                                    ? (getCollectionDisplayCover(sourceCollection) || sourceCollection.cover_image || '')
+                                    : '';
+                                  if (sourceCover && !isPlaceholderImageUrl(sourceCover)) {
+                                    return (
+                                      <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Imagem de Capa</label>
+                                        <img
+                                          src={sourceCover}
+                                          alt=""
+                                          aria-hidden="true"
+                                          className="w-full aspect-square rounded-xl border border-gray-200 bg-gray-100 object-cover"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Capa herdada da mídia de origem{sourceCollection?.title ? ` (“${sourceCollection.title}”)` : ''}. Para trocá-la, edite a capa na coleção de origem.
+                                        </p>
+                                      </div>
+                                    );
+                                  }
+                                }
+
+                                return (
+                                  <>
+                                    <FileUpload
+                                      label="Imagem de Capa"
+                                      value={formData.cover_image || placeholderImageUrl}
+                                      onChange={(url) => setFormData({ ...formData, cover_image: url })}
+                                      folder="covers"
+                                      accept="image/*"
                                       collectionId={editingId || undefined}
-                                      onFrameSelected={(url) =>
-                                        setFormData({ ...formData, cover_image: url })
-                                      }
+                                      hideUrlInput={true}
+                                      inputId={`library-cover-upload-${initialLibraryArea ?? 'default'}`}
                                     />
-                                  ) : null;
-                                })()
-                              }
+                                    {/* Aviso de imagem padrão para não-vídeos */}
+                                    {initialLibraryArea !== 'videos' && isPlaceholderImageUrl(formData.cover_image || placeholderImageUrl) && (
+                                      <p className="text-xs text-amber-600 mt-1">Usando imagem padrão. Recomendamos adicionar uma capa personalizada.</p>
+                                    )}
+                                    {/* Frame picker: only for videos when cover is still placeholder */}
+                                    {initialLibraryArea === 'videos' &&
+                                      isPlaceholderImageUrl(formData.cover_image || placeholderImageUrl) &&
+                                      (() => {
+                                        const videoAsset = formData.collection_assets.find(
+                                          (a) => a.category === 'animation' && a.url
+                                        );
+                                        return videoAsset ? (
+                                          <VideoFramePicker
+                                            videoUrl={videoAsset.url}
+                                            collectionId={editingId || undefined}
+                                            onFrameSelected={(url) =>
+                                              setFormData({ ...formData, cover_image: url })
+                                            }
+                                          />
+                                        ) : null;
+                                      })()
+                                    }
+                                  </>
+                                );
+                              })()}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
@@ -3574,27 +3801,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               )}
                             </div>
 
-                            {/* Publicar conteúdo — só aparece quando há URL vinculada */}
-                            {currentUrl && (() => {
-                              const assetIsPublished = getAssetByCategory(activeCategory)?.is_published !== false;
-                              return (
-                                <div className="flex items-center justify-between pt-1">
-                                  <div>
-                                    <p className="text-sm font-bold text-gray-800">Publicar conteúdo</p>
-                                    <p className="text-xs text-gray-500">
-                                      {assetIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
-                                    </p>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => setAssetPublished(activeCategory, !assetIsPublished)}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${assetIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
-                                  >
-                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${assetIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
-                                  </button>
-                                </div>
-                              );
-                            })()}
                           </div>
                         );
                       })()}
@@ -3721,26 +3927,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     accept="audio/*"
                                     collectionId={editingId || undefined}
                                   />
-                                  {asset?.url && (() => {
-                                    const slotIsPublished = asset.is_published !== false;
-                                    return (
-                                      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
-                                        <div>
-                                          <p className="text-sm font-bold text-gray-800">Publicar conteúdo</p>
-                                          <p className="text-xs text-gray-500">
-                                            {slotIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
-                                          </p>
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => setAssetPublished(slot.category, !slotIsPublished)}
-                                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${slotIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
-                                        >
-                                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${slotIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
-                                        </button>
-                                      </div>
-                                    );
-                                  })()}
                                 </div>
                               ) : (
                                 /* Registration mode: URL input field for non-audio slots */
@@ -3772,32 +3958,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     )}
                                   </div>
                                   {asset?.url && (
-                                    <>
-                                      <p className="text-xs text-green-600 font-medium flex items-center gap-1">
-                                        <Icons.Check size={12} />
-                                        URL vinculada
-                                      </p>
-                                      {(() => {
-                                        const slotIsPublished = asset.is_published !== false;
-                                        return (
-                                          <div className="flex items-center justify-between pt-1">
-                                            <div>
-                                              <p className="text-sm font-bold text-gray-800">Publicar conteúdo</p>
-                                              <p className="text-xs text-gray-500">
-                                                {slotIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
-                                              </p>
-                                            </div>
-                                            <button
-                                              type="button"
-                                              onClick={() => setAssetPublished(slot.category, !slotIsPublished)}
-                                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${slotIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
-                                            >
-                                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${slotIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
-                                            </button>
-                                          </div>
-                                        );
-                                      })()}
-                                    </>
+                                    <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                      <Icons.Check size={12} />
+                                      URL vinculada
+                                    </p>
                                   )}
                                 </div>
                               )

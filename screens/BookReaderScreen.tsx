@@ -11,9 +11,11 @@ import { useOfflineDownload } from '../hooks/useOfflineDownload';
 interface BookReaderScreenProps {
   collection: Collection;
   onBack: () => void;
+  collectionTitle?: string;
+  bookTitle?: string;
 }
 
-export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, onBack }) => {
+export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, onBack, collectionTitle, bookTitle }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [forcePortrait, setForcePortrait] = useState(false);
@@ -228,9 +230,20 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
           
           <div className="flex-1 text-center">
             <div className="inline-block bg-black/20 backdrop-blur-md px-6 py-2 rounded-full shadow-lg border border-white/10">
-              <h1 className="text-sm md:text-base font-bold text-white drop-shadow-sm">
-                {collection.title}
-              </h1>
+              {bookTitle ? (
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[10px] md:text-xs text-white/70 font-semibold leading-none">
+                    Coleção: {collectionTitle || collection.title}
+                  </span>
+                  <span className="text-sm md:text-base font-bold text-white drop-shadow-sm leading-none">
+                    {bookTitle}
+                  </span>
+                </div>
+              ) : (
+                <h1 className="text-sm md:text-base font-bold text-white drop-shadow-sm">
+                  {collection.title}
+                </h1>
+              )}
             </div>
           </div>
 

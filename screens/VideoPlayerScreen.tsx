@@ -336,7 +336,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   useEffect(() => {
     let isActive = true;
 
-    setRelatedItems([]);
+    // Do NOT clear relatedItems here. Keeping the previous list visible prevents
+    // the right column from disappearing (which caused the player to expand/collapse).
+    // The hub re-fetch below will update the list correctly in the background.
     setItemDescription('');
 
     const loadContext = async () => {
@@ -355,9 +357,15 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           ...hub.shelves.flatMap((shelf) => shelf.items),
         ];
 
+        // Exclude the currently-playing video from "Próximos vídeos" — by id AND by
+        // video URL. The URL check is essential because the same video can be reached
+        // without a mediaItemId (e.g. opened from a collection's materials list) and
+        // because the same video may be referenced by more than one collection.
+        const currentUrl = (assetUrl ?? collection.video_url ?? '').trim();
         const unique = Array.from(new Map(allItems.map((item) => [item.id, item])).values());
         const filtered = unique
           .filter((item) => item.id !== mediaItemId)
+          .filter((item) => !currentUrl || (item.assetUrl ?? '').trim() !== currentUrl)
           .slice(0, 10);
 
         setRelatedItems(filtered);
@@ -377,7 +385,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     return () => {
       isActive = false;
     };
-  }, [collection.description, mediaItemId]);
+  }, [collection.description, mediaItemId, assetUrl, collection.video_url]);
 
   useEffect(() => {
     setShowMobileQueue(false);
@@ -1121,7 +1129,11 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                               autoFocus
                               type="button"
                               onClick={() => {
-                                if (videoRef.current) {
+                                if (isYouTubeSource) {
+                                  ytPostMessage('seekTo', [0, true]);
+                                  ytPostMessage('playVideo');
+                                  setPlayerState('playing');
+                                } else if (videoRef.current) {
                                   videoRef.current.currentTime = 0;
                                   videoRef.current.play().then(() => {
                                     setIsPlaying(true);
@@ -1551,7 +1563,11 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 autoFocus
                 type="button"
                 onClick={() => {
-                  if (videoRef.current) {
+                  if (isYouTubeSource) {
+                    ytPostMessage('seekTo', [0, true]);
+                    ytPostMessage('playVideo');
+                    setPlayerState('playing');
+                  } else if (videoRef.current) {
                     videoRef.current.currentTime = 0;
                     videoRef.current.play().then(() => {
                       setIsPlaying(true);

@@ -135,32 +135,29 @@ interface GridViewProps {
   onCollectionClick: (collection: Collection) => void;
   grants: UserContentGrant[];
   tone?: 'default' | 'central-coruja';
+  subtitleFallback?: string;
 }
 
-const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, grants, tone = 'default' }) => {
+const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, grants, tone = 'default', subtitleFallback }) => {
   const isCorujaTone = tone === 'central-coruja';
-  const usesCollectionLayout = !isCorujaTone
-    && collections.length > 0
-    && collections.every((collection) => getCollectionTypeMeta(collection).type === 'kit');
 
   return (
     <div
       className={`grid ${isCorujaTone
-        ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-          : usesCollectionLayout
-            ? 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
-          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'} ${layoutSpacing.cardGridGap}`}
-        style={{
-          contain: 'layout style',
-        }}
-      >
+        ? `grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 ${layoutSpacing.cardGridGap}`
+        : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3'}`}
+      style={{
+        contain: 'layout style',
+      }}
+    >
       {collections.map((collection) => (
-        <div key={collection.id} className="w-full max-w-[420px] sm:max-w-full mx-auto sm:mx-0">
+        <div key={collection.id}>
           <Card3D
             collection={collection}
             onCollectionClick={onCollectionClick}
             locked={!canAccessCollection(grants, collection.id)}
             tone={tone}
+            subtitleFallback={subtitleFallback}
           />
         </div>
       ))}
@@ -1832,11 +1829,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
           {/* GRID SKELETON */}
           <div className="mt-6">
-            <div className={`grid ${currentCollectionGroup === 'kits' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'} ${layoutSpacing.cardGridGap}`}>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
               {[...Array(12)].map((_, i) => (
                 <div key={i} className="w-full animate-pulse">
-                  <div className={`mb-3 overflow-hidden relative bg-gray-200 ${currentCollectionGroup === 'kits' ? 'rounded-[30px] aspect-[1.7/1]' : 'rounded-lg aspect-square'}`}></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="mb-2.5 overflow-hidden relative bg-gray-200 rounded-[10px] aspect-square"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-1.5"></div>
                   <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                 </div>
               ))}
@@ -2119,6 +2116,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       onCollectionClick={handleCollectionClick}
                       grants={contentGrants}
                       tone="default"
+                      subtitleFallback={currentCollectionGroup === 'books' ? `Livro digital do ${brandDisplayName}.` : undefined}
                     />
                   </div>
                 ) : (
@@ -2160,6 +2158,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       onCollectionClick={handleCollectionClick}
                       grants={contentGrants}
                       tone="default"
+                      subtitleFallback={currentCollectionGroup === 'books' ? `Livro digital do ${brandDisplayName}.` : undefined}
                     />
                   </div>
                 </div>
@@ -2302,6 +2301,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     onCollectionClick={handleCollectionClick}
                     grants={contentGrants}
                     tone="default"
+                    subtitleFallback={currentCollectionGroup === 'books' ? `Livro digital do ${brandDisplayName}.` : undefined}
                   />
                 </div>
               ) : (

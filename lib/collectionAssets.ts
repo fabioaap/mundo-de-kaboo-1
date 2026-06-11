@@ -226,6 +226,9 @@ const normalizeAsset = (
         ...(asset.is_published !== undefined && asset.is_published !== null
             ? { is_published: asset.is_published }
             : {}),
+        ...(asset.download_available !== undefined && asset.download_available !== null
+            ? { download_available: asset.download_available }
+            : {}),
     };
 };
 
@@ -247,9 +250,30 @@ const mergeAssetCandidate = (
             // Per-asset flags: prefer current (already-stored) value over candidate
             offline_available: current?.offline_available ?? candidate.offline_available,
             is_published: current?.is_published ?? candidate.is_published,
+            download_available: current?.download_available ?? candidate.download_available,
         },
         fallbackCategory ?? current?.category ?? candidate.category
     );
+};
+
+/**
+ * Whether an asset/material may be downloaded by the end user.
+ *
+ * HARD RULE: videos can NEVER be downloaded, regardless of any flag. For every other
+ * media type (PDF, slides, docs, images, audio…) download is allowed unless the admin
+ * explicitly turned it off via `download_available === false`.
+ *
+ * Use this single function everywhere a download control is rendered so the rule
+ * cannot drift between the storefront, the book view and the materials list.
+ */
+export const canDownloadCollectionAsset = (asset: {
+    media_type?: CollectionAssetMediaType | null;
+    download_available?: boolean | null;
+}): boolean => {
+    if (asset.media_type === 'video') {
+        return false;
+    }
+    return asset.download_available !== false;
 };
 
 const addAssetCandidate = (

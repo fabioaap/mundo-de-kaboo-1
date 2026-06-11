@@ -157,6 +157,12 @@ export interface CollectionAsset {
    * while the parent collection may remain published.
    */
   is_published?: boolean | null;
+  /**
+   * Whether this material can be downloaded by the end user. undefined/null = allowed
+   * (backward-compat). Controlled by an admin toggle. HARD RULE: videos can NEVER be
+   * downloaded regardless of this flag — see canDownloadCollectionAsset().
+   */
+  download_available?: boolean | null;
 }
 
 export interface Collection {

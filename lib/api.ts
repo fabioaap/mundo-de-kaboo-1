@@ -77,7 +77,7 @@ import {
   normalizeVoucherCode,
 } from './access';
 import { getActiveGrantsForUser, hasGrantForCollection } from './mockVoucherData';
-import { getCollectionDisplayCover, normalizeSingleKitBookIds } from './collectionPresentation';
+import { extractSourceCollectionId, getCollectionDisplayCover, normalizeSingleKitBookIds } from './collectionPresentation';
 
 // Cache management for collections
 const COLLECTIONS_CACHE_KEY = 'kaboo_collections_cache';
@@ -504,7 +504,49 @@ const getCollectionBackedThumbnail = (collection: Collection): string | undefine
   return getCollectionDisplayCover(collection) || undefined;
 };
 
-const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection, asset: CollectionAsset): LibraryMockItem => {
+// Derives a YouTube thumbnail from a video URL ('' when not a YouTube link).
+const getYoutubeThumbnailUrl = (url?: string | null): string => {
+  const value = url || '';
+  const id =
+    value.match(/youtu\.be\/([\w-]{6,})/i)?.[1] ??
+    value.match(/[?&]v=([\w-]{6,})/i)?.[1] ??
+    value.match(/youtube\.com\/embed\/([\w-]{6,})/i)?.[1] ??
+    '';
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
+};
+
+// Cover for a collection-backed media item. A media should show its OWN cover, not the
+// cover of whatever collection it happens to be linked into (e.g. an audio reused inside a
+// kit must not show the kit cover). Order: YouTube frame for videos → cover of the
+// collection that OWNS the file (id embedded in the storage URL) → the linking collection
+// cover. The structural fix (per-media cover) is tracked in the roadmap backlog.
+const getCollectionBackedAssetThumbnail = (
+  collection: Collection,
+  asset: CollectionAsset,
+  collectionsById?: Map<string, Collection>,
+): string | undefined => {
+  if (asset.media_type === 'video') {
+    const youtubeThumb = getYoutubeThumbnailUrl(asset.url);
+    if (youtubeThumb) {
+      return youtubeThumb;
+    }
+  }
+
+  const sourceId = extractSourceCollectionId(asset.url);
+  if (sourceId && collectionsById && sourceId !== collection.id) {
+    const source = collectionsById.get(sourceId);
+    if (source) {
+      const sourceCover = getCollectionBackedThumbnail(source);
+      if (sourceCover) {
+        return sourceCover;
+      }
+    }
+  }
+
+  return getCollectionBackedThumbnail(collection);
+};
+
+const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection, asset: CollectionAsset, collectionsById?: Map<string, Collection>): LibraryMockItem => {
   const variant = buildCollectionBackedVariant(hub, asset);
   const assetType = buildCollectionBackedAssetType(asset);
 
@@ -521,7 +563,7 @@ const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection,
       : undefined,
     relatedCollection: collection.title,
     collectionId: collection.id,
-    coverImage: getCollectionBackedThumbnail(collection),
+    coverImage: getCollectionBackedAssetThumbnail(collection, asset, collectionsById),
     progress: 0,
     chips: buildCollectionBackedChips(collection, asset),
     ctaLabel: assetType === 'video'
@@ -544,6 +586,7 @@ const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]
   // Videos and music hubs intentionally allow book collections (they carry animation/
   // storytelling assets that should appear in those hubs).
   const excludeBookCollections = hub === 'materials';
+  const collectionsById = new Map(collections.map((collection) => [collection.id, collection]));
 
   return collections
     .filter((collection) => !excludeBookCollections || collection.collection_type !== 'book')
@@ -565,7 +608,7 @@ const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]
 
       return left.asset.title.localeCompare(right.asset.title, 'pt-BR');
     })
-    .map(({ collection, asset }) => buildCollectionBackedLibraryItem(hub, collection, asset));
+    .map(({ collection, asset }) => buildCollectionBackedLibraryItem(hub, collection, asset, collectionsById));
 };
 
 const mapMockAssetToProvider = (item: LibraryMockItem): MediaProvider => {

@@ -18,7 +18,8 @@ import { CharacterAvatar } from '../components/CharacterAvatar';
 import { formatSegmentLabel, getCharacterBgColor, getCharacterColor, getCharacterImageUrl } from '../constants';
 import { lookupBncc } from '../lib/bnccLookup';
 import { lookupCasel } from '../lib/caselLookup';
-import { COLLECTION_ASSET_META, inferCollectionAssets } from '../lib/collectionAssets';
+import { COLLECTION_ASSET_META, canDownloadCollectionAsset, inferCollectionAssets } from '../lib/collectionAssets';
+import { isPlaceholderImageUrl } from '../lib/appPaths';
 import { layoutSpacing } from '../design-system/layout/spacing';
 import {
   getCollectionDisplayCover,
@@ -48,6 +49,7 @@ type StructuredLibraryItem = {
   description?: string | null;
   size?: string;
   previewType: PreviewFileType;
+  download_available?: boolean | null;
 };
 
 type PedagogicalTooltipState = {
@@ -121,6 +123,9 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
   const [loadingResources, setLoadingResources] = useState(false);
   const [linkedBooks, setLinkedBooks] = useState<Collection[]>([]);
   const [loadingLinkedBooks, setLoadingLinkedBooks] = useState(false);
+  // Maps a source collection id → its display cover, so each item card inside a kit
+  // can show the real cover of the material's source collection (matching the vitrine).
+  const [sourceCoverById, setSourceCoverById] = useState<Record<string, string>>({});
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: PreviewFileType } | null>(null);
   const [fileSizes, setFileSizes] = useState<Record<string, string>>({});
   const [activePedagogicalTooltip, setActivePedagogicalTooltip] = useState<PedagogicalTooltipState | null>(null);
@@ -204,6 +209,31 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
       isCancelled = true;
     };
   }, [collection.id, linkedBookIds.join('|'), shouldLoadLinkedBooks]);
+
+  // Build a source-collection cover map for kit item cards. A kit's primary assets
+  // come from other collections (the source id is embedded in the asset URL); we
+  // look up each source collection's real cover so the item thumbnails match the
+  // vitrine instead of all showing the parent kit's cover.
+  useEffect(() => {
+    if (!isKit) {
+      setSourceCoverById({});
+      return;
+    }
+    let cancelled = false;
+    api.getCollections()
+      .then((collections) => {
+        if (cancelled) return;
+        const map: Record<string, string> = {};
+        for (const item of collections) {
+          map[item.id] = getCollectionDisplayCover(item) || item.cover_image || '';
+        }
+        setSourceCoverById(map);
+      })
+      .catch(() => {
+        if (!cancelled) setSourceCoverById({});
+      });
+    return () => { cancelled = true; };
+  }, [collection.id, isKit]);
 
   const handleShowExtraTools = () => {
     setShowExtraTools(true);
@@ -336,6 +366,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
         description: asset.description ?? null,
         size: fileSizes[asset.id],
         previewType: getPreviewFileTypeFromUrl(asset.url, asset.media_type),
+        download_available: asset.download_available,
       });
     });
 
@@ -411,7 +442,14 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
 
   const handlePrimaryAssetAction = (asset: CollectionAsset) => {
     if (asset.category === 'reading') {
-      onNavigate('player_book', { collectionId: collection.id });
+      const bookParams: Record<string, unknown> = { collectionId: collection.id };
+      if (isKit && linkedBooks.length > 0) {
+        bookParams.bookTitle = linkedBooks[0].title;
+      } else if (parentCollection) {
+        bookParams.collectionTitle = parentCollection.title;
+        bookParams.bookTitle = collection.title;
+      }
+      onNavigate('player_book', bookParams);
       return;
     }
 
@@ -422,6 +460,9 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
         assetTitle: asset.title,
         lyricsUrl: asset.lyrics_url ?? undefined,
         assetOfflineAvailable: asset.offline_available ?? undefined,
+        // Per-media cover (the audio's own/source cover) so the player matches the
+        // collection item card instead of showing the launching collection's cover.
+        coverImage: getAssetCover(asset),
       });
       return;
     }
@@ -449,7 +490,14 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
       return;
     }
 
-    onNavigate('player_book', { collectionId: collection.id });
+    const bookParams: Record<string, unknown> = { collectionId: collection.id };
+    if (isKit && linkedBooks.length > 0) {
+      bookParams.bookTitle = linkedBooks[0].title;
+    } else if (parentCollection) {
+      bookParams.collectionTitle = parentCollection.title;
+      bookParams.bookTitle = collection.title;
+    }
+    onNavigate('player_book', bookParams);
   };
 
   const handleBackToMain = () => {
@@ -528,36 +576,127 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
 
   const hasQuickActions = isKit && (visiblePrimaryAssets.length > 0 || hasResources);
 
+  // Cover + name helpers for the "Itens dessa coleção" cards.
+  const collectionItemCover = getCollectionDisplayCover(collection) || collection.cover_image || '';
+
+  const getAssetTypeLabel = (asset: CollectionAsset) =>
+    asset.category === 'reading' && isKit ? 'Livro' : COLLECTION_ASSET_META[asset.category].label;
+
+  // Real item name (e.g. "Batatinha e o Espelho da Alegria"); falls back to the
+  // type label when the asset has no distinct title.
+  const getAssetItemName = (asset: CollectionAsset) => {
+    const title = (asset.title || '').trim();
+    const generic = COLLECTION_ASSET_META[asset.category].label;
+    return title && title !== generic ? title : getAssetTypeLabel(asset);
+  };
+
+  const getAssetIcon = (asset: CollectionAsset, size: number) =>
+    asset.category === 'reading' ? <Icons.BookOpen size={size} />
+      : asset.category === 'storytelling' ? <Icons.Headphones size={size} />
+        : <Icons.Video size={size} />;
+
+  // Extracts the source collection id from a storage asset URL, e.g.
+  // ".../object/public/collections/pdfs/<collectionId>/file.pdf".
+  const extractSourceCollectionId = (url?: string | null): string => {
+    const match = (url || '').match(/\/collections\/[^/]+\/([0-9a-fA-F-]{36})\//);
+    return match?.[1] ?? '';
+  };
+
+  // Derives a YouTube thumbnail from a video URL (empty string when not YouTube).
+  const getYoutubeThumb = (url?: string | null): string => {
+    const value = url || '';
+    const id =
+      value.match(/youtu\.be\/([\w-]{6,})/i)?.[1] ??
+      value.match(/[?&]v=([\w-]{6,})/i)?.[1] ??
+      value.match(/youtube\.com\/embed\/([\w-]{6,})/i)?.[1] ??
+      '';
+    return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
+  };
+
+  // Cover for an item card: a video shows its own thumbnail (YouTube frame); other
+  // materials use the real cover of their source collection (matches the vitrine),
+  // falling back to this collection's own cover.
+  const getAssetCover = (asset: CollectionAsset): string => {
+    if (asset.media_type === 'video') {
+      const thumb = getYoutubeThumb(asset.url);
+      if (thumb) return thumb;
+    }
+    const sourceId = extractSourceCollectionId(asset.url);
+    const sourceCover = sourceId ? sourceCoverById[sourceId] : '';
+    return sourceCover || collectionItemCover;
+  };
+
+  // Representative cover for the aggregated "Materiais da Coleção" card: prefer a
+  // video thumbnail (YouTube), then a source-collection cover; '' → icon fallback.
+  const materialsCover = (() => {
+    for (const asset of libraryAssets) {
+      const thumb = getYoutubeThumb(asset.url);
+      if (thumb) return thumb;
+    }
+    for (const asset of libraryAssets) {
+      const sourceId = extractSourceCollectionId(asset.url);
+      const cover = sourceId ? sourceCoverById[sourceId] : '';
+      if (cover && !isPlaceholderImageUrl(cover)) return cover;
+    }
+    return '';
+  })();
+
+  // Small cover thumbnail with a type-icon badge (or an icon tile when there's no cover).
+  const renderItemThumb = (cover: string, icon: React.ReactNode, iconBadge: React.ReactNode) => {
+    const hasCover = Boolean(cover) && !isPlaceholderImageUrl(cover);
+    return hasCover ? (
+      <span className="relative h-16 w-16 flex-shrink-0">
+        <img
+          src={cover}
+          alt=""
+          aria-hidden="true"
+          className="h-16 w-16 rounded-xl border border-gray-200 bg-gray-100 object-cover"
+        />
+        <span className="absolute -bottom-1 -right-1 inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-primary text-white shadow ring-2 ring-white">
+          {iconBadge}
+        </span>
+      </span>
+    ) : (
+      <span className="inline-flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
+        {icon}
+      </span>
+    );
+  };
+
   const desktopQuickActions = (
     <>
-      {visiblePrimaryAssets.map((asset) => {
-        const label = asset.category === 'reading' && isKit ? 'Livro' : COLLECTION_ASSET_META[asset.category].label;
-        const isReading = asset.category === 'reading';
-        const isAudio = asset.category === 'storytelling';
-
-        return (
-          <button
-            key={asset.id}
-            onClick={() => handlePrimaryAssetAction(asset)}
-            className="flex min-h-[104px] flex-col items-start justify-between gap-3 rounded-2xl border border-gray-100 bg-white/90 px-4 py-4 text-left text-gray-800 shadow-sm transition-all duration-200 hover:border-brand-primary/20 hover:bg-brand-primary/[0.04] active:scale-[0.98]"
-          >
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
-              {isReading ? <Icons.BookOpen size={22} /> : isAudio ? <Icons.Headphones size={22} /> : <Icons.Video size={22} />}
+      {visiblePrimaryAssets.map((asset) => (
+        <button
+          key={asset.id}
+          onClick={() => handlePrimaryAssetAction(asset)}
+          className="flex min-h-[120px] flex-col items-start gap-3 rounded-2xl border border-gray-100 bg-white/90 px-4 py-4 text-left text-gray-800 shadow-sm transition-all duration-200 hover:border-brand-primary/20 hover:bg-brand-primary/[0.04] active:scale-[0.98]"
+        >
+          {renderItemThumb(getAssetCover(asset), getAssetIcon(asset, 24), getAssetIcon(asset, 14))}
+          <span className="min-w-0">
+            <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-brand-primary/60">
+              {getAssetTypeLabel(asset)}
             </span>
-            <span className="text-sm font-bold leading-tight">{label}</span>
-          </button>
-        );
-      })}
+            <span className="mt-0.5 block text-sm font-bold leading-tight text-gray-800 line-clamp-2">
+              {getAssetItemName(asset)}
+            </span>
+          </span>
+        </button>
+      ))}
 
       {hasResources && (
         <button
           onClick={handleShowExtraTools}
-          className="flex min-h-[104px] flex-col items-start justify-between gap-3 rounded-2xl border border-gray-100 bg-white/90 px-4 py-4 text-left text-gray-800 shadow-sm transition-all duration-200 hover:border-brand-primary/20 hover:bg-brand-primary/[0.04] active:scale-[0.98]"
+          className="flex min-h-[120px] flex-col items-start gap-3 rounded-2xl border border-gray-100 bg-white/90 px-4 py-4 text-left text-gray-800 shadow-sm transition-all duration-200 hover:border-brand-primary/20 hover:bg-brand-primary/[0.04] active:scale-[0.98]"
         >
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
-            <Icons.Paperclip size={22} />
+          {renderItemThumb(materialsCover, <Icons.Paperclip size={24} />, <Icons.Paperclip size={14} />)}
+          <span className="min-w-0">
+            <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-brand-primary/60">
+              Materiais
+            </span>
+            <span className="mt-0.5 block text-sm font-bold leading-tight text-gray-800 line-clamp-2">
+              {presentationCopy.materialsTitle}
+            </span>
           </span>
-          <span className="text-sm font-bold leading-tight">{presentationCopy.materialsTitle}</span>
         </button>
       )}
     </>
@@ -640,20 +779,35 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                       <div className="flex items-center gap-2 md:ml-auto md:flex-shrink-0 w-full md:w-auto">
                         <button
                           onClick={() => {
+                            // Video must not open a modal-over-modal: redirect to the
+                            // dedicated player instead of the in-page preview.
+                            if (item.media_type === 'video') {
+                              onNavigate('player_video', {
+                                collectionId: collection.id,
+                                assetUrl: item.url,
+                                assetTitle: item.title,
+                              });
+                              return;
+                            }
                             setPreviewFile({ url: item.url, name: item.title, type: item.previewType });
                           }}
+                          aria-label={item.media_type === 'video' ? 'Assistir vídeo' : 'Visualizar material'}
                           className="flex-1 md:flex-none flex items-center justify-center py-2 md:py-0 md:w-10 md:h-10 rounded-full border-2 border-brand-primary/20 text-brand-primary hover:bg-brand-primary hover:text-white transition-all text-sm font-bold"
                         >
-                          <Icons.Eye size={20} />
+                          {item.media_type === 'video' ? <Icons.Play size={20} /> : <Icons.Eye size={20} />}
                         </button>
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 md:flex-none flex items-center justify-center py-2 md:py-0 md:w-10 md:h-10 rounded-full border-2 border-brand-primary/20 text-brand-primary hover:bg-brand-primary hover:text-white transition-all text-sm font-bold"
-                        >
-                          <Icons.Download size={20} />
-                        </a>
+                        {/* Download only for non-video materials the admin marked as downloadable. */}
+                        {canDownloadCollectionAsset(item) && (
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Baixar material"
+                            className="flex-1 md:flex-none flex items-center justify-center py-2 md:py-0 md:w-10 md:h-10 rounded-full border-2 border-brand-primary/20 text-brand-primary hover:bg-brand-primary hover:text-white transition-all text-sm font-bold"
+                          >
+                            <Icons.Download size={20} />
+                          </a>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -860,19 +1014,17 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
               {hasQuickActions && (
                 <div className="flex flex-wrap gap-4 mb-10 md:hidden">
                   {visiblePrimaryAssets.map((asset) => {
-                    const label = asset.category === 'reading' && isKit ? 'Livro' : COLLECTION_ASSET_META[asset.category].label;
-                    const isReading = asset.category === 'reading';
-                    const isAudio = asset.category === 'storytelling';
+                    const itemName = getAssetItemName(asset);
 
                     return (
                       <button
                         key={asset.id}
                         onClick={() => handlePrimaryAssetAction(asset)}
-                        className="flex h-20 min-w-[calc(50%-0.5rem)] flex-1 flex-col items-center justify-center gap-2 rounded-2xl bg-gray-100 text-gray-800 transition-all duration-200 hover:bg-gray-200 active:scale-95"
+                        className="flex min-h-[88px] min-w-[calc(50%-0.5rem)] flex-1 flex-col items-center justify-center gap-2 rounded-2xl bg-gray-100 px-3 py-3 text-gray-800 transition-all duration-200 hover:bg-gray-200 active:scale-95"
                       >
-                        {isReading ? <Icons.BookOpen size={24} /> : isAudio ? <Icons.Headphones size={24} /> : <Icons.Video size={24} />}
-                        <span className={`leading-tight text-center font-bold ${label.length > 14 ? 'text-[10px]' : 'text-xs'}`}>
-                          {label}
+                        {renderItemThumb(getAssetCover(asset), getAssetIcon(asset, 24), getAssetIcon(asset, 14))}
+                        <span className={`line-clamp-2 text-center font-bold leading-tight ${itemName.length > 14 ? 'text-[10px]' : 'text-xs'}`}>
+                          {itemName}
                         </span>
                       </button>
                     );
@@ -881,10 +1033,10 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                   {hasResources && (
                     <button
                       onClick={handleShowExtraTools}
-                      className="flex h-20 min-w-[calc(50%-0.5rem)] flex-1 flex-col items-center justify-center gap-2 rounded-2xl bg-gray-100 text-gray-800 transition-all duration-200 hover:bg-gray-200 active:scale-95"
+                      className="flex min-h-[88px] min-w-[calc(50%-0.5rem)] flex-1 flex-col items-center justify-center gap-2 rounded-2xl bg-gray-100 px-3 py-3 text-gray-800 transition-all duration-200 hover:bg-gray-200 active:scale-95"
                     >
-                      <Icons.Paperclip size={24} />
-                      <span className="text-xs font-bold leading-tight text-center">{presentationCopy.materialsTitle}</span>
+                      {renderItemThumb(materialsCover, <Icons.Paperclip size={24} />, <Icons.Paperclip size={14} />)}
+                      <span className="line-clamp-2 text-center text-xs font-bold leading-tight">{presentationCopy.materialsTitle}</span>
                     </button>
                   )}
 

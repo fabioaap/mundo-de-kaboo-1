@@ -15,5 +15,8 @@ Esta seção reúne os documentos de roadmap, backlog e PRDs relacionados ao pro
 - [Plano de Validação QA — v1.2](./qa-validation-plan-v1.2)
 
 - [Backlog — Gaps dos Testes de Usabilidade MVP (2026-06-06)](./backlog-gaps-testes-usabilidade-2026-06-06)
+- [Changelog & Backlog — Sessão de Ajustes Kaboo (2026-06-08)](./changelog-ajustes-kaboo-2026-06-08)
+- [Backlog — Organização do Projeto e Desempenho (Build/Deploy/Repo)](./backlog-organizacao-projeto-desempenho)
+- [Backlog — Capa por Mídia (desacoplar capa de mídia × coleção)](./backlog-capa-por-midia)
 
 Use estes documentos como fonte única para o planejamento e acompanhamento das entregas. Atualize os arquivos originais quando houver mudanças de escopo ou progresso nas sprints.

@@ -355,6 +355,23 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
             />
           </div>
 
+          {/* Status de publicação */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-200">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Status de publicação</p>
+              <p className="text-xs text-gray-500">
+                {formData.is_published ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, is_published: !prev.is_published }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.is_published ? 'bg-green-500' : 'bg-gray-300'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${formData.is_published ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+
           {/* Description */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">Descrição</label>

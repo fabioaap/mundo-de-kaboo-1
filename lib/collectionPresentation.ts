@@ -147,16 +147,72 @@ export const getCollectionDisplayCover = (collection?: Partial<Collection> | nul
   const primaryCoverImage = normalizeImageUrl(collection.cover_image);
   const kitCoverImage = normalizeImageUrl(collection.kit_cover_image);
 
-  if (collectionType === 'kit' && kitCoverImage && !isPlaceholderImageUrl(kitCoverImage)) {
-    return kitCoverImage;
-  }
-
+  // Prefer the real uploaded cover_image. The generic "-kit.svg" badge stored in
+  // kit_cover_image (seed/hydration default) is only a fallback for kits that have
+  // no real cover — otherwise the public vitrine would show the placeholder badge
+  // while the admin catalog (which forces kit_cover_image=null) shows the real art.
   if (primaryCoverImage && !isPlaceholderImageUrl(primaryCoverImage)) {
     return primaryCoverImage;
   }
 
   if (collectionType === 'kit' && kitCoverImage) {
     return kitCoverImage;
+  }
+
+  return '';
+};
+
+// Derives a YouTube thumbnail from a video URL (empty string when not YouTube).
+export const getYoutubeThumbnail = (url?: string | null): string => {
+  const value = url || '';
+  const id =
+    value.match(/youtu\.be\/([\w-]{6,})/i)?.[1] ??
+    value.match(/[?&]v=([\w-]{6,})/i)?.[1] ??
+    value.match(/youtube\.com\/embed\/([\w-]{6,})/i)?.[1] ??
+    '';
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
+};
+
+// Extracts the source collection id from a storage asset URL, e.g.
+// ".../object/public/collections/pdfs/<collectionId>/file.pdf".
+export const extractSourceCollectionId = (url?: string | null): string => {
+  const match = (url || '').match(/\/collections\/[^/]+\/([0-9a-fA-F-]{36})\//);
+  return match?.[1] ?? '';
+};
+
+// Resolves the cover to show for a media asset in admin library lists.
+// PALLIATIVE (display only): a media has no cover of its own — covers live on
+// collections — so when the same file is linked into a kit the list would show
+// the kit's cover. Prefer, in order: the YouTube thumbnail (videos), then the
+// cover of the collection that OWNS the file (id embedded in the storage URL),
+// then the owner-collection cover. Returns '' so callers can apply their own
+// category/placeholder fallback. The underlying structural fix (per-media cover)
+// is tracked in the roadmap backlog.
+export const getLibraryAssetCoverImage = (
+  asset: { url?: string | null; media_type?: string | null },
+  ownerCollection?: Partial<Collection> | null,
+  collectionsById?: Map<string, Collection>,
+): string => {
+  if (asset?.media_type === 'video') {
+    const thumb = getYoutubeThumbnail(asset.url);
+    if (thumb) {
+      return thumb;
+    }
+  }
+
+  const sourceId = extractSourceCollectionId(asset?.url);
+  if (sourceId && collectionsById) {
+    const source = collectionsById.get(sourceId);
+    if (source) {
+      const sourceCover = getCollectionDisplayCover(source) || normalizeImageUrl(source.cover_image);
+      if (sourceCover) {
+        return sourceCover;
+      }
+    }
+  }
+
+  if (ownerCollection) {
+    return getCollectionDisplayCover(ownerCollection) || normalizeImageUrl(ownerCollection.cover_image);
   }
 
   return '';

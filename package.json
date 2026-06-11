@@ -16,6 +16,7 @@
     "test:jtbd:central-coruja-videos": "node scripts/run-central-coruja-video-jtbd.mjs",
     "test:jtbd:central-coruja-audios": "node scripts/run-central-coruja-audio-jtbd.mjs",
     "update-docs": "node scripts/update-docs.mjs",
+    "cleanup:dedupe-assets": "node scripts/dedupe-collection-assets.mjs",
     "sprint:chart": "node scripts/update-sprint-chart.mjs",
     "storybook": "storybook dev -p 6007",
     "build-storybook": "storybook build"

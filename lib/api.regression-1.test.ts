@@ -71,7 +71,7 @@ describe('api mock collections cache invalidation', () => {
     expect(created?.title).toBe('Regression BUG-005 Create');
     expect(sessionStorage.getItem('kaboo_collections_cache')).toBeNull();
 
-    const refreshedCollections = await api.getCollections();
+    const refreshedCollections = await api.getCollections(false, true);
     expect(refreshedCollections.some((collection) => collection.id === created?.id)).toBe(true);
   });
 

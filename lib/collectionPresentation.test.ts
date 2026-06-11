@@ -5,6 +5,9 @@ import {
   getCollectionFormatKinds,
   getCollectionTypeMeta,
   getKitLinkedBookCount,
+  getLibraryAssetCoverImage,
+  getYoutubeThumbnail,
+  extractSourceCollectionId,
   isStandaloneReadableBook,
   getVisiblePrimaryCollectionAssets,
   normalizeSingleKitBookIds,
@@ -112,12 +115,12 @@ describe('isStandaloneReadableBook', () => {
 });
 
 describe('getCollectionDisplayCover', () => {
-  it('prefers kit_cover_image over cover_image when both are present', () => {
+  it('prefers cover_image over kit_cover_image when both are present', () => {
     expect(getCollectionDisplayCover({
       collection_type: 'kit',
       cover_image: 'https://cdn.example.com/cover.jpg',
       kit_cover_image: 'https://cdn.example.com/kit-cover.jpg',
-    } as any)).toBe('https://cdn.example.com/kit-cover.jpg');
+    } as any)).toBe('https://cdn.example.com/cover.jpg');
   });
 
   it('falls back to kit_cover_image for kits without a primary cover', () => {
@@ -134,6 +137,85 @@ describe('getCollectionDisplayCover', () => {
       cover_image: '/assets/images/image-placeholder.png',
       kit_cover_image: 'https://cdn.example.com/kit-cover.jpg',
     } as any)).toBe('https://cdn.example.com/kit-cover.jpg');
+  });
+});
+
+describe('getYoutubeThumbnail', () => {
+  it('derives the thumbnail from a youtu.be short link', () => {
+    expect(getYoutubeThumbnail('https://youtu.be/bl4FwD0IGQc'))
+      .toBe('https://img.youtube.com/vi/bl4FwD0IGQc/hqdefault.jpg');
+  });
+
+  it('derives the thumbnail from a watch?v= link', () => {
+    expect(getYoutubeThumbnail('https://www.youtube.com/watch?v=bl4FwD0IGQc&t=10'))
+      .toBe('https://img.youtube.com/vi/bl4FwD0IGQc/hqdefault.jpg');
+  });
+
+  it('returns empty string for non-youtube and empty urls', () => {
+    expect(getYoutubeThumbnail('https://cdn.example.com/video.mp4')).toBe('');
+    expect(getYoutubeThumbnail('')).toBe('');
+    expect(getYoutubeThumbnail(null)).toBe('');
+  });
+});
+
+describe('extractSourceCollectionId', () => {
+  it('extracts the owner collection id from a storage asset url', () => {
+    expect(extractSourceCollectionId(
+      'https://x.supabase.co/storage/v1/object/public/collections/audio/11b18c7e-4e13-40c3-bb72-965a0713e2d2/sons.wav',
+    )).toBe('11b18c7e-4e13-40c3-bb72-965a0713e2d2');
+  });
+
+  it('returns empty string for temp paths and youtube urls', () => {
+    expect(extractSourceCollectionId(
+      'https://x.supabase.co/storage/v1/object/public/collections/audio/temp/sons.wav',
+    )).toBe('');
+    expect(extractSourceCollectionId('https://youtu.be/bl4FwD0IGQc')).toBe('');
+  });
+});
+
+describe('getLibraryAssetCoverImage', () => {
+  const KIT = {
+    id: 'kit-asas',
+    collection_type: 'kit',
+    cover_image: 'https://cdn.example.com/kit-asas.png',
+  } as any;
+
+  const SOURCE_BOOK = {
+    id: '11b18c7e-4e13-40c3-bb72-965a0713e2d2',
+    collection_type: 'book',
+    cover_image: 'https://cdn.example.com/blado-own.png',
+  } as any;
+
+  it('prefers the YouTube thumbnail for a youtube video linked in a kit (not the kit cover)', () => {
+    const asset = { url: 'https://youtu.be/bl4FwD0IGQc', media_type: 'video' };
+    expect(getLibraryAssetCoverImage(asset, KIT)).toBe(
+      'https://img.youtube.com/vi/bl4FwD0IGQc/hqdefault.jpg',
+    );
+  });
+
+  it('uses the source collection cover for an audio reused in a kit (not the kit cover)', () => {
+    const byId = new Map([[SOURCE_BOOK.id, SOURCE_BOOK]]);
+    const asset = {
+      url: 'https://x.supabase.co/storage/v1/object/public/collections/audio/11b18c7e-4e13-40c3-bb72-965a0713e2d2/sons.wav',
+      media_type: 'audio',
+    };
+    expect(getLibraryAssetCoverImage(asset, KIT, byId)).toBe('https://cdn.example.com/blado-own.png');
+  });
+
+  it('falls back to the owner collection cover when the source cannot be resolved', () => {
+    const asset = {
+      url: 'https://x.supabase.co/storage/v1/object/public/collections/audio/temp/sons.wav',
+      media_type: 'audio',
+    };
+    expect(getLibraryAssetCoverImage(asset, KIT)).toBe('https://cdn.example.com/kit-asas.png');
+  });
+
+  it('returns empty string when nothing resolves (lets caller apply its own placeholder)', () => {
+    const asset = {
+      url: 'https://x.supabase.co/storage/v1/object/public/collections/audio/temp/sons.wav',
+      media_type: 'audio',
+    };
+    expect(getLibraryAssetCoverImage(asset, null)).toBe('');
   });
 });
 

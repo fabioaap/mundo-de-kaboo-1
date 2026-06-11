@@ -1230,6 +1230,7 @@ const App: React.FC = () => {
             assetTitle={currentParams?.assetTitle}
             lyricsUrl={currentParams?.lyricsUrl}
             assetOfflineAvailable={currentParams?.assetOfflineAvailable}
+            coverImage={currentParams?.coverImage as string | undefined}
             onNavigate={navigate}
             onBack={goBack}
           />
@@ -1283,7 +1284,12 @@ const App: React.FC = () => {
               <div className="relative z-10 w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
             </div>
           }>
-            <BookReaderScreen collection={currentCollection} onBack={goBack} />
+            <BookReaderScreen
+              collection={currentCollection}
+              onBack={goBack}
+              collectionTitle={currentParams?.collectionTitle as string | undefined}
+              bookTitle={currentParams?.bookTitle as string | undefined}
+            />
           </React.Suspense>
         );
 

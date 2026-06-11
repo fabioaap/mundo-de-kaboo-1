@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Icons } from '../components/Icons';
 import { placeholderImageUrl } from '../lib/appPaths';
-import { getCollectionDisplayCover } from '../lib/collectionPresentation';
+import { getCollectionDisplayCover, getLibraryAssetCoverImage } from '../lib/collectionPresentation';
 import { Collection, MediaItemCard, ScreenName } from '../types';
 import { useThemeBackground } from '../hooks/useThemeBackground';
 import { GalaxyBackground } from '../components/GalaxyBackground';
@@ -27,6 +27,10 @@ interface AudioPlayerScreenProps {
   assetTitle?: string;
   lyricsUrl?: string;
   assetOfflineAvailable?: boolean | null;
+  // Per-media cover passed by the caller (e.g. DetailsScreen.getAssetCover): the cover of
+  // the media being played, NOT of the collection it was opened from. Prevents an audio
+  // reused inside a kit from showing the kit's cover. Falls back to the collection cover.
+  coverImage?: string;
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
 }
@@ -38,6 +42,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   assetTitle,
   lyricsUrl,
   assetOfflineAvailable,
+  coverImage,
   onNavigate,
   onBack,
 }) => {
@@ -50,6 +55,12 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartTime, setDragStartTime] = useState(0);
   const [dragStartRotation, setDragStartRotation] = useState(0);
+
+  // All collections (cached by the api layer) so the player can resolve the cover of the
+  // media being played from its asset URL — independent of which collection it was opened
+  // from. This makes every entry point (DetailsScreen, vitrine, next-track, reload) show the
+  // media's own/source cover instead of the launching collection's cover.
+  const [collectionsById, setCollectionsById] = useState<Map<string, Collection> | null>(null);
 
   const [playError, setPlayError] = useState<string | null>(null);
   const [resolvedPlaybackUrl, setResolvedPlaybackUrl] = useState<string | null>(null);
@@ -84,6 +95,15 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const resolvedAudioUrl = resolvedPlaybackUrl ?? assetUrl ?? collection.audio_url;
   const resolvedTitle = resolvedPlaybackTitle ?? assetTitle ?? collection.title;
   const progressPercent = duration ? (currentTime / duration) * 100 : 0;
+
+  // Cover of the media actually playing, resolved from its URL (source-collection cover),
+  // independent of which collection the player was opened from. Falls back to the caller's
+  // hint, then the launching collection cover, then the placeholder. While the collections
+  // list is loading, the hint/collection cover avoids a flash.
+  const resolvedAlbumCover = collectionsById
+    ? getLibraryAssetCoverImage({ url: resolvedAudioUrl, media_type: 'audio' }, collection, collectionsById)
+    : '';
+  const albumCoverImage = resolvedAlbumCover || coverImage || getCollectionDisplayCover(collection) || placeholderImageUrl;
   const {
     isAvailable: canDownloadOffline,
     isDownloaded: isOfflineDownloaded,
@@ -205,6 +225,22 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       isActive = false;
     };
   }, [mediaItemId]);
+
+  // Load all collections once (api layer caches this) so the album cover can be resolved
+  // from the playing media's source collection — see albumCoverImage above.
+  useEffect(() => {
+    let active = true;
+    api.getCollections()
+      .then((cols) => {
+        if (active) setCollectionsById(new Map(cols.map((item) => [item.id, item])));
+      })
+      .catch(() => {
+        if (active) setCollectionsById(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -625,15 +661,18 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       <div className={`relative z-20 flex flex-shrink-0 items-center justify-between gap-3 ${isMobile ? 'px-4 py-4' : 'p-4'}`}>
         <button
           onClick={handleBack}
-          className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30"
+          className="w-12 h-12 shrink-0 rounded-full bg-black/20 backdrop-blur-md shadow-xl text-white flex items-center justify-center hover:bg-black/30 transition-all active:scale-95 border border-white/30"
           aria-label="Voltar"
         >
           <Icons.ChevronLeft size={24} strokeWidth={2.5} />
         </button>
 
-        <div className="min-w-0 flex-1 text-center">
-          <div className={`inline-flex max-w-full items-center justify-center border border-white/10 bg-black/20 shadow-lg backdrop-blur-md ${isMobile ? 'rounded-[24px] px-4 py-2' : 'rounded-full px-6 py-2'}`}>
-            <h1 className={`${isMobile ? 'line-clamp-2 text-sm' : 'text-sm md:text-base'} font-bold text-white drop-shadow-sm`}>
+        {/* Title pill — absolutely centered on the full header width so it stays
+            perfectly aligned with the album art and controls below, regardless
+            of the width difference between the back button and the right-side buttons. */}
+        <div className="absolute inset-x-0 flex justify-center pointer-events-none px-16">
+          <div className={`pointer-events-auto min-w-0 max-w-[70%] flex items-center justify-center border border-white/10 bg-black/20 shadow-lg backdrop-blur-md ${isMobile ? 'rounded-[24px] px-4 py-2' : 'rounded-full px-6 py-2'}`}>
+            <h1 className={`${isMobile ? 'line-clamp-2 text-sm' : 'text-sm md:text-base'} font-bold text-white drop-shadow-sm break-words text-center`}>
               {resolvedTitle}
             </h1>
           </div>
@@ -677,18 +716,6 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                 </span>
               </button>
             )}
-
-            <button
-              onClick={toggleSuggestionsPanel}
-              aria-label={showSidebar ? 'Ocultar sugestões' : 'Ver sugestões'}
-              className={`h-10 inline-flex items-center gap-1.5 rounded-full border px-3 text-[11px] font-bold text-white/90 transition-colors backdrop-blur-md ${showSidebar
-                ? 'border-white/40 bg-white/20'
-                : 'border-white/25 bg-black/30 hover:bg-black/45'
-                }`}
-            >
-              {showSidebar ? 'Ocultar' : 'Sugestões'}
-              <Icons.ChevronRight size={13} className={`transition-transform ${showSidebar ? 'rotate-180' : ''}`} />
-            </button>
 
             {lyricsUrl && (
               <button
@@ -818,11 +845,12 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                 <div className="absolute inset-8 rounded-full border border-white/10" />
               </div>
 
-              {/* Album Cover */}
+              {/* Album Cover — the cover of the media actually playing (resolved from its
+                  URL), not the collection it was opened from. See albumCoverImage. */}
               <div className="absolute inset-4 rounded-full overflow-hidden shadow-inner">
                 <img
-                  src={getCollectionDisplayCover(collection) || placeholderImageUrl}
-                  alt={collection.title}
+                  src={albumCoverImage}
+                  alt={resolvedTitle}
                   className="w-full h-full object-cover"
                 />
               </div>
