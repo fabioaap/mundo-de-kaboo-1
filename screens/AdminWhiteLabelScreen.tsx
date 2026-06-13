@@ -10,6 +10,15 @@ import { invalidateBrandBootstrapCache } from '../hooks/useBrandConfig';
 import { getWhiteLabelPreviewSettings, setActiveWhiteLabelBrand } from '../lib/whiteLabelPreview';
 import { isAdmin } from '../lib/auth';
 import {
+    AI_PROVIDERS,
+    defaultModelFor,
+    getWhiteLabelAIConfig,
+    setWhiteLabelAIConfig,
+    testWhiteLabelAIConnection,
+    type AIProviderId,
+    type WhiteLabelAIConfig,
+} from '../lib/aiIntegrationApi';
+import {
     getWhiteLabelAlertingConfig,
     getWhiteLabelBrandIdentity,
     canUseRemoteWhiteLabel,
@@ -122,7 +131,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const [alertingConfig, setAlertingConfig] = useState<WhiteLabelAlertingConfig>(DEFAULT_ALERTING_CONFIG);
     const [brandIdentity, setBrandIdentity] = useState<WhiteLabelBrandIdentity>(DEFAULT_BRAND_IDENTITY);
     const [brandIdentityBaseline, setBrandIdentityBaseline] = useState(() => serializeBrandIdentity(DEFAULT_BRAND_IDENTITY));
-    const [activeTab, setActiveTab] = useState<'identidade' | 'operacoes' | 'auditoria'>('identidade');
+    const [activeTab, setActiveTab] = useState<'identidade' | 'operacoes' | 'auditoria' | 'ia'>('identidade');
     const [alertDispatchHistory, setAlertDispatchHistory] = useState<WhiteLabelAlertDispatchEntry[]>([]);
     const [operationalTimeline, setOperationalTimeline] = useState<WhiteLabelOperationalEvent[]>([]);
     const [healthCheck, setHealthCheck] = useState<WhiteLabelHealthCheck | null>(null);
@@ -135,9 +144,45 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isAdminUser, setIsAdminUser] = useState(false);
 
+    // --- Integração de IA (aba "IA") ---
+    const [aiConfig, setAiConfig] = useState<WhiteLabelAIConfig | null>(null);
+    const [aiProvider, setAiProvider] = useState<AIProviderId>('anthropic');
+    const [aiModel, setAiModel] = useState<string>(defaultModelFor('anthropic'));
+    const [aiEnabled, setAiEnabled] = useState(false);
+    const [aiKeyInput, setAiKeyInput] = useState('');
+    const [aiReason, setAiReason] = useState('');
+    const [aiSaving, setAiSaving] = useState(false);
+    const [aiTesting, setAiTesting] = useState(false);
+    const [aiTestResult, setAiTestResult] = useState<{ ok: boolean; error?: string } | null>(null);
+
     useEffect(() => {
         isAdmin().then(setIsAdminUser);
     }, []);
+
+    // Carrega a config de IA (mascarada) quando troca a marca.
+    useEffect(() => {
+        if (!selectedBrandId) {
+            setAiConfig(null);
+            return;
+        }
+        let cancelled = false;
+        getWhiteLabelAIConfig(selectedBrandId)
+            .then((cfg) => {
+                if (cancelled) return;
+                setAiConfig(cfg);
+                setAiProvider(cfg.provider);
+                setAiModel(cfg.model);
+                setAiEnabled(cfg.enabled);
+                setAiKeyInput('');
+                setAiTestResult(null);
+            })
+            .catch(() => {
+                if (!cancelled) setAiConfig(null);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedBrandId]);
 
     const { toast, showToast, hideToast } = useToast();
     const remoteEnabled = canUseRemoteWhiteLabel();
@@ -146,6 +191,63 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         () => brands.find((brand) => brand.id === selectedBrandId) ?? null,
         [brands, selectedBrandId],
     );
+
+    const handleSaveAIConfig = useCallback(async () => {
+        if (!selectedBrandId || aiSaving) return;
+        // Exige a chave ao ativar pela primeira vez (sem chave ainda configurada).
+        if (aiEnabled && !aiConfig?.key_configured && !aiKeyInput.trim()) {
+            showToast('Informe a chave de API para ativar a IA.', 'error');
+            return;
+        }
+        setAiSaving(true);
+        try {
+            const next = await setWhiteLabelAIConfig({
+                brandId: selectedBrandId,
+                provider: aiProvider,
+                model: aiModel.trim() || defaultModelFor(aiProvider),
+                enabled: aiEnabled,
+                apiKey: aiKeyInput.trim() || undefined,
+                reason: aiReason.trim() || undefined,
+            });
+            setAiConfig(next);
+            setAiModel(next.model);
+            setAiKeyInput('');
+            setAiReason('');
+            setAiTestResult(null);
+            showToast('Configuração de IA salva com segurança.', 'success');
+        } catch (e) {
+            showToast(e instanceof Error ? e.message : 'Falha ao salvar a configuração de IA.', 'error');
+        } finally {
+            setAiSaving(false);
+        }
+    }, [selectedBrandId, aiSaving, aiEnabled, aiConfig, aiKeyInput, aiProvider, aiModel, aiReason, showToast]);
+
+    const handleTestAIConnection = useCallback(async () => {
+        if (!selectedBrandId || aiTesting) return;
+        if (!aiConfig?.key_configured && !aiKeyInput.trim()) {
+            showToast('Informe a chave para testar a conexão.', 'error');
+            return;
+        }
+        setAiTesting(true);
+        setAiTestResult(null);
+        try {
+            const result = await testWhiteLabelAIConnection({
+                brandId: selectedBrandId,
+                provider: aiProvider,
+                model: aiModel.trim() || defaultModelFor(aiProvider),
+                apiKey: aiKeyInput.trim() || undefined,
+            });
+            setAiTestResult(result);
+            showToast(result.ok ? 'Conexão com o provedor OK!' : `Falha no teste: ${result.error ?? 'erro'}`, result.ok ? 'success' : 'error');
+        } catch (e) {
+            const error = e instanceof Error ? e.message : 'erro';
+            setAiTestResult({ ok: false, error });
+            showToast(`Falha no teste: ${error}`, 'error');
+        } finally {
+            setAiTesting(false);
+        }
+    }, [selectedBrandId, aiTesting, aiConfig, aiKeyInput, aiProvider, aiModel, showToast]);
+
     const activeFeatureCount = useMemo(
         () => Number(menuMusicEnabled) + Number(heroParallaxEnabled) + Number(contentOfflineEnabled),
         [contentOfflineEnabled, heroParallaxEnabled, menuMusicEnabled],
@@ -966,6 +1068,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                             {([
                                 { key: 'identidade' as const, label: 'Identidade Visual', icon: <Icons.Palette size={16} /> },
                                 { key: 'operacoes' as const, label: 'Operações', icon: <Icons.Settings size={16} /> },
+                                { key: 'ia' as const, label: 'Integrações de IA', icon: <Icons.Link size={16} /> },
                                 { key: 'auditoria' as const, label: 'Auditoria', icon: <Icons.History size={16} /> },
                             ]).map((tab) => (
                                 <button
@@ -1655,6 +1758,165 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {/* ═══ Tab: Integrações de IA ═══ */}
+                        {activeTab === 'ia' && (
+                            <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
+                                <div className="space-y-5">
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-900">Provedor de IA</h3>
+                                            <p className="text-sm text-gray-500">
+                                                Conecte um provedor de LLM para sugestões de conteúdo (ex.: sinopse). A chave é
+                                                guardada cifrada no servidor e nunca aparece aqui — só os últimos 4 dígitos.
+                                            </p>
+                                        </div>
+
+                                        {!isAdminUser && (
+                                            <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700">
+                                                Apenas administradores podem alterar a configuração de IA.
+                                            </div>
+                                        )}
+                                        {!remoteEnabled && (
+                                            <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 text-sm text-blue-700">
+                                                Modo local/mock: salvar e testar a IA exige o ambiente real (edge functions).
+                                            </div>
+                                        )}
+
+                                        {/* Ativar */}
+                                        <label className="flex items-center justify-between gap-3 cursor-pointer">
+                                            <span className="text-sm font-bold text-gray-800">Ativar IA para esta marca</span>
+                                            <input
+                                                type="checkbox"
+                                                checked={aiEnabled}
+                                                onChange={(e) => setAiEnabled(e.target.checked)}
+                                                disabled={!isAdminUser || aiSaving}
+                                                className="h-5 w-5 accent-brand-primary"
+                                            />
+                                        </label>
+
+                                        {/* Provedor */}
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Provedor</label>
+                                            <select
+                                                value={aiProvider}
+                                                onChange={(e) => {
+                                                    const next = e.target.value as AIProviderId;
+                                                    setAiProvider(next);
+                                                    setAiModel(defaultModelFor(next));
+                                                    setAiTestResult(null);
+                                                }}
+                                                disabled={!isAdminUser || aiSaving}
+                                                className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
+                                            >
+                                                {AI_PROVIDERS.map((p) => (
+                                                    <option key={p.id} value={p.id}>{p.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Modelo */}
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Modelo</label>
+                                            <input
+                                                type="text"
+                                                value={aiModel}
+                                                onChange={(e) => setAiModel(e.target.value)}
+                                                placeholder={defaultModelFor(aiProvider)}
+                                                disabled={!isAdminUser || aiSaving}
+                                                className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
+                                            />
+                                        </div>
+
+                                        {/* Chave */}
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Chave de API</label>
+                                            <input
+                                                type="password"
+                                                value={aiKeyInput}
+                                                onChange={(e) => { setAiKeyInput(e.target.value); setAiTestResult(null); }}
+                                                placeholder={
+                                                    aiConfig?.key_configured
+                                                        ? `Chave configurada ••••${aiConfig.key_last4 ?? ''} — deixe em branco para manter`
+                                                        : 'Cole a chave do provedor'
+                                                }
+                                                autoComplete="off"
+                                                disabled={!isAdminUser || aiSaving}
+                                                className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
+                                            />
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                A chave é enviada com segurança e cifrada no servidor (Vault). Não é exibida depois.
+                                            </p>
+                                        </div>
+
+                                        {/* Motivo (auditoria) */}
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Motivo (auditoria)</label>
+                                            <input
+                                                type="text"
+                                                value={aiReason}
+                                                onChange={(e) => setAiReason(e.target.value)}
+                                                placeholder="Ex.: habilitando sugestões de sinopse"
+                                                disabled={!isAdminUser || aiSaving}
+                                                className="w-full bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
+                                            />
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-3 pt-1">
+                                            <Button onClick={handleSaveAIConfig} disabled={!isAdminUser || aiSaving || !remoteEnabled}>
+                                                {aiSaving ? 'Salvando...' : 'Salvar configuração'}
+                                            </Button>
+                                            <Button
+                                                variant="secondary"
+                                                onClick={handleTestAIConnection}
+                                                disabled={!isAdminUser || aiTesting || !remoteEnabled}
+                                            >
+                                                {aiTesting ? 'Testando...' : 'Testar conexão'}
+                                            </Button>
+                                        </div>
+
+                                        {aiTestResult && (
+                                            <div className={`rounded-xl p-3 text-sm border ${aiTestResult.ok ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                                                {aiTestResult.ok ? 'Conexão validada com sucesso.' : `Falha: ${aiTestResult.error ?? 'erro'}`}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Lateral: status */}
+                                <aside className="space-y-4">
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
+                                        <h4 className="text-sm font-bold text-gray-900 mb-3">Status atual</h4>
+                                        <dl className="space-y-2 text-sm">
+                                            <div className="flex justify-between gap-2">
+                                                <dt className="text-gray-500">IA</dt>
+                                                <dd className="font-bold text-gray-800">{aiConfig?.enabled ? 'Ativa' : 'Inativa'}</dd>
+                                            </div>
+                                            <div className="flex justify-between gap-2">
+                                                <dt className="text-gray-500">Provedor</dt>
+                                                <dd className="font-bold text-gray-800">{aiConfig?.provider ?? '—'}</dd>
+                                            </div>
+                                            <div className="flex justify-between gap-2">
+                                                <dt className="text-gray-500">Modelo</dt>
+                                                <dd className="font-bold text-gray-800 truncate max-w-[160px]" title={aiConfig?.model ?? ''}>{aiConfig?.model ?? '—'}</dd>
+                                            </div>
+                                            <div className="flex justify-between gap-2">
+                                                <dt className="text-gray-500">Chave</dt>
+                                                <dd className="font-bold text-gray-800">
+                                                    {aiConfig?.key_configured ? `••••${aiConfig.key_last4 ?? ''}` : 'não configurada'}
+                                                </dd>
+                                            </div>
+                                            {aiConfig?.updated_at && (
+                                                <div className="flex justify-between gap-2">
+                                                    <dt className="text-gray-500">Atualizada</dt>
+                                                    <dd className="text-gray-600">{new Date(aiConfig.updated_at).toLocaleString('pt-BR')}</dd>
+                                                </div>
+                                            )}
+                                        </dl>
+                                    </div>
+                                </aside>
                             </div>
                         )}
 

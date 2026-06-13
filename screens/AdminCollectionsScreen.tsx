@@ -38,6 +38,10 @@ import { extractSourceCollectionId, getCollectionDisplayCover, getCollectionType
 import { VideoFramePicker } from '../components/VideoFramePicker';
 import { extractAudioCoverArt } from '../lib/extractAudioCoverArt';
 import { uploadFile } from '../lib/storage';
+import { renderPdfFirstPageToFile } from '../lib/pdfCover';
+import { extractPdfText } from '../lib/pdfText';
+import { useBrandConfig } from '../hooks/useBrandConfig';
+import { getWhiteLabelAIConfig, aiSuggest } from '../lib/aiIntegrationApi';
 
 interface AdminCollectionsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -82,6 +86,31 @@ type FixedMediaSlot = {
 };
 
 const DEFAULT_COLLECTION_COLOR_THEME = '#5D1F58';
+
+/** Extrai título e nível a partir do nome de arquivo PDF dos livros Kaboo.
+ * Padrões suportados:
+ *   EFAI{N}_Livro_{Título com espaços}_app.pdf  → level "Fundamental I"
+ *   EI_KabooLivro{N}_{CamelCase}_app.pdf        → level "Educação Infantil"
+ */
+const parsePdfFilename = (filename: string): {
+  title: string | null;
+  level: 'Educação Infantil' | 'Fundamental I' | null;
+} => {
+  const base = filename.replace(/\.[^.]+$/, ''); // remove extensão
+
+  // EFAI: título já vem com espaços (ex.: "Kaboo e a Carta Misteriosa")
+  const efai = base.match(/^EFAI\d+_Livro_(.+?)(?:_app|_compressed)?$/i);
+  if (efai) return { title: efai[1].trim(), level: 'Fundamental I' };
+
+  // EI: título em CamelCase abreviado — separa em palavras como sugestão
+  const ei = base.match(/^EI_KabooLivro\d+_(.+?)(?:_app|_New|_compressed)?$/i);
+  if (ei) {
+    const words = ei[1].replace(/([A-ZÁÉÍÓÚÃÕÂÊÔÀÜÇ])/g, ' $1').trim();
+    return { title: words, level: 'Educação Infantil' };
+  }
+
+  return { title: null, level: null };
+};
 
 const EMPTY_COLLECTION_FORM_DATA: CollectionFormData = {
   title: '',
@@ -640,6 +669,26 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   } | null>(null);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const { toast, showToast, hideToast } = useToast();
+
+  // --- Sugestão de sinopse por IA (White Label) ---
+  const { bootstrap: brandBootstrap } = useBrandConfig();
+  const activeBrandId = brandBootstrap?.brand?.id ?? '';
+  const [aiSynopsisEnabled, setAiSynopsisEnabled] = useState(false);
+  const [suggestingSynopsis, setSuggestingSynopsis] = useState(false);
+  // Guarda o último PDF selecionado no upload, para extrair texto sem rebaixar do storage.
+  const lastPdfFileRef = useRef<File | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeBrandId) {
+      setAiSynopsisEnabled(false);
+      return;
+    }
+    getWhiteLabelAIConfig(activeBrandId)
+      .then((cfg) => { if (!cancelled) setAiSynopsisEnabled(cfg.enabled && cfg.key_configured); })
+      .catch(() => { if (!cancelled) setAiSynopsisEnabled(false); });
+    return () => { cancelled = true; };
+  }, [activeBrandId]);
   const [searchFilter, setSearchFilter] = useState('');
   const [levelFilter, setLevelFilter] = useState<'all' | 'Educação Infantil' | 'Fundamental I'>('all');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
@@ -673,6 +722,46 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [highlightedAssetId, setHighlightedAssetId] = useState<string | null>(null);
   const [highlightedAssetCategory, setHighlightedAssetCategory] = useState<CollectionAssetCategory | null>(null);
   const [slotSearchTerms, setSlotSearchTerms] = useState<Record<string, string>>({});
+
+  const handleSuggestSynopsis = useCallback(async () => {
+    if (suggestingSynopsis || !activeBrandId) return;
+    setSuggestingSynopsis(true);
+    try {
+      // Texto do PDF: do arquivo recém-selecionado ou do PDF já vinculado.
+      let pdfText = '';
+      if (lastPdfFileRef.current) {
+        pdfText = await extractPdfText(lastPdfFileRef.current);
+      } else {
+        const readingUrl =
+          formData.collection_assets.find((a) => a.category === 'reading')?.url || formData.pdf_url || '';
+        if (readingUrl) pdfText = await extractPdfText(readingUrl);
+      }
+
+      const { text } = await aiSuggest({
+        brandId: activeBrandId,
+        action: 'suggest_synopsis',
+        input: {
+          title: formData.title,
+          theme: formData.theme,
+          level: formData.level,
+          pdfText: pdfText || undefined,
+          currentSynopsis: formData.synopsis || undefined,
+        },
+      });
+
+      const suggestion = (text || '').trim().slice(0, 500);
+      if (!suggestion) {
+        showToast('A IA não retornou uma sugestão.', 'error');
+        return;
+      }
+      setFormData((prev) => ({ ...prev, synopsis: suggestion }));
+      showToast('Sinopse sugerida pela IA. Revise antes de salvar.', 'success');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Falha ao sugerir sinopse.', 'error');
+    } finally {
+      setSuggestingSynopsis(false);
+    }
+  }, [suggestingSynopsis, activeBrandId, formData.collection_assets, formData.pdf_url, formData.title, formData.theme, formData.level, formData.synopsis, showToast]);
 
   const activeLibraryAreaLabel = initialLibraryArea ? LIBRARY_AREA_LABEL[initialLibraryArea] : null;
   const activeLibraryAreaUi = initialLibraryArea ? LIBRARY_AREA_UI_META[initialLibraryArea] : null;
@@ -3215,7 +3304,21 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         <div>
                           <div className="mb-2 flex items-center justify-between">
                             <label className="block text-sm font-bold text-gray-700">Descrição</label>
-                            <span className="text-xs text-gray-400">{(formData.synopsis || '').length}/500</span>
+                            <div className="flex items-center gap-3">
+                              {aiSynopsisEnabled && (
+                                <button
+                                  type="button"
+                                  onClick={handleSuggestSynopsis}
+                                  disabled={suggestingSynopsis}
+                                  className="inline-flex items-center gap-1 text-xs font-bold text-brand-primary hover:text-brand-primary/80 disabled:opacity-50"
+                                  title="Gerar sugestão de sinopse com IA"
+                                >
+                                  <Icons.Feather size={14} />
+                                  {suggestingSynopsis ? 'Gerando...' : 'Sugerir com IA'}
+                                </button>
+                              )}
+                              <span className="text-xs text-gray-400">{(formData.synopsis || '').length}/500</span>
+                            </div>
                           </div>
                           <textarea
                             value={formData.synopsis || ''}
@@ -3309,6 +3412,49 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             folder="pdfs"
                             accept="application/pdf"
                             collectionId={editingId || undefined}
+                            onFile={(file) => {
+                              // Guarda o arquivo para extração de texto (sugestão de sinopse por IA).
+                              lastPdfFileRef.current = file;
+                              // 1) Auto-preenche título/nível a partir do nome do arquivo.
+                              const parsed = parsePdfFilename(file.name);
+                              if (parsed.title || parsed.level) {
+                                setFormData((prev) => {
+                                  const willFillTitle = !!parsed.title && !prev.title;
+                                  if (willFillTitle || parsed.level) {
+                                    const isApprox = parsed.level === 'Educação Infantil' && !!parsed.title;
+                                    showToast(
+                                      isApprox
+                                        ? 'Nível preenchido automaticamente. Verifique o título.'
+                                        : 'Título e nível preenchidos automaticamente.',
+                                      'success'
+                                    );
+                                  }
+                                  return {
+                                    ...prev,
+                                    ...(willFillTitle ? { title: parsed.title! } : {}),
+                                    ...(parsed.level ? { level: parsed.level } : {}),
+                                  };
+                                });
+                              }
+
+                              // 2) Gera a capa a partir da 1ª página — só se ainda for placeholder
+                              // (nunca sobrescreve uma capa que o usuário já escolheu).
+                              if (isPlaceholderImageUrl(formData.cover_image)) {
+                                void (async () => {
+                                  const coverFile = await renderPdfFirstPageToFile(file);
+                                  if (!coverFile) return;
+                                  const result = await uploadFile(coverFile, 'covers', editingId || undefined);
+                                  if (result?.url) {
+                                    setFormData((prev) =>
+                                      isPlaceholderImageUrl(prev.cover_image)
+                                        ? { ...prev, cover_image: result.url! }
+                                        : prev
+                                    );
+                                    showToast('Capa gerada a partir da 1ª página do PDF.', 'success');
+                                  }
+                                })();
+                              }
+                            }}
                           />
                         </div>
                       );

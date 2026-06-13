@@ -111,6 +111,7 @@ const sidebars: SidebarsConfig = {
         'roadmap/changelog-ajustes-kaboo-2026-06-08',
         'roadmap/backlog-organizacao-projeto-desempenho',
         'roadmap/backlog-capa-por-midia',
+        'roadmap/backlog-cadastro-em-lote',
       ],
     },
     'contributing',
