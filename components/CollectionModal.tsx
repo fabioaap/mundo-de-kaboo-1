@@ -24,7 +24,15 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [collectionStack, setCollectionStack] = useState<Collection[]>([]);
   const activeCollection = collectionStack[collectionStack.length - 1] || collection;
-  const parentCollection = collectionStack.length > 1 ? collectionStack[collectionStack.length - 2] : null;
+  // Índice do nível ativo na pilha — guia o slide horizontal (drill-down).
+  const activeIndex = Math.max(0, collectionStack.length - 1);
+
+  const handleStackBack = () => {
+    setCollectionStack((currentStack) => (currentStack.length > 1 ? currentStack.slice(0, -1) : currentStack));
+    if (collectionStack.length <= 1) {
+      onClose();
+    }
+  };
   // Keep a stable ref to onClose so the escape handler always calls the latest version
   // without causing Effect 1 to re-run (and reset state) on every parent render
   const onCloseRef = useRef(onClose);
@@ -132,7 +140,9 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       window.clearTimeout(skeletonTimer);
       window.clearTimeout(contentTimer);
     };
-  }, [isOpen, activeCollection?.id]);
+    // Intencional: só na abertura do modal. Ao drilar (a pilha muda), NÃO reexibimos
+    // o skeleton — a transição entre níveis é o slide horizontal (drill-down).
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -169,38 +179,43 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
             </div>
           )}
 
-          {/* Content - fades in when ready */}
-          {activeCollection && showContent && (
-            <div className="flex-1 content-fade-in">
-              <DetailsScreen
-                collection={activeCollection}
-                onNavigate={(screen, params) => {
-                  // Close modal when navigating to player screens
-                  if (['player_book', 'player_audio', 'player_video'].includes(screen)) {
-                    onClose();
-                  }
-                  onNavigate(screen, ['player_book', 'player_audio', 'player_video'].includes(screen)
-                    ? {
-                      ...params,
-                      returnToModal: {
-                        stackIds: collectionStack.map((item) => item.id),
-                      },
-                    }
-                    : params);
-                }}
-                onBack={() => {
-                  if (collectionStack.length > 1) {
-                    setCollectionStack((currentStack) => currentStack.slice(0, -1));
-                    return;
-                  }
-
-                  onClose();
-                }}
-                onOpenCollection={(nextCollection) => {
-                  setCollectionStack((currentStack) => [...currentStack, nextCollection]);
-                }}
-                parentCollection={parentCollection}
-              />
+          {/* Content - track horizontal deslizante (drill-down estilo iPad).
+              Cada nível da pilha é um painel; o track desliza -100% por nível. */}
+          {showContent && collectionStack.length > 0 && (
+            <div
+              className="absolute inset-0 flex content-fade-in transition-transform duration-300 ease-out"
+              style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+            >
+              {collectionStack.map((levelCollection, index) => (
+                <div
+                  key={`${levelCollection.id}-${index}`}
+                  className={`h-full w-full flex-shrink-0 ${index === activeIndex ? '' : 'pointer-events-none'}`}
+                  aria-hidden={index !== activeIndex}
+                >
+                  <DetailsScreen
+                    collection={levelCollection}
+                    onNavigate={(screen, params) => {
+                      // Close modal when navigating to player screens
+                      if (['player_book', 'player_audio', 'player_video'].includes(screen)) {
+                        onClose();
+                      }
+                      onNavigate(screen, ['player_book', 'player_audio', 'player_video'].includes(screen)
+                        ? {
+                          ...params,
+                          returnToModal: {
+                            stackIds: collectionStack.map((item) => item.id),
+                          },
+                        }
+                        : params);
+                    }}
+                    onBack={handleStackBack}
+                    onOpenCollection={(nextCollection) => {
+                      setCollectionStack((currentStack) => [...currentStack, nextCollection]);
+                    }}
+                    parentCollection={index > 0 ? collectionStack[index - 1] : null}
+                  />
+                </div>
+              ))}
             </div>
           )}
         </div>
