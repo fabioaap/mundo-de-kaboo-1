@@ -2800,22 +2800,29 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     <span>Editar</span>
                                   </button>
                                 )}
-                                {isAdminUser && !collection.is_published && (
+                                {isAdminUser && (
                                   <button
                                     type="button"
+                                    disabled={collection.is_published}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       e.preventDefault();
+                                      if (collection.is_published) return;
                                       handleDeleteClick(collection.id);
                                       setOpenDropdown(null);
                                     }}
                                     onMouseDown={(e) => {
                                       e.stopPropagation();
                                     }}
-                                    className="w-full px-4 py-3 text-left flex items-center gap-3 transition-colors first:rounded-t-2xl text-red-500 hover:bg-red-50 font-medium"
+                                    className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors font-medium ${
+                                      collection.is_published
+                                        ? 'text-gray-300 cursor-not-allowed'
+                                        : 'text-red-500 hover:bg-red-50'
+                                    }`}
+                                    title={collection.is_published ? 'Despublique para excluir' : undefined}
                                   >
                                     <Icons.Trash2 size={18} />
-                                    <span>Excluir</span>
+                                    <span>{collection.is_published ? 'Despublique para excluir' : 'Excluir'}</span>
                                   </button>
                                 )}
                                 {isAdminUser && (
@@ -2967,12 +2974,21 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                   </h2>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                {isAdminUser && editingId && !formData.is_published && (
+                {isAdminUser && editingId && (
                   <button
                     type="button"
-                    onClick={() => handleDeleteClick(editingId)}
-                    className="w-9 h-9 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-all text-red-500"
-                    title={isBooksCatalogMode ? 'Excluir livro' : 'Excluir coleção'}
+                    onClick={() => { if (!formData.is_published) handleDeleteClick(editingId); }}
+                    disabled={formData.is_published}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                      formData.is_published
+                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                        : 'bg-red-50 hover:bg-red-100 text-red-500'
+                    }`}
+                    title={
+                      formData.is_published
+                        ? 'Despublique para excluir'
+                        : (isBooksCatalogMode ? 'Excluir livro' : 'Excluir coleção')
+                    }
                   >
                     <Icons.Trash2 size={16} />
                   </button>
