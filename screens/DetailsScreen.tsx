@@ -574,7 +574,8 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
     };
   })();
 
-  const hasQuickActions = isKit && (visiblePrimaryAssets.length > 0 || hasResources);
+  // Itens da coleção unificados: livros vinculados (que drilam) + mídias + materiais.
+  const hasQuickActions = isKit && (visiblePrimaryAssets.length > 0 || hasResources || showLinkedBooksPanel);
 
   // Cover + name helpers for the "Itens dessa coleção" cards.
   const collectionItemCover = getCollectionDisplayCover(collection) || collection.cover_image || '';
@@ -665,6 +666,21 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
 
   const desktopQuickActions = (
     <>
+      {/* Livros vinculados como itens da coleção — tocar DRILA pro modal do livro. */}
+      {showLinkedBooksPanel && linkedBooks.map((book) => (
+        <button
+          key={book.id}
+          onClick={() => onOpenCollection?.(book)}
+          className="flex min-h-[120px] flex-col items-start gap-3 rounded-2xl border border-gray-100 bg-white/90 px-4 py-4 text-left text-gray-800 shadow-sm transition-all duration-200 hover:border-brand-primary/20 hover:bg-brand-primary/[0.04] active:scale-[0.98]"
+        >
+          {renderItemThumb(getCollectionDisplayCover(book) || book.cover_image, <Icons.BookOpen size={24} />, <Icons.BookOpen size={14} />)}
+          <span className="min-w-0">
+            <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-brand-primary/60">Livro</span>
+            <span className="mt-0.5 block text-sm font-bold leading-tight text-gray-800 line-clamp-2">{book.title}</span>
+          </span>
+        </button>
+      ))}
+
       {visiblePrimaryAssets.map((asset) => (
         <button
           key={asset.id}
@@ -917,7 +933,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                         <p className="mt-1 text-sm text-gray-500">{quickActionsDescription}</p>
                       </div>
                       <span className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
-                        {visiblePrimaryAssets.length + (hasResources ? 1 : 0)} itens
+                        {visiblePrimaryAssets.length + (hasResources ? 1 : 0) + (showLinkedBooksPanel ? linkedBookCount : 0)} itens
                       </span>
                     </div>
 
@@ -928,73 +944,8 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                 </div>
               )}
 
-              {showLinkedBooksPanel && (
-                <div className="mb-8 rounded-[28px] border border-amber-200 bg-[linear-gradient(135deg,rgba(255,251,235,1),rgba(255,247,237,1))] p-5 md:p-6 shadow-sm">
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-lg font-black text-gray-800">Livros da Coleção</h2>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Escolha um livro para ver os detalhes dentro deste mesmo modal.
-                      </p>
-                    </div>
-                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-amber-800">
-                      {linkedBookCount} {linkedBookCount === 1 ? 'livro' : 'livros'}
-                    </span>
-                  </div>
-
-                  {loadingLinkedBooks ? (
-                    <div className="space-y-2">
-                      <div className="h-16 rounded-2xl bg-white/80 animate-pulse" />
-                      <div className="h-16 rounded-2xl bg-white/60 animate-pulse" />
-                    </div>
-                  ) : linkedBooks.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-amber-200 bg-white/70 px-4 py-5 text-sm text-gray-500">
-                      Esta coleção ainda não tem livros vinculados.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {linkedBooks.map((linkedBook, index) => {
-                        const linkedBookCover = getCollectionDisplayCover(linkedBook) || linkedBook.cover_image;
-
-                        return (
-                          <button
-                            key={linkedBook.id}
-                            type="button"
-                            onClick={() => onOpenCollection?.(linkedBook)}
-                            className="w-full rounded-2xl border border-white/80 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-brand-primary/30 hover:shadow-md active:scale-[0.99]"
-                          >
-                            <div className="flex items-center gap-4">
-                              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-black text-amber-800">
-                                {index + 1}
-                              </span>
-
-                              <img
-                                src={linkedBookCover}
-                                alt=""
-                                aria-hidden="true"
-                                className="h-14 w-14 flex-shrink-0 rounded-2xl border border-gray-200 bg-gray-100 object-cover"
-                              />
-
-                              <div className="min-w-0 flex-1">
-                                <p className="line-clamp-1 text-sm font-black text-gray-800">{linkedBook.title}</p>
-                                <p className="mt-1 line-clamp-1 text-xs text-gray-500">
-                                  {formatSegmentLabel(linkedBook.level)}
-                                  {linkedBook.theme ? ` • ${linkedBook.theme}` : ''}
-                                </p>
-                              </div>
-
-                              <div className="flex flex-shrink-0 items-center gap-2 text-brand-primary">
-                                <Icons.BookOpen size={18} />
-                                <Icons.ChevronRight size={18} />
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Livros vinculados agora aparecem dentro de "Itens dessa coleção"
+                  (unificado) — não há mais um painel "Livros da Coleção" separado. */}
 
               {collection.progress ? (
                 <div className="w-full max-w-xs mx-auto md:mx-0 mb-8">
@@ -1013,6 +964,18 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
 
               {hasQuickActions && (
                 <div className="flex flex-wrap gap-4 mb-10 md:hidden">
+                  {/* Livros vinculados como itens — tocar DRILA pro modal do livro. */}
+                  {showLinkedBooksPanel && linkedBooks.map((book) => (
+                    <button
+                      key={book.id}
+                      onClick={() => onOpenCollection?.(book)}
+                      className="flex min-h-[88px] min-w-[calc(50%-0.5rem)] flex-1 flex-col items-center justify-center gap-2 rounded-2xl bg-gray-100 px-3 py-3 text-gray-800 transition-all duration-200 hover:bg-gray-200 active:scale-95"
+                    >
+                      {renderItemThumb(getCollectionDisplayCover(book) || book.cover_image, <Icons.BookOpen size={24} />, <Icons.BookOpen size={14} />)}
+                      <span className="line-clamp-2 text-center text-xs font-bold leading-tight">{book.title}</span>
+                    </button>
+                  ))}
+
                   {visiblePrimaryAssets.map((asset) => {
                     const itemName = getAssetItemName(asset);
 
