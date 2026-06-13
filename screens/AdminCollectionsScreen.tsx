@@ -3025,10 +3025,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
             {/* Scrollable form body */}
             <div ref={drawerBodyRef} className="flex-1 overflow-y-auto px-6 pb-4 pt-4">
-              <div className="space-y-6">
+              <div className="flex flex-col gap-6">
                 {/* Tab: Dados da Coleção */}
                 {!isLibraryAreaMode && activeTab === 'identification' && (
                   <>
+                    {/* Grupo "Dados" (identificação + pedagógicas) — order-2: aparece depois do conteúdo. */}
+                    <div className="space-y-6 order-2">
                     {/* Informações de Identificação Title */}
                     <div>
                       <h3 className="text-lg font-bold text-gray-800 mb-4">Informações de Identificação</h3>
@@ -3388,7 +3390,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           />
                         </div>
                     </>
+                    </div>
 
+                    {/* Grupo "Conteúdo" (upload) — order-1: aparece PRIMEIRO (fluxo upload → dados). */}
+                    {isBooksCatalogMode && (
+                    <div className="space-y-6 order-1">
                     {/* Section heading: Conteúdo (books only) */}
                     {isBooksCatalogMode && (
                       <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mt-6 mb-3">Conteúdo</h3>
@@ -3605,9 +3611,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         </div>
                       );
                     })()}
+                    </div>
+                    )}
 
                     {!isBooksCatalogMode && (
-                      <div className="flex justify-end pt-2">
+                      <div className="flex justify-end pt-2 order-3">
                         <button
                           type="button"
                           onClick={() => setActiveTab('media')}
