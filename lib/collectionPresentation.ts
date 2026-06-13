@@ -89,7 +89,10 @@ export const getKitLinkedBookCount = ({
 };
 
 export const shouldShowKitLinkedBooksPanel = (linkedBookCount: number): boolean => {
-  return linkedBookCount > 1;
+  // >= 1: mesmo um kit com um único livro mostra o painel de livros, para que
+  // tocar no livro DRILE até o modal do livro (slide), em vez de pular direto
+  // pro leitor — preservando o acesso ao audiolivro/vídeo do livro.
+  return linkedBookCount >= 1;
 };
 
 export const getVisiblePrimaryCollectionAssets = (

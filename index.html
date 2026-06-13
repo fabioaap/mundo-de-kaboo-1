@@ -14,7 +14,9 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-  <link rel="manifest" href="/manifest.json" />
+  <!-- crossorigin=use-credentials: envia o cookie do Cloudflare Access junto com o
+       fetch do manifesto, evitando o redirect pro login (que quebrava por CORS). -->
+  <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
 
   <!-- Meta tags for mobile platforms -->
   <meta name="apple-mobile-web-app-capable" content="yes" />

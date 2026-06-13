@@ -42,12 +42,16 @@ describe('kit linked book presentation', () => {
     })).toBe(1);
   });
 
-  it('keeps a single linked book embedded in the kit experience', () => {
-    expect(shouldShowKitLinkedBooksPanel(1)).toBe(false);
+  it('shows the linked books panel even for a single linked book (drills to the book modal)', () => {
+    expect(shouldShowKitLinkedBooksPanel(1)).toBe(true);
   });
 
-  it('shows the book chooser only when the kit has multiple linked books', () => {
+  it('shows the book chooser when the kit has linked books', () => {
     expect(shouldShowKitLinkedBooksPanel(2)).toBe(true);
+  });
+
+  it('hides the linked books panel when the kit has no linked books', () => {
+    expect(shouldShowKitLinkedBooksPanel(0)).toBe(false);
   });
 
   it('keeps the reading shortcut in the kit when the linked books panel stays hidden', () => {
