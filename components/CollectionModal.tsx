@@ -127,7 +127,15 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       return;
     }
 
-    // Small delay to ensure smooth transition each time the modal reopens.
+    // Já exibindo conteúdo (ex.: drill-down, quando a pilha muda) — NÃO reexibe o
+    // skeleton; a transição entre níveis é o slide horizontal.
+    if (showContent) {
+      return;
+    }
+
+    // Revela o conteúdo assim que a coleção estiver disponível (inclui o caso em que
+    // o modal abre antes de a coleção terminar de carregar — por isso depende de
+    // activeCollection?.id, senão o conteúdo nunca apareceria e o modal ficaria branco).
     const skeletonTimer = window.setTimeout(() => {
       setShowSkeleton(false);
     }, 50);
@@ -140,9 +148,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       window.clearTimeout(skeletonTimer);
       window.clearTimeout(contentTimer);
     };
-    // Intencional: só na abertura do modal. Ao drilar (a pilha muda), NÃO reexibimos
-    // o skeleton — a transição entre níveis é o slide horizontal (drill-down).
-  }, [isOpen]);
+  }, [isOpen, activeCollection?.id, showContent]);
 
   if (!isOpen) return null;
 
