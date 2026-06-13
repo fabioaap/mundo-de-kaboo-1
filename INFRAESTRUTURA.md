@@ -1549,6 +1549,6 @@ mundo-de-kaboo-main/
 
 ---
 
-**Última atualização**: 08/06/2026, 01:38:57
+**Última atualização**: 13/06/2026, 16:19:04
 **Responsável**: Equipe de Desenvolvimento
 **Versão**: 1.0
