@@ -19,5 +19,6 @@ Esta seção reúne os documentos de roadmap, backlog e PRDs relacionados ao pro
 - [Backlog — Organização do Projeto e Desempenho (Build/Deploy/Repo)](./backlog-organizacao-projeto-desempenho)
 - [Backlog — Capa por Mídia (desacoplar capa de mídia × coleção)](./backlog-capa-por-midia)
 - [Backlog — Cadastro de conteúdo em lote (carga inicial em massa)](./backlog-cadastro-em-lote)
+- [Backlog — Modal deslizante (drill-down sem empilhar modais)](./backlog-modal-deslizante)
 
 Use estes documentos como fonte única para o planejamento e acompanhamento das entregas. Atualize os arquivos originais quando houver mudanças de escopo ou progresso nas sprints.

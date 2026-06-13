@@ -21,6 +21,7 @@ const sidebars: SidebarsConfig = {
         'architecture/overview',
         'architecture/tech-stack',
         'architecture/data-models',
+        'architecture/colecao-artefatos',
       ],
     },
     {
@@ -112,6 +113,7 @@ const sidebars: SidebarsConfig = {
         'roadmap/backlog-organizacao-projeto-desempenho',
         'roadmap/backlog-capa-por-midia',
         'roadmap/backlog-cadastro-em-lote',
+        'roadmap/backlog-modal-deslizante',
       ],
     },
     'contributing',
