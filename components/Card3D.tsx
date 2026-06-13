@@ -108,12 +108,15 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
     || collection.theme?.trim()
     || subtitleFallback;
 
-  // Primary hover icon: headphones if pure audio, video if pure video, library otherwise
+  // Primary hover icon: headphones if pure audio, video if pure video,
+  // BookOpen for books, and Library only for kits/collections.
   const HoverIcon = formatKinds.length === 1 && formatKinds[0] === 'audio'
     ? Icons.Headphones
     : formatKinds.length === 1 && formatKinds[0] === 'video'
     ? Icons.Video
-    : Icons.Library;
+    : collection.collection_type === 'kit'
+    ? Icons.Library
+    : Icons.BookOpen;
 
   const isActive = tilt.x !== 0 || tilt.y !== 0;
 

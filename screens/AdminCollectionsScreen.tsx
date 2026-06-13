@@ -3486,7 +3486,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     scope: COLLECTION_ASSET_META.storytelling.scope,
                                     lyrics_url: null,
                                     offline_available: false,
-                                    is_published: currentAsset?.is_published ?? false,
+                                    is_published: currentAsset?.is_published ?? true,
                                   });
                                   return buildNextFormFromAssets(currentFormData, nextAssets);
                                 });
@@ -3548,7 +3548,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                       scope: COLLECTION_ASSET_META.animation.scope,
                                       lyrics_url: null,
                                       offline_available: false,
-                                      is_published: currentAsset?.is_published ?? false,
+                                      is_published: currentAsset?.is_published ?? true,
                                     });
                                     return buildNextFormFromAssets(currentFormData, nextAssets);
                                   });
