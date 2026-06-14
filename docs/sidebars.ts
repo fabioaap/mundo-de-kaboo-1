@@ -114,6 +114,7 @@ const sidebars: SidebarsConfig = {
         'roadmap/backlog-capa-por-midia',
         'roadmap/backlog-cadastro-em-lote',
         'roadmap/backlog-modal-deslizante',
+        'roadmap/backlog-livro-vincula-midias',
       ],
     },
     'contributing',
