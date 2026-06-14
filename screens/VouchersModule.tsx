@@ -740,7 +740,7 @@ const ModelWizard: React.FC<{
                             onChange={(e) => setLevelFilter(e.target.value)}
                             className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary/30"
                         >
-                            <option value="all">Todos os segmentos</option>
+                            <option value="all">Todos os níveis</option>
                             <option value="Educação Infantil">Ed. Infantil</option>
                             <option value="Fundamental I">E.F. Anos Iniciais</option>
                         </select>

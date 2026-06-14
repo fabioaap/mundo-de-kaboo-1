@@ -2390,7 +2390,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       </div>
                     </div>
 
-                    {/* Filtro de Segmento com Dropdown */}
+                    {/* Filtro de Nível com Dropdown */}
                     <div className="md:w-48 relative" ref={levelDropdownRef}>
                       <button
                         onClick={() => setShowLevelDropdown(!showLevelDropdown)}
@@ -2400,7 +2400,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           }`}
                       >
                         <span className="truncate">
-                          {levelFilter === 'all' ? 'Todos os segmentos' : formatSegmentLabel(levelFilter)}
+                          {levelFilter === 'all' ? 'Todos os níveis' : formatSegmentLabel(levelFilter)}
                         </span>
                         <Icons.ChevronDown size={16} className={`transition-transform flex-shrink-0 ${showLevelDropdown ? 'rotate-180' : ''}`} />
                       </button>
@@ -2417,7 +2417,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               : 'text-gray-700 hover:bg-gray-50 font-medium'
                               }`}
                           >
-                            <span>Todos os segmentos</span>
+                            <span>Todos os níveis</span>
                             {levelFilter === 'all' && <Icons.Check size={18} className="ml-auto" />}
                           </button>
                           <button
@@ -3231,7 +3231,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     <>
                       {/* Editable pedagogical fields */}
                         <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Nível</label>
                           <div className="space-y-2">
                             {AVAILABLE_SEGMENTS.map((seg) => {
                               const checked = formData.segments?.includes(seg) ?? false;
@@ -3405,9 +3405,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       const asset = getAssetByCategory('reading');
                       return (
                         <div className="space-y-2">
-                          <p className="text-sm font-bold text-gray-800">PDF do Livro</p>
                           <FileUpload
-                            label="Arquivo PDF"
+                            label="PDF do Livro"
                             value={asset?.url || ''}
                             onChange={(url) => {
                               if (url) {
@@ -3746,9 +3745,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             </div>
                           )}
 
-                          {/* Segmento — campo obrigatório oculto na aba de identificação em modo biblioteca */}
+                          {/* Nível — campo obrigatório oculto na aba de identificação em modo biblioteca */}
                           <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Nível</label>
                             <div className="flex gap-2">
                               {(['Educação Infantil', 'Fundamental I'] as const).map((lvl) => (
                                 <button
@@ -3870,7 +3869,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               })()}
                             </div>
                             <div>
-                              <label className="block text-sm font-bold text-gray-700 mb-2">Segmento</label>
+                              <label className="block text-sm font-bold text-gray-700 mb-2">Nível</label>
                               <div className="space-y-2">
                                 {(['Educação Infantil', 'Fundamental I'] as const).map((seg) => {
                                   const isActive = formData.level === seg;

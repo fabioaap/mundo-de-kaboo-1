@@ -1604,8 +1604,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               </p>
               <p className={`mt-1 text-sm leading-relaxed md:mt-0.5 md:text-[13px] ${bodyClass}`}>
                 {isSearchExperience
-                  ? 'Busque por texto e refine o acervo com filtros e segmentos.'
-                  : 'Busque por título, tema, BNCC ou personagem. Refine com filtros e segmentos.'}
+                  ? 'Busque por texto e refine o acervo com filtros e níveis.'
+                  : 'Busque por título, tema, BNCC ou personagem. Refine com filtros e níveis.'}
               </p>
             </div>
 
