@@ -69,3 +69,6 @@ Thumbs.db
 
 # Backups de dados reais (nunca commitar)
 supabase/backups/
+
+# AIOX: caminho bloqueado pelo push ruleset do repo (GitHub Copilot agents)
+.github/agents/
