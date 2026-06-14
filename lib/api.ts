@@ -283,11 +283,10 @@ const sanitizeCollectionPayload = (collection: Partial<Collection>, characters?:
   // the whole write is lost and the user's change (e.g. publish/unpublish)
   // silently never persists. Strip the bad entries here so the valid data saves.
   const next: Partial<Collection> = { ...syncedCollection };
-  const cleanCharacterIds = keepValidUuids(next.character_ids);
-  if (cleanCharacterIds && cleanCharacterIds.length !== (next.character_ids?.length ?? 0)) {
-    logger.warn('sanitizeCollectionPayload: dropped non-uuid character_ids', next.character_ids);
+  // character_ids is TEXT[] in Supabase — keep any non-empty string (IDs like 'kaboo', 'baratao').
+  if (Array.isArray(next.character_ids)) {
+    next.character_ids = next.character_ids.filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
   }
-  if (cleanCharacterIds) next.character_ids = cleanCharacterIds;
   const cleanKitBookIds = keepValidUuids(next.kit_book_ids);
   if (cleanKitBookIds && cleanKitBookIds.length !== (next.kit_book_ids?.length ?? 0)) {
     logger.warn('sanitizeCollectionPayload: dropped non-uuid kit_book_ids', next.kit_book_ids);

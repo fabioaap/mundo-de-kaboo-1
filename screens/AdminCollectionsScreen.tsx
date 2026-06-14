@@ -633,6 +633,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [isSaving, setIsSaving] = useState(false);
   const [isFetchingYoutubeData, setIsFetchingYoutubeData] = useState(false);
   const [availableCharacters, setAvailableCharacters] = useState<Character[]>([]);
+  // Começa true: evita mostrar "Nenhum personagem cadastrado" (e permitir salvar
+  // uma seleção vazia) antes do catálogo terminar de carregar.
+  const [charactersLoading, setCharactersLoading] = useState(true);
 
   // Users state
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -675,6 +678,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const activeBrandId = brandBootstrap?.brand?.id ?? '';
   const [aiSynopsisEnabled, setAiSynopsisEnabled] = useState(false);
   const [suggestingSynopsis, setSuggestingSynopsis] = useState(false);
+  // Guideline de capa (coleção): prompt copiável para gerar a capa em LLM de imagem.
+  const [coverPromptCopied, setCoverPromptCopied] = useState(false);
+  const [showCoverPromptGuide, setShowCoverPromptGuide] = useState(false);
   // Guarda o último PDF selecionado no upload, para extrair texto sem rebaixar do storage.
   const lastPdfFileRef = useRef<File | null>(null);
 
@@ -780,6 +786,53 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const showcaseDescription = isCollectionsCatalogMode
     ? 'A tag Coleção é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme as mídias vinculadas nesta coleção.'
     : 'A tag Livro é automática. Os chips de Leitura, Áudio, Vídeo e Materiais aparecem conforme as mídias vinculadas neste livro.';
+
+  // Monta o prompt que o usuário copia e cola em uma LLM de geração de imagem
+  // (anexando a foto da caixa física da coleção) para gerar a capa do card.
+  const buildCollectionCoverPrompt = useCallback((): string => {
+    const collectionName = (formData.title || '').trim() || '[NOME DA COLEÇÃO]';
+    const themeLine = (formData.theme || '').trim();
+    return [
+      `Você é um especialista em OUTPAINTING (expansão/uncrop) de fotos de produtos.`,
+      ``,
+      `Em anexo está a foto da CAIXA FÍSICA da coleção "${collectionName}".`,
+      themeLine ? `Tema da coleção: ${themeLine}.` : ``,
+      ``,
+      `TAREFA: NÃO redesenhe, NÃO recrie e NÃO transforme isso em uma capa/ilustração chapada. Sua única tarefa é EXPANDIR a tela (outpainting) ao redor da foto anexada, mantendo a CAIXA exatamente como ela está e preenchendo apenas o espaço vazio em volta dela.`,
+      ``,
+      `REGRAS OBRIGATÓRIAS:`,
+      `1. FORMATO: resultado perfeitamente QUADRADO (1:1), alta resolução, sem bordas brancas.`,
+      `2. CAIXA INTACTA NO CENTRO: reaproveite a foto da caixa do anexo SEM ALTERAR — mesma caixa tridimensional, mesma arte, mesmo lettering, mesmas cores, mesma perspectiva e mesma sombra. Ela deve permanecer no CENTRO, em destaque, claramente reconhecível como a caixa do produto (um objeto 3D fotografado, não um desenho plano).`,
+      `3. TAMANHO DA CAIXA (CRÍTICO): a caixa deve ocupar no MÁXIMO cerca de 65% do quadro e ficar centralizada, deixando margem visível em TODOS os lados (cima, baixo, esquerda e direita). MESMO que a foto da caixa seja quadrada, REDUZA a caixa para que sobre espaço ao redor — esse espaço é onde o fundo expandido vai aparecer. A caixa NUNCA pode preencher o quadro inteiro nem encostar nas bordas.`,
+      `4. APENAS O FUNDO É NOVO: gere somente a área AO REDOR da caixa, dando continuidade à arte que já aparece NA PRÓPRIA caixa (mesmos personagens, mesma paleta, mesmo cenário e estilo de ilustração). O fundo deve parecer que a cena ilustrada da caixa "vazou" para fora dela e preencheu o quadro.`,
+      `5. O ESTILO VEM DA CAIXA: cada caixa tem identidade própria — extraia cores, personagens e cenário DESTA caixa específica. NÃO use estilo genérico nem de outra coleção.`,
+      `6. INTEGRAÇÃO: transição suave entre a caixa e o fundo expandido, iluminação coerente, como um mockup de produto profissional.`,
+      `7. SEM ELEMENTOS EXTRAS: não adicione textos, logotipos, código de barras, selos ou marcas d'água novos.`,
+      ``,
+      `RESULTADO ESPERADO: imagem quadrada com a CAIXA fotografada no centro (intacta) + o fundo ao redor expandido com a identidade visual da própria caixa. Se você redesenhar a caixa como uma capa plana, a tarefa está ERRADA.`,
+    ].filter(Boolean).join('\n');
+  }, [formData.title, formData.theme]);
+
+  const handleCopyCoverPrompt = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(buildCollectionCoverPrompt());
+      setCoverPromptCopied(true);
+      showToast('Prompt copiado! Cole na sua IA de imagem junto com a foto da caixa.', 'success');
+      window.setTimeout(() => setCoverPromptCopied(false), 2500);
+    } catch {
+      showToast('Não foi possível copiar. Selecione o texto manualmente.', 'error');
+    }
+  }, [buildCollectionCoverPrompt, showToast]);
+
+  // Validação leve do wizard de coleção: exige título antes de ir para "Mídias vinculadas".
+  const canAdvanceToMediaStep = !isCollectionsCatalogMode || formData.title.trim().length > 0;
+  const goToMediaStep = useCallback(() => {
+    if (isCollectionsCatalogMode && !formData.title.trim()) {
+      showToast('Informe o título da coleção antes de vincular as mídias.', 'warning' as any);
+      return;
+    }
+    setActiveTab('media');
+  }, [isCollectionsCatalogMode, formData.title, showToast]);
   const synopsisPlaceholder = isCollectionsCatalogMode
     ? 'Descrição editorial da coleção (opcional)'
     : 'Descrição editorial do livro (opcional)';
@@ -1120,6 +1173,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       learning_objectives: inheritField(currentFormData.learning_objectives, currentSelectedBook?.learning_objectives, linkedBook?.learning_objectives, ''),
       bncc_skills: inheritField(currentFormData.bncc_skills, currentSelectedBook?.bncc_skills, linkedBook?.bncc_skills, [] as string[]),
       casel_competencies: inheritField(currentFormData.casel_competencies, currentSelectedBook?.casel_competencies, linkedBook?.casel_competencies, [] as string[]),
+      // Personagens também são herdados do livro vinculado. Os nomes (characters)
+      // são re-derivados a partir dos IDs em buildCollectionFormData → syncCollectionCharacters.
+      character_ids: inheritField(currentFormData.character_ids, currentSelectedBook?.character_ids, linkedBook?.character_ids, [] as string[]),
+      characters: inheritField(currentFormData.characters, currentSelectedBook?.characters, linkedBook?.characters, [] as string[]),
     };
   };
 
@@ -1701,12 +1758,15 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   };
 
   const loadCharacters = async () => {
+    setCharactersLoading(true);
     try {
       const data = await api.getCharacters();
       setAvailableCharacters(data);
     } catch (error) {
       console.error('Error loading characters:', error);
       showToast('Erro ao carregar personagens.', 'error');
+    } finally {
+      setCharactersLoading(false);
     }
   };
 
@@ -3004,18 +3064,68 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
               </div>
             </div>
 
-            {/* Tabs — generic collection flow keeps identification and linked-media steps together */}
-            {!isLibraryAreaMode && (
+            {/* Navegação do drawer.
+                Coleções: wizard de 2 passos (Dados → Mídias). Demais: abas simples. */}
+            {!isLibraryAreaMode && isCollectionsCatalogMode && (
+              <div className="px-6 pt-4 pb-0 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  {(() => {
+                    const linkedMediaCount = formData.collection_assets.filter(a => a.url?.trim()).length;
+                    const steps = [
+                      { id: 'identification' as const, n: 1, label: 'Dados da coleção' },
+                      { id: 'media' as const, n: 2, label: 'Mídias vinculadas' },
+                    ];
+                    return steps.map((step, idx) => {
+                      const isActive = activeTab === step.id;
+                      const isDone = step.id === 'identification' && activeTab === 'media';
+                      return (
+                        <React.Fragment key={step.id}>
+                          <button
+                            type="button"
+                            onClick={() => step.id === 'media' ? goToMediaStep() : setActiveTab('identification')}
+                            className="flex items-center gap-2 group"
+                          >
+                            <span
+                              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                                isActive
+                                  ? 'bg-brand-primary text-white'
+                                  : isDone
+                                    ? 'bg-brand-primary/15 text-brand-primary'
+                                    : 'bg-gray-200 text-gray-500'
+                              }`}
+                            >
+                              {isDone ? <Icons.Check size={14} /> : step.n}
+                            </span>
+                            <span
+                              className={`text-sm font-semibold transition-colors ${
+                                isActive ? 'text-gray-800' : 'text-gray-400 group-hover:text-gray-600'
+                              }`}
+                            >
+                              {step.label}
+                            </span>
+                            {step.id === 'media' && (
+                              <span className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                                linkedMediaCount === 0 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                              }`}>
+                                {linkedMediaCount}
+                              </span>
+                            )}
+                          </button>
+                          {idx === 0 && <div className="h-px flex-1 bg-gray-200" />}
+                        </React.Fragment>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Abas simples para livro (passo único) e outros fluxos não-biblioteca. */}
+            {!isLibraryAreaMode && !isCollectionsCatalogMode && (
               <div className="px-6 pt-4 pb-0 flex-shrink-0">
                 <Tabs
                   tabs={[
                     { id: 'identification', label: isBooksCatalogMode ? 'Dados do Livro' : 'Dados da Coleção' },
-                    ...(!isBooksCatalogMode ? [{ id: 'media' as const, label: (() => {
-                      const n = formData.collection_assets.filter(a => a.url?.trim()).length;
-                      return n === 0
-                        ? <span>Mídias vinculadas <span className="inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 ml-1">0</span></span>
-                        : <span>Mídias vinculadas <span className="inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-700 ml-1">{n}</span></span>;
-                    })() }] : [])
                   ]}
                   activeTab={activeTab}
                   onChange={(tabId) => setActiveTab(tabId as any)}
@@ -3089,6 +3199,224 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       );
                     })()}
 
+                    {/* CONTEÚDO: PDF do Livro, Audiolivro e Vídeo do Livro */}
+                    {isBooksCatalogMode && (
+                    <div className="space-y-6">
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mt-2 mb-3">Conteúdo</h3>
+
+                    {/* PDF do Livro */}
+                    {(() => {
+                      const asset = getAssetByCategory('reading');
+                      return (
+                        <div className="space-y-2">
+                          <FileUpload
+                            label="PDF do Livro"
+                            value={asset?.url || ''}
+                            onChange={(url) => {
+                              if (url) {
+                                setFormData((currentFormData) => {
+                                  const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'reading');
+                                  const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'reading');
+                                  nextAssets.push({
+                                    id: currentAsset?.id || createAssetId('reading'),
+                                    category: 'reading',
+                                    media_type: 'document',
+                                    title: currentFormData.title || 'Leitura',
+                                    url: url.trim(),
+                                    description: null,
+                                    scope: COLLECTION_ASSET_META.reading.scope,
+                                    lyrics_url: null,
+                                    offline_available: true,
+                                  });
+                                  return buildNextFormFromAssets(currentFormData, nextAssets);
+                                });
+                              } else {
+                                removeAsset('reading');
+                              }
+                            }}
+                            folder="pdfs"
+                            accept="application/pdf"
+                            collectionId={editingId || undefined}
+                            onFile={(file) => {
+                              // Guarda o arquivo para extração de texto (sugestão de sinopse por IA).
+                              lastPdfFileRef.current = file;
+                              // 1) Auto-preenche título/nível a partir do nome do arquivo.
+                              const parsed = parsePdfFilename(file.name);
+                              if (parsed.title || parsed.level) {
+                                setFormData((prev) => {
+                                  const willFillTitle = !!parsed.title && !prev.title;
+                                  if (willFillTitle || parsed.level) {
+                                    const isApprox = parsed.level === 'Educação Infantil' && !!parsed.title;
+                                    showToast(
+                                      isApprox
+                                        ? 'Nível preenchido automaticamente. Verifique o título.'
+                                        : 'Título e nível preenchidos automaticamente.',
+                                      'success'
+                                    );
+                                  }
+                                  return {
+                                    ...prev,
+                                    ...(willFillTitle ? { title: parsed.title! } : {}),
+                                    ...(parsed.level ? { level: parsed.level } : {}),
+                                  };
+                                });
+                              }
+
+                              // 2) Gera a capa a partir da 1ª página — só se ainda for placeholder
+                              // (nunca sobrescreve uma capa que o usuário já escolheu).
+                              if (isPlaceholderImageUrl(formData.cover_image)) {
+                                void (async () => {
+                                  const coverFile = await renderPdfFirstPageToFile(file);
+                                  if (!coverFile) return;
+                                  const result = await uploadFile(coverFile, 'covers', editingId || undefined);
+                                  if (result?.url) {
+                                    setFormData((prev) =>
+                                      isPlaceholderImageUrl(prev.cover_image)
+                                        ? { ...prev, cover_image: result.url! }
+                                        : prev
+                                    );
+                                    showToast('Capa gerada a partir da 1ª página do PDF.', 'success');
+                                  }
+                                })();
+                              }
+                            }}
+                          />
+                        </div>
+                      );
+                    })()}
+
+                    {/* Audiolivro */}
+                    {(() => {
+                      const asset = getAssetByCategory('storytelling');
+                      const assetIsPublished = asset ? asset.is_published !== false : false;
+                      return (
+                        <div className="space-y-2">
+                          <p className="text-sm font-bold text-gray-800">Audiolivro</p>
+                          <p className="text-xs text-gray-500">Narração completa da obra. Não obrigatório.</p>
+                          <FileUpload
+                            label="Arquivo de Áudio ou Link"
+                            value={asset?.url || ''}
+                            onChange={(url) => {
+                              if (url) {
+                                setFormData((currentFormData) => {
+                                  const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'storytelling');
+                                  const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'storytelling');
+                                  nextAssets.push({
+                                    id: currentAsset?.id || createAssetId('storytelling'),
+                                    category: 'storytelling',
+                                    media_type: 'audio',
+                                    title: currentFormData.title || 'Audiolivro',
+                                    url: url.trim(),
+                                    description: null,
+                                    scope: COLLECTION_ASSET_META.storytelling.scope,
+                                    lyrics_url: null,
+                                    offline_available: false,
+                                    is_published: currentAsset?.is_published ?? true,
+                                  });
+                                  return buildNextFormFromAssets(currentFormData, nextAssets);
+                                });
+                              } else {
+                                removeAsset('storytelling');
+                              }
+                            }}
+                            folder="audio"
+                            accept="audio/*"
+                            collectionId={editingId || undefined}
+                          />
+                          {asset && (
+                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
+                              <div>
+                                <p className="text-sm font-bold text-gray-800">Publicar audiolivro</p>
+                                <p className="text-xs text-gray-500">
+                                  {assetIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setAssetPublished('storytelling', !assetIsPublished)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${assetIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
+                              >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${assetIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Vídeo do Livro */}
+                    {(() => {
+                      const asset = getAssetByCategory('animation');
+                      const assetIsPublished = asset ? asset.is_published !== false : false;
+                      return (
+                        <div className="space-y-2">
+                          <p className="text-sm font-bold text-gray-800">Vídeo do Livro</p>
+                          <p className="text-xs text-gray-500">Animação ou vídeocanção específica deste livro (opcional).</p>
+                          <div className="flex items-center gap-2 rounded-2xl bg-gray-50 px-4 py-3">
+                            <Icons.Link size={16} className="shrink-0 text-gray-400" />
+                            <input
+                              type="url"
+                              value={asset?.url || ''}
+                              onChange={(e) => {
+                                const url = e.target.value;
+                                if (url.trim()) {
+                                  setFormData((currentFormData) => {
+                                    const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'animation');
+                                    const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'animation');
+                                    nextAssets.push({
+                                      id: currentAsset?.id || createAssetId('animation'),
+                                      category: 'animation',
+                                      media_type: 'video',
+                                      title: currentFormData.title || 'Vídeo',
+                                      url: url.trim(),
+                                      description: null,
+                                      scope: COLLECTION_ASSET_META.animation.scope,
+                                      lyrics_url: null,
+                                      offline_available: false,
+                                      is_published: currentAsset?.is_published ?? true,
+                                    });
+                                    return buildNextFormFromAssets(currentFormData, nextAssets);
+                                  });
+                                } else {
+                                  removeAsset('animation');
+                                }
+                              }}
+                              placeholder="https://www.youtube.com/watch?v=..."
+                              className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
+                            />
+                            {asset?.url && (
+                              <button
+                                type="button"
+                                onClick={() => removeAsset('animation')}
+                                className="shrink-0 text-gray-400 hover:text-gray-600"
+                              >
+                                <Icons.X size={14} />
+                              </button>
+                            )}
+                          </div>
+                          {asset && (
+                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
+                              <div>
+                                <p className="text-sm font-bold text-gray-800">Publicar vídeo</p>
+                                <p className="text-xs text-gray-500">
+                                  {assetIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setAssetPublished('animation', !assetIsPublished)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${assetIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
+                              >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${assetIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    </div>
+                    )}
+
                     {/* Capa principal e cor base do card */}
                     <div className="rounded-2xl border border-brand-primary/10 bg-brand-primary/[0.04] p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -3138,6 +3466,55 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     </div>
 
                     {isCollectionsCatalogMode && (
+                      <div className="rounded-2xl border border-brand-primary/20 bg-brand-primary/[0.04] p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary">
+                            <Icons.Sparkles size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-gray-800">Gerar capa com IA a partir da caixa</p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              Não tem uma capa? Copie o prompt abaixo, abra sua IA de imagem (ChatGPT, Gemini, etc.),
+                              <span className="font-semibold text-gray-700"> anexe a foto da caixa física desta coleção</span> e cole o prompt.
+                              A IA gera a capa quadrada seguindo a identidade visual da caixa.
+                            </p>
+
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={handleCopyCoverPrompt}
+                                className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-primary/90"
+                              >
+                                {coverPromptCopied ? <Icons.Check size={15} /> : <Icons.Copy size={15} />}
+                                {coverPromptCopied ? 'Copiado!' : 'Copiar prompt'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShowCoverPromptGuide((prev) => !prev)}
+                                className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50"
+                              >
+                                {showCoverPromptGuide ? 'Ocultar prompt' : 'Ver prompt'}
+                                <Icons.ChevronDown
+                                  size={15}
+                                  className={`transition-transform ${showCoverPromptGuide ? 'rotate-180' : ''}`}
+                                />
+                              </button>
+                            </div>
+
+                            {showCoverPromptGuide && (
+                              <textarea
+                                readOnly
+                                value={buildCollectionCoverPrompt()}
+                                onFocus={(e) => e.currentTarget.select()}
+                                className="mt-3 w-full resize-y rounded-2xl border border-gray-200 bg-white p-4 font-mono text-xs leading-5 text-gray-700 outline-none focus:ring-2 focus:ring-brand-primary min-h-[200px]"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {isCollectionsCatalogMode && (
                       <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 flex items-start gap-2">
                         <Icons.CheckCircle size={16} className="shrink-0 text-gray-400 mt-0.5" />
                         <span>
@@ -3146,6 +3523,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       </div>
                     )}
 
+                    {/* Personagens + Contexto Pedagógico: apenas no cadastro de LIVRO.
+                        Na coleção esses dados são herdados do livro vinculado (single source of truth). */}
+                    {!isCollectionsCatalogMode && (
+                    <>
                     {/* 1.10. Personagens */}
                     <div className="space-y-4">
                       <div>
@@ -3156,7 +3537,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             : 'Selecione os personagens cadastrados para manter a coleção sincronizada com a vitrine pública.'}
                         </p>
 
-                        {selectableCharacters.length === 0 ? (
+                        {charactersLoading ? (
+                          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500 flex items-center gap-2">
+                            <Icons.RotateCw size={16} className="shrink-0 animate-spin text-gray-400" />
+                            Carregando personagens…
+                          </div>
+                        ) : selectableCharacters.length === 0 ? (
                           <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
                             Nenhum personagem cadastrado ainda. Use o módulo Personagens para criar o catálogo.
                           </div>
@@ -3319,6 +3705,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           />
                         </div>
 
+                        {!isBooksCatalogMode && (
                         <div>
                           <div className="mb-2 flex items-center justify-between">
                             <label className="block text-sm font-bold text-gray-700">Descrição</label>
@@ -3346,6 +3733,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             maxLength={500}
                           />
                         </div>
+                        )}
 
                         <div>
                           <label className="block text-sm font-bold text-gray-700 mb-2">Tema</label>
@@ -3390,235 +3778,18 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           />
                         </div>
                     </>
-                    </div>
-
-                    {/* Grupo "Conteúdo" (upload) — order-1: aparece PRIMEIRO (fluxo upload → dados). */}
-                    {isBooksCatalogMode && (
-                    <div className="space-y-6 order-1">
-                    {/* Section heading: Conteúdo (books only) */}
-                    {isBooksCatalogMode && (
-                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mt-6 mb-3">Conteúdo</h3>
+                    </>
                     )}
-
-                    {/* PDF do Livro — só aparece na aba Dados quando isBooksCatalogMode */}
-                    {isBooksCatalogMode && (() => {
-                      const asset = getAssetByCategory('reading');
-                      return (
-                        <div className="space-y-2">
-                          <FileUpload
-                            label="PDF do Livro"
-                            value={asset?.url || ''}
-                            onChange={(url) => {
-                              if (url) {
-                                setFormData((currentFormData) => {
-                                  const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'reading');
-                                  const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'reading');
-                                  nextAssets.push({
-                                    id: currentAsset?.id || createAssetId('reading'),
-                                    category: 'reading',
-                                    media_type: 'document',
-                                    title: currentFormData.title || 'Leitura',
-                                    url: url.trim(),
-                                    description: null,
-                                    scope: COLLECTION_ASSET_META.reading.scope,
-                                    lyrics_url: null,
-                                    offline_available: true,
-                                  });
-                                  return buildNextFormFromAssets(currentFormData, nextAssets);
-                                });
-                              } else {
-                                removeAsset('reading');
-                              }
-                            }}
-                            folder="pdfs"
-                            accept="application/pdf"
-                            collectionId={editingId || undefined}
-                            onFile={(file) => {
-                              // Guarda o arquivo para extração de texto (sugestão de sinopse por IA).
-                              lastPdfFileRef.current = file;
-                              // 1) Auto-preenche título/nível a partir do nome do arquivo.
-                              const parsed = parsePdfFilename(file.name);
-                              if (parsed.title || parsed.level) {
-                                setFormData((prev) => {
-                                  const willFillTitle = !!parsed.title && !prev.title;
-                                  if (willFillTitle || parsed.level) {
-                                    const isApprox = parsed.level === 'Educação Infantil' && !!parsed.title;
-                                    showToast(
-                                      isApprox
-                                        ? 'Nível preenchido automaticamente. Verifique o título.'
-                                        : 'Título e nível preenchidos automaticamente.',
-                                      'success'
-                                    );
-                                  }
-                                  return {
-                                    ...prev,
-                                    ...(willFillTitle ? { title: parsed.title! } : {}),
-                                    ...(parsed.level ? { level: parsed.level } : {}),
-                                  };
-                                });
-                              }
-
-                              // 2) Gera a capa a partir da 1ª página — só se ainda for placeholder
-                              // (nunca sobrescreve uma capa que o usuário já escolheu).
-                              if (isPlaceholderImageUrl(formData.cover_image)) {
-                                void (async () => {
-                                  const coverFile = await renderPdfFirstPageToFile(file);
-                                  if (!coverFile) return;
-                                  const result = await uploadFile(coverFile, 'covers', editingId || undefined);
-                                  if (result?.url) {
-                                    setFormData((prev) =>
-                                      isPlaceholderImageUrl(prev.cover_image)
-                                        ? { ...prev, cover_image: result.url! }
-                                        : prev
-                                    );
-                                    showToast('Capa gerada a partir da 1ª página do PDF.', 'success');
-                                  }
-                                })();
-                              }
-                            }}
-                          />
-                        </div>
-                      );
-                    })()}
-
-                    {/* Audiolivro — só aparece na aba Dados quando isBooksCatalogMode */}
-                    {isBooksCatalogMode && (() => {
-                      const asset = getAssetByCategory('storytelling');
-                      const assetIsPublished = asset ? asset.is_published !== false : false;
-                      return (
-                        <div className="space-y-2">
-                          <p className="text-sm font-bold text-gray-800">Audiolivro</p>
-                          <p className="text-xs text-gray-500">Narração completa da obra. Não obrigatório.</p>
-                          <FileUpload
-                            label="Arquivo de Áudio ou Link"
-                            value={asset?.url || ''}
-                            onChange={(url) => {
-                              if (url) {
-                                setFormData((currentFormData) => {
-                                  const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'storytelling');
-                                  const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'storytelling');
-                                  nextAssets.push({
-                                    id: currentAsset?.id || createAssetId('storytelling'),
-                                    category: 'storytelling',
-                                    media_type: 'audio',
-                                    title: currentFormData.title || 'Audiolivro',
-                                    url: url.trim(),
-                                    description: null,
-                                    scope: COLLECTION_ASSET_META.storytelling.scope,
-                                    lyrics_url: null,
-                                    offline_available: false,
-                                    is_published: currentAsset?.is_published ?? true,
-                                  });
-                                  return buildNextFormFromAssets(currentFormData, nextAssets);
-                                });
-                              } else {
-                                removeAsset('storytelling');
-                              }
-                            }}
-                            folder="audio"
-                            accept="audio/*"
-                            collectionId={editingId || undefined}
-                          />
-                          {asset && (
-                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
-                              <div>
-                                <p className="text-sm font-bold text-gray-800">Publicar audiolivro</p>
-                                <p className="text-xs text-gray-500">
-                                  {assetIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setAssetPublished('storytelling', !assetIsPublished)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${assetIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
-                              >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${assetIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Vídeo do Livro — só aparece na aba Dados quando isBooksCatalogMode */}
-                    {isBooksCatalogMode && (() => {
-                      const asset = getAssetByCategory('animation');
-                      const assetIsPublished = asset ? asset.is_published !== false : false;
-                      return (
-                        <div className="space-y-2">
-                          <p className="text-sm font-bold text-gray-800">Vídeo do Livro</p>
-                          <p className="text-xs text-gray-500">Animação ou vídeocanção específica deste livro (opcional).</p>
-                          <div className="flex items-center gap-2 rounded-2xl bg-gray-50 px-4 py-3">
-                            <Icons.Link size={16} className="shrink-0 text-gray-400" />
-                            <input
-                              type="url"
-                              value={asset?.url || ''}
-                              onChange={(e) => {
-                                const url = e.target.value;
-                                if (url.trim()) {
-                                  setFormData((currentFormData) => {
-                                    const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'animation');
-                                    const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'animation');
-                                    nextAssets.push({
-                                      id: currentAsset?.id || createAssetId('animation'),
-                                      category: 'animation',
-                                      media_type: 'video',
-                                      title: currentFormData.title || 'Vídeo',
-                                      url: url.trim(),
-                                      description: null,
-                                      scope: COLLECTION_ASSET_META.animation.scope,
-                                      lyrics_url: null,
-                                      offline_available: false,
-                                      is_published: currentAsset?.is_published ?? true,
-                                    });
-                                    return buildNextFormFromAssets(currentFormData, nextAssets);
-                                  });
-                                } else {
-                                  removeAsset('animation');
-                                }
-                              }}
-                              placeholder="https://www.youtube.com/watch?v=..."
-                              className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
-                            />
-                            {asset?.url && (
-                              <button
-                                type="button"
-                                onClick={() => removeAsset('animation')}
-                                className="shrink-0 text-gray-400 hover:text-gray-600"
-                              >
-                                <Icons.X size={14} />
-                              </button>
-                            )}
-                          </div>
-                          {asset && (
-                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
-                              <div>
-                                <p className="text-sm font-bold text-gray-800">Publicar vídeo</p>
-                                <p className="text-xs text-gray-500">
-                                  {assetIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setAssetPublished('animation', !assetIsPublished)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${assetIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
-                              >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${assetIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
                     </div>
-                    )}
 
                     {!isBooksCatalogMode && (
                       <div className="flex justify-end pt-2 order-3">
                         <button
                           type="button"
-                          onClick={() => setActiveTab('media')}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-primary text-white text-sm font-semibold hover:bg-brand-primary/90 transition-colors"
+                          onClick={goToMediaStep}
+                          disabled={!canAdvanceToMediaStep}
+                          title={!canAdvanceToMediaStep ? 'Informe o título da coleção para avançar' : undefined}
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-brand-primary text-white text-sm font-semibold hover:bg-brand-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-primary"
                         >
                           Próximo
                           <Icons.ChevronRight size={16} />
@@ -3631,6 +3802,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                 {/* Tab: Mídias vinculadas */}
                 {activeTab === 'media' && (
                   <>
+                    {isCollectionsCatalogMode && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('identification')}
+                        className="inline-flex items-center gap-1 self-start text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors"
+                      >
+                        <Icons.ChevronLeft size={16} />
+                        Voltar para Dados da coleção
+                      </button>
+                    )}
                     <div>
                       <h3 className="text-lg font-bold text-gray-800 mb-4">
                         {activeLibraryAreaLabel ? activeLibraryAreaLabel : 'Mídias vinculadas'}

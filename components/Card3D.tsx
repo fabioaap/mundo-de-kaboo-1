@@ -104,6 +104,7 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
   const collectionHeroCover = displayCoverImage || collection.cover_image?.trim() || '';
   const formatKinds = getCollectionFormatKinds(collection);
   const bookSummary = collection.synopsis?.trim()
+    || collection.learning_objectives?.trim()
     || (collection.description as string | undefined)?.trim()
     || collection.theme?.trim()
     || subtitleFallback;

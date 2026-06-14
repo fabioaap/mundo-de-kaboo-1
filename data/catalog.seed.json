@@ -476,9 +476,9 @@
                 "Tomada de Decisão Responsável"
             ],
             "age_grade": [
-                "3 anos",
-                "4 anos",
-                "5 anos",
+                "G3",
+                "G4",
+                "G5",
                 "1º ano",
                 "2º ano"
             ],
@@ -506,17 +506,17 @@
                 "EI03CG02",
                 "EF15AR15",
                 "EF12LP07",
-                "ΕI03ΕF03",
-                "ΕI03ΕO02"
+                "EI03EF03",
+                "EI03EO02"
             ],
             "casel_competencies": [
                 "Autoconsciência",
                 "Habilidades de Relacionamento"
             ],
             "age_grade": [
-                "3 anos",
-                "4 anos",
-                "5 anos",
+                "G3",
+                "G4",
+                "G5",
                 "1º ano",
                 "2º ano"
             ],
@@ -555,9 +555,9 @@
                 "Habilidades de Relacionamento"
             ],
             "age_grade": [
-                "3 anos",
-                "4 anos",
-                "5 anos",
+                "G3",
+                "G4",
+                "G5",
                 "1º ano",
                 "2º ano"
             ],
@@ -592,9 +592,9 @@
                 "Habilidades de Relacionamento"
             ],
             "age_grade": [
-                "3 anos",
-                "4 anos",
-                "5 anos",
+                "G3",
+                "G4",
+                "G5",
                 "1º ano",
                 "2º ano"
             ],
@@ -629,9 +629,9 @@
                 "Autoconsciência"
             ],
             "age_grade": [
-                "3 anos",
-                "4 anos",
-                "5 anos"
+                "G3",
+                "G4",
+                "G5"
             ],
             "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/78942184-3cab-47c9-92a1-4ba56932e440/1768192877873-wg09c61-EI_KabooLivro4_BatatinhaAcolhimento_app_compressed",
             "extra_materials": [
@@ -664,9 +664,9 @@
                 "Tomada de Decisão Responsável"
             ],
             "age_grade": [
-                "3 anos",
-                "4 anos",
-                "5 anos"
+                "G3",
+                "G4",
+                "G5"
             ],
             "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/410acf81-6d7d-4569-85e4-02ed2fb28762/1768192779387-i5lmwcw-EI_KabooLivro3_OndeEstaGaio_app_compressed.pdf",
             "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/410acf81-6d7d-4569-85e4-02ed2fb28762/1768842640202-h0s902q-onde_esta__o_Gaio.WAV",
@@ -697,9 +697,9 @@
                 "Autoconsciência"
             ],
             "age_grade": [
-                "3 anos",
-                "4 anos",
-                "5 anos"
+                "G3",
+                "G4",
+                "G5"
             ],
             "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/76ea478e-a796-48b7-b9f5-67187a777cb8/1768192650106-9x0kc27-EI_KabooLivro2_BladoSonsBrilham_app_compressed.pdf",
             "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/76ea478e-a796-48b7-b9f5-67187a777cb8/1769477771898-n4rfbh1-04_Blado_e_os_sons_que_brilham_ok.WAV",
@@ -730,9 +730,9 @@
                 "Autoconsciência"
             ],
             "age_grade": [
-                "3 anos",
-                "4 anos",
-                "5 anos"
+                "G3",
+                "G4",
+                "G5"
             ],
             "pdf_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/pdfs/df28d7f4-7eed-4417-ae8c-81e457d61bd5/1768192671272-atimo0w-EI_KabooLivro1_ACordoSentir_app_compressed.pdf",
             "audio_url": "https://uuaiacefzdmsdbsvsuoj.supabase.co/storage/v1/object/public/collections/audio/df28d7f4-7eed-4417-ae8c-81e457d61bd5/1769477834084-p3qcsg8-05_a_cor_do_sentir_ok.WAV",

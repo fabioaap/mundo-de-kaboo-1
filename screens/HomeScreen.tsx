@@ -58,7 +58,7 @@ const getInitialFilters = (params?: any): FilterState => {
   };
 };
 
-const AGE_ORDER = ['3 anos', '4 anos', '5 anos', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano'];
+const AGE_ORDER = ['G3', 'G4', 'G5', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano'];
 
 const normalizeSearch = (str: string) => {
   return str
