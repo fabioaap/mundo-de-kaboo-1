@@ -259,10 +259,42 @@ const hydrateCollectionsPresentationFields = (collections: Collection[], charact
   return collections.map((collection) => hydrateCollectionPresentationFields(collection, characters));
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Keep only valid UUID strings from a `uuid[]` column value. Drops client-generated
+ * asset ids ("collection-asset:…", "storytelling-…"), mock-session ids ("mock-…"),
+ * and any other non-uuid junk. Returns `undefined` when the input is not an array
+ * (so the caller leaves the field untouched).
+ */
+const keepValidUuids = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  return value.filter((v): v is string => typeof v === 'string' && UUID_RE.test(v.trim()));
+};
+
 const sanitizeCollectionPayload = (collection: Partial<Collection>, characters?: Character[]): Partial<Collection> => {
   const syncedCollection = syncCollectionCharacters(syncCollectionWithAssets(collection), characters);
 
-  return syncedCollection;
+  // `character_ids` and `kit_book_ids` are `uuid[]` columns. A SINGLE non-uuid
+  // value (a client asset id, a mock-session id, …) makes Postgres reject the
+  // entire UPDATE/INSERT with `22P02` (invalid input syntax for type uuid). That
+  // is a *type* error, not a missing-column error, so the retry in
+  // create/updateCollection (which only recovers from PGRST204) can't save it —
+  // the whole write is lost and the user's change (e.g. publish/unpublish)
+  // silently never persists. Strip the bad entries here so the valid data saves.
+  const next: Partial<Collection> = { ...syncedCollection };
+  const cleanCharacterIds = keepValidUuids(next.character_ids);
+  if (cleanCharacterIds && cleanCharacterIds.length !== (next.character_ids?.length ?? 0)) {
+    logger.warn('sanitizeCollectionPayload: dropped non-uuid character_ids', next.character_ids);
+  }
+  if (cleanCharacterIds) next.character_ids = cleanCharacterIds;
+  const cleanKitBookIds = keepValidUuids(next.kit_book_ids);
+  if (cleanKitBookIds && cleanKitBookIds.length !== (next.kit_book_ids?.length ?? 0)) {
+    logger.warn('sanitizeCollectionPayload: dropped non-uuid kit_book_ids', next.kit_book_ids);
+  }
+  if (cleanKitBookIds) next.kit_book_ids = cleanKitBookIds;
+
+  return next;
 };
 
 export const stripMissingCollectionColumns = (
