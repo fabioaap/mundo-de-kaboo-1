@@ -23,7 +23,7 @@
 - [ ] **Hardening operacional homologado** (offline, feature flags, health checks como processo real + runbook). (Infra)
 
 ## P1 — Alta (bloqueadores funcionais / integridade)
-- [ ] **VouchersModule 100% mock → integração Supabase** (4 abas leem só de localStorage; admin não vê resgates/ativações reais). `G2` (Vouchers)
+- [x] ~~**VouchersModule 100% mock → integração Supabase**~~ — **JÁ INTEGRADO** (verificado 2026-06-15). `lib/apiVouchers.ts` é 100% Supabase (`voucher_models`/`voucher_batches`/`vouchers`/`audit_log` + RPC `emit_voucher_batch`); `VouchersModule` usa `apiVouchers.*` em todas as abas quando `isSupabaseConfigured`, com mock só como fallback. Banco real: 1 modelo, 1 lote, 14 vouchers. **Cleanup futuro:** remover o caminho mock / `lib/mockVoucherData.ts` quando o fallback não for mais necessário. (Vouchers)
 - [ ] **Redeem de voucher depende de localStorage entre etapas** — persistir `pending_voucher_code` no banco (`lib/api.ts:1541`, `lib/auth.ts`). `G3` (Vouchers)
 - [ ] **Cloudflare Access bloqueia usuários externos** (prod exige `@educacross.com.br`) — config Cloudflare, fora do código. `G1` (Infra/UX)
 - [ ] **Tags obrigatórias no card de coleção: idade recomendada (família) + ano escolar (escola)** — notas Gemini. (Conteúdo/UX)
