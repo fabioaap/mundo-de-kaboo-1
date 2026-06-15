@@ -34,6 +34,13 @@
 - **Sem indicador de cadeado nas bibliotecas** — Home mostra cadeado, mas Áudios/Vídeos/etc. não; só descobre que está bloqueado ao clicar. Inconsistente.
 - **Modal não fecha após "Comprar na loja"** — abre a loja em nova aba e mantém o modal aberto na aba original. Avaliar fechar automaticamente.
 
+### 🔴 CRIAÇÃO de voucher pela UI (admin) — testada ao vivo, e está QUEBRADA
+Como `admin@mundodekaboo.dev` (sessão real, não expirada), fiz o wizard de criação de voucher (Etapa 1 config → Etapa 2 "selecionar exatamente os conteúdos" → Etapa 3 revisão; liberei só o livro "A Cordo Sentir"). ✅ O wizard de liberação é claro e funciona até o save. Mas:
+- **"Salvar e ativar" falha com 403** — `POST /rest/v1/voucher_models` retorna **403 (RLS)** e o modelo NÃO é criado. Contradição a investigar: a sessão é admin que gerencia Kaboo (`296eab71`), o brand cacheado no bootstrap é o correto (`296eab71`), e `can_manage_brand('296eab71')` retorna **true** isolado (testado via JWT simulado). Próximo passo: capturar o `brand_id` real do corpo do POST / logs do Supabase (pode ser timing/estado do `wizardBrand = useBrandConfig().bootstrap.brand` no momento do submit). **Bloqueia o go-live: admin não consegue emitir voucher pela UI.**
+- **Falha silenciosa** — `VouchersModule.handleSave` faz `catch { setSavingWizard(false); }` (VouchersModule:598) **sem toast** → o wizard congela na Etapa 3 sem nenhuma mensagem de erro. Corrigir para exibir o erro.
+- **Modelos criados fora da UI (via SQL) não aparecem na lista** — "Nenhum modelo criado" mesmo com modelo `brand=kaboo` no banco (RLS/escopo de brand + `created_by` null). Menos crítico, mas confirma o acoplamento com brand/RLS.
+- Nota de modelagem: a tela deixa claro que *"o tipo de pacote organiza a oferta, mas os conteúdos liberados são definidos apenas pelas seleções abaixo"* — a liberação é escolher exatamente as coleções. Reforça o bug do kit→livro acima (escolher um kit não inclui o livro vinculado).
+
 ## P0 — Gates de Go-Live (`checklist-go-live-v1-3.md`)
 - [ ] **Vouchers ponta a ponta com a gráfica** sem mock (geração → distribuição → resgate → operação). (Vouchers)
 - [ ] **Isolamento por marca homologado** (Kaboo × Central Coruja, sem vazamento de leitura/escrita). (White-label)
