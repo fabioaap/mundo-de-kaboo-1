@@ -43,7 +43,7 @@ A Central Coruja entra no go-live quando, **logada como um usuário real da marc
 
 ## 5. Passo a passo no Admin (para o time de conteúdo)
 
-> Pré-requisito: estar logado como **admin/editor da Central Coruja** (membership da marca). Hoje **não há admin/editor da Coruja** — ver §7.
+> Pré-requisito: gerenciar a marca Central Coruja. A conta **`admin@mundodekaboo.dev` já tem membership das DUAS marcas** (gerencia Coruja), então **já consegue cadastrar** conteúdo da Coruja — basta operar no contexto da marca Coruja (front `central-coruja` ou seleção de marca no admin). O que falta é um **viewer** da Coruja para validar a visão do usuário final (§6/§7).
 
 ### 5.1 Cadastrar personagem
 1. Admin → **Personagens** → Novo.
@@ -77,7 +77,7 @@ A Central Coruja entra no go-live quando, **logada como um usuário real da marc
 ## 7. Pendências de dados / suporte (posso executar com sua autorização)
 
 - **Limpar/remapear `character_ids` Kaboo** nas 12 coleções da Coruja (migration). Limpar agora (até existirem personagens Coruja) evita chips quebrados; remapear quando os personagens forem cadastrados.
-- **Criar 1 viewer de teste da Coruja** + **1 admin/editor da Coruja** (hoje não há membership da marca — sem isso o time não consegue nem cadastrar pela UI logado como Coruja).
+- **Criar 1 viewer de teste da Coruja** (`brand_id=bb43daa4…`, `active`) para homologar a visão do usuário final. (Admin já existe: `admin@mundodekaboo.dev` gerencia as duas marcas.)
 - **Cadastrar o conteúdo** (personagens/vídeos) — depende dos arquivos do time; posso cadastrar assim que vierem.
 
 ## 8. Checklist final de aceite
