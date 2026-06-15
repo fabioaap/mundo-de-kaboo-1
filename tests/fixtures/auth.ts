@@ -163,6 +163,113 @@ export async function setupAdminSession(page: Page): Promise<void> {
     });
 }
 
+const GRANTS_STORAGE_KEY = 'kaboo_mock_user_content_grants';
+const VIEWER_USER_ID = 'mock-viewer-e2e';
+const VIEWER_SESSION_ID = 'session_e2e_viewer_grants';
+
+type SetupViewerSessionWithGrantsOptions = {
+    userId?: string;
+    sessionId?: string;
+    email?: string;
+    fullName?: string;
+    grantedCollectionIds: string[];
+    voucherId?: string;
+    navState?: Record<string, unknown>;
+    initialUrl?: string;
+};
+
+/**
+ * Seeds a MOCK viewer session (role 'viewer', active) plus a content-grants array so
+ * the user only has access to the granted collections. Used by the voucher-upsell E2E.
+ */
+export async function setupViewerSessionWithGrants(
+    page: Page,
+    options: SetupViewerSessionWithGrantsOptions,
+): Promise<void> {
+    const now = new Date().toISOString();
+    const futureDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+    const userId = options.userId || VIEWER_USER_ID;
+    const sessionId = options.sessionId || VIEWER_SESSION_ID;
+    const email = options.email || 'viewer-e2e@mundodekaboo.local';
+    const fullName = options.fullName || 'Viewer Degustacao';
+    const voucherId = options.voucherId || 'voucher-e2e-grant';
+    const navState = options.navState || { currentScreen: 'home' };
+    const initialUrl = options.initialUrl || '/#home';
+
+    const profile = {
+        id: userId,
+        full_name: fullName,
+        email,
+        avatar_id: 'Kaboo',
+        role: 'viewer',
+        voucher_id: voucherId,
+        access_starts_at: now,
+        access_expires_at: futureDate,
+        access_status: 'active',
+        created_by: null,
+    };
+
+    const users = [
+        {
+            id: userId,
+            email,
+            password: 'viewer123',
+            role: 'viewer',
+            created_at: now,
+            invited_at: null,
+            confirmed_at: now,
+            last_sign_in_at: now,
+            profile,
+        },
+    ];
+
+    const grants = options.grantedCollectionIds.map((collectionId, index) => ({
+        id: `grant-e2e-${index}`,
+        user_id: userId,
+        collection_id: collectionId,
+        voucher_id: voucherId,
+        granted_at: now,
+        expires_at: null,
+    }));
+
+    await page.addInitScript(
+        ({
+            sessionId,
+            userId,
+            usersJson,
+            profileCacheJson,
+            grantsJson,
+            navStateJson,
+            grantsKey,
+        }) => {
+            window.sessionStorage.setItem('kaboo_session_id', sessionId);
+            window.sessionStorage.setItem('kaboo_dev_mock_session', '1');
+            window.sessionStorage.setItem('kaboo_mock_session_user_id', userId);
+            window.localStorage.setItem('kaboo_mock_session_user_id', userId);
+            window.localStorage.setItem('kaboo_mock_users', usersJson);
+            window.sessionStorage.setItem('kaboo_profile_cache', profileCacheJson);
+            window.localStorage.setItem(grantsKey, grantsJson);
+            window.localStorage.setItem('kaboo_nav_state', navStateJson);
+        },
+        {
+            sessionId,
+            userId,
+            usersJson: JSON.stringify(users),
+            profileCacheJson: JSON.stringify({
+                profile,
+                userId,
+                sessionId,
+                timestamp: Date.now(),
+            }),
+            grantsJson: JSON.stringify(grants),
+            navStateJson: JSON.stringify(navState),
+            grantsKey: GRANTS_STORAGE_KEY,
+        },
+    );
+
+    await page.goto(initialUrl);
+}
+
 export async function setupCentralCorujaEditorSession(
     page: Page,
     options?: {
