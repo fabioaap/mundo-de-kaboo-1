@@ -6,7 +6,7 @@
 
 **CORE: APROVADO ✅** — o conteúdo real (coleções, personagens, formações, materiais, vouchers) está isolado por marca, comprovado por simulação cross-brand de leitura e escrita.
 
-**CONDICIONAL ⚠️** — o subsistema de **mídia/recursos** (mini-YouTube/Spotify, ainda não lançado) tem políticas sem escopo de marca. **Sem vazamento ativo hoje** (tabelas vazias/draft, sem usuários Central Coruja), mas precisa ser fechado **antes** de (a) publicar mídia ou (b) criar usuários da Central Coruja.
+**LEITURA: APROVADO ✅** — os gaps de leitura do subsistema de mídia (mini-YouTube/Spotify, ainda não lançado) foram **fechados** em 2026-06-15 (migration `20260615170000_brand_scope_media_rls.sql`). Resta apenas um follow-up 🟡 não-bloqueante: as policies de **gestão** (admin) de mídia ainda são cross-brand no nível admin — estreitar quando a feature de mídia for construída.
 
 ## Modelo de isolamento
 
@@ -27,14 +27,22 @@
 
 `collections`, `characters`, `formations`, `materials`, `vouchers`, `voucher_models`, `voucher_batches`, `brand_settings`, `brand_routes`, `brand_feature_overrides`, `audit_log`, `profiles` — todas com `brand_id` + RLS que filtra por marca. RLS habilitada em **todas** as tabelas do schema público.
 
-## 🔴 Gaps latentes (fechar antes do go-live de mídia / usuários Coruja)
+## ✅ Gaps de leitura — FECHADOS (2026-06-15)
 
-| # | Tabela | Política atual | Risco | Correção proposta |
-|---|--------|----------------|-------|-------------------|
-| 1 | `media_items` | SELECT permite `access_mode='active_subscription'` para **qualquer** usuário ativo, sem filtro de marca | Usuário ativo de uma marca leria mídia publicada de outra | Escopar via `media_collection_links → collections.brand_id` (ou adicionar `brand_id` à tabela). Hoje: 26 linhas, **todas `draft`** → inerte. |
-| 2 | `collection_resources` | SELECT `USING (true)` (qualquer autenticado lê tudo) | Sem escopo algum | Escopar pela coleção-pai (`collection_resources.collection_id → collections`, que já é RLS por marca). Hoje: **0 linhas**. |
-| 3 | `media_collection_links` | SELECT `USING (true)` | Metadados de vínculo mídia↔coleção cross-brand | Escopar via `collection_id → collections`. Usado pelo "collection-backed hub" — exige teste. |
-| 4 | `media_shelves` / `media_shelf_items` | SELECT só por `is_published` | Estrutura de prateleiras cross-brand | Sem `brand_id` na tabela → decisão de schema (adicionar `brand_id` ou vincular a coleção). Hoje: **0 linhas**. |
+Migration `20260615170000_brand_scope_media_rls.sql` (aplicada em prod) brand-escopou as políticas de **leitura** (`authenticated`) do subsistema de mídia, via a coleção-pai (espelhando a policy de `collections`):
+
+| # | Tabela | Antes | Depois |
+|---|--------|-------|--------|
+| 1 | `media_items` | branch `active_subscription` sem filtro de marca | viewer só lê mídia publicada ligada a uma coleção **publicada da sua marca** |
+| 2 | `collection_resources` | SELECT `USING(true)` | escopado pela coleção-pai (marca) |
+| 3 | `media_collection_links` | SELECT `USING(true)` | escopado pela coleção vinculada (marca) |
+| 4 | `media_shelves` / `media_shelf_items` | só `is_published` | adicionada coluna `brand_id` em `media_shelves`; leitura escopada por marca |
+
+**Verificação pós-fix (simulação):** viewer Kaboo continua vendo 9 coleções (sem regressão) e **0** linhas das tabelas de mídia (draft/não-lançado); admin Kaboo mantém acesso aos 26 drafts + 7 links (workflow intacto, policies de gestão não alteradas).
+
+### 🟡 Follow-ups (não-bloqueantes, ligados à épica de mídia)
+- As policies de **gestão** (admin/editor `ALL`) de `media_items`/`media_collection_links`/`media_shelves`/`media_shelf_items` ainda usam `EXISTS profiles admin/editor` (qualquer admin) — visibilidade/escrita cross-brand no nível admin. Estreitar para `can_manage_brand` quando a feature de mídia for construída (interage com o fluxo criar-depois-vincular).
+- `media_shelves.brand_id` precisa ser preenchido na criação quando a feature lançar.
 
 ## Observações (não-bloqueantes)
 
@@ -44,6 +52,7 @@
 
 ## Recomendação
 
-1. Fechar os gaps 1–4 com migration de RLS (escopo por marca via coleção-pai) **antes** de publicar mídia ou onboard de usuários Coruja. Gaps 2 e 4 são baratos (tabelas vazias); 1 e 3 exigem teste por tocarem o hub de mídia.
-2. Revisar a conta dual-brand `admin@mundodekaboo.dev`.
-3. Limpar/atribuir o viewer com `brand_id` nulo.
+1. ✅ **FEITO** — gaps de leitura fechados (migration `20260615170000`).
+2. 🟡 Estreitar as policies de **gestão** de mídia (admin/editor `ALL`) para `can_manage_brand` quando a feature de mídia for construída.
+3. Revisar a conta dual-brand `admin@mundodekaboo.dev` (confirmar se deve administrar as duas marcas).
+4. Limpar/atribuir o viewer com `brand_id` nulo.
