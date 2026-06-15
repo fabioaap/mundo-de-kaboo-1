@@ -24,12 +24,12 @@ A Central Coruja entra no go-live quando, **logada como um usuário real da marc
 | Usuário da marca p/ validar | **0** | 🔴 |
 | Formações (opcional) | 0 | 🟡 |
 
-**Problema de dados:** 12 coleções da Coruja referenciam `character_ids` que **pertencem à Kaboo** (6 ids distintos). Como a RLS de `characters` é por marca, um viewer Coruja **não lê** esses personagens → chips de personagem quebram. Precisa ser corrigido.
+**Problema de dados — ✅ CORRIGIDO (2026-06-15):** 12 coleções da Coruja referenciavam `character_ids` da **Kaboo** (6 ids; chips quebrariam para o viewer Coruja por causa da RLS). Migration `20260615200000_clear_crossbrand_character_ids.sql` removeu as referências cross-brand (mantendo só as da própria marca). Resultado: Coruja com 0 refs (revincular quando os personagens forem criados); Kaboo manteve as suas (4 coleções).
 
 ## 3. O que falta (prioridade)
 
 1. 🔴 **Cadastrar ≥2 personagens da Central Coruja** (Admin → Personagens).
-2. 🔴 **Remapear/limpar os `character_ids` Kaboo** nas 12 coleções da Coruja → apontar para os personagens da Coruja (ou limpar até existirem).
+2. ✅ ~~**Limpar os `character_ids` Kaboo** nas coleções da Coruja~~ — feito (migration `20260615200000`). Resta **revincular** aos personagens da Coruja depois que forem criados (passo 1).
 3. 🔴 **Criar 1 usuário viewer da Coruja** (ou usar preview) para **homologar visibilidade**.
 4. ⚠️ **Reforçar vídeo** — só 1 coleção tem vídeo; idealmente +2.
 5. 🟡 (Opcional) Cadastrar ≥1 **Formação** se a biblioteca Formações for entrar no go-live.
@@ -76,14 +76,14 @@ A Central Coruja entra no go-live quando, **logada como um usuário real da marc
 
 ## 7. Pendências de dados / suporte (posso executar com sua autorização)
 
-- **Limpar/remapear `character_ids` Kaboo** nas 12 coleções da Coruja (migration). Limpar agora (até existirem personagens Coruja) evita chips quebrados; remapear quando os personagens forem cadastrados.
+- ✅ ~~**Limpar `character_ids` Kaboo** nas coleções da Coruja~~ — feito (migration `20260615200000`); revincular aos personagens da Coruja quando existirem.
 - **Criar 1 viewer de teste da Coruja** (`brand_id=bb43daa4…`, `active`) para homologar a visão do usuário final. (Admin já existe: `admin@mundodekaboo.dev` gerencia as duas marcas.)
 - **Cadastrar o conteúdo** (personagens/vídeos) — depende dos arquivos do time; posso cadastrar assim que vierem.
 
 ## 8. Checklist final de aceite
 
 - [ ] ≥2 personagens da Coruja cadastrados e ativos
-- [ ] `character_ids` Kaboo removidos/remapeados nas coleções da Coruja
+- [x] `character_ids` Kaboo **removidos** das coleções da Coruja (migration `20260615200000`) — falta revincular aos personagens da Coruja
 - [ ] ≥3 coleções publicadas (✅ já 18)
 - [ ] ≥1 livro, ≥1 áudio, ≥1 vídeo, ≥1 material acessíveis (vídeo: reforçar)
 - [ ] 1 viewer da Coruja criado e usado para validar
