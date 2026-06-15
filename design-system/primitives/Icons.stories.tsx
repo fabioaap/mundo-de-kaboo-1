@@ -22,7 +22,7 @@ interface GalleryProps {
 const Gallery: React.FC<GalleryProps> = ({ size, strokeWidth, color }) => (
   <div className="flex flex-wrap gap-6 p-4">
     {projectIcons.map((name) => {
-      const Icon = (LucideIcons as Record<string, React.FC<{ size: number; strokeWidth: number; color: string }>>)[name]
+      const Icon = (LucideIcons as unknown as Record<string, React.FC<{ size: number; strokeWidth: number; color: string }>>)[name]
       if (!Icon) return null
       return (
         <div key={name} className="flex flex-col items-center gap-2 w-20">

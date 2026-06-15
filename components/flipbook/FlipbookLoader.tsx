@@ -1,5 +1,9 @@
 import React, { forwardRef, memo, useCallback, useState, useEffect } from 'react';
-import HTMLFlipBook from 'react-pageflip';
+import HTMLFlipBookRaw from 'react-pageflip';
+
+// react-pageflip's IProps marca várias props opcionais em runtime como obrigatórias.
+// Relaxamos o tipo (sem alterar runtime) para passar só o que usamos, incluindo ref.
+const HTMLFlipBook = HTMLFlipBookRaw as unknown as React.ComponentType<any>;
 import PdfPage from './PdfPage';
 import { useDebounce } from '../../hooks/useDebounce';
 import useScreenSize from '../../hooks/useScreenSize';

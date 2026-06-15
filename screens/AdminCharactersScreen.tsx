@@ -545,7 +545,7 @@ export const AdminCharactersScreen = forwardRef<AdminCharactersHandle, AdminChar
         </div>
       )}
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} progress={toast.progress} />}
+      {toast && <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} progress={toast.progress} />}
     </div>
   );
 });

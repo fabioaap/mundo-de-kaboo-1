@@ -141,13 +141,16 @@ function resolveBrandSlug(): string {
         }
     }
 
+    // VITE_BRAND_SLUG é autoritativo: cada front é de uma única marca (single-brand
+    // deployment). Fica ACIMA do preview override (localStorage) para que uma sessão
+    // de preview antiga não troque a marca silenciosamente.
+    const fromEnv = import.meta.env.VITE_BRAND_SLUG as string | undefined;
+    if (fromEnv) return fromEnv;
+
     const previewSettings = getWhiteLabelPreviewSettings();
     if (previewSettings.previewEnabled) {
         return previewSettings.activeBrandId;
     }
-
-    const fromEnv = import.meta.env.VITE_BRAND_SLUG as string | undefined;
-    if (fromEnv) return fromEnv;
 
     if (typeof window !== 'undefined') {
         const fromPathname = resolveBrandSlugFromPathname(window.location.pathname);

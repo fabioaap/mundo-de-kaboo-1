@@ -403,7 +403,7 @@ const ModelDetailView: React.FC<{
 
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
-            {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+            {toast && <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />}
 
             {/* Breadcrumb */}
             <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-primary mb-4">
@@ -1187,7 +1187,7 @@ const BatchDetailView: React.FC<{
 
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
-            {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+            {toast && <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />}
 
             <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-primary mb-4">
                 <Icons.ChevronLeft className="w-4 h-4" /> Lotes
@@ -1420,7 +1420,7 @@ const CodesListView: React.FC = () => {
 
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
-            {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+            {toast && <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />}
 
             <h1 className="text-xl font-bold text-gray-800 mb-6">Códigos</h1>
 

@@ -405,6 +405,8 @@ const SLOT_MEDIA_TYPE: Record<CollectionAssetCategory, { label: string; color: s
   video_lesson:   { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
   teacher_guide:  { label: 'Material', color: 'bg-amber-50 text-amber-600 border-amber-200' },
   extra_material: { label: 'Material', color: 'bg-amber-50 text-amber-600 border-amber-200' },
+  formation:      { label: 'Formação', color: 'bg-amber-50 text-amber-600 border-amber-200' },
+  story_video:    { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
 };
 
 // Maps each asset category to a human-readable hint for the empty-state in the media picker.
@@ -947,7 +949,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     // kit's cover. See getLibraryAssetCoverImage.
     const collectionsById = new Map(collections.map((item) => [item.id, item]));
 
-    return collections.flatMap((collection) => {
+    // Dono canônico de um arquivo: a coleção cujo ID aparece no caminho de storage
+    // (.../collections/<pasta>/<COLLECTION_ID>/<arquivo>). Usado para deduplicar:
+    // quando um kit copia a mídia de um livro (mesma URL), a entrada do LIVRO (dono)
+    // prevalece e a cópia do kit não aparece duplicada na biblioteca.
+    const ownerIdFromUrl = (url: string): string | null => {
+      const match = url.match(/\/collections\/[^/]+\/([0-9a-fA-F-]{36})\//);
+      return match ? match[1] : null;
+    };
+
+    const flatItems = collections.flatMap((collection) => {
       const explicitCategories = new Set(
         (collection.collection_assets ?? [])
           .filter((a) => a.url?.trim())
@@ -995,6 +1006,25 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
           };
         });
     });
+
+    // Deduplica por arquivo (URL): o mesmo áudio/PDF/vídeo só aparece UMA vez na
+    // biblioteca, mesmo que esteja copiado em vários kits/coleções. Quando há
+    // empate, a entrada da coleção DONA do arquivo (ID no caminho de storage)
+    // prevalece sobre cópias linkadas em kits.
+    const byUrl = new Map<string, LibraryAssetListItem>();
+    for (const item of flatItems) {
+      const url = item.asset.url.trim();
+      const existing = byUrl.get(url);
+      if (!existing) {
+        byUrl.set(url, item);
+        continue;
+      }
+      const owner = ownerIdFromUrl(url);
+      if (owner && item.collection.id === owner && existing.collection.id !== owner) {
+        byUrl.set(url, item);
+      }
+    }
+    return Array.from(byUrl.values());
   }, [collections, initialLibraryArea, isBooksCatalogMode]);
 
   const filteredLibraryAssets = React.useMemo(() => {
@@ -4698,6 +4728,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       setUserFormData({
                         email: '',
                         full_name: '',
+                        password: '',
                         role: 'viewer',
                       });
                       setAcceptedTerms(false);

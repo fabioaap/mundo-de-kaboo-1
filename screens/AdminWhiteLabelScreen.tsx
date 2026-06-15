@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ColorPicker } from '../components/ColorPicker';
 import { FileUpload } from '../components/FileUpload';
 import { Button } from '../design-system';
@@ -6,7 +6,7 @@ import { Icons } from '../components/Icons';
 import { Toast } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import { LOGO_URL } from '../constants';
-import { invalidateBrandBootstrapCache } from '../hooks/useBrandConfig';
+import { invalidateBrandBootstrapCache, useBrandConfig } from '../hooks/useBrandConfig';
 import { getWhiteLabelPreviewSettings, setActiveWhiteLabelBrand } from '../lib/whiteLabelPreview';
 import { isAdmin } from '../lib/auth';
 import {
@@ -59,16 +59,9 @@ const MODE_OPTIONS: Array<{ value: HeroParallaxMode; label: string; description:
     { value: 'standard', label: 'Padrão', description: 'Profundidade mais rica para a marca.' },
 ];
 
-const BRAND_ACCENTS: Record<string, string> = {
-    kaboo: 'from-brand-primary/10 via-brand-primary/[0.04] to-transparent',
-    'central-coruja': 'from-[#0C1A34]/16 via-[#5D1E76]/10 to-[#EA9A3B]/8',
-};
-
-const ROLLOUT_WAVES: Array<{ value: WhiteLabelRolloutWave; label: string; description: string }> = [
-    { value: 'pilot', label: 'Piloto', description: 'Exposição inicial controlada para validação.' },
-    { value: 'group', label: 'Grupo', description: 'Expansão para grupo intermediário.' },
-    { value: 'general', label: 'Geral', description: 'Rollout completo para toda a marca.' },
-];
+// Faixa de destaque do resumo: derivada da cor primária da marca (via CSS var
+// brand-primary), funciona para qualquer marca — sem hardcode por slug.
+const BRAND_ACCENT = 'from-brand-primary/10 via-brand-primary/[0.04] to-transparent';
 
 const DEFAULT_ALERTING_CONFIG: WhiteLabelAlertingConfig = {
     enabled: false,
@@ -86,7 +79,7 @@ const DEFAULT_ALERTING_CONFIG: WhiteLabelAlertingConfig = {
 };
 
 const DEFAULT_BRAND_IDENTITY: WhiteLabelBrandIdentity = {
-    display_name: 'Mundo de Kaboo',
+    display_name: '',
     logo_url: '',
     primary_color: '#5D1F58',
     light_color: '#883E82',
@@ -118,6 +111,9 @@ const serializeBrandIdentity = (identity: WhiteLabelBrandIdentity) => JSON.strin
 });
 
 export const AdminWhiteLabelScreen: React.FC = () => {
+    // Marca desta instância (resolvida pelo app — single-brand). As Configurações
+    // sempre editam essa marca, sem seletor.
+    const { slug: appBrandSlug } = useBrandConfig();
     const [brands, setBrands] = useState<WhiteLabelBrandRow[]>([]);
     const [selectedBrandId, setSelectedBrandId] = useState<string>('');
     const [menuMusicEnabled, setMenuMusicEnabled] = useState<boolean>(true);
@@ -262,7 +258,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     );
 
     const selectedBrandLabel = selectedBrand?.display_name || selectedBrand?.name || 'Nenhuma marca';
-    const selectedBrandAccent = BRAND_ACCENTS[selectedBrand?.slug ?? 'kaboo'] ?? BRAND_ACCENTS.kaboo;
+    const selectedBrandAccent = BRAND_ACCENT;
     const brandPreviewLogo = brandIdentity.logo_url || LOGO_URL;
 
     const rolloutLabel = rolloutConfig.wave === 'pilot'
@@ -330,41 +326,12 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             {
                 title: 'Feature Flags',
                 value: activeFeatureCount === 0 ? 'Nenhuma ativa' : `${activeFeatureCount} ${activeFeatureCount === 1 ? 'flag ativa' : 'flags ativas'}`,
-                description: enabledFeatureLabels.length > 0 ? enabledFeatureLabels.join(' · ') : 'Nenhuma capacidade habilitada nesta marca.',
+                description: enabledFeatureLabels.length > 0 ? enabledFeatureLabels.join(' · ') : 'Nenhuma capacidade habilitada nesta aplicação.',
                 tone: activeFeatureCount === 0 ? 'warning' : 'positive',
                 icon: <Icons.Settings size={14} />,
             },
-            {
-                title: 'Rollout & Publicação',
-                value: `Rollout ${rolloutLabel}`,
-                description: publicationState.published_at ? `Versão v${publicationState.version} publicada` : 'Aguardando publicação da versão atual.',
-                tone: publicationState.published_at ? 'positive' : rolloutConfig.wave === 'general' ? 'critical' : 'neutral',
-                icon: <Icons.TrendingUp size={14} />,
-            },
-            {
-                title: 'Alertas Externos',
-                value: alertingConfig.enabled ? 'Operação conectada' : 'Desabilitados',
-                description: alertingConfig.enabled
-                    ? alertingConfig.webhook_url
-                        ? `${alertingConfig.channel || 'Canal sem nome'} · ${alertingConfig.last_dispatch_status === 'error' ? 'último dispatch com erro' : alertingConfig.last_dispatch_status === 'success' ? 'último dispatch entregue' : 'aguardando teste'}`
-                        : 'Webhook pendente de configuração.'
-                    : 'Alertas externos desabilitados (normal).',
-                tone: alertingConfig.enabled
-                    ? alertingConfig.webhook_url
-                        ? alertingConfig.last_dispatch_status === 'error' ? 'warning' : 'positive'
-                        : 'warning'
-                    : 'neutral',
-                icon: <Icons.Send size={14} />,
-            },
-            {
-                title: 'Integridade de Métricas',
-                value: `${derivedRolloutMetrics.changes_24h} mudança(s) nas últimas 24h`,
-                description: `${derivedRolloutMetrics.total_changes} alteração(ões) totais monitoradas.`,
-                tone: derivedRolloutMetrics.changes_24h >= alertingConfig.changes_24h_threshold ? 'warning' : 'positive',
-                icon: <Icons.BarChart3 size={14} />,
-            },
         ];
-    }, [activeFeatureCount, alertingConfig.changes_24h_threshold, alertingConfig.channel, alertingConfig.enabled, alertingConfig.last_dispatch_status, alertingConfig.webhook_url, contentOfflineEnabled, derivedRolloutMetrics.changes_24h, derivedRolloutMetrics.total_changes, heroParallaxMode, heroParallaxModeLabel, menuMusicEnabled, publicationState.published_at, publicationState.version, rolloutConfig.wave, rolloutLabel]);
+    }, [activeFeatureCount, contentOfflineEnabled, heroParallaxMode, heroParallaxModeLabel, menuMusicEnabled]);
 
     const operationalAlertPayload = useMemo(() => {
         return {
@@ -435,37 +402,9 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             setPublicationState({ version: 1, published_at: null });
         }
 
-        try {
-            const rollout = await getWhiteLabelRolloutConfig(brandId);
-            setRolloutConfig(rollout);
-        } catch (err) {
-            console.error('[AdminWhiteLabelScreen] rollout config load error:', err);
-            setRolloutConfig({ enabled: true, wave: 'pilot', started_at: null, last_changed_at: null, last_reason: null });
-        }
-
-        try {
-            const metrics = await getWhiteLabelRolloutMetrics(brandId);
-            setRolloutMetrics(metrics);
-        } catch (err) {
-            console.error('[AdminWhiteLabelScreen] rollout metrics load error:', err);
-            setRolloutMetrics({ enabled_flags: 0, total_changes: 0, changes_24h: 0, last_publish_at: null });
-        }
-
-        try {
-            const alerting = await getWhiteLabelAlertingConfig(brandId);
-            setAlertingConfig(alerting);
-        } catch (err) {
-            console.error('[AdminWhiteLabelScreen] alerting config load error:', err);
-            setAlertingConfig(DEFAULT_ALERTING_CONFIG);
-        }
-
-        try {
-            const dispatchHistory = await getWhiteLabelAlertDispatchHistory(brandId);
-            setAlertDispatchHistory(dispatchHistory);
-        } catch (err) {
-            console.error('[AdminWhiteLabelScreen] alert dispatch history load error:', err);
-            setAlertDispatchHistory([]);
-        }
+        // Rollout, métricas de rollout e alerting (config + histórico de dispatch)
+        // foram removidos da UI single-brand. Estado fica nos defaults — o
+        // auto-dispatch de alertas nunca dispara (alertingConfig.enabled = false).
 
         try {
             const audit = await listWhiteLabelAudit(brandId, 12);
@@ -505,14 +444,10 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                 }
 
                 setBrands(loadedBrands);
-                const firstBrandId = loadedBrands[0]?.id ?? '';
-                const previewSlug = getWhiteLabelPreviewSettings().previewEnabled
-                    ? getWhiteLabelPreviewSettings().activeBrandId
-                    : null;
-                const previewBrandId = previewSlug
-                    ? loadedBrands.find((brand) => brand.slug === previewSlug)?.id ?? ''
-                    : '';
-                const initialBrandId = previewBrandId || firstBrandId;
+                // Single-brand: a tela edita a marca DESTA instância (resolvida pelo app
+                // via VITE_BRAND_SLUG), não a primeira da lista. Fallback: primeira disponível.
+                const appBrand = loadedBrands.find((brand) => brand.slug === appBrandSlug);
+                const initialBrandId = appBrand?.id ?? loadedBrands[0]?.id ?? '';
 
                 setSelectedBrandId((current) => current || initialBrandId);
 
@@ -536,51 +471,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [hydrateBrandFeatures]);
+    }, [hydrateBrandFeatures, appBrandSlug]);
 
-    useEffect(() => {
-        if (!selectedBrandId || loading || saving) {
-            return;
-        }
-
-        if (!alertingConfig.enabled || !alertingConfig.webhook_url || operationalAlerts.length === 0) {
-            return;
-        }
-
-        if (alertingConfig.last_live_alert_signature === activeAlertSignature) {
-            return;
-        }
-
-        let cancelled = false;
-
-        async function dispatchActiveAlerts() {
-            try {
-                const result = await dispatchWhiteLabelOperationalAlerts({
-                    brandId: selectedBrandId,
-                    payload: operationalAlertPayload as Record<string, unknown>,
-                    alertSignature: activeAlertSignature,
-                    reason: `Auto-dispatch operacional: ${operationalAlerts.map((alert) => alert.title).join(' | ')}`,
-                });
-
-                if (cancelled) {
-                    return;
-                }
-
-                setAlertingConfig(result.config);
-                setAlertDispatchHistory(result.history);
-            } catch (err) {
-                if (!cancelled) {
-                    console.error('[AdminWhiteLabelScreen] auto dispatch active alerts error:', err);
-                }
-            }
-        }
-
-        void dispatchActiveAlerts();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [activeAlertSignature, alertingConfig.enabled, alertingConfig.last_live_alert_signature, alertingConfig.webhook_url, loading, operationalAlertPayload, operationalAlerts, saving, selectedBrandId]);
 
     useEffect(() => {
         if (activeTab !== 'identidade' || !isBrandIdentityDirty) {
@@ -597,43 +489,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
     }, [activeTab, isBrandIdentityDirty]);
-
-    const selectBrand = async (brandId: string) => {
-        if (brandId === selectedBrandId || saving) {
-            return;
-        }
-
-        if (
-            activeTab === 'identidade'
-            && isBrandIdentityDirty
-            && typeof window !== 'undefined'
-            && !window.confirm('Você tem alterações não salvas na identidade visual. Deseja descartá-las e trocar de marca?')
-        ) {
-            return;
-        }
-
-        const previousBrandId = selectedBrandId;
-        const nextBrand = brands.find((brand) => brand.id === brandId) ?? null;
-        setSelectedBrandId(brandId);
-
-        try {
-            setError(null);
-            await hydrateBrandFeatures(brandId);
-            if (nextBrand?.slug === 'central-coruja' || nextBrand?.slug === 'kaboo') {
-                setActiveWhiteLabelBrand(nextBrand.slug);
-                invalidateBrandBootstrapCache(nextBrand.slug);
-            }
-            setContextChangedAt(new Date().toISOString());
-            if (nextBrand) {
-                showToast(`Contexto alterado: agora você está editando ${nextBrand.display_name || nextBrand.name}.`, 'success');
-            }
-        } catch (err) {
-            setSelectedBrandId(previousBrandId);
-            setError('Falha ao carregar flags da marca selecionada.');
-            showToast('Não foi possível trocar o contexto da marca.', 'error');
-            console.error('[AdminWhiteLabelScreen] selectBrand error:', err);
-        }
-    };
 
     const persistFeature = async (featureKey: string, enabled: boolean, config: Record<string, unknown>) => {
         if (!selectedBrandId || saving) {
@@ -707,7 +562,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         }
     };
 
-    const applyCorujaPreset = async () => {
+    const applyDefaultBaseline = async () => {
         if (!selectedBrandId) {
             return;
         }
@@ -716,24 +571,9 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             await persistFeature('menu.music', true, {});
             await persistFeature('hero.parallax', false, { mode: 'off' });
             await persistFeature('content.offline', false, {});
-            showToast('Preset Central Coruja aplicado com sucesso!', 'success');
+            showToast('Baseline padrão aplicado com sucesso!', 'success');
         } catch (err) {
-            showToast('Erro ao aplicar preset Central Coruja.', 'error');
-        }
-    };
-
-    const applyKabooBaseline = async () => {
-        if (!selectedBrandId) {
-            return;
-        }
-
-        try {
-            await persistFeature('menu.music', true, {});
-            await persistFeature('hero.parallax', false, { mode: 'off' });
-            await persistFeature('content.offline', false, {});
-            showToast('Baseline Kaboo aplicado com sucesso!', 'success');
-        } catch (err) {
-            showToast('Erro ao aplicar baseline Kaboo.', 'error');
+            showToast('Erro ao aplicar baseline padrão.', 'error');
         }
     };
 
@@ -782,138 +622,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         }
     };
 
-    const changeRolloutWave = async (wave: WhiteLabelRolloutWave) => {
-        if (!selectedBrandId || saving || rolloutConfig.wave === wave) {
-            return;
-        }
-
-        if (!rolloutReason.trim()) {
-            setError('Informe o motivo da mudança de onda para governança.');
-            return;
-        }
-
-        if (wave === 'general' && !publicationState.published_at) {
-            setError('Para usar rollout geral, publique a versão atual da marca antes.');
-            return;
-        }
-
-        try {
-            setSaving(true);
-            setError(null);
-            const nextConfig = await setWhiteLabelRolloutWave({
-                brandId: selectedBrandId,
-                wave,
-                reason: rolloutReason.trim(),
-            });
-            setRolloutConfig(nextConfig);
-            const metrics = await getWhiteLabelRolloutMetrics(selectedBrandId);
-            setRolloutMetrics(metrics);
-            const waveLabel = wave === 'pilot' ? 'Piloto' : wave === 'group' ? 'Grupo' : 'Geral';
-            setRolloutReason('');
-            showToast(`Rollout alterado para ${waveLabel}!`, 'success');
-        } catch (err) {
-            setError('Falha ao atualizar a onda de rollout.');
-            showToast('Erro ao mudar rollout.', 'error');
-            console.error('[AdminWhiteLabelScreen] changeRolloutWave error:', err);
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const saveAlertingConfig = async () => {
-        if (!selectedBrandId || saving) {
-            return;
-        }
-
-        if (!alertingReason.trim()) {
-            setError('Informe o motivo da mudança de alertas externos.');
-            return;
-        }
-
-        try {
-            setSaving(true);
-            setError(null);
-            const nextConfig = await setWhiteLabelAlertingConfig({
-                brandId: selectedBrandId,
-                enabled: alertingConfig.enabled,
-                webhook_url: alertingConfig.webhook_url,
-                channel: alertingConfig.channel,
-                changes_24h_threshold: alertingConfig.changes_24h_threshold,
-                notify_on_general_without_publish: alertingConfig.notify_on_general_without_publish,
-                reason: alertingReason.trim(),
-            });
-            setAlertingConfig(nextConfig);
-            const dispatchHistory = await getWhiteLabelAlertDispatchHistory(selectedBrandId);
-            setAlertDispatchHistory(dispatchHistory);
-        } catch (err) {
-            setError('Falha ao salvar configuração de alertas externos.');
-            console.error('[AdminWhiteLabelScreen] saveAlertingConfig error:', err);
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const sendAlertTest = async () => {
-        if (!selectedBrandId || saving) {
-            return;
-        }
-
-        if (!alertingReason.trim()) {
-            setError('Informe o motivo para enviar o teste de alerta.');
-            return;
-        }
-
-        try {
-            setSaving(true);
-            setError(null);
-            const result = await dispatchWhiteLabelAlertTest({
-                brandId: selectedBrandId,
-                payload: operationalAlertPayload as Record<string, unknown>,
-                reason: alertingReason.trim(),
-            });
-            setAlertingConfig(result.config);
-            setAlertDispatchHistory(result.history);
-        } catch (err) {
-            setError('Falha ao enviar alerta de teste.');
-            console.error('[AdminWhiteLabelScreen] sendAlertTest error:', err);
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const sendOperationalAlerts = async () => {
-        if (!selectedBrandId || saving) {
-            return;
-        }
-
-        if (!alertingReason.trim()) {
-            setError('Informe o motivo para disparar alertas operacionais.');
-            return;
-        }
-
-        if (operationalAlerts.length === 0) {
-            setError('Não há alertas operacionais ativos para disparar.');
-            return;
-        }
-
-        try {
-            setSaving(true);
-            setError(null);
-            const result = await dispatchWhiteLabelOperationalAlerts({
-                brandId: selectedBrandId,
-                payload: operationalAlertPayload as Record<string, unknown>,
-                alertSignature: activeAlertSignature,
-                reason: alertingReason.trim(),
-            });
-            setAlertingConfig(result.config);
-            setAlertDispatchHistory(result.history);
-        } catch (err) {
-            setError('Falha ao disparar alertas operacionais.');
-            console.error('[AdminWhiteLabelScreen] sendOperationalAlerts error:', err);
-        } finally {
-            setSaving(false);
-        }
-    };
 
     return (
         <div className="min-h-full bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_24%)] p-4 md:p-6">
@@ -992,8 +700,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                 {/* ─── Page Header ─── */}
                 <header className="flex flex-col gap-3 rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between md:p-6">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight text-gray-900">Gestão de Marca</h1>
-                        <p className="mt-1 text-sm text-gray-500">Console White Label — identidade visual, feature flags e governança operacional.</p>
+                        <h1 className="text-2xl font-black tracking-tight text-gray-900">Configurações</h1>
+                        <p className="mt-1 text-sm text-gray-500">Identidade visual, feature flags e integrações desta aplicação.</p>
                     </div>
                     <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-500">
                         <Icons.Database size={14} />
@@ -1007,59 +715,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                         {error}
                     </section>
                 )}
-
-                {/* ─── Brand Selector + Context ─── */}
-                <section className="rounded-[28px] border border-gray-200 bg-white p-4 shadow-sm md:p-5">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="mr-1 text-xs font-semibold text-gray-400">Marca:</span>
-                            {brands.map((brand) => {
-                                const active = brand.id === selectedBrandId;
-                                return (
-                                    <button
-                                        key={brand.id}
-                                        type="button"
-                                        onClick={() => selectBrand(brand.id)}
-                                        className={`rounded-full border px-4 py-2 text-sm font-bold transition-all ${active
-                                            ? 'border-brand-primary bg-brand-primary text-white shadow-md'
-                                            : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-brand-primary/40 hover:bg-gray-100'
-                                            }`}
-                                        disabled={loading || saving}
-                                    >
-                                        {brand.display_name || brand.name}
-                                        {active && <Icons.Check size={14} className="ml-1.5 inline" />}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {selectedBrand && (
-                            <div className="flex flex-wrap items-center gap-2 text-xs">
-                                <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 font-semibold text-gray-600">
-                                    {selectedBrand.slug}
-                                </span>
-                                <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 font-semibold text-gray-600">
-                                    Rollout: {rolloutLabel}
-                                </span>
-                                <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 font-semibold text-gray-600">
-                                    {publicationState.published_at ? `v${publicationState.version}` : 'Não publicada'}
-                                </span>
-                                <span className={`rounded-full px-3 py-1.5 font-semibold ${selectedBrand.is_active
-                                    ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-                                    : 'border border-red-200 bg-red-50 text-red-700'
-                                    }`}>
-                                    {selectedBrand.is_active ? 'Ativa' : 'Inativa'}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-
-                    {contextChangedAt && (
-                        <p className="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-400">
-                            Contexto sincronizado às {new Date(contextChangedAt).toLocaleTimeString('pt-BR')}.
-                        </p>
-                    )}
-                </section>
 
                 {/* ─── Tabs + Content ─── */}
                 {selectedBrand && (
@@ -1103,7 +758,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     type="text"
                                                     value={brandIdentity.display_name}
                                                     onChange={(event) => updateBrandIdentityField('display_name', event.target.value)}
-                                                    placeholder="Ex.: Central Coruja"
+                                                    placeholder="Ex.: nome da marca"
                                                     className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
                                                     disabled={loading || saving}
                                                 />
@@ -1472,23 +1127,16 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                     <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                             <div>
-                                                <p className="text-sm font-bold text-gray-900">Presets rápidos</p>
-                                                <p className="mt-1 text-xs text-gray-500">Atalhos para voltar ao baseline esperado de cada marca.</p>
+                                                <p className="text-sm font-bold text-gray-900">Preset rápido</p>
+                                                <p className="mt-1 text-xs text-gray-500">Atalho para voltar ao baseline esperado da aplicação.</p>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
                                                 <Button
-                                                    variant="secondary"
-                                                    onClick={applyCorujaPreset}
-                                                    disabled={loading || saving || selectedBrand?.slug !== 'central-coruja'}
-                                                >
-                                                    Preset Coruja
-                                                </Button>
-                                                <Button
                                                     variant="ghost"
-                                                    onClick={applyKabooBaseline}
-                                                    disabled={loading || saving || selectedBrand?.slug !== 'kaboo'}
+                                                    onClick={applyDefaultBaseline}
+                                                    disabled={loading || saving || !selectedBrand}
                                                 >
-                                                    Baseline Kaboo
+                                                    Baseline padrão
                                                 </Button>
                                             </div>
                                         </div>
@@ -1518,243 +1166,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                             >
                                                 {publicationState.published_at ? 'Publicar nova versão' : 'Publicar agora'}
                                             </Button>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-4">
-                                        <div>
-                                            <h3 className="text-lg font-bold text-gray-900">Rollout por Ondas</h3>
-                                            <p className="mt-1 text-sm text-gray-500">
-                                                Escolha a etapa de exposição da marca e registre o motivo da mudança no mesmo bloco.
-                                            </p>
-                                            {rolloutConfig.last_reason && (
-                                                <p className="mt-2 text-xs text-gray-400">Último motivo salvo: {rolloutConfig.last_reason}</p>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="rollout-reason">
-                                                Motivo da mudança de onda
-                                            </label>
-                                            <textarea
-                                                id="rollout-reason"
-                                                value={rolloutReason}
-                                                onChange={(event) => setRolloutReason(event.target.value)}
-                                                placeholder="Ex.: ampliar rollout após validação do piloto."
-                                                className="min-h-[88px] w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
-                                            />
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            {ROLLOUT_WAVES.map((wave) => {
-                                                const active = rolloutConfig.wave === wave.value;
-                                                return (
-                                                    <button
-                                                        key={wave.value}
-                                                        type="button"
-                                                        onClick={() => changeRolloutWave(wave.value)}
-                                                        disabled={loading || saving || !selectedBrand}
-                                                        className={`w-full rounded-2xl border px-3 py-2 text-left transition-colors ${active
-                                                            ? 'border-brand-primary bg-brand-primary/[0.06]'
-                                                            : 'border-gray-200 bg-white hover:border-brand-primary/25'
-                                                            }`}
-                                                    >
-                                                        <div className="flex items-center justify-between gap-3">
-                                                            <p className="text-sm font-bold text-gray-800">{wave.label}</p>
-                                                            {active && <Icons.Check size={14} className="text-brand-primary" />}
-                                                        </div>
-                                                        <p className="mt-1 text-xs text-gray-500">{wave.description}</p>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-
-                                        {rolloutConfig.wave !== 'general' && !publicationState.published_at && (
-                                            <p className="text-xs text-amber-700">Rollout geral só fica disponível depois da publicação da versão atual.</p>
-                                        )}
-                                    </div>
-
-                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
-                                        <div className="flex items-center gap-2">
-                                            <Icons.BarChart3 size={16} className="text-gray-400" />
-                                            <h3 className="text-lg font-bold text-gray-900">Métricas</h3>
-                                        </div>
-                                        <div className="mt-3 grid grid-cols-3 gap-2">
-                                            <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
-                                                <p className="text-lg font-black text-gray-800">{derivedRolloutMetrics.enabled_flags}</p>
-                                                <p className="text-[11px] text-gray-400">Flags ativas</p>
-                                            </div>
-                                            <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
-                                                <p className="text-lg font-black text-gray-800">{derivedRolloutMetrics.changes_24h}</p>
-                                                <p className="text-[11px] text-gray-400">Mudanças 24h</p>
-                                            </div>
-                                            <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center">
-                                                <p className="text-lg font-black text-gray-800">{derivedRolloutMetrics.total_changes}</p>
-                                                <p className="text-[11px] text-gray-400">Total</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
-                                        <h3 className="text-lg font-bold text-gray-900">Alertas operacionais</h3>
-                                        <div className="mt-3">
-                                            {operationalAlerts.length === 0 ? (
-                                                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                                                    Nenhum alerta ativo.
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-2">
-                                                    {operationalAlerts.map((alert) => (
-                                                        <div
-                                                            key={`${alert.level}-${alert.title}`}
-                                                            className={`rounded-xl border px-3 py-2 ${alert.level === 'critical'
-                                                                ? 'border-red-200 bg-red-50'
-                                                                : 'border-amber-200 bg-amber-50'
-                                                                }`}
-                                                        >
-                                                            <p className={`text-xs font-bold uppercase ${alert.level === 'critical' ? 'text-red-700' : 'text-amber-700'}`}>
-                                                                {alert.level === 'critical' ? 'Crítico' : 'Atenção'}
-                                                            </p>
-                                                            <p className="mt-1 text-sm font-bold text-gray-800">{alert.title}</p>
-                                                            <p className="mt-1 text-xs text-gray-600">{alert.description}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-4">
-                                        <div>
-                                            <h3 className="text-lg font-bold text-gray-900">Alertas externos</h3>
-                                            <p className="mt-1 text-sm text-gray-500">Webhook, canal e disparos operacionais por marca.</p>
-                                            {alertingConfig.last_reason && (
-                                                <p className="mt-2 text-xs text-gray-400">Último motivo salvo: {alertingConfig.last_reason}</p>
-                                            )}
-                                        </div>
-
-                                        <label className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-gray-50 px-3 py-3">
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-800">Habilitar alertas externos</p>
-                                                <p className="text-xs text-gray-500">Ativa destino operacional para incidentes.</p>
-                                            </div>
-                                            <input
-                                                type="checkbox"
-                                                checked={alertingConfig.enabled}
-                                                onChange={(event) => setAlertingConfig((current) => ({ ...current, enabled: event.target.checked }))}
-                                                className="h-4 w-4 accent-brand-primary"
-                                                disabled={loading || saving || !selectedBrand}
-                                            />
-                                        </label>
-
-                                        <div className="grid gap-3">
-                                            <div>
-                                                <label className="mb-1 block text-xs font-semibold text-gray-500">Webhook URL</label>
-                                                <input
-                                                    type="url"
-                                                    value={alertingConfig.webhook_url}
-                                                    onChange={(event) => setAlertingConfig((current) => ({ ...current, webhook_url: event.target.value }))}
-                                                    placeholder="https://hooks.exemplo.com/white-label"
-                                                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand-primary/40"
-                                                    disabled={loading || saving || !selectedBrand}
-                                                />
-                                            </div>
-                                            <div className="grid gap-3 md:grid-cols-2">
-                                                <div>
-                                                    <label className="mb-1 block text-xs font-semibold text-gray-500">Canal</label>
-                                                    <input
-                                                        type="text"
-                                                        value={alertingConfig.channel}
-                                                        onChange={(event) => setAlertingConfig((current) => ({ ...current, channel: event.target.value }))}
-                                                        placeholder="ops-central-coruja"
-                                                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand-primary/40"
-                                                        disabled={loading || saving || !selectedBrand}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="mb-1 block text-xs font-semibold text-gray-500">Limite mudanças 24h</label>
-                                                    <input
-                                                        type="number"
-                                                        min={1}
-                                                        value={alertingConfig.changes_24h_threshold}
-                                                        onChange={(event) => setAlertingConfig((current) => ({ ...current, changes_24h_threshold: Number(event.target.value || 1) }))}
-                                                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand-primary/40"
-                                                        disabled={loading || saving || !selectedBrand}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <label className="flex items-center gap-2 text-sm text-gray-700">
-                                            <input
-                                                type="checkbox"
-                                                checked={alertingConfig.notify_on_general_without_publish}
-                                                onChange={(event) => setAlertingConfig((current) => ({ ...current, notify_on_general_without_publish: event.target.checked }))}
-                                                className="h-4 w-4 accent-brand-primary"
-                                                disabled={loading || saving || !selectedBrand}
-                                            />
-                                            Notificar rollout geral sem publicação
-                                        </label>
-
-                                        <div>
-                                            <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="alerting-reason">
-                                                Motivo da ação operacional
-                                            </label>
-                                            <textarea
-                                                id="alerting-reason"
-                                                value={alertingReason}
-                                                onChange={(event) => setAlertingReason(event.target.value)}
-                                                placeholder="Obrigatório para salvar, testar ou disparar alertas."
-                                                className="min-h-[88px] w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
-                                            />
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-2">
-                                            <Button
-                                                variant="secondary"
-                                                onClick={saveAlertingConfig}
-                                                disabled={loading || saving || !selectedBrand || !isAdminUser}
-                                                title={!isAdminUser ? 'Apenas administradores podem salvar' : undefined}
-                                            >
-                                                Salvar alertas
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                onClick={sendAlertTest}
-                                                disabled={loading || saving || !selectedBrand || !alertingConfig.enabled || !alertingConfig.webhook_url}
-                                            >
-                                                Enviar teste
-                                            </Button>
-                                            <Button
-                                                variant="primary"
-                                                onClick={sendOperationalAlerts}
-                                                disabled={loading || saving || !selectedBrand || !alertingConfig.enabled || !alertingConfig.webhook_url || operationalAlerts.length === 0}
-                                            >
-                                                Disparar ativos
-                                            </Button>
-                                        </div>
-
-                                        <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600">
-                                            <p>
-                                                Último dispatch: {alertingConfig.last_dispatch_at
-                                                    ? new Date(alertingConfig.last_dispatch_at).toLocaleString('pt-BR')
-                                                    : 'nenhum'}
-                                            </p>
-                                            <p className="mt-1">
-                                                Status:{' '}
-                                                <span className={`font-bold ${alertingConfig.last_dispatch_status === 'success'
-                                                    ? 'text-emerald-700'
-                                                    : alertingConfig.last_dispatch_status === 'error'
-                                                        ? 'text-red-700'
-                                                        : 'text-gray-700'
-                                                    }`}>{alertingConfig.last_dispatch_status}</span>
-                                                {alertingConfig.last_dispatch_http_status !== null && (
-                                                    <span> · HTTP {alertingConfig.last_dispatch_http_status}</span>
-                                                )}
-                                            </p>
-                                            {alertingConfig.last_dispatch_error && (
-                                                <p className="mt-1 text-red-600">Erro: {alertingConfig.last_dispatch_error}</p>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -2013,41 +1424,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                             </div>
                                         )}
                                     </div>
-                                </div>
-
-                                {/* Dispatch History */}
-                                <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
-                                    <h3 className="text-lg font-bold text-gray-900">Histórico de entregas</h3>
-                                    <div className="mt-3">
-                                        {alertDispatchHistory.length === 0 ? (
-                                            <p className="text-sm text-gray-500">Sem entregas registradas.</p>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {alertDispatchHistory.map((entry) => (
-                                                    <div key={entry.id} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-600">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <span className="font-bold text-gray-800">{new Date(entry.sent_at).toLocaleString('pt-BR')}</span>
-                                                            <span className="flex items-center gap-2">
-                                                                <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase text-gray-500">{entry.mode}</span>
-                                                                <span className={`font-bold ${entry.status === 'success' ? 'text-emerald-700' : 'text-red-700'}`}>{entry.status}</span>
-                                                            </span>
-                                                        </div>
-                                                        <p className="mt-1">Canal: {entry.channel || 'n/a'} · Tentativas: {entry.attempts}</p>
-                                                        {entry.http_status !== null && <p className="mt-1">HTTP: {entry.http_status}</p>}
-                                                        {entry.error && <p className="mt-1 text-red-600">Erro: {entry.error}</p>}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Payload Preview */}
-                                <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
-                                    <h3 className="text-lg font-bold text-gray-900">Payload de alertas</h3>
-                                    <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-gray-50 p-3 text-[11px] leading-relaxed text-gray-600">
-                                        {alertPayloadPreview}
-                                    </pre>
                                 </div>
                             </div>
                         )}

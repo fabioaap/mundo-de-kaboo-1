@@ -365,7 +365,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         const unique = Array.from(new Map(allItems.map((item) => [item.id, item])).values());
         const filtered = unique
           .filter((item) => item.id !== mediaItemId)
-          .filter((item) => !currentUrl || (item.assetUrl ?? '').trim() !== currentUrl)
+          .filter((item) => !currentUrl || ((item as { assetUrl?: string | null }).assetUrl ?? '').trim() !== currentUrl)
           .slice(0, 10);
 
         setRelatedItems(filtered);
@@ -661,7 +661,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       return;
     }
 
-    const screenOrientation = window.screen.orientation;
+    const screenOrientation = window.screen.orientation as ScreenOrientation & {
+      lock?: (orientation: string) => Promise<void>;
+    };
     if (!screenOrientation || typeof screenOrientation.lock !== 'function') {
       return;
     }

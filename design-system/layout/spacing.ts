@@ -3,6 +3,8 @@ export const layoutSpacing = {
   bottomNavPopover: 'right-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] w-[min(14rem,calc(100vw-1.5rem))] p-3',
   cardGridGap: 'gap-4 md:gap-5 xl:gap-6',
   pageHeader: 'px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-3 md:pb-4',
+  pageIntro: 'px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-3 md:pb-4',
+  pageContent: 'px-4 sm:px-6 lg:px-8',
   pageSectionX: 'px-4 sm:px-6 lg:px-8',
   pageSection: 'px-4 sm:px-6 lg:px-8 py-[var(--space-page-section-y)] md:py-[var(--space-page-section-y-desktop)]',
   pageInset: 'px-4 py-3 sm:px-6',

@@ -63,7 +63,7 @@ describe('api mock collections cache invalidation', () => {
     const created = await api.createCollection({
       title: 'Regression BUG-005 Create',
       theme: 'QA cache invalidation',
-      collection_type: 'collection',
+      collection_type: 'kit',
       primary_segment: 'E.F. Anos Iniciais',
       segments: ['E.F. Anos Iniciais'],
     });

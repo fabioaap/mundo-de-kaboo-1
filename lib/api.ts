@@ -619,13 +619,37 @@ const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]
   const excludeBookCollections = hub === 'materials';
   const collectionsById = new Map(collections.map((collection) => [collection.id, collection]));
 
-  return collections
+  const pairs = collections
     .filter((collection) => !excludeBookCollections || collection.collection_type !== 'book')
     .flatMap((collection) => (collection.collection_assets ?? [])
       // On the public storefront, hide assets that were explicitly unpublished (is_published=false).
       // undefined/null means published (backward-compat with assets created before per-asset flags).
       .filter((asset) => allowedCategories.includes(asset.category) && asset.is_published !== false)
-      .map((asset) => ({ collection, asset })))
+      .map((asset) => ({ collection, asset })));
+
+  // Dedup por arquivo (URL): a mesma mídia copiada em vários kits/coleções (ex.: kit
+  // que copiou o áudio do livro) aparece UMA vez só na vitrine, preferindo a coleção
+  // DONA do arquivo (ID no caminho de storage .../collections/<pasta>/<ID>/<arquivo>).
+  const ownerIdFromUrl = (url: string): string | null => {
+    const match = url.match(/\/collections\/[^/]+\/([0-9a-fA-F-]{36})\//);
+    return match ? match[1] : null;
+  };
+  const byUrl = new Map<string, (typeof pairs)[number]>();
+  for (const pair of pairs) {
+    const url = (pair.asset.url ?? '').trim();
+    const dedupKey = url || `nourl:${pair.collection.id}:${pair.asset.id}`;
+    const existing = byUrl.get(dedupKey);
+    if (!existing) {
+      byUrl.set(dedupKey, pair);
+      continue;
+    }
+    const owner = url ? ownerIdFromUrl(url) : null;
+    if (owner && pair.collection.id === owner && existing.collection.id !== owner) {
+      byUrl.set(dedupKey, pair);
+    }
+  }
+
+  return Array.from(byUrl.values())
     .sort((left, right) => {
       const categoryDiff = allowedCategories.indexOf(left.asset.category) - allowedCategories.indexOf(right.asset.category);
       if (categoryDiff !== 0) {
@@ -2074,7 +2098,7 @@ export const api = {
     const currentUserId = await getCurrentUserId();
     const { progressByItemId, favoriteIds } = currentUserId
       ? await getRemoteMediaUserState(currentUserId)
-      : { progressByItemId: {}, favoriteIds: new Set<string>(), continueItemIds: [] as string[] };
+      : { progressByItemId: {}, favoriteIds: new Set<string>() };
 
     return {
       ...toMediaItemCard(data as MediaItemRow, { progressByItemId, favoriteIds, relatedCollections }),
@@ -2522,7 +2546,7 @@ export const api = {
         break;
       }
       stripped.push(missingCol);
-      currentPayload = stripMissingCollectionColumns(payload, stripped);
+      currentPayload = stripMissingCollectionColumns(payload, stripped) as typeof currentPayload;
       logger.warn(`Retrying collection update without column: ${missingCol}`);
     }
 
