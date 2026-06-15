@@ -60,7 +60,7 @@
 
 ## P0 — Gates de Go-Live (`checklist-go-live-v1-3.md`)
 - [ ] **Vouchers ponta a ponta com a gráfica** sem mock (geração → distribuição → resgate → operação). (Vouchers)
-- [ ] **Isolamento por marca homologado** (Kaboo × Central Coruja, sem vazamento de leitura/escrita). (White-label)
+- [~] **Isolamento por marca homologado** (Kaboo × Central Coruja) — **CORE APROVADO** (2026-06-15), ver `docs/HOMOLOGACAO-ISOLAMENTO-MARCA-2026-06-15.md`. Conteúdo real (coleções/personagens/formações/materiais/vouchers) isolado por `brand_id`+RLS, comprovado por simulação cross-brand (viewer Kaboo: 9 Kaboo / 0 Coruja; admin kaboo-only não gerencia Coruja). **Pendente antes do go-live de mídia/usuários Coruja:** fechar gaps de RLS sem escopo de marca no subsistema de mídia — `media_items` (branch `active_subscription`), `collection_resources` (`USING(true)`), `media_collection_links` (`USING(true)`), `media_shelves`/`media_shelf_items` (só `is_published`). Sem vazamento ativo hoje (tabelas vazias/draft, sem usuários Coruja). Também: revisar conta dual-brand `admin@mundodekaboo.dev`; limpar viewer com `brand_id` nulo. (White-label)
 - [ ] **Catálogo real da Central Coruja** (≥3 coleções, 2 personagens, 1 ativo por tipo, visíveis). (Conteúdo)
 - [ ] **Hardening operacional homologado** (offline, feature flags, health checks como processo real + runbook). (Infra)
 
