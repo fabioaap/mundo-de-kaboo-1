@@ -238,8 +238,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
           throw new Error(result.error || 'Nao foi possivel iniciar a sessao.');
         }
         let currentProfile = result.profile;
-        const pendingVoucher = getPendingSignupVoucher();
-        if (pendingVoucher) {
+        // Voucher pendente: prioriza o código persistido no PERFIL (sobrevive a troca de
+        // dispositivo/limpeza de storage); localStorage é fallback. Só resgata se ainda não ativo.
+        const pendingVoucher = currentProfile?.pending_voucher_code?.trim() || getPendingSignupVoucher();
+        if (pendingVoucher && getProfileAccessStatus(currentProfile) !== 'active') {
           const pr = await api.redeemVoucher(pendingVoucher);
           if (pr.success && pr.profile) { currentProfile = pr.profile; clearPendingSignupVoucher(); }
         }

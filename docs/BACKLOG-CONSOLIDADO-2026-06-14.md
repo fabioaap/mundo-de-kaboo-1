@@ -24,7 +24,7 @@
 
 ## P1 — Alta (bloqueadores funcionais / integridade)
 - [x] ~~**VouchersModule 100% mock → integração Supabase**~~ — **JÁ INTEGRADO** (verificado 2026-06-15). `lib/apiVouchers.ts` é 100% Supabase (`voucher_models`/`voucher_batches`/`vouchers`/`audit_log` + RPC `emit_voucher_batch`); `VouchersModule` usa `apiVouchers.*` em todas as abas quando `isSupabaseConfigured`, com mock só como fallback. Banco real: 1 modelo, 1 lote, 14 vouchers. **Cleanup futuro:** remover o caminho mock / `lib/mockVoucherData.ts` quando o fallback não for mais necessário. (Vouchers)
-- [ ] **Redeem de voucher depende de localStorage entre etapas** — persistir `pending_voucher_code` no banco (`lib/api.ts:1541`, `lib/auth.ts`). `G3` (Vouchers)
+- [x] ~~**Redeem de voucher depende de localStorage entre etapas**~~ — corrigido 2026-06-15 (migração aplicada em prod): coluna `profiles.pending_voucher_code` + trigger `handle_new_user` grava o código do `signUp` metadata; `registerWithVoucher` envia o código; LoginScreen/AccessExpiredScreen leem do PERFIL (DB) com localStorage como fallback. Sobrevive a troca de dispositivo. `G3` (Vouchers)
 - [ ] **Cloudflare Access bloqueia usuários externos** (prod exige `@educacross.com.br`) — config Cloudflare, fora do código. `G1` (Infra/UX)
 - [ ] **Tags obrigatórias no card de coleção: idade recomendada (família) + ano escolar (escola)** — notas Gemini. (Conteúdo/UX)
 - [ ] **Mesclar versões parciais** (só-PDF + só-áudio) de: *Gaio e o Vento da Coragem*, *Kaboo e a Carta Misteriosa*, *Mensageiro e a Canção Certa*, *Onde está Gaio?* (Conteúdo)

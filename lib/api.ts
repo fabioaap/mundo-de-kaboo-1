@@ -1665,6 +1665,9 @@ export const api = {
           data: {
             full_name: input.full_name,
             brand_id: _activeBrandIdForApi,
+            // Persiste o código no servidor (raw_user_meta_data → trigger handle_new_user)
+            // para o resgate sobreviver a troca de dispositivo/limpeza de localStorage.
+            pending_voucher_code: input.voucherCode,
           }
         }
       });

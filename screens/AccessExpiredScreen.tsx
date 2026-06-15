@@ -38,7 +38,7 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
 }) => {
     const { slug: brandSlug } = useBrandConfig();
     const voucherPlaceholder = brandSlug === 'central-coruja' ? 'Ex.: CORUJA-6MESES-2026' : 'Ex.: KABOO-6MESES-2026';
-    const [voucherCode, setVoucherCode] = useState(() => getPendingSignupVoucher());
+    const [voucherCode, setVoucherCode] = useState(() => profile?.pending_voucher_code?.trim() || getPendingSignupVoucher());
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -73,7 +73,7 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
     }, []);
 
     useEffect(() => {
-        const pendingVoucher = getPendingSignupVoucher();
+        const pendingVoucher = profile?.pending_voucher_code?.trim() || getPendingSignupVoucher();
 
         if (status !== 'pending_voucher' || !pendingVoucher || autoRedeemAttempted) {
             return;
