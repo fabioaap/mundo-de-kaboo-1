@@ -4,7 +4,7 @@
 > Marque `[x]` conforme for resolvendo. Itens agrupados por prioridade; tema entre parênteses.
 
 ## Saúde atual (2026-06-14)
-- ✅ **Unit tests:** 95/95 passando (24 arquivos, vitest).
+- ⚠️ **Unit tests:** 94/95 (`vitest run --project unit`). 1 falha **pré-existente** (não relacionada a vouchers): `api.regression-2.test.ts` — "media hub bridge ... resolves playback for shared media shortcuts" (`expected undefined to be 'Kaboo e a Carta Misteriosa'`). Confirmado que falha mesmo sem as mudanças de voucher. A investigar (P3).
 - ✅ **Typecheck:** **0 erros** (`npx tsc --noEmit --skipLibCheck`). Eram 43 (revelados ao remover os arquivos corrompidos); todos corrigidos em 2026-06-14.
 - ✅ **Refatoração single-brand (Configurações):** verificada; sem regressão funcional. Resíduos limpos (ver P3).
 - ✅ Filtro de idade (G3-G5), BNCC por faixa, save de personagens, guards do cadastro: verificados e corretos.
@@ -26,9 +26,16 @@
 - Gate cobre as **bibliotecas** (clicar áudio de coleção não-concedida → modal).
 - Nomenclatura **G3/G4/G5** aparece nas tags do detalhe do livro.
 
-### 🔴 CRÍTICO (bloqueia go-live do voucher) — conteúdo do kit CONCEDIDO fica inacessível
-- O voucher concede o **kit** "Cores do Sentir" (`8a593fb9`), mas o **livro/áudio** "A Cordo Sentir" é uma **coleção separada** (`39602737`) que NÃO está nos grants. Resultado: "Ler livro", "Ouvir" e o áudio na biblioteca **disparam o modal de upsell** — o usuário tem o kit mas **não consegue abrir o conteúdo dele**.
-- **Causa:** `redeem_voucher` concede só os `collection_id` do model_snapshot (o kit); não expande para os livros vinculados (`kit_book_ids`). **Fix (decidir onde):** (a) no redeem, conceder também as coleções vinculadas ao kit; ou (b) `canAccessCollection` resolver kit→livro (um livro de um kit concedido é acessível). Liga-se à épica de mídia/kit canônico.
+### ✅ RESOLVIDO (2026-06-15) — conteúdo do kit CONCEDIDO agora acessível (kit→livro)
+**Era:** o voucher concedia o **kit** "Cores do Sentir" (`8a593fb9`), mas o livro "A Cordo Sentir" (`39602737`) é coleção separada que não entrava nos grants → "Ler/Ouvir" disparavam o upsell mesmo o usuário tendo o kit.
+
+**Causa:** `redeem_voucher` concedia só os `collection_id` do snapshot (o kit), sem expandir para os `collections.kit_book_ids`.
+
+**Fix (as duas abordagens, decidido com o usuário):**
+- **(a) Cliente:** `api.getUserContentGrants` agora expande cada kit concedido para seus `kit_book_ids` (`api.expandKitGrants`) → `canAccessCollection` libera o livro. Sem migração, corrige todos na hora.
+- **(b) Banco:** migration `20260615150000_redeem_voucher_expand_kit_books.sql` — `redeem_voucher` passa a conceder também os livros do kit no resgate **+ backfill** dos grants existentes. Aplicada em prod.
+
+**Validação:** backfill = 0 kits sem livro; `fabiovisualmidia+testevoucher` agora tem o kit **e** "A Cordo Sentir". Typecheck 0 erros.
 
 ### 🟡 UX (menor/médio)
 - **Sem indicador de cadeado nas bibliotecas** — Home mostra cadeado, mas Áudios/Vídeos/etc. não; só descobre que está bloqueado ao clicar. Inconsistente.

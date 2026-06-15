@@ -3010,7 +3010,44 @@ export const api = {
       return [];
     }
 
-    return data || [];
+    return this.expandKitGrants(data || []);
+  },
+
+  /**
+   * A voucher that grants a KIT must also unlock the kit's linked books/medias,
+   * which live as separate collections referenced by `collections.kit_book_ids`.
+   * The grant rows only store the kit's collection_id, so we expand them here:
+   * for each granted kit, add (synthetic) grants for its linked collections that
+   * aren't already granted. Keeps canAccessCollection working unchanged everywhere.
+   */
+  async expandKitGrants(
+    grants: import('../types').UserContentGrant[]
+  ): Promise<import('../types').UserContentGrant[]> {
+    if (!grants.length) return grants;
+
+    const grantedIds = grants.map(g => g.collection_id);
+    const { data: kits, error } = await supabase
+      .from('collections')
+      .select('id, kit_book_ids')
+      .in('id', grantedIds)
+      .eq('collection_type', 'kit');
+
+    if (error || !kits?.length) return grants;
+
+    const known = new Set(grantedIds);
+    const extra: import('../types').UserContentGrant[] = [];
+    for (const kit of kits) {
+      const bookIds: string[] = (kit as { kit_book_ids?: string[] | null }).kit_book_ids ?? [];
+      const source = grants.find(g => g.collection_id === kit.id);
+      if (!source) continue;
+      for (const bookId of bookIds) {
+        if (!bookId || known.has(bookId)) continue;
+        known.add(bookId);
+        extra.push({ ...source, id: `${source.id}:kit-book:${bookId}`, collection_id: bookId });
+      }
+    }
+
+    return extra.length ? [...grants, ...extra] : grants;
   },
 
   /**
