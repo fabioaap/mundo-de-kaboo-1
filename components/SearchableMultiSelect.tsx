@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
 
+const normalizeText = (v: string) => (v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
 export interface SelectOption {
   value: string;
   label: string;
@@ -61,11 +63,11 @@ export const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
   }, [open]);
 
   const filtered = options.filter((opt) => {
-    const q = search.toLowerCase();
+    const q = normalizeText(search);
     return (
-      opt.value.toLowerCase().includes(q) ||
-      opt.label.toLowerCase().includes(q) ||
-      (opt.description?.toLowerCase().includes(q) ?? false)
+      normalizeText(opt.value).includes(q) ||
+      normalizeText(opt.label).includes(q) ||
+      (opt.description ? normalizeText(opt.description).includes(q) : false)
     );
   });
 

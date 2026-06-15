@@ -7,6 +7,8 @@ import { useToast } from '../hooks/useToast';
 import { api } from '../lib/api';
 import { Formation, FormationLevel, FormationAsset, MaterialAssetType, ScreenName } from '../types';
 
+const normalizeText = (v: string) => (v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
 interface AdminFormationsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
@@ -188,7 +190,7 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
   };
 
   const filtered = formations.filter(f =>
-    f.title.toLowerCase().includes(searchQuery.toLowerCase())
+    normalizeText(f.title).includes(normalizeText(searchQuery))
   );
 
   const ASSET_TYPE_ICONS: Record<MaterialAssetType, React.FC<any>> = {

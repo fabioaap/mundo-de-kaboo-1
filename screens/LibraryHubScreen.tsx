@@ -964,6 +964,15 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
   const isBaseCompactCatalogEmpty = !isVideoHub && compactLibraryItems.length === 0;
   const currentLibraryItems = isVideoHub ? videoLibraryItems : compactLibraryItems;
   const availableCollectionFilterOptions = getLibraryCollectionFilterOptions(currentLibraryItems);
+  // O modal de Filtros (personagens/ano/BNCC/CASEL) só faz sentido quando há opções
+  // derivadas das coleções vinculadas. Para conteúdo ao vivo (fora do catalog seed) o
+  // lookup não acha a coleção e as opções vêm vazias — nesse caso escondemos o botão
+  // em vez de abrir um modal vazio. (Suporte pleno depende de plumbar coleções ao vivo.)
+  const hasCollectionFilterOptions =
+    availableCollectionFilterOptions.characters.length > 0
+    || availableCollectionFilterOptions.age.length > 0
+    || availableCollectionFilterOptions.bncc.length > 0
+    || availableCollectionFilterOptions.casel.length > 0;
   const activeLibraryFilterCount = (Object.values(libraryCollectionFilters) as string[][]).reduce((total, values) => total + values.length, 0);
   const hasLibraryFiltersApplied = activeLibraryFilterCount > 0;
   const normalizedLibraryBnccQuery = normalizeLibraryText(libraryBnccQuery.trim());
@@ -1664,6 +1673,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                       <span className={isCorujaLibraryHub ? corujaSearchResultBadgeClass : defaultSearchResultBadgeClass}>
                         {sortedVideoItems.length} resultados
                       </span>
+                      {hasCollectionFilterOptions && (
                       <button
                         type="button"
                         onClick={() => setShowLibraryFilters(true)}
@@ -1682,6 +1692,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                           </span>
                         )}
                       </button>
+                      )}
                     </div>
                   </div>
 
@@ -1858,6 +1869,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                       <span className={isCorujaLibraryHub ? corujaSearchResultBadgeClass : defaultSearchResultBadgeClass}>
                         {sortedCompactItems.length} resultados
                       </span>
+                      {hasCollectionFilterOptions && (
                       <button
                         type="button"
                         onClick={() => setShowLibraryFilters(true)}
@@ -1876,6 +1888,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                           </span>
                         )}
                       </button>
+                      )}
                     </div>
                   </div>
 
@@ -2024,7 +2037,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
         </div>
       </div>
 
-      {showLibraryFilters && <LibraryFilterDrawer />}
+      {showLibraryFilters && hasCollectionFilterOptions && <LibraryFilterDrawer />}
       {showLibraryBnccPicker && <LibraryBnccPicker />}
     </div>
   );

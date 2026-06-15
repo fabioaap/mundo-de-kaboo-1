@@ -355,7 +355,9 @@ const COLLECTION_BACKED_HUB_CATEGORIES: Record<MediaHub, CollectionAssetCategory
   videos: ['animation', 'accessible_video', 'how_to_play', 'video_lesson'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
-  materials: ['reading', 'extra_material'],
+  // reading (PDF do livro) pertence EXCLUSIVAMENTE ao hub Livros — Materiais é só
+  // material de apoio (extra_material). Alinhado ao admin (LIBRARY_AREA_LISTING_CATEGORIES).
+  materials: ['extra_material'],
 };
 
 const buildCollectionAssetMediaItemId = (hub: MediaHub, collectionId: string, assetId: string): string => {
@@ -612,15 +614,13 @@ const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection,
 const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]): LibraryMockItem[] => {
   const allowedCategories = COLLECTION_BACKED_HUB_CATEGORIES[hub];
 
-  // For the materials hub: book collections share the 'reading' category but belong in
-  // the Books hub, so we exclude them here to avoid cross-hub bleed.
-  // Videos and music hubs intentionally allow book collections (they carry animation/
-  // storytelling assets that should appear in those hubs).
-  const excludeBookCollections = hub === 'materials';
+  // Cada hub filtra pelas SUAS categorias (allowedCategories). Materiais agora só inclui
+  // extra_material — o PDF do livro (reading) pertence só ao hub Livros — então não é
+  // preciso excluir coleções tipo "book": o Guia do Professor (extra_material) de um livro
+  // deve, sim, aparecer em Materiais.
   const collectionsById = new Map(collections.map((collection) => [collection.id, collection]));
 
   const pairs = collections
-    .filter((collection) => !excludeBookCollections || collection.collection_type !== 'book')
     .flatMap((collection) => (collection.collection_assets ?? [])
       // On the public storefront, hide assets that were explicitly unpublished (is_published=false).
       // undefined/null means published (backward-compat with assets created before per-asset flags).

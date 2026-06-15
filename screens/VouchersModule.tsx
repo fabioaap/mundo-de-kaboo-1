@@ -45,6 +45,8 @@ const getVoucherCollectionCover = (collection?: { cover_image?: string | null; k
     return getCollectionDisplayCover(collection) || collection?.cover_image || '';
 };
 
+const normalizeText = (v: string) => (v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
 /* ── Constants ────────────────────────────────────────── */
 
 const PACKAGE_LABELS: Record<VoucherPackageType, { icon: string; label: string }> = {
@@ -204,7 +206,7 @@ const ModelsListView: React.FC<{
     const filtered = useMemo(() => {
         return models.filter(m => {
             if (statusFilter !== 'all' && m.status !== statusFilter) return false;
-            if (search && !m.name.toLowerCase().includes(search.toLowerCase())) return false;
+            if (search && !normalizeText(m.name).includes(normalizeText(search))) return false;
             return true;
         });
     }, [models, search, statusFilter]);
@@ -544,7 +546,7 @@ const ModelWizard: React.FC<{
     const filteredCollections = useMemo(() => {
         return collections.filter(c => {
             if (levelFilter !== 'all' && c.level !== levelFilter) return false;
-            if (contentSearch && !c.title.toLowerCase().includes(contentSearch.toLowerCase())) return false;
+            if (contentSearch && !normalizeText(c.title).includes(normalizeText(contentSearch))) return false;
             return true;
         });
     }, [collections, contentSearch, levelFilter]);
@@ -972,11 +974,11 @@ const BatchesListView: React.FC<{
         return batches.filter(b => {
             if (statusFilter !== 'all' && b.status !== statusFilter) return false;
             if (search) {
-                const q = search.toLowerCase();
+                const q = normalizeText(search);
                 if (
-                    !b.id.toLowerCase().includes(q) &&
-                    !b.model_snapshot.name.toLowerCase().includes(q) &&
-                    !(b.label || '').toLowerCase().includes(q)
+                    !normalizeText(b.id).includes(q) &&
+                    !normalizeText(b.model_snapshot.name).includes(q) &&
+                    !normalizeText(b.label || '').includes(q)
                 ) return false;
             }
             return true;

@@ -2353,10 +2353,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
     // Apply search filter
     if (searchFilter.trim()) {
-      const searchLower = searchFilter.toLowerCase();
+      const searchLower = normalizeSearchableText(searchFilter);
       filtered = filtered.filter(collection =>
-        collection.title?.toLowerCase().includes(searchLower) ||
-        collection.theme?.toLowerCase().includes(searchLower)
+        normalizeSearchableText(collection.title).includes(searchLower) ||
+        normalizeSearchableText(collection.theme).includes(searchLower)
       );
     }
 
@@ -2398,10 +2398,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
     let base = [...scopedCollections];
     if (searchFilter.trim()) {
-      const searchLower = searchFilter.toLowerCase();
+      const searchLower = normalizeSearchableText(searchFilter);
       base = base.filter((collection) =>
-        collection.title?.toLowerCase().includes(searchLower) ||
-        collection.theme?.toLowerCase().includes(searchLower)
+        normalizeSearchableText(collection.title).includes(searchLower) ||
+        normalizeSearchableText(collection.theme).includes(searchLower)
       );
     }
     if (levelFilter !== 'all') {
@@ -4359,11 +4359,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                               const slotAssets = formData.collection_assets.filter((a) => a.category === slot.category);
                               const slotSearch = slotSearchTerms[slot.category] ?? '';
                               const filteredLibraryItems = slotSearch.trim()
-                                ? libraryItems.filter(item =>
-                                    item.displayTitle.toLowerCase().includes(slotSearch.toLowerCase()) ||
-                                    item.collection.title.toLowerCase().includes(slotSearch.toLowerCase()) ||
-                                    item.searchText.toLowerCase().includes(slotSearch.toLowerCase())
-                                  )
+                                ? (() => {
+                                    const slotSearchNorm = normalizeSearchableText(slotSearch);
+                                    return libraryItems.filter(item =>
+                                      normalizeSearchableText(item.displayTitle).includes(slotSearchNorm) ||
+                                      normalizeSearchableText(item.collection.title).includes(slotSearchNorm) ||
+                                      item.searchText.includes(slotSearchNorm)
+                                    );
+                                  })()
                                 : libraryItems;
                               return (
                                 <div className="space-y-2">
@@ -4509,11 +4512,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             ) : (() => {
                               const extraSearch = slotSearchTerms['extra_material'] ?? '';
                               const filteredExtraItems = extraSearch.trim()
-                                ? extraLibItems.filter(item =>
-                                    item.displayTitle.toLowerCase().includes(extraSearch.toLowerCase()) ||
-                                    item.collection.title.toLowerCase().includes(extraSearch.toLowerCase()) ||
-                                    item.searchText.toLowerCase().includes(extraSearch.toLowerCase())
-                                  )
+                                ? (() => {
+                                    const extraSearchNorm = normalizeSearchableText(extraSearch);
+                                    return extraLibItems.filter(item =>
+                                      normalizeSearchableText(item.displayTitle).includes(extraSearchNorm) ||
+                                      normalizeSearchableText(item.collection.title).includes(extraSearchNorm) ||
+                                      item.searchText.includes(extraSearchNorm)
+                                    );
+                                  })()
                                 : extraLibItems;
                               return (
                               <div className="space-y-2">
