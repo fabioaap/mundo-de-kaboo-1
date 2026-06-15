@@ -98,12 +98,6 @@
   --space-list-item-y: 1.25rem;
 }
 
-[data-brand="central-coruja"] {
-  --space-page-x-desktop: 1.5rem;
-  --space-card-gap-desktop: 1.25rem;
-  --space-page-inset-y-desktop: 1.25rem;
-}
-
 /* ─── Scrollbar ──────────────────────────────────────────── */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

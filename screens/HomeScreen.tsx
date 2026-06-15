@@ -139,13 +139,11 @@ interface GridViewProps {
 }
 
 const GridView: React.FC<GridViewProps> = ({ collections, onCollectionClick, grants, tone = 'default', subtitleFallback }) => {
-  const isCorujaTone = tone === 'central-coruja';
-
+  // Grid idêntico entre marcas (diagramação igual ao Kaboo); o `tone` segue só para
+  // o tema visual dos cards.
   return (
     <div
-      className={`grid ${isCorujaTone
-        ? `grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 ${layoutSpacing.cardGridGap}`
-        : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3'}`}
+      className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3"
       style={{
         contain: 'layout style',
       }}
@@ -701,15 +699,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     && (Boolean(brandHomeHeroImageUrl) || isCentralCoruja || brandSlug === 'kaboo')
     && !(isCentralCoruja && currentCollectionGroup === 'books');
   const isCorujaHomeLayout = isCentralCoruja && !isSearchExperience;
-  const isCorujaPinnedShelfLayout = isCorujaHomeLayout && Boolean(brandHomeHeroImageUrl);
-  const desktopShellPaddingClass = isCorujaPinnedShelfLayout
-    ? 'px-[var(--space-page-x)] md:mx-auto md:w-full md:max-w-[78rem] md:px-0'
-    : isCentralCoruja
-      ? 'px-[var(--space-page-x)] md:px-[var(--space-page-x)]'
-      : 'px-4 sm:px-6 lg:px-8';
-  const desktopSkeletonHeaderPaddingClass = isCorujaPinnedShelfLayout
-    ? 'hidden md:block shrink-0 md:mx-auto md:w-full md:max-w-[78rem] md:pt-[var(--space-page-header-top-desktop)] md:pb-[var(--space-page-inset-y)]'
-    : 'hidden md:block shrink-0 px-[var(--space-page-x-desktop)] pt-[var(--space-page-header-top-desktop)] pb-[var(--space-page-inset-y)]';
+  // Diagramação/largura idêntica entre marcas: todas usam o mesmo container do Kaboo
+  // (sem cap de max-width específico da Coruja). White-label = cores/tema, não layout.
+  const desktopShellPaddingClass = 'px-4 sm:px-6 lg:px-8';
+  const desktopSkeletonHeaderPaddingClass = 'hidden md:block shrink-0 px-[var(--space-page-x-desktop)] pt-[var(--space-page-header-top-desktop)] pb-[var(--space-page-inset-y)]';
   const corujaHeroLayerDepths = useMemo(() => (isMobile ? [0.8, 0.36] : [1.4, 0.6]), [isMobile]);
   const { containerRef: corujaHeroMotionContainerRef, setLayerRef: setCorujaHeroLayerRef } = useParallaxMotion({
     disabled: !isCorujaHeroImageLayout || prefersReducedMotion,

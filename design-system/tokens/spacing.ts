@@ -34,12 +34,10 @@ export const spacing = {
     'detail-desktop': '3rem',
     'list-item-y': '1.25rem',
   },
+  // Sem overrides de espaçamento por marca: a diagramação é idêntica entre marcas
+  // (white-label = cores/tema, não layout).
   brands: {
-    'central-coruja': {
-      'page-x-desktop': '1.5rem',
-      'card-gap-desktop': '1.25rem',
-      'page-inset-y-desktop': '1.25rem',
-    },
+    'central-coruja': {},
   },
 } as const
 
