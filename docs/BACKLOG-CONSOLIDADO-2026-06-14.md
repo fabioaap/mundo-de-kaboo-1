@@ -34,12 +34,22 @@
 - **Sem indicador de cadeado nas bibliotecas** — Home mostra cadeado, mas Áudios/Vídeos/etc. não; só descobre que está bloqueado ao clicar. Inconsistente.
 - **Modal não fecha após "Comprar na loja"** — abre a loja em nova aba e mantém o modal aberto na aba original. Avaliar fechar automaticamente.
 
-### 🔴 CRIAÇÃO de voucher pela UI (admin) — testada ao vivo, e está QUEBRADA
-Como `admin@mundodekaboo.dev` (sessão real, não expirada), fiz o wizard de criação de voucher (Etapa 1 config → Etapa 2 "selecionar exatamente os conteúdos" → Etapa 3 revisão; liberei só o livro "A Cordo Sentir"). ✅ O wizard de liberação é claro e funciona até o save. Mas:
-- **"Salvar e ativar" falha com 403** — `POST /rest/v1/voucher_models` retorna **403 (RLS)** e o modelo NÃO é criado. Contradição a investigar: a sessão é admin que gerencia Kaboo (`296eab71`), o brand cacheado no bootstrap é o correto (`296eab71`), e `can_manage_brand('296eab71')` retorna **true** isolado (testado via JWT simulado). Próximo passo: capturar o `brand_id` real do corpo do POST / logs do Supabase (pode ser timing/estado do `wizardBrand = useBrandConfig().bootstrap.brand` no momento do submit). **Bloqueia o go-live: admin não consegue emitir voucher pela UI.**
-- **Falha silenciosa** — `VouchersModule.handleSave` faz `catch { setSavingWizard(false); }` (VouchersModule:598) **sem toast** → o wizard congela na Etapa 3 sem nenhuma mensagem de erro. Corrigir para exibir o erro.
-- **Modelos criados fora da UI (via SQL) não aparecem na lista** — "Nenhum modelo criado" mesmo com modelo `brand=kaboo` no banco (RLS/escopo de brand + `created_by` null). Menos crítico, mas confirma o acoplamento com brand/RLS.
-- Nota de modelagem: a tela deixa claro que *"o tipo de pacote organiza a oferta, mas os conteúdos liberados são definidos apenas pelas seleções abaixo"* — a liberação é escolher exatamente as coleções. Reforça o bug do kit→livro acima (escolher um kit não inclui o livro vinculado).
+### ✅ RESOLVIDO (2026-06-15): CRIAÇÃO de voucher pela UI (admin) — era GRANT faltando, não RLS
+**Causa raiz:** as tabelas `voucher_models`, `voucher_model_items`, `voucher_batches`, `vouchers` e `audit_log` receberam as **políticas RLS** para o papel `authenticated`, mas **nunca receberam o GRANT** de tabela. O Postgres avalia o privilégio SQL (`GRANT`) **antes** da RLS → todo acesso do admin batia em `permission denied for table` (HTTP 403) antes da política ser avaliada. Só o `service_role` funcionava. Por isso: não criava, não listava ("Nenhum modelo criado"), não lia lotes/códigos/auditoria.
+
+**Diagnóstico:** logs do Postgres (`permission denied for table voucher_models / voucher_batches / vouchers / audit_log`) + `information_schema.role_table_grants` (só `service_role` listado). `can_manage_brand('296eab71')` = TRUE no contexto JWT real → RLS estava OK; o problema era o GRANT.
+
+**Fix aplicado em prod:** migration `20260615120000_grant_voucher_tables_to_authenticated.sql` — concede ao `authenticated` exatamente os privilégios que batem com as políticas (menor privilégio): voucher_models (S/I/U), voucher_model_items (S/I/D), voucher_batches (S/I/U), vouchers (S/U), audit_log (S). RLS continua filtrando por `can_manage_brand`.
+
+**Validação ao vivo:** como `admin@mundodekaboo.dev`, criado modelo "Teste GRANT - 1 conteudo" (active, collection, 6 meses, 1 item = "A Cordo Sentir") pela UI → GET voucher_models agora 200, INSERT OK. Lista voltou a carregar.
+
+**Também corrigido:** falha silenciosa em `VouchersModule.handleSave` (`catch {}` → agora exibe o erro real acima dos botões + `console.error`).
+
+**Limpeza pendente:** remover modelos de teste em prod ("Teste GRANT - 1 conteudo" e demais de teste). `voucher_models` não tem policy/grant de DELETE para `authenticated` → deletar exige `service_role`.
+
+**Observação menor:** `created_by` fica `null` no insert pela UI (não preenche `auth.uid()`). Não bloqueia, mas vale um `DEFAULT auth.uid()` ou setar no client para rastreabilidade.
+
+**Modelagem (mantém aberto):** a liberação é escolher exatamente as coleções — reforça o bug do kit→livro (escolher um kit não inclui o livro vinculado).
 
 ## P0 — Gates de Go-Live (`checklist-go-live-v1-3.md`)
 - [ ] **Vouchers ponta a ponta com a gráfica** sem mock (geração → distribuição → resgate → operação). (Vouchers)

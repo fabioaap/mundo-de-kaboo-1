@@ -573,6 +573,7 @@ const ModelWizard: React.FC<{
 
     const wizardBrand = useBrandConfig().bootstrap.brand;
     const [savingWizard, setSavingWizard] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     const handleSave = async (status: VoucherModelStatus) => {
         const data = {
@@ -587,6 +588,7 @@ const ModelWizard: React.FC<{
 
         if (isSupabaseConfigured) {
             setSavingWizard(true);
+            setSaveError(null);
             try {
                 if (editId) {
                     await apiVouchers.updateVoucherModel(editId, data);
@@ -595,8 +597,11 @@ const ModelWizard: React.FC<{
                     const created = await apiVouchers.createVoucherModel(wizardBrand.id, data);
                     onDone(created.id);
                 }
-            } catch {
+            } catch (err) {
                 setSavingWizard(false);
+                const message = err instanceof Error ? err.message : String(err);
+                setSaveError(`Não foi possível salvar o modelo: ${message}`);
+                console.error('[VouchersModule] Erro ao salvar modelo de voucher:', err);
             }
         } else {
             let model: VoucherModel | null;
@@ -821,6 +826,12 @@ const ModelWizard: React.FC<{
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
                         ⚠️ Se ainda houver dúvida, salve como rascunho. Depois da emissão, os dados críticos ficam congelados para os lotes gerados.
                     </div>
+
+                    {saveError && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700" role="alert">
+                            {saveError}
+                        </div>
+                    )}
 
                     <div className="fixed bottom-[4.5rem] left-0 right-0 md:static md:bottom-auto md:left-auto md:right-auto bg-white md:bg-transparent border-t border-gray-100 md:border-t-0 p-4 md:p-0 md:pt-2 flex flex-wrap justify-between gap-2 z-[51] md:z-auto shadow-[0_-1px_4px_rgba(0,0,0,0.06)] md:shadow-none">
                         <Button onClick={() => setStep(2)} variant="secondary">← Voltar</Button>
