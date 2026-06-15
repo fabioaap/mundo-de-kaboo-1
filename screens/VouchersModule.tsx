@@ -45,6 +45,8 @@ const getVoucherCollectionCover = (collection?: { cover_image?: string | null; k
     return getCollectionDisplayCover(collection) || collection?.cover_image || '';
 };
 
+const normalizeText = (v: string) => (v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
 /* ── Constants ────────────────────────────────────────── */
 
 const PACKAGE_LABELS: Record<VoucherPackageType, { icon: string; label: string }> = {
@@ -204,7 +206,7 @@ const ModelsListView: React.FC<{
     const filtered = useMemo(() => {
         return models.filter(m => {
             if (statusFilter !== 'all' && m.status !== statusFilter) return false;
-            if (search && !m.name.toLowerCase().includes(search.toLowerCase())) return false;
+            if (search && !normalizeText(m.name).includes(normalizeText(search))) return false;
             return true;
         });
     }, [models, search, statusFilter]);
@@ -403,7 +405,7 @@ const ModelDetailView: React.FC<{
 
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
-            {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+            {toast && <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />}
 
             {/* Breadcrumb */}
             <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-primary mb-4">
@@ -544,7 +546,7 @@ const ModelWizard: React.FC<{
     const filteredCollections = useMemo(() => {
         return collections.filter(c => {
             if (levelFilter !== 'all' && c.level !== levelFilter) return false;
-            if (contentSearch && !c.title.toLowerCase().includes(contentSearch.toLowerCase())) return false;
+            if (contentSearch && !normalizeText(c.title).includes(normalizeText(contentSearch))) return false;
             return true;
         });
     }, [collections, contentSearch, levelFilter]);
@@ -571,6 +573,7 @@ const ModelWizard: React.FC<{
 
     const wizardBrand = useBrandConfig().bootstrap.brand;
     const [savingWizard, setSavingWizard] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     const handleSave = async (status: VoucherModelStatus) => {
         const data = {
@@ -585,6 +588,7 @@ const ModelWizard: React.FC<{
 
         if (isSupabaseConfigured) {
             setSavingWizard(true);
+            setSaveError(null);
             try {
                 if (editId) {
                     await apiVouchers.updateVoucherModel(editId, data);
@@ -593,8 +597,11 @@ const ModelWizard: React.FC<{
                     const created = await apiVouchers.createVoucherModel(wizardBrand.id, data);
                     onDone(created.id);
                 }
-            } catch {
+            } catch (err) {
                 setSavingWizard(false);
+                const message = err instanceof Error ? err.message : String(err);
+                setSaveError(`Não foi possível salvar o modelo: ${message}`);
+                console.error('[VouchersModule] Erro ao salvar modelo de voucher:', err);
             }
         } else {
             let model: VoucherModel | null;
@@ -820,6 +827,12 @@ const ModelWizard: React.FC<{
                         ⚠️ Se ainda houver dúvida, salve como rascunho. Depois da emissão, os dados críticos ficam congelados para os lotes gerados.
                     </div>
 
+                    {saveError && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700" role="alert">
+                            {saveError}
+                        </div>
+                    )}
+
                     <div className="fixed bottom-[4.5rem] left-0 right-0 md:static md:bottom-auto md:left-auto md:right-auto bg-white md:bg-transparent border-t border-gray-100 md:border-t-0 p-4 md:p-0 md:pt-2 flex flex-wrap justify-between gap-2 z-[51] md:z-auto shadow-[0_-1px_4px_rgba(0,0,0,0.06)] md:shadow-none">
                         <Button onClick={() => setStep(2)} variant="secondary">← Voltar</Button>
                         <div className="flex gap-2 flex-1 md:flex-none justify-end">
@@ -972,11 +985,11 @@ const BatchesListView: React.FC<{
         return batches.filter(b => {
             if (statusFilter !== 'all' && b.status !== statusFilter) return false;
             if (search) {
-                const q = search.toLowerCase();
+                const q = normalizeText(search);
                 if (
-                    !b.id.toLowerCase().includes(q) &&
-                    !b.model_snapshot.name.toLowerCase().includes(q) &&
-                    !(b.label || '').toLowerCase().includes(q)
+                    !normalizeText(b.id).includes(q) &&
+                    !normalizeText(b.model_snapshot.name).includes(q) &&
+                    !normalizeText(b.label || '').includes(q)
                 ) return false;
             }
             return true;
@@ -1187,7 +1200,7 @@ const BatchDetailView: React.FC<{
 
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
-            {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+            {toast && <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />}
 
             <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-brand-primary mb-4">
                 <Icons.ChevronLeft className="w-4 h-4" /> Lotes
@@ -1420,7 +1433,7 @@ const CodesListView: React.FC = () => {
 
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
-            {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
+            {toast && <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />}
 
             <h1 className="text-xl font-bold text-gray-800 mb-6">Códigos</h1>
 

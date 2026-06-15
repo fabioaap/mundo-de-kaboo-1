@@ -83,6 +83,7 @@ export interface UserProfile {
   access_starts_at?: string | null;
   access_expires_at?: string | null;
   access_status?: AccessStatus | null;
+  pending_voucher_code?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   invited_at?: string | null;

@@ -155,8 +155,13 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const resolvedTitle = resolvedPlaybackTitle ?? assetTitle ?? collection.title;
   const youtubeVideoId = getYouTubeVideoId(resolvedVideoUrl);
   const isYouTubeSource = Boolean(youtubeVideoId);
+  // iOS/Safari/Edge bloqueiam play programático (postMessage) de iframe YouTube. Em
+  // dispositivos touch usamos os CONTROLES NATIVOS do YouTube (controls=1) para que o
+  // toque no player do YouTube inicie o vídeo. No desktop mantemos os controles do app.
+  const isTouchDevice = typeof window !== 'undefined'
+    && (('ontouchstart' in window) || (navigator.maxTouchPoints ?? 0) > 0);
   const youtubeEmbedUrl = youtubeVideoId
-    ? `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&playsinline=1&rel=0&enablejsapi=1&controls=0`
+    ? `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=${isTouchDevice ? 0 : 1}&playsinline=1&rel=0&enablejsapi=1&controls=${isTouchDevice ? 1 : 0}`
     : null;
   const {
     isAvailable: canDownloadOffline,
@@ -365,7 +370,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         const unique = Array.from(new Map(allItems.map((item) => [item.id, item])).values());
         const filtered = unique
           .filter((item) => item.id !== mediaItemId)
-          .filter((item) => !currentUrl || (item.assetUrl ?? '').trim() !== currentUrl)
+          .filter((item) => !currentUrl || ((item as { assetUrl?: string | null }).assetUrl ?? '').trim() !== currentUrl)
           .slice(0, 10);
 
         setRelatedItems(filtered);
@@ -661,7 +666,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       return;
     }
 
-    const screenOrientation = window.screen.orientation;
+    const screenOrientation = window.screen.orientation as ScreenOrientation & {
+      lock?: (orientation: string) => Promise<void>;
+    };
     if (!screenOrientation || typeof screenOrientation.lock !== 'function') {
       return;
     }
@@ -1746,7 +1753,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
         {(
           <>
-            {/* Center Play Button — skip buttons live only in the bottom dock (YouTube reference pattern) */}
+            {/* Center Play Button — skip buttons live only in the bottom dock (YouTube reference pattern).
+                Em touch + YouTube NÃO renderizamos o play customizado: ele interceptaria o toque
+                e o iOS bloqueia o play via postMessage — deixamos os controles nativos do YouTube. */}
+            {!(isTouchDevice && isYouTubeSource) && (
             <div
               className={`absolute left-1/2 top-1/2 ${isYouTubeSource ? 'pointer-events-auto' : ''}`}
               style={{ transform: mobilePortraitCenterTransform }}
@@ -1764,6 +1774,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 )}
               </button>
             </div>
+            )}
 
             {/* Bottom Control Dock */}
             <div className={`w-full flex flex-col gap-2 ${isYouTubeSource ? 'pointer-events-auto' : ''}`} onClick={(e) => e.stopPropagation()}>

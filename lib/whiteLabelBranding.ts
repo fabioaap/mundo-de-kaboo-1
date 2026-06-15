@@ -10,6 +10,12 @@ export interface BrandDesignTokens {
     radius_3xl: string | null;
 }
 
+export interface BrandLinks {
+    store_url: string | null;
+    lead_capture_url: string | null;
+    support_contact_url: string | null;
+}
+
 export interface MockBrandSettingsOverride {
     display_name?: string;
     logo_url?: string | null;
@@ -119,6 +125,41 @@ export function mergeBrandDesignTokens(
         visual_identity: {
             ...visualIdentity,
             design_tokens: nextTokens,
+        },
+    };
+}
+
+function extractBrandLinksRecord(menuConfig: Record<string, unknown> | null | undefined): Record<string, unknown> {
+    return isPlainRecord(menuConfig?.brand_links) ? menuConfig.brand_links : {};
+}
+
+// Links white-label (loja de upsell, captação de lead, suporte) — guardados em
+// menu_config.brand_links, no mesmo padrão de visual_identity/design_tokens.
+export function extractBrandLinks(menuConfig: Record<string, unknown> | null | undefined): BrandLinks {
+    const links = extractBrandLinksRecord(menuConfig);
+
+    return {
+        store_url: normalizeNullableString(links.store_url),
+        lead_capture_url: normalizeNullableString(links.lead_capture_url),
+        support_contact_url: normalizeNullableString(links.support_contact_url),
+    };
+}
+
+export function mergeBrandLinks(
+    menuConfig: Record<string, unknown> | null | undefined,
+    links: Partial<BrandLinks>,
+): Record<string, unknown> {
+    const currentLinks = extractBrandLinksRecord(menuConfig);
+    const nextLinks = {
+        ...extractBrandLinks(menuConfig),
+        ...links,
+    };
+
+    return {
+        ...(isPlainRecord(menuConfig) ? menuConfig : {}),
+        brand_links: {
+            ...currentLinks,
+            ...nextLinks,
         },
     };
 }

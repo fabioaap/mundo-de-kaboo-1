@@ -88,6 +88,7 @@ const sidebars: SidebarsConfig = {
         'journeys/journeys',
         'journeys/auth',
         'journeys/post-login',
+        'journeys/vouchers',
         'journeys/reference',
       ],
     },

@@ -6,6 +6,7 @@ import { LOGO_URL, LEAD_CAPTURE_URL, PENDING_SIGNUP_VOUCHER_STORAGE_KEY, PRIVACY
 import { api } from '../lib/api';
 import { getProfileAccessStatus } from '../lib/access';
 import { logger } from '../lib/logger';
+import { useBrandConfig } from '../hooks/useBrandConfig';
 
 type LoginStep =
   | 'voucher'
@@ -89,6 +90,9 @@ const normalizeAuthError = (message: string): { message: string; requiresEmailCo
 };
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSuccess, brandSlug, brandLogoUrl, brandName, backgroundImageUrl }) => {
+  const { bootstrap: brandBootstrap } = useBrandConfig();
+  const leadCaptureUrl = brandBootstrap.settings.lead_capture_url || LEAD_CAPTURE_URL;
+  const supportContactUrl = brandBootstrap.settings.support_contact_url || SUPPORT_CONTACT_URL;
   const isCentralCoruja = brandSlug === 'central-coruja';
   const resolvedBrandLogoUrl = brandLogoUrl || (brandSlug === 'kaboo' ? LOGO_URL : undefined);
   const resolvedBrandName = brandName || (isCentralCoruja ? 'Central Coruja' : 'Mundo de Kaboo');
@@ -238,8 +242,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
           throw new Error(result.error || 'Nao foi possivel iniciar a sessao.');
         }
         let currentProfile = result.profile;
-        const pendingVoucher = getPendingSignupVoucher();
-        if (pendingVoucher) {
+        // Voucher pendente: prioriza o código persistido no PERFIL (sobrevive a troca de
+        // dispositivo/limpeza de storage); localStorage é fallback. Só resgata se ainda não ativo.
+        const pendingVoucher = currentProfile?.pending_voucher_code?.trim() || getPendingSignupVoucher();
+        if (pendingVoucher && getProfileAccessStatus(currentProfile) !== 'active') {
           const pr = await api.redeemVoucher(pendingVoucher);
           if (pr.success && pr.profile) { currentProfile = pr.profile; clearPendingSignupVoucher(); }
         }
@@ -290,7 +296,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     <div className="text-center">
       <p className="text-xs font-medium text-gray-500">Ainda não tem voucher?</p>
       <a
-        href={LEAD_CAPTURE_URL}
+        href={leadCaptureUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-colors hover:text-brand-primary/80"
@@ -305,7 +311,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     <div className="text-center">
       <p className="text-xs font-medium text-gray-500">Precisa de ajuda com o voucher?</p>
       <a
-        href={SUPPORT_CONTACT_URL}
+        href={supportContactUrl}
         className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-gray-600 transition-colors hover:text-brand-primary"
       >
         Falar com o suporte{' '}

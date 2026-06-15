@@ -2,9 +2,11 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import { isDevMockSession } from './api';
 import {
     extractBrandDesignTokens,
+    extractBrandLinks,
     extractBrandVisualIdentity,
     getMockBrandSettingsOverride,
     mergeBrandDesignTokens,
+    mergeBrandLinks,
     mergeBrandVisualIdentity,
     writeMockBrandSettingsOverride,
 } from './whiteLabelBranding';
@@ -54,6 +56,9 @@ export interface WhiteLabelBrandIdentity {
     radius_3xl: string;
     login_background_url: string;
     home_hero_image_url: string;
+    store_url: string;
+    lead_capture_url: string;
+    support_contact_url: string;
 }
 
 export type WhiteLabelRolloutWave = 'pilot' | 'group' | 'general';
@@ -237,6 +242,9 @@ const DEFAULT_BRAND_IDENTITY_BY_BRAND: Record<string, WhiteLabelBrandIdentity> =
         radius_3xl: '2rem',
         login_background_url: '',
         home_hero_image_url: '',
+        store_url: 'https://empatiaeditora.com.br/',
+        lead_capture_url: 'https://loja.empatiaeditora.com.br/',
+        support_contact_url: 'mailto:suporte@mundodekaboo.com',
     },
     'mock-central-coruja': {
         display_name: 'Central Coruja',
@@ -252,6 +260,9 @@ const DEFAULT_BRAND_IDENTITY_BY_BRAND: Record<string, WhiteLabelBrandIdentity> =
         radius_3xl: '2rem',
         login_background_url: '',
         home_hero_image_url: '',
+        store_url: 'https://loja.educabox.com.br/',
+        lead_capture_url: '',
+        support_contact_url: '',
     },
 };
 
@@ -280,6 +291,9 @@ function buildMockBrandIdentity(brandId: string): WhiteLabelBrandIdentity {
         radius_3xl: Object.prototype.hasOwnProperty.call(override ?? {}, 'radius_3xl') ? normalizeText(override?.radius_3xl ?? '') || defaults.radius_3xl : defaults.radius_3xl,
         login_background_url: Object.prototype.hasOwnProperty.call(override ?? {}, 'login_background_url') ? normalizeText(override?.login_background_url ?? '') : defaults.login_background_url,
         home_hero_image_url: Object.prototype.hasOwnProperty.call(override ?? {}, 'home_hero_image_url') ? normalizeText(override?.home_hero_image_url ?? '') : defaults.home_hero_image_url,
+        store_url: defaults.store_url,
+        lead_capture_url: defaults.lead_capture_url,
+        support_contact_url: defaults.support_contact_url,
     };
 }
 
@@ -384,6 +398,7 @@ export async function getWhiteLabelBrandIdentity(brandId: string): Promise<White
     const menuConfig = (data.menu_config as Record<string, unknown> | null) ?? {};
     const visualIdentity = extractBrandVisualIdentity(menuConfig);
     const designTokens = extractBrandDesignTokens(menuConfig);
+    const brandLinks = extractBrandLinks(menuConfig);
 
     return {
         display_name: normalizeText((data.display_name as string | null | undefined) ?? defaults.display_name) || defaults.display_name,
@@ -399,6 +414,9 @@ export async function getWhiteLabelBrandIdentity(brandId: string): Promise<White
         radius_3xl: normalizeText(designTokens.radius_3xl ?? defaults.radius_3xl) || defaults.radius_3xl,
         login_background_url: normalizeText(visualIdentity.login_background_url ?? defaults.login_background_url),
         home_hero_image_url: normalizeText(visualIdentity.home_hero_image_url ?? defaults.home_hero_image_url),
+        store_url: normalizeText(brandLinks.store_url ?? defaults.store_url),
+        lead_capture_url: normalizeText(brandLinks.lead_capture_url ?? defaults.lead_capture_url),
+        support_contact_url: normalizeText(brandLinks.support_contact_url ?? defaults.support_contact_url),
     };
 }
 
@@ -417,6 +435,9 @@ export async function setWhiteLabelBrandIdentity(input: {
     radius_3xl?: string;
     login_background_url?: string;
     home_hero_image_url?: string;
+    store_url?: string;
+    lead_capture_url?: string;
+    support_contact_url?: string;
 }): Promise<WhiteLabelBrandIdentity> {
     const normalizedDisplayName = normalizeText(input.display_name);
     const normalizedLogoUrl = normalizeText(input.logo_url);
@@ -427,6 +448,9 @@ export async function setWhiteLabelBrandIdentity(input: {
     const normalizedRadius3xl = normalizeText(input.radius_3xl);
     const normalizedLoginBackgroundUrl = normalizeText(input.login_background_url);
     const normalizedHomeHeroImageUrl = normalizeText(input.home_hero_image_url);
+    const normalizedStoreUrl = normalizeText(input.store_url);
+    const normalizedLeadCaptureUrl = normalizeText(input.lead_capture_url);
+    const normalizedSupportContactUrl = normalizeText(input.support_contact_url);
 
     if (!normalizedDisplayName) {
         throw new Error('display_name_required');
@@ -466,19 +490,26 @@ export async function setWhiteLabelBrandIdentity(input: {
         throw currentSettingsError;
     }
 
-    const nextMenuConfig = mergeBrandDesignTokens(
-        mergeBrandVisualIdentity(
-            (currentSettings.menu_config as Record<string, unknown> | null) ?? {},
+    const nextMenuConfig = mergeBrandLinks(
+        mergeBrandDesignTokens(
+            mergeBrandVisualIdentity(
+                (currentSettings.menu_config as Record<string, unknown> | null) ?? {},
+                {
+                    login_background_url: normalizedLoginBackgroundUrl || null,
+                    home_hero_image_url: normalizedHomeHeroImageUrl || null,
+                },
+            ),
             {
-                login_background_url: normalizedLoginBackgroundUrl || null,
-                home_hero_image_url: normalizedHomeHeroImageUrl || null,
+                green_color: normalizedGreenColor || null,
+                radius_xl: normalizedRadiusXl || null,
+                radius_2xl: normalizedRadius2xl || null,
+                radius_3xl: normalizedRadius3xl || null,
             },
         ),
         {
-            green_color: normalizedGreenColor || null,
-            radius_xl: normalizedRadiusXl || null,
-            radius_2xl: normalizedRadius2xl || null,
-            radius_3xl: normalizedRadius3xl || null,
+            store_url: normalizedStoreUrl || null,
+            lead_capture_url: normalizedLeadCaptureUrl || null,
+            support_contact_url: normalizedSupportContactUrl || null,
         },
     );
 

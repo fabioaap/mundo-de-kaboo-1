@@ -283,11 +283,10 @@ const sanitizeCollectionPayload = (collection: Partial<Collection>, characters?:
   // the whole write is lost and the user's change (e.g. publish/unpublish)
   // silently never persists. Strip the bad entries here so the valid data saves.
   const next: Partial<Collection> = { ...syncedCollection };
-  const cleanCharacterIds = keepValidUuids(next.character_ids);
-  if (cleanCharacterIds && cleanCharacterIds.length !== (next.character_ids?.length ?? 0)) {
-    logger.warn('sanitizeCollectionPayload: dropped non-uuid character_ids', next.character_ids);
+  // character_ids is TEXT[] in Supabase — keep any non-empty string (IDs like 'kaboo', 'baratao').
+  if (Array.isArray(next.character_ids)) {
+    next.character_ids = next.character_ids.filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
   }
-  if (cleanCharacterIds) next.character_ids = cleanCharacterIds;
   const cleanKitBookIds = keepValidUuids(next.kit_book_ids);
   if (cleanKitBookIds && cleanKitBookIds.length !== (next.kit_book_ids?.length ?? 0)) {
     logger.warn('sanitizeCollectionPayload: dropped non-uuid kit_book_ids', next.kit_book_ids);
@@ -356,7 +355,9 @@ const COLLECTION_BACKED_HUB_CATEGORIES: Record<MediaHub, CollectionAssetCategory
   videos: ['animation', 'accessible_video', 'how_to_play', 'video_lesson'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
-  materials: ['reading', 'extra_material'],
+  // reading (PDF do livro) pertence EXCLUSIVAMENTE ao hub Livros — Materiais é só
+  // material de apoio (extra_material). Alinhado ao admin (LIBRARY_AREA_LISTING_CATEGORIES).
+  materials: ['extra_material'],
 };
 
 const buildCollectionAssetMediaItemId = (hub: MediaHub, collectionId: string, assetId: string): string => {
@@ -613,20 +614,42 @@ const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection,
 const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]): LibraryMockItem[] => {
   const allowedCategories = COLLECTION_BACKED_HUB_CATEGORIES[hub];
 
-  // For the materials hub: book collections share the 'reading' category but belong in
-  // the Books hub, so we exclude them here to avoid cross-hub bleed.
-  // Videos and music hubs intentionally allow book collections (they carry animation/
-  // storytelling assets that should appear in those hubs).
-  const excludeBookCollections = hub === 'materials';
+  // Cada hub filtra pelas SUAS categorias (allowedCategories). Materiais agora só inclui
+  // extra_material — o PDF do livro (reading) pertence só ao hub Livros — então não é
+  // preciso excluir coleções tipo "book": o Guia do Professor (extra_material) de um livro
+  // deve, sim, aparecer em Materiais.
   const collectionsById = new Map(collections.map((collection) => [collection.id, collection]));
 
-  return collections
-    .filter((collection) => !excludeBookCollections || collection.collection_type !== 'book')
+  const pairs = collections
     .flatMap((collection) => (collection.collection_assets ?? [])
       // On the public storefront, hide assets that were explicitly unpublished (is_published=false).
       // undefined/null means published (backward-compat with assets created before per-asset flags).
       .filter((asset) => allowedCategories.includes(asset.category) && asset.is_published !== false)
-      .map((asset) => ({ collection, asset })))
+      .map((asset) => ({ collection, asset })));
+
+  // Dedup por arquivo (URL): a mesma mídia copiada em vários kits/coleções (ex.: kit
+  // que copiou o áudio do livro) aparece UMA vez só na vitrine, preferindo a coleção
+  // DONA do arquivo (ID no caminho de storage .../collections/<pasta>/<ID>/<arquivo>).
+  const ownerIdFromUrl = (url: string): string | null => {
+    const match = url.match(/\/collections\/[^/]+\/([0-9a-fA-F-]{36})\//);
+    return match ? match[1] : null;
+  };
+  const byUrl = new Map<string, (typeof pairs)[number]>();
+  for (const pair of pairs) {
+    const url = (pair.asset.url ?? '').trim();
+    const dedupKey = url || `nourl:${pair.collection.id}:${pair.asset.id}`;
+    const existing = byUrl.get(dedupKey);
+    if (!existing) {
+      byUrl.set(dedupKey, pair);
+      continue;
+    }
+    const owner = url ? ownerIdFromUrl(url) : null;
+    if (owner && pair.collection.id === owner && existing.collection.id !== owner) {
+      byUrl.set(dedupKey, pair);
+    }
+  }
+
+  return Array.from(byUrl.values())
     .sort((left, right) => {
       const categoryDiff = allowedCategories.indexOf(left.asset.category) - allowedCategories.indexOf(right.asset.category);
       if (categoryDiff !== 0) {
@@ -1642,6 +1665,9 @@ export const api = {
           data: {
             full_name: input.full_name,
             brand_id: _activeBrandIdForApi,
+            // Persiste o código no servidor (raw_user_meta_data → trigger handle_new_user)
+            // para o resgate sobreviver a troca de dispositivo/limpeza de localStorage.
+            pending_voucher_code: input.voucherCode,
           }
         }
       });
@@ -2075,7 +2101,7 @@ export const api = {
     const currentUserId = await getCurrentUserId();
     const { progressByItemId, favoriteIds } = currentUserId
       ? await getRemoteMediaUserState(currentUserId)
-      : { progressByItemId: {}, favoriteIds: new Set<string>(), continueItemIds: [] as string[] };
+      : { progressByItemId: {}, favoriteIds: new Set<string>() };
 
     return {
       ...toMediaItemCard(data as MediaItemRow, { progressByItemId, favoriteIds, relatedCollections }),
@@ -2523,7 +2549,7 @@ export const api = {
         break;
       }
       stripped.push(missingCol);
-      currentPayload = stripMissingCollectionColumns(payload, stripped);
+      currentPayload = stripMissingCollectionColumns(payload, stripped) as typeof currentPayload;
       logger.warn(`Retrying collection update without column: ${missingCol}`);
     }
 
@@ -2984,7 +3010,44 @@ export const api = {
       return [];
     }
 
-    return data || [];
+    return this.expandKitGrants(data || []);
+  },
+
+  /**
+   * A voucher that grants a KIT must also unlock the kit's linked books/medias,
+   * which live as separate collections referenced by `collections.kit_book_ids`.
+   * The grant rows only store the kit's collection_id, so we expand them here:
+   * for each granted kit, add (synthetic) grants for its linked collections that
+   * aren't already granted. Keeps canAccessCollection working unchanged everywhere.
+   */
+  async expandKitGrants(
+    grants: import('../types').UserContentGrant[]
+  ): Promise<import('../types').UserContentGrant[]> {
+    if (!grants.length) return grants;
+
+    const grantedIds = grants.map(g => g.collection_id);
+    const { data: kits, error } = await supabase
+      .from('collections')
+      .select('id, kit_book_ids')
+      .in('id', grantedIds)
+      .eq('collection_type', 'kit');
+
+    if (error || !kits?.length) return grants;
+
+    const known = new Set(grantedIds);
+    const extra: import('../types').UserContentGrant[] = [];
+    for (const kit of kits) {
+      const bookIds: string[] = (kit as { kit_book_ids?: string[] | null }).kit_book_ids ?? [];
+      const source = grants.find(g => g.collection_id === kit.id);
+      if (!source) continue;
+      for (const bookId of bookIds) {
+        if (!bookId || known.has(bookId)) continue;
+        known.add(bookId);
+        extra.push({ ...source, id: `${source.id}:kit-book:${bookId}`, collection_id: bookId });
+      }
+    }
+
+    return extra.length ? [...grants, ...extra] : grants;
   },
 
   /**

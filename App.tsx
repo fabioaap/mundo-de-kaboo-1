@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
-import { NavState, ScreenName, Collection, UserProfile, AdminModule } from './types';
+import { NavState, ScreenName, Collection, UserProfile, AdminModule, UserContentGrant } from './types';
 import { api, clearAllUserCache, getCachedProfileSync, isDevMockSession, setActiveBrandForApi } from './lib/api';
 import {
   awaitDevSessionBridgeImport,
@@ -11,7 +11,9 @@ import {
 import { useThemeBackground } from './hooks/useThemeBackground';
 import { useBrandConfig } from './hooks/useBrandConfig';
 import { resolveBrandSlugFromPathname } from './hooks/brandSlug';
-import { getProfileAccessStatus, isAccessBlocked } from './lib/access';
+import { getProfileAccessStatus, isAccessBlocked, canAccessCollection } from './lib/access';
+import { VoucherUpsellModal } from './components/VoucherUpsellModal';
+import { getVoucherUpsellStoreUrl } from './constants';
 import { setActiveBrandForCharacters } from './lib/characters';
 import { getAccessibleNavState, PROTECTED_SCREENS } from './lib/navigationAccess';
 import { logger } from './lib/logger';
@@ -454,6 +456,10 @@ const App: React.FC = () => {
   });
   const [sessionChecked, setSessionChecked] = useState(false);
   const [accessProfile, setAccessProfile] = useState<UserProfile | null>(() => getCachedProfileSync());
+  // Grants de conteúdo do usuário (coleções liberadas pelo voucher). Usado no gate
+  // central de navegação: material fora do voucher abre o modal de upsell.
+  const [contentGrants, setContentGrants] = useState<UserContentGrant[]>([]);
+  const [upsellCollectionId, setUpsellCollectionId] = useState<string | null>(null);
 
   const [currentCollection, setCurrentCollection] = useState<Collection | undefined>(undefined);
   // Store previous screen and collectionId before navigating to player screens
@@ -820,7 +826,32 @@ const App: React.FC = () => {
     }
   }, [navState.params?.collectionId, navState.currentScreen]);
 
+  // Carrega os grants de conteúdo do usuário (coleções liberadas pelo voucher).
+  useEffect(() => {
+    const userId = accessProfile?.id;
+    if (!userId) {
+      setContentGrants([]);
+      return;
+    }
+    let cancelled = false;
+    api.getUserContentGrants()
+      .then((grants) => { if (!cancelled) setContentGrants(grants); })
+      .catch(() => { if (!cancelled) setContentGrants([]); });
+    return () => { cancelled = true; };
+  }, [accessProfile?.id]);
+
   const navigate = (screen: ScreenName, params?: any) => {
+    // Gate de acesso por material: se a navegação abre uma coleção/material (detalhes
+    // ou player) que NÃO está no voucher do usuário, exibimos o modal de upsell
+    // (degustação) em vez de abrir o conteúdo. Admin/editor não têm grants → liberados.
+    const targetCollectionId = params?.collectionId;
+    const isCollectionContext = !!targetCollectionId
+      && ([...PLAYER_SCREENS, 'home', 'search'] as ScreenName[]).includes(screen);
+    if (isCollectionContext && !canAccessCollection(contentGrants, targetCollectionId)) {
+      setUpsellCollectionId(targetCollectionId);
+      return;
+    }
+
     const normalizedScreen = screen === 'search' ? 'home' : screen;
     const normalizedParams = screen === 'search'
       ? {
@@ -1373,6 +1404,13 @@ const App: React.FC = () => {
   const showNav = ['home', 'search', 'videos', 'music', 'formations', 'materials', 'support', 'profile', 'my_data', 'admin', 'characters'].includes(currentScreen);
   // Modal opens immediately when collectionId is present, even if collection is still loading
   const isModalOpen = !!currentParams?.collectionId && ['home', 'search'].includes(currentScreen);
+  // Deep-link/restore para uma coleção fora do voucher: o detalhe não deve abrir;
+  // mostramos o upsell. (Cliques in-app já são barrados no gate do navigate.)
+  const lockedModalCollectionId = isModalOpen && currentParams?.collectionId
+    && !canAccessCollection(contentGrants, currentParams.collectionId)
+    ? (currentParams.collectionId as string)
+    : null;
+  const showUpsellModal = Boolean(upsellCollectionId || lockedModalCollectionId);
   const mainShellClassName = `relative w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-white overscroll-none md:h-screen`;
 
 
@@ -1401,11 +1439,24 @@ const App: React.FC = () => {
       {/* Collection Details Modal */}
       <CollectionModal
         collection={currentCollection || null}
-        isOpen={isModalOpen}
+        isOpen={isModalOpen && !lockedModalCollectionId}
         initialStackIds={Array.isArray(currentParams?.modalStackIds) ? currentParams.modalStackIds : undefined}
         onClose={closeModal}
         onNavigate={navigate}
       />
+
+      {/* Upsell: material fora do voucher (degustação) → comprar na loja */}
+      {showUpsellModal && (
+        <VoucherUpsellModal
+          storeUrl={brandBootstrap.settings.store_url || getVoucherUpsellStoreUrl(brandSlug)}
+          onClose={() => {
+            setUpsellCollectionId(null);
+            if (lockedModalCollectionId) {
+              closeModal();
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

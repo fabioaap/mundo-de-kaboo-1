@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { getAccessibleNavState, isProtectedScreen } from './navigationAccess';
+import { NavState } from '../types';
 
 describe('navigation access guard', () => {
   it('marks home as a protected screen', () => {
@@ -18,13 +19,13 @@ describe('navigation access guard', () => {
   });
 
   it('preserves public screens without an authenticated profile', () => {
-    const state = { currentScreen: 'forgot_password' };
+    const state: NavState = { currentScreen: 'forgot_password' };
 
     expect(getAccessibleNavState(state, false, 'login')).toBe(state);
   });
 
   it('preserves protected screens for authenticated profiles', () => {
-    const state = { currentScreen: 'materials' };
+    const state: NavState = { currentScreen: 'materials' };
 
     expect(getAccessibleNavState(state, true, 'login')).toBe(state);
   });

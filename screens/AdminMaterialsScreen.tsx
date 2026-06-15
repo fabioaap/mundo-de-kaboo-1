@@ -7,6 +7,8 @@ import { useToast } from '../hooks/useToast';
 import { api } from '../lib/api';
 import { Material, MaterialAssetType, ScreenName } from '../types';
 
+const normalizeText = (v: string) => (v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
 interface AdminMaterialsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
@@ -181,7 +183,7 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
   };
 
   const filtered = materials.filter(m =>
-    m.title.toLowerCase().includes(searchQuery.toLowerCase())
+    normalizeText(m.title).includes(normalizeText(searchQuery))
   );
 
   const ASSET_ICONS: Record<MaterialAssetType, React.FC<any>> = {

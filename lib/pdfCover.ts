@@ -48,7 +48,7 @@ export const renderPdfFirstPageToBlob = async (
     const context = canvas.getContext('2d');
     if (!context) return null;
 
-    await page.render({ canvasContext: context, viewport }).promise;
+    await page.render({ canvas, canvasContext: context, viewport }).promise;
 
     const blob = await new Promise<Blob | null>((resolve) => {
       canvas.toBlob((b) => resolve(b), type, quality);

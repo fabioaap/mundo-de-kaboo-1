@@ -96,7 +96,7 @@ const ensureSeed = () => {
             id: modelId1,
             name: 'Kit Aventura Kaboo',
             description: 'Kit com 3 livros de aventura para Fund. I',
-            package_type: 'kit',
+            package_type: 'collection',
             duration_months: 6,
             redeem_by: null,
             status: 'active',

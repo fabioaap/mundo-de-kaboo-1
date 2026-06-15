@@ -13,7 +13,17 @@ import {
     Voucher,
 } from '../types';
 
+/**
+ * Placeholder brand ids (e.g. 'mock-kaboo') are emitted by the brand bootstrap
+ * during the brief window before the real brand resolves (or when the bootstrap
+ * RPC falls back to mock). Querying voucher tables with them returns nothing and
+ * pollutes the network log; writing with them would fail RLS with a confusing 403.
+ * Guard centrally so no component ever hits the API with a placeholder id.
+ */
+const isPlaceholderBrandId = (brandId: string): boolean => !brandId || brandId.startsWith('mock-');
+
 export async function getVoucherModels(brandId: string): Promise<VoucherModel[]> {
+    if (isPlaceholderBrandId(brandId)) return [];
     const { data, error } = await supabase
         .from('voucher_models')
         .select(`
@@ -51,6 +61,7 @@ export async function getVoucherBatches(
     brandId: string,
     modelId?: string,
 ): Promise<VoucherBatch[]> {
+    if (isPlaceholderBrandId(brandId)) return [];
     let query = supabase
         .from('voucher_batches')
         .select('*')
@@ -94,6 +105,7 @@ export async function getVoucherCodes(
     brandId: string,
     filters?: { status?: string; batchId?: string; search?: string },
 ): Promise<Voucher[]> {
+    if (isPlaceholderBrandId(brandId)) return [];
     let query = supabase
         .from('vouchers')
         .select('*')
@@ -118,6 +130,7 @@ export async function getVoucherCodes(
 }
 
 export async function getAuditLog(brandId: string): Promise<AuditLogEntry[]> {
+    if (isPlaceholderBrandId(brandId)) return [];
     const { data, error } = await supabase
         .from('audit_log')
         .select('*')
@@ -143,6 +156,9 @@ export async function createVoucherModel(
         collection_ids: string[];
     },
 ): Promise<VoucherModel> {
+    if (isPlaceholderBrandId(brandId)) {
+        throw new Error('Marca ainda não carregada. Aguarde o carregamento da marca e tente novamente.');
+    }
     const { data: model, error } = await supabase
         .from('voucher_models')
         .insert({

@@ -5,7 +5,7 @@ import { formationsLibraryMock } from './formations.mock';
 import { materialsLibraryMock } from './materials.mock';
 import { musicLibraryMock } from './music.mock';
 import { videosLibraryMock } from './videos.mock';
-import { LibraryHubData, LibraryHubKind, LibraryMockItem } from './types';
+import { LibraryHubData, LibraryHubKind, LibraryMockItem, LibraryMockItemVariant } from './types';
 
 type CatalogSeed = {
     collections?: Collection[];

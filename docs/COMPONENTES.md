@@ -1,6 +1,6 @@
 # Documentação de Componentes
 
-**Atualizado em**: 14/06/2026, 10:56:30
+**Atualizado em**: 15/06/2026, 19:10:11
 
 ## Índice
 
@@ -27,6 +27,7 @@
 - [Toast](#toast)
 - [UserIdentityCard](#useridentitycard)
 - [VideoFramePicker](#videoframepicker)
+- [VoucherUpsellModal](#voucherupsellmodal)
 - [VouchersOnboardingBanner](#vouchersonboardingbanner)
 - [Flipbook](#flipbook)
 - [FlipbookLoader](#flipbookloader)
@@ -310,6 +311,19 @@
 
 
 **Exports**: `VideoFramePicker`
+
+---
+
+## VoucherUpsellModal
+
+**Arquivo**: `components/VoucherUpsellModal.tsx`
+
+**Descrição**: /  URL da loja para onde o CTA de compra direciona. /
+
+
+
+
+**Exports**: `VoucherUpsellModal`
 
 ---
 
