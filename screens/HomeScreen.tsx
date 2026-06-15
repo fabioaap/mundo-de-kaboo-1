@@ -1251,11 +1251,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const inProgressCollections = groupedCollections.filter(c => (userProgress[c.id] || 0) > 0);
 
   const handleCollectionClick = (collection: Collection) => {
-    if (!canAccessCollection(contentGrants, collection.id)) {
-      // Collection is locked — don't open details
-      return;
-    }
-    // Always open the modal so users can choose between read/listen/watch
+    // O acesso por material é validado no gate central (App.navigate): coleções fora do
+    // voucher abrem o modal de upsell (degustação) em vez dos detalhes. Sempre navegamos.
     onNavigate(screenName, { ...baseHomeParams, collectionId: collection.id });
   };
 

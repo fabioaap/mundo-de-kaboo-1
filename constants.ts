@@ -28,6 +28,10 @@ export const SUPPORT_CONTACT_URL = 'mailto:suporte@mundodekaboo.com';
 // Chave compartilhada para persistir o voucher pendente entre cadastro, login e renovação.
 export const PENDING_SIGNUP_VOUCHER_STORAGE_KEY = 'kaboo_pending_signup_voucher';
 
+// Loja para upsell quando o usuário tenta acessar um material fora do voucher (degustação).
+// PLACEHOLDER — confirmar a URL definitiva da loja Educacross.
+export const VOUCHER_UPSELL_STORE_URL = 'https://loja.educacross.com.br';
+
 // URL da política de privacidade
 export const PRIVACY_POLICY_URL = 'https://mundodekaboo.com.br/privacidade';
 
