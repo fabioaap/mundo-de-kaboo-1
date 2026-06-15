@@ -13,7 +13,7 @@ import { useBrandConfig } from './hooks/useBrandConfig';
 import { resolveBrandSlugFromPathname } from './hooks/brandSlug';
 import { getProfileAccessStatus, isAccessBlocked, canAccessCollection } from './lib/access';
 import { VoucherUpsellModal } from './components/VoucherUpsellModal';
-import { VOUCHER_UPSELL_STORE_URL } from './constants';
+import { getVoucherUpsellStoreUrl } from './constants';
 import { setActiveBrandForCharacters } from './lib/characters';
 import { getAccessibleNavState, PROTECTED_SCREENS } from './lib/navigationAccess';
 import { logger } from './lib/logger';
@@ -1448,7 +1448,7 @@ const App: React.FC = () => {
       {/* Upsell: material fora do voucher (degustação) → comprar na loja */}
       {showUpsellModal && (
         <VoucherUpsellModal
-          storeUrl={VOUCHER_UPSELL_STORE_URL}
+          storeUrl={getVoucherUpsellStoreUrl(brandSlug)}
           onClose={() => {
             setUpsellCollectionId(null);
             if (lockedModalCollectionId) {
