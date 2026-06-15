@@ -16,6 +16,24 @@
 
 ---
 
+## Teste de navegação do voucher — rodada 2026-06-15 (viewer real, voucher `KABOO-DEGUST-TESTE` cobrindo só o kit "Cores do Sentir")
+
+### ✅ Funcionando (validado ao vivo)
+- Home: card concedido com capa cheia; card não-coberto com **cadeado**.
+- Clicar material bloqueado → **modal de upsell** ("Material não incluído / Conteúdo de degustação"), texto correto.
+- CTA **"Comprar na loja"** abre `https://loja.educabox.com.br/` em nova aba. ✅
+- Kit concedido abre os **detalhes** normalmente (sem modal).
+- Gate cobre as **bibliotecas** (clicar áudio de coleção não-concedida → modal).
+- Nomenclatura **G3/G4/G5** aparece nas tags do detalhe do livro.
+
+### 🔴 CRÍTICO (bloqueia go-live do voucher) — conteúdo do kit CONCEDIDO fica inacessível
+- O voucher concede o **kit** "Cores do Sentir" (`8a593fb9`), mas o **livro/áudio** "A Cordo Sentir" é uma **coleção separada** (`39602737`) que NÃO está nos grants. Resultado: "Ler livro", "Ouvir" e o áudio na biblioteca **disparam o modal de upsell** — o usuário tem o kit mas **não consegue abrir o conteúdo dele**.
+- **Causa:** `redeem_voucher` concede só os `collection_id` do model_snapshot (o kit); não expande para os livros vinculados (`kit_book_ids`). **Fix (decidir onde):** (a) no redeem, conceder também as coleções vinculadas ao kit; ou (b) `canAccessCollection` resolver kit→livro (um livro de um kit concedido é acessível). Liga-se à épica de mídia/kit canônico.
+
+### 🟡 UX (menor/médio)
+- **Sem indicador de cadeado nas bibliotecas** — Home mostra cadeado, mas Áudios/Vídeos/etc. não; só descobre que está bloqueado ao clicar. Inconsistente.
+- **Modal não fecha após "Comprar na loja"** — abre a loja em nova aba e mantém o modal aberto na aba original. Avaliar fechar automaticamente.
+
 ## P0 — Gates de Go-Live (`checklist-go-live-v1-3.md`)
 - [ ] **Vouchers ponta a ponta com a gráfica** sem mock (geração → distribuição → resgate → operação). (Vouchers)
 - [ ] **Isolamento por marca homologado** (Kaboo × Central Coruja, sem vazamento de leitura/escrita). (White-label)
