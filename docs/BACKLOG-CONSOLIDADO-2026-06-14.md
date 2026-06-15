@@ -73,6 +73,9 @@
 - [ ] **Bundle splitting** (`lib/api.ts` ~104 KB; telas ~100 KB). (Performance)
 - [ ] **Sem trigger de `updated_at` em `collections`** (campo não confiável para auditoria). (DB)
 - [ ] **Playwright E2E só roda local (não no CI)** — regressões passam em deploys. (Testes)
+- [ ] **~50 testes E2E desatualizados após a refatoração single-brand/admin (2026-06-15)** — `white-label.spec.ts` (28) + favicon/shell (2) referenciam "Gestão de Marca"/seletor de marcas/rollout/alerting (removidos); `admin-collections-usability*` (13) seletores do drawer/aba de mídia; `central-coruja-*-jtbd` (6). Não são bugs de feature — precisam ser atualizados para a UI atual. (Testes)
+- [ ] **`npx playwright test` puro quebra** — `tests/hooks.useBrandConfig.central-coruja.regression.test.ts` é vitest dentro de `tests/`; o glob do Playwright tenta carregá-lo (`Cannot redefine property Symbol($$jest-matchers-object)`). Estreitar `testMatch` para `*.spec.ts`. (Testes)
+- [x] ~~**E2E do gate de upsell de voucher**~~ — adicionado 2026-06-15 (`tests/voucher-upsell.spec.ts`, commit d39ba90): viewer com grant parcial → material fora do voucher abre o modal; material coberto abre normal. Mock auth, sem conta real. (Testes)
 - [ ] **Alinhar idioma do strip-retry** em `createCollection` vs `updateCollection` (`lib/api.ts:2461`/`:2525`) — cosmético. (Tech-debt)
 
 ## Mídia canônica (estrutural — diferido, mas referenciado por vários itens)
