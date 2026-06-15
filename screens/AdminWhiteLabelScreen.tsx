@@ -92,6 +92,9 @@ const DEFAULT_BRAND_IDENTITY: WhiteLabelBrandIdentity = {
     radius_3xl: '2rem',
     login_background_url: '',
     home_hero_image_url: '',
+    store_url: '',
+    lead_capture_url: '',
+    support_contact_url: '',
 };
 
 const serializeBrandIdentity = (identity: WhiteLabelBrandIdentity) => JSON.stringify({
@@ -108,6 +111,9 @@ const serializeBrandIdentity = (identity: WhiteLabelBrandIdentity) => JSON.strin
     radius_3xl: identity.radius_3xl,
     login_background_url: identity.login_background_url,
     home_hero_image_url: identity.home_hero_image_url,
+    store_url: identity.store_url,
+    lead_capture_url: identity.lead_capture_url,
+    support_contact_url: identity.support_contact_url,
 });
 
 export const AdminWhiteLabelScreen: React.FC = () => {
@@ -854,6 +860,36 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                 value={brandIdentity.accent_color}
                                                 onChange={(value) => updateBrandIdentityField('accent_color', value)}
                                             />
+                                        </div>
+                                    </div>
+
+                                    {/* Links da marca (white-label) */}
+                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
+                                        <div className="flex items-center gap-2">
+                                            <Icons.ExternalLink size={16} className="text-gray-400" />
+                                            <h3 className="text-lg font-bold text-gray-900">Links da marca</h3>
+                                        </div>
+                                        <p className="mt-1 text-xs text-gray-500">
+                                            Lojas e contato usados nos CTAs (upsell de voucher, primeiro acesso e suporte). Deixe em branco para usar o padrão.
+                                        </p>
+                                        <div className="mt-4 grid gap-4">
+                                            {([
+                                                ['store_url', 'Loja (upsell de voucher)', 'https://loja.exemplo.com.br/'],
+                                                ['lead_capture_url', 'Captação de lead / comprar acesso', 'https://loja.exemplo.com.br/'],
+                                                ['support_contact_url', 'Contato de suporte', 'mailto:suporte@exemplo.com'],
+                                            ] as const).map(([field, label, placeholder]) => (
+                                                <label key={field} className="block">
+                                                    <span className="text-sm font-semibold text-gray-700">{label}</span>
+                                                    <input
+                                                        type="text"
+                                                        value={brandIdentity[field]}
+                                                        onChange={(event) => updateBrandIdentityField(field, event.target.value)}
+                                                        placeholder={placeholder}
+                                                        disabled={loading || saving}
+                                                        className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                                                    />
+                                                </label>
+                                            ))}
                                         </div>
                                     </div>
 

@@ -1448,7 +1448,7 @@ const App: React.FC = () => {
       {/* Upsell: material fora do voucher (degustação) → comprar na loja */}
       {showUpsellModal && (
         <VoucherUpsellModal
-          storeUrl={getVoucherUpsellStoreUrl(brandSlug)}
+          storeUrl={brandBootstrap.settings.store_url || getVoucherUpsellStoreUrl(brandSlug)}
           onClose={() => {
             setUpsellCollectionId(null);
             if (lockedModalCollectionId) {

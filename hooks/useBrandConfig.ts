@@ -16,6 +16,7 @@ import { getWhiteLabelPreviewSettings, subscribeToWhiteLabelPreviewSettings } fr
 import { resolveBrandSlugFromPathname, resolveBrandSlugFromSearch } from './brandSlug';
 import {
     extractBrandDesignTokens,
+    extractBrandLinks,
     extractBrandVisualIdentity,
     getMockBrandSettingsOverride,
     mergeBrandDesignTokens,
@@ -48,6 +49,10 @@ export interface BrandSettings {
     login_background_url: string | null;
     home_hero_image_url: string | null;
     menu_config: Record<string, unknown>;
+    // Links white-label (opcionais): loja de upsell, captação de lead, suporte.
+    store_url?: string | null;
+    lead_capture_url?: string | null;
+    support_contact_url?: string | null;
 }
 
 export interface BrandFeatureState {
@@ -175,9 +180,13 @@ function normalizeNullableString(value: string | null | undefined): string | nul
 function normalizeBrandSettings(settings: BrandSettings, fallbackName = 'Mundo de Kaboo'): BrandSettings {
     const visualIdentity = extractBrandVisualIdentity(settings.menu_config);
     const designTokens = extractBrandDesignTokens(settings.menu_config);
+    const links = extractBrandLinks(settings.menu_config);
 
     return {
         ...settings,
+        store_url: normalizeNullableString(settings.store_url) ?? links.store_url,
+        lead_capture_url: normalizeNullableString(settings.lead_capture_url) ?? links.lead_capture_url,
+        support_contact_url: normalizeNullableString(settings.support_contact_url) ?? links.support_contact_url,
         display_name: settings.display_name?.trim() || fallbackName,
         logo_url: normalizeNullableString(settings.logo_url),
         primary_color: normalizeNullableString(settings.primary_color),
