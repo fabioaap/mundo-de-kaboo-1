@@ -31,6 +31,8 @@
 - [ ] **Verificação de acesso não é real-time** durante a sessão (expiração só reflete após reload) — polling/Realtime (`lib/access.ts:20,49`). `G10` (UX)
 
 ## P2 — Média (UX, conteúdo, mídia)
+- [ ] **Player de vídeo (YouTube) não dá play no celular Android (Edge)** — diagnosticado 2026-06-15. O fix de **controles nativos do YouTube no touch** (`controls=1` quando `ontouchstart`/`maxTouchPoints`, + não renderizar o play customizado no touch+YouTube) **funcionou no iPad**, mas no **Android/Edge nenhum controle dá play**. Tentativas de tela cheia/girar (`documentElement` fullscreen + lock landscape, autoplay mudo) **quebraram** e foram **revertidas** — `VideoPlayerScreen.tsx` está no estado estável do commit `87cec5c` + APENAS o fix de controls nativos (diff +11/−2). **Próximo passo:** reproduzir com device real (chrome://inspect via USB) ou DevTools device mode (touch emulado) para ver console + comportamento do iframe; NÃO mexer às cegas. Arquivo: `screens/VideoPlayerScreen.tsx` (`youtubeEmbedUrl`, `isTouchDevice`). (Mídia/UX)
+- [ ] **Vídeo nativo `.mov` no projeto Supabase antigo** — "Gaio e o Vento da Coragem" (animation) aponta para `uuaiacefzdmsdbsvsuoj` + formato `.mov`/QuickTime (Edge/Chrome não tocam). Reupload como `.mp4` no projeto atual. (Conteúdo/Mídia)
 - [ ] **Padronizar cards de coleção para 1:1** (crop/zoom de capa, estilo foto de perfil) — notas Gemini. (UX)
 - [x] ~~**" Sequências do Dia" — título com espaço no início**~~ — não-issue (banco sem títulos com espaço sobrando). (Conteúdo)
 - [ ] **Thumbnail de vídeos enviados como `.mp4`** (hoje caem na capa da coleção; gerar poster no upload). (Mídia)
