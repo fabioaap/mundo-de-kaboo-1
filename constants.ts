@@ -29,15 +29,14 @@ export const SUPPORT_CONTACT_URL = 'mailto:suporte@mundodekaboo.com';
 export const PENDING_SIGNUP_VOUCHER_STORAGE_KEY = 'kaboo_pending_signup_voucher';
 
 // Loja para upsell quando o usuário tenta acessar um material fora do voucher (degustação).
-// Default (Kaboo) mantido por compatibilidade.
-export const VOUCHER_UPSELL_STORE_URL = 'https://loja.educabox.com.br/';
+// Default = loja da Kaboo (Empatia Editora).
+export const VOUCHER_UPSELL_STORE_URL = 'https://empatiaeditora.com.br/';
 
 // White-label: cada marca aponta para a SUA loja. Enquanto a loja não for um campo
 // editável no White Label (brand_settings), resolvemos por slug aqui.
 const VOUCHER_UPSELL_STORE_URL_BY_BRAND: Record<string, string> = {
-  kaboo: 'https://loja.educabox.com.br/',
-  // TODO(central-coruja): definir a loja da Central Coruja (hoje cai no default Kaboo).
-  // 'central-coruja': 'https://loja.<central-coruja>.com.br/',
+  kaboo: 'https://empatiaeditora.com.br/',            // Empatia Editora (loja da Kaboo)
+  'central-coruja': 'https://loja.educabox.com.br/',  // Universo Educacross (loja da Central Coruja)
 };
 
 /** Loja de upsell da marca atual; cai no default (Kaboo) se a marca não tiver loja definida. */
