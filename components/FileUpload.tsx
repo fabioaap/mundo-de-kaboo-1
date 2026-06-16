@@ -254,6 +254,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </div>
         )}
 
+        {/* Upload button for image fields with no value yet */}
+        {isImage && !value && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (fileInputRef.current) fileInputRef.current.click();
+            }}
+            className="mt-1 w-full px-3 py-1.5 bg-brand-primary/10 text-brand-primary rounded-lg font-bold text-sm hover:bg-brand-primary/20 transition-colors disabled:opacity-50"
+            disabled={disabled || uploading}
+          >
+            {uploading ? 'Enviando...' : 'Adicionar Imagem'}
+          </button>
+        )}
+
         {/* File Upload Button - Always visible for non-image types */}
         {!isImage && (
           <div className="flex items-center gap-2">
