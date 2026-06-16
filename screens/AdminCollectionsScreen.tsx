@@ -3741,10 +3741,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           />
                         </div>
 
-                        {!isBooksCatalogMode && (
                         <div>
                           <div className="mb-2 flex items-center justify-between">
-                            <label className="block text-sm font-bold text-gray-700">Descrição</label>
+                            <label className="block text-sm font-bold text-gray-700">{isBooksCatalogMode ? 'Sinopse' : 'Descrição'}</label>
                             <div className="flex items-center gap-3">
                               {aiSynopsisEnabled && (
                                 <button
@@ -3769,7 +3768,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             maxLength={500}
                           />
                         </div>
-                        )}
 
                         <div>
                           <label className="block text-sm font-bold text-gray-700 mb-2">Tema</label>
