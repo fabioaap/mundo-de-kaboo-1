@@ -3956,27 +3956,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             </div>
                           )}
 
-                          {/* Nível — campo obrigatório oculto na aba de identificação em modo biblioteca */}
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Nível</label>
-                            <div className="flex gap-2">
-                              {(['Educação Infantil', 'Fundamental I'] as const).map((lvl) => (
-                                <button
-                                  key={lvl}
-                                  type="button"
-                                  onClick={() => setFormData({ ...formData, level: lvl })}
-                                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors ${
-                                    formData.level === lvl
-                                      ? 'bg-brand-primary text-white border-brand-primary'
-                                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                  }`}
-                                >
-                                  {lvl === 'Educação Infantil' ? 'Ed. Infantil' : 'E.F. Anos Iniciais'}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
                           <div className="grid grid-cols-2 gap-4 items-start">
                             <div>
                               {(() => {

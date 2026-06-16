@@ -148,6 +148,19 @@ jobs:
 
           echo "Final URL: ${final_url}"
 
+          # Cloudflare Access may answer with a 200 login page (curl succeeds) and land us
+          # on *.cloudflareaccess.com / cdn-cgi/access. Without a service token there is no
+          # way to reach the app shell — treat it as "protected, validation skipped" instead
+          # of a host mismatch. (Mirrors the warn-and-pass branch used when curl fails.)
+          if [[ "${final_host}" == *.cloudflareaccess.com || "${final_url}" == *"/cdn-cgi/access/"* ]]; then
+            if [[ ${#access_headers[@]} -eq 0 ]]; then
+              echo "::warning::Custom domain is protected by Cloudflare Access and no service token secrets are configured. Redirect validation passed; skipping app shell validation."
+              exit 0
+            fi
+            echo "::error::Cloudflare Access rejected the configured service token during smoke-check."
+            exit 1
+          fi
+
           if [[ "${final_host}" != "${PAGES_EXPECTED_HOST}" ]]; then
             echo "::error::GitHub Pages resolved to unexpected host ${final_host}. Expected ${PAGES_EXPECTED_HOST}."
             exit 1

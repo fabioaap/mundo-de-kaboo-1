@@ -2466,6 +2466,8 @@ export const api = {
       ...sanitizeCollectionPayload(collection, (await loadRemoteCharacters()) ?? undefined),
       brand_id: activeBrandId,
     };
+    // Preserve values that may be stripped by the retry loop so we can recover them.
+    const originalCharacterIds = [...(currentPayload.character_ids ?? [])];
     let data: Collection | null = null;
     let error: unknown = null;
     const stripped: string[] = [];
@@ -2492,6 +2494,23 @@ export const api = {
     if (error) {
       logger.error('Error creating collection:', error);
       return null;
+    }
+
+    // If character_ids was stripped by the retry loop (schema cache miss), follow up
+    // with a targeted update so the characters are never silently lost.
+    if (data && stripped.includes('character_ids') && originalCharacterIds.length > 0) {
+      logger.warn('character_ids was stripped from insert; recovering via follow-up update', { id: data.id, character_ids: originalCharacterIds });
+      const { data: recovered, error: recoverError } = await supabase
+        .from('collections')
+        .update({ character_ids: originalCharacterIds })
+        .eq('id', data.id)
+        .select()
+        .single();
+      if (!recoverError && recovered) {
+        data = recovered as Collection;
+      } else if (recoverError) {
+        logger.warn('character_ids recovery update failed (column may be absent in this env):', recoverError);
+      }
     }
 
     // Clear cache after creation
@@ -2521,6 +2540,8 @@ export const api = {
       ...sanitizeCollectionPayload(updates, (await loadRemoteCharacters()) ?? undefined),
       brand_id: activeBrandId,
     };
+    // Preserve character_ids before the retry loop may strip them.
+    const originalCharacterIds = [...(payload.character_ids ?? [])];
     // First, verify the collection exists and we can access it
     const existing = await this.getCollectionById(id);
     if (!existing) {
@@ -2551,6 +2572,23 @@ export const api = {
       stripped.push(missingCol);
       currentPayload = stripMissingCollectionColumns(payload, stripped) as typeof currentPayload;
       logger.warn(`Retrying collection update without column: ${missingCol}`);
+    }
+
+    // If character_ids was stripped by the retry loop (schema cache miss), follow up
+    // with a targeted update so the new character selection is never silently lost.
+    if (!error && data && stripped.includes('character_ids') && originalCharacterIds.length > 0) {
+      logger.warn('character_ids was stripped from update; recovering via follow-up update', { id, character_ids: originalCharacterIds });
+      const { data: recovered, error: recoverError } = await supabase
+        .from('collections')
+        .update({ character_ids: originalCharacterIds })
+        .eq('id', id)
+        .select()
+        .single();
+      if (!recoverError && recovered) {
+        data = recovered as Collection;
+      } else if (recoverError) {
+        logger.warn('character_ids recovery update failed (column may be absent in this env):', recoverError);
+      }
     }
 
     if (error) {
