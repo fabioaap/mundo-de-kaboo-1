@@ -340,24 +340,6 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     descriptionPlaceholder: 'Descreva o foco do vídeo de como jogar.',
   },
   {
-    category: 'video_lesson',
-    label: COLLECTION_ASSET_META.video_lesson.label,
-    folder: 'video',
-    accept: 'video/*',
-    allowMetadata: true,
-    titlePlaceholder: 'Ex.: Videoaula introdutória',
-    descriptionPlaceholder: 'Descreva o conteúdo pedagógico desta videoaula.',
-  },
-  {
-    category: 'formation',
-    label: COLLECTION_ASSET_META.formation.label,
-    folder: 'video',
-    accept: 'video/*',
-    allowMetadata: true,
-    titlePlaceholder: 'Ex.: Formação para educadores',
-    descriptionPlaceholder: 'Descreva o conteúdo formativo deste vídeo.',
-  },
-  {
     category: 'story_video',
     label: COLLECTION_ASSET_META.story_video.label,
     folder: 'video',
@@ -388,10 +370,11 @@ const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
 const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
   books: ['reading'],
   // Vídeos: animação + contação + acessível (Libras) + uso guiado (Como Jogar).
-  // Videoaula/Formação são geridas no hub próprio "Formações" (entidade separada).
+  // As categorias video_lesson (Videoaula) e formation (Formação) foram aposentadas
+  // do cadastro — o hub "Formações" é uma entidade separada (tabela formations).
   videos: ['animation', 'story_video', 'accessible_video', 'how_to_play'],
   music: ['storytelling'],
-  formations: ['teacher_guide', 'video_lesson'],
+  formations: ['teacher_guide'],
   // Materiais = extra_material apenas; reading pertence exclusivamente a Livros.
   materials: ['extra_material'],
 };
@@ -426,7 +409,7 @@ const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCat
   books: ['reading'],
   videos: ['animation', 'story_video', 'accessible_video', 'how_to_play'],
   music: ['storytelling'],
-  formations: ['teacher_guide', 'video_lesson'],
+  formations: ['teacher_guide'],
   // reading pertence exclusivamente a Livros; Materiais exibe apenas extra_material.
   materials: ['extra_material'],
 };
