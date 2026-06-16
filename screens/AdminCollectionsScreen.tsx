@@ -340,6 +340,24 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     descriptionPlaceholder: 'Descreva o foco do vídeo de como jogar.',
   },
   {
+    category: 'video_lesson',
+    label: COLLECTION_ASSET_META.video_lesson.label,
+    folder: 'video',
+    accept: 'video/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: Videoaula introdutória',
+    descriptionPlaceholder: 'Descreva o conteúdo pedagógico desta videoaula.',
+  },
+  {
+    category: 'formation',
+    label: COLLECTION_ASSET_META.formation.label,
+    folder: 'video',
+    accept: 'video/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: Formação para educadores',
+    descriptionPlaceholder: 'Descreva o conteúdo formativo deste vídeo.',
+  },
+  {
     category: 'story_video',
     label: COLLECTION_ASSET_META.story_video.label,
     folder: 'video',
@@ -369,12 +387,10 @@ const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
 
 const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
   books: ['reading'],
-  // Vídeos: animação + contação + acessível (Libras) + uso guiado (Como Jogar).
-  // As categorias video_lesson (Videoaula) e formation (Formação) foram aposentadas
-  // do cadastro — o hub "Formações" é uma entidade separada (tabela formations).
-  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play'],
+  // Vídeos: animação + contação + acessível + uso guiado + videoaula + formação.
+  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
   music: ['storytelling'],
-  formations: ['teacher_guide'],
+  formations: ['teacher_guide', 'video_lesson'],
   // Materiais = extra_material apenas; reading pertence exclusivamente a Livros.
   materials: ['extra_material'],
 };
@@ -407,9 +423,11 @@ const CATEGORY_REGISTER_HINT: Partial<Record<CollectionAssetCategory, string>> =
 
 const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
   books: ['reading'],
-  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play'],
+  // Deve espelhar LIBRARY_AREA_PRIMARY_SLOTS.videos — senão vídeos criados em
+  // categorias ausentes aqui salvam no banco mas somem da lista do hub.
+  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
   music: ['storytelling'],
-  formations: ['teacher_guide'],
+  formations: ['teacher_guide', 'video_lesson'],
   // reading pertence exclusivamente a Livros; Materiais exibe apenas extra_material.
   materials: ['extra_material'],
 };
