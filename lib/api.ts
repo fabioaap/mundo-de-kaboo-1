@@ -352,7 +352,9 @@ const isMissingRelationError = (error: unknown, relationName: string): boolean =
 const mapLibraryHubToMediaHub = (hub: LibraryHubKind): MediaHub => hub;
 
 const COLLECTION_BACKED_HUB_CATEGORIES: Record<MediaHub, CollectionAssetCategory[]> = {
-  videos: ['animation', 'accessible_video', 'how_to_play', 'video_lesson'],
+  // Deve espelhar LIBRARY_AREA_LISTING_CATEGORIES.videos do admin — senão vídeos
+  // publicados em story_video/formation aparecem no admin mas somem da vitrine.
+  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
   // reading (PDF do livro) pertence EXCLUSIVAMENTE ao hub Livros — Materiais é só
