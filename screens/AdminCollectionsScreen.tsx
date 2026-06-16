@@ -387,8 +387,9 @@ const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
 
 const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
   books: ['reading'],
-  // Vídeos: animação + contação + acessível + uso guiado + videoaula + formação.
-  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
+  // Vídeos: animação + contação + acessível (Libras) + uso guiado (Como Jogar).
+  // Videoaula/Formação são geridas no hub próprio "Formações" (entidade separada).
+  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
   // Materiais = extra_material apenas; reading pertence exclusivamente a Livros.
@@ -423,7 +424,7 @@ const CATEGORY_REGISTER_HINT: Partial<Record<CollectionAssetCategory, string>> =
 
 const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
   books: ['reading'],
-  videos: ['animation', 'accessible_video', 'how_to_play'],
+  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play'],
   music: ['storytelling'],
   formations: ['teacher_guide', 'video_lesson'],
   // reading pertence exclusivamente a Livros; Materiais exibe apenas extra_material.
