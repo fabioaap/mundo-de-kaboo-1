@@ -4061,25 +4061,65 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             <div>
                               <label className="block text-sm font-bold text-gray-700 mb-2">Nível</label>
                               <div className="space-y-2">
-                                {(['Educação Infantil', 'Fundamental I'] as const).map((seg) => {
-                                  const isActive = formData.level === seg;
+                                {AVAILABLE_SEGMENTS.map((seg) => {
+                                  const checked = formData.segments?.includes(seg) ?? false;
+                                  const isPrimary = formData.primary_segment === seg;
                                   return (
-                                    <button
-                                      key={seg}
-                                      type="button"
-                                      onClick={() => setFormData({
-                                        ...formData,
-                                        level: seg,
-                                        primary_segment: seg,
-                                        segments: formData.segments?.includes(seg) ? formData.segments : [...(formData.segments || []), seg],
-                                      })}
-                                      className={`w-full rounded-2xl border px-3 py-2.5 text-sm font-bold text-left transition-all active:scale-[0.99] ${isActive
-                                        ? 'border-brand-primary bg-brand-primary/10 text-brand-primary shadow-sm'
-                                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                                        }`}
-                                    >
-                                      {formatSegmentLabel(seg)}
-                                    </button>
+                                    <div key={seg} className="flex items-center gap-3">
+                                      <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          onChange={() => {
+                                            const prev = formData.segments || [];
+                                            let next: string[];
+                                            if (checked) {
+                                              next = prev.filter(s => s !== seg);
+                                              if (isPrimary) {
+                                                const newPrimary = next[0] || '';
+                                                setFormData({
+                                                  ...formData,
+                                                  segments: next,
+                                                  primary_segment: newPrimary,
+                                                  level: newPrimary === 'Educação Infantil' ? 'Educação Infantil' : (newPrimary ? 'Fundamental I' : formData.level),
+                                                });
+                                                return;
+                                              }
+                                            } else {
+                                              next = [...prev, seg];
+                                              if (next.length === 1) {
+                                                setFormData({
+                                                  ...formData,
+                                                  segments: next,
+                                                  primary_segment: seg,
+                                                  level: seg === 'Educação Infantil' ? 'Educação Infantil' : 'Fundamental I',
+                                                });
+                                                return;
+                                              }
+                                            }
+                                            setFormData({ ...formData, segments: next });
+                                          }}
+                                          className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                                        />
+                                        <span className="text-sm text-gray-800">{seg}</span>
+                                      </label>
+                                      {checked && (
+                                        <label className="flex items-center gap-1 cursor-pointer text-xs text-gray-500 shrink-0">
+                                          <input
+                                            type="radio"
+                                            name="primary_segment_library"
+                                            checked={isPrimary}
+                                            onChange={() => setFormData({
+                                              ...formData,
+                                              primary_segment: seg,
+                                              level: seg === 'Educação Infantil' ? 'Educação Infantil' : 'Fundamental I',
+                                            })}
+                                            className="w-3 h-3 text-brand-primary focus:ring-brand-primary"
+                                          />
+                                          <span className={isPrimary ? 'font-bold text-brand-primary' : ''}>Principal</span>
+                                        </label>
+                                      )}
+                                    </div>
                                   );
                                 })}
                               </div>
