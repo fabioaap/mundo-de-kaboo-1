@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Icons } from './Icons';
 
-export type ToastType = 'success' | 'error' | 'progress';
+export type ToastType = 'success' | 'error' | 'warning' | 'progress';
 
 interface ToastProps {
   message: string;
@@ -32,8 +32,8 @@ export const Toast: React.FC<ToastProps> = ({
 
   if (!isVisible) return null;
 
-  const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
-  const icon = type === 'success' ? <Icons.Check size={20} /> : type === 'error' ? <Icons.AlertCircle size={20} /> : (
+  const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : type === 'warning' ? 'bg-amber-500' : 'bg-blue-500';
+  const icon = type === 'success' ? <Icons.Check size={20} /> : type === 'error' ? <Icons.AlertCircle size={20} /> : type === 'warning' ? <Icons.AlertTriangle size={20} /> : (
     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
   );
 

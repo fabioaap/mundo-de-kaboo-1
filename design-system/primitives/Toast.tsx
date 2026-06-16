@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
-import { Check, AlertCircle, X } from './Icons'
+import { Check, AlertCircle, AlertTriangle, X } from './Icons'
 
-export type ToastType = 'success' | 'error' | 'progress'
+export type ToastType = 'success' | 'error' | 'warning' | 'progress'
 
 export interface ToastProps {
   message: string
@@ -15,6 +15,7 @@ export interface ToastProps {
 const bgColor: Record<ToastType, string> = {
   success:  'bg-green-500',
   error:    'bg-red-500',
+  warning:  'bg-amber-500',
   progress: 'bg-blue-500',
 }
 
@@ -34,7 +35,9 @@ export const Toast: React.FC<ToastProps> = ({
     ? <Check size={20} />
     : type === 'error'
       ? <AlertCircle size={20} />
-      : <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+      : type === 'warning'
+        ? <AlertTriangle size={20} />
+        : <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
 
   return (
     <div className="fixed top-0 right-0 z-[300] pt-[max(1rem,env(safe-area-inset-top))] pr-4 animate-in slide-in-from-top-5 duration-300">

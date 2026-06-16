@@ -7,7 +7,7 @@ export {
   Settings, LogOut, HelpCircle, Mail, Grid,
   Volume2, VolumeX, Maximize, Minimize,
   Eye, EyeOff, X, Filter, Check, Plus,
-  Edit, Trash2, AlertCircle, ExternalLink,
+  Edit, Trash2, AlertCircle, AlertTriangle, ExternalLink,
   RotateCw, Smartphone, Image,
   ArrowUpDown, ArrowDown, ArrowUp,
   Ticket,

@@ -832,7 +832,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const canAdvanceToMediaStep = !isCollectionsCatalogMode || formData.title.trim().length > 0;
   const goToMediaStep = useCallback(() => {
     if (isCollectionsCatalogMode && !formData.title.trim()) {
-      showToast('Informe o título da coleção antes de vincular as mídias.', 'warning' as any);
+      showToast('Informe o título da coleção antes de vincular as mídias.', 'warning');
       return;
     }
     setActiveTab('media');
@@ -2142,7 +2142,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         .some((u) => u?.trim());
       if (!hasLinkedAsset && !hasKitBooks && !hasLegacyMedia) {
         normalizedDataToSave.is_published = false;
-        showToast('Para publicar, vincule um livro ou mídia na aba "Mídias vinculadas". Salvo como rascunho por enquanto.', 'warning' as any);
+        showToast('Para publicar, vincule um livro ou mídia na aba "Mídias vinculadas". Salvo como rascunho por enquanto.', 'warning');
       }
     }
 
@@ -2231,7 +2231,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       // Cascade-unpublish affected collections
       if (cascadeCollections.length > 0) {
         await Promise.all(cascadeCollections.map(c => api.updateCollection(c.id, { is_published: false })));
-        showToast(`${contentEntityLabel} despublicado. ${cascadeCollections.length} coleção(ões) despublicada(s) automaticamente.`, 'warning' as any);
+        showToast(`${contentEntityLabel} despublicado. ${cascadeCollections.length} coleção(ões) despublicada(s) automaticamente.`, 'warning');
       } else {
         setOriginalFormData(createCollectionFormDataForCurrentFlow(normalizedDataToSave));
         const hasNoMedia = !editingId && formData.collection_assets.filter(a => a.url?.trim()).length === 0;
@@ -2939,7 +2939,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                                 const ok = await api.unpublishCollection(collection.id);
                                                 if (ok) {
                                                   await Promise.all(affected.map(c => api.updateCollection(c.id, { is_published: false })));
-                                                  showToast(`Livro despublicado. ${affected.length} coleção(ões) despublicada(s) automaticamente.`, 'warning' as any);
+                                                  showToast(`Livro despublicado. ${affected.length} coleção(ões) despublicada(s) automaticamente.`, 'warning');
                                                   await loadCollections(true);
                                                 }
                                               } catch {
