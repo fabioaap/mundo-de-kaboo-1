@@ -1562,6 +1562,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       for (const asset of (collection.collection_assets ?? [])) {
         if (!asset.url?.trim()) continue;
         if (asset.is_published === false) continue;
+        // Livros vinculáveis num kit devem ser SEMPRE livros reais (collection_type='book').
+        // Sem este filtro, um kit que copiou um PDF aparecia como "livro" selecionável e
+        // acabava gravado em kit_book_ids — vinculando uma coleção como se fosse livro.
+        if (asset.category === 'reading' && collection.collection_type !== 'book') continue;
         const displayTitle = getLibraryAssetDisplayTitle(collection, asset);
         const coverImage = getLibraryAssetCoverImage(asset, collection, collectionsById)
           || CATEGORY_COVER_URL[asset.category]
