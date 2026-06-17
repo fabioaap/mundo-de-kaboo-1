@@ -182,16 +182,14 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
     return 'video';
   };
 
-  const [statusFilter, setStatusFilter] = React.useState<'all' | 'published' | 'draft'>('all');
+  const [statusFilter, setStatusFilter] = React.useState<'published' | 'draft'>('published');
 
-  const countAll = materials.length;
   const countPublished = materials.filter(m => m.is_published).length;
   const countDraft = materials.filter(m => !m.is_published).length;
 
   const filtered = materials.filter(m => {
     const matchesSearch = normalizeText(m.title).includes(normalizeText(searchQuery));
-    const matchesStatus = statusFilter === 'all'
-      || (statusFilter === 'published' && m.is_published)
+    const matchesStatus = (statusFilter === 'published' && m.is_published)
       || (statusFilter === 'draft' && !m.is_published);
     return matchesSearch && matchesStatus;
   });
@@ -230,9 +228,9 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
           />
         </div>
         <div className="flex gap-1">
-          {(['all', 'published', 'draft'] as const).map(key => {
-            const label = key === 'all' ? 'Todos' : key === 'published' ? 'Publicado' : 'Rascunho';
-            const count = key === 'all' ? countAll : key === 'published' ? countPublished : countDraft;
+          {(['published', 'draft'] as const).map(key => {
+            const label = key === 'published' ? 'Publicado' : 'Rascunho';
+            const count = key === 'published' ? countPublished : countDraft;
             const active = statusFilter === key;
             return (
               <button
