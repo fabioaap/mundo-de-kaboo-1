@@ -133,6 +133,12 @@ const MOCK_BRAND_OVERRIDES: Record<string, Partial<BrandBootstrap>> = {
             'hero.parallax': { enabled: false, config: { mode: 'off' } },
         },
     },
+    'kaboo': {
+        features: {
+            ...DEFAULT_FEATURES,
+            'menu.music': { enabled: false, config: {} },
+        },
+    },
 };
 
 // ── Helpers ───────────────────────────────────────────────

@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Icons } from '../components/Icons';
 import { AdminModule, ScreenName } from '../types';
 import useIsMobile from '../hooks/useIsMobile';
 import { isAdmin } from '../lib/auth';
+import { useBrandConfig } from '../hooks/useBrandConfig';
 
 // Re-export the legacy admin screen so existing code keeps working
 import { AdminCollectionsScreen, AdminCollectionsHandle } from './AdminCollectionsScreen';
@@ -34,6 +35,17 @@ const MODULE_META: Record<AdminModule, { icon: React.FC<{ className?: string }>;
 
 const ALL_MODULES: AdminModule[] = ['collections', 'books', 'videos', 'music', 'formations', 'materials', 'users', 'characters', 'vouchers', 'white_label'];
 const EDITOR_MODULES: AdminModule[] = ['collections', 'books', 'videos', 'music', 'formations', 'materials', 'characters'];
+
+const MODULE_FEATURE_FLAG: Partial<Record<AdminModule, string>> = {
+    collections: 'menu.collections',
+    books: 'menu.books',
+    videos: 'menu.videos',
+    music: 'menu.music',
+    formations: 'menu.formations',
+    materials: 'menu.materials',
+    characters: 'module.characters',
+    vouchers: 'module.vouchers',
+};
 
 const COLLECTION_SCREEN_MODULES: AdminModule[] = ['collections', 'books', 'users', 'videos', 'music'];
 
@@ -135,12 +147,19 @@ export const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate, onBack, in
     const [isAdminUser, setIsAdminUser] = useState(false);
     const collectionsRef = useRef<AdminCollectionsHandle>(null);
     const charactersRef = useRef<AdminCharactersHandle>(null);
+    const { isFeatureEnabled } = useBrandConfig();
 
     useEffect(() => {
         isAdmin().then(setIsAdminUser);
     }, []);
 
-    const visibleModules = isAdminUser ? ALL_MODULES : EDITOR_MODULES;
+    const visibleModules = useMemo(
+        () => (isAdminUser ? ALL_MODULES : EDITOR_MODULES).filter((m) => {
+            const flag = MODULE_FEATURE_FLAG[m];
+            return !flag || isFeatureEnabled(flag);
+        }),
+        [isAdminUser, isFeatureEnabled],
+    );
 
     useEffect(() => {
         if (!initialModule || !visibleModules.includes(initialModule)) {
