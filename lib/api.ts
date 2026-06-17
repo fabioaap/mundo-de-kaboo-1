@@ -309,6 +309,62 @@ export const stripMissingCollectionColumns = (
   return nextPayload;
 };
 
+/**
+ * Propaga o renome de um livro para os kits que o embutem.
+ *
+ * Os assets do kit guardam um SNAPSHOT do título no momento do vínculo, então
+ * renomear a mídia-fonte não refletia na coleção (o "Áudio Livro" continuava com
+ * o título antigo). Aqui atualizamos o título dos assets cujo `url` referencia o
+ * id do livro renomeado, em todos os kits que o listam em `kit_book_ids`.
+ * Best-effort: qualquer falha é logada e ignorada (não bloqueia o update).
+ */
+const propagateBookTitleToKits = async (
+  bookId: string,
+  existing: Collection | null,
+  updated: Collection | null,
+  activeBrandId: string,
+): Promise<void> => {
+  const newTitle = updated?.title?.trim();
+  if (!existing || !newTitle || existing.title === newTitle) return;
+
+  try {
+    let kitsQuery = supabase
+      .from('collections')
+      .select('id, collection_assets')
+      .eq('collection_type', 'kit')
+      .contains('kit_book_ids', [bookId]);
+    kitsQuery = applyActiveBrandScope(kitsQuery, activeBrandId);
+    const { data: kits, error } = await kitsQuery;
+    if (error || !Array.isArray(kits)) return;
+
+    for (const kit of kits as Array<{ id: string; collection_assets: unknown }>) {
+      const assets = Array.isArray(kit.collection_assets)
+        ? (kit.collection_assets as Array<Record<string, unknown>>)
+        : [];
+      let changed = false;
+      const nextAssets = assets.map((asset) => {
+        const url = asset?.url;
+        if (typeof url === 'string' && url.includes(bookId) && asset.title !== newTitle) {
+          changed = true;
+          return { ...asset, title: newTitle };
+        }
+        return asset;
+      });
+      if (!changed) continue;
+
+      const { error: propErr } = await supabase
+        .from('collections')
+        .update({ collection_assets: nextAssets })
+        .eq('id', kit.id);
+      if (propErr) {
+        logger.warn('Falha ao propagar título do livro para o kit', { kitId: kit.id, error: propErr });
+      }
+    }
+  } catch (err) {
+    logger.warn('Erro ao propagar renome do livro para kits:', err);
+  }
+};
+
 const isMissingColumnError = (error: unknown, columnName: string): boolean => {
   if (!error || typeof error !== 'object') {
     return false;
@@ -2614,6 +2670,9 @@ export const api = {
       clearCollectionsCache();
       return fetched;
     }
+
+    // Renome de livro → propaga o novo título para os kits que o embutem.
+    await propagateBookTitleToKits(id, existing, data as Collection, activeBrandId);
 
     // Clear cache after update
     clearCollectionsCache();
