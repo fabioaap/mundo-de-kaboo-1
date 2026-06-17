@@ -236,52 +236,60 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
             <p className="text-gray-400 text-sm">Crie o primeiro material usando o botão acima</p>
           </div>
         ) : (
-          <div className="grid gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filtered.map(material => {
               const AssetIcon = ASSET_ICONS[material.asset_type ?? 'pdf'] ?? Icons.FileText;
               return (
                 <div
                   key={material.id}
-                  className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${editingId === material.id ? 'border-brand-primary bg-brand-primary/5' : 'border-gray-100 hover:border-gray-200 bg-white'}`}
+                  className={`flex flex-col rounded-2xl border overflow-hidden transition-all cursor-pointer group ${editingId === material.id ? 'border-brand-primary ring-2 ring-brand-primary/20' : 'border-gray-100 hover:border-gray-200 bg-white hover:shadow-md'}`}
                   onClick={() => openEdit(material)}
                 >
-                  {/* Cover / Icon */}
-                  <div className="w-14 h-14 rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden mt-0.5">
+                  {/* Cover */}
+                  <div className="relative aspect-square bg-gray-100 flex-shrink-0 overflow-hidden">
                     {material.cover_image ? (
-                      <img src={material.cover_image} alt="" className="w-full h-full object-cover" />
+                      <img src={material.cover_image} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <AssetIcon size={20} className="text-gray-400" />
+                        <AssetIcon size={28} className="text-gray-300" />
                       </div>
                     )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-800 text-sm truncate">{material.title}</p>
-                    <p className="text-gray-500 text-xs line-clamp-2 mt-0.5">{material.description || 'Sem descrição'}</p>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase font-bold">{material.asset_type ?? 'pdf'}</span>
-                      {(material.tags ?? []).slice(0, 2).map(tag => (
-                        <span key={tag} className="text-xs bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-full">{tag}</span>
-                      ))}
+                    {/* Type badge (top-left) */}
+                    <span className="absolute top-2 left-2 text-[10px] bg-white/90 text-gray-600 px-2 py-0.5 rounded-full font-black uppercase tracking-wide shadow-sm">
+                      {material.asset_type ?? 'pdf'}
+                    </span>
+                    {/* Publish toggle (top-right) */}
+                    <div className="absolute top-2 right-2" onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleTogglePublish(material)}
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-black transition-colors shadow-sm ${material.is_published ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-white/90 text-gray-500 hover:bg-gray-100'}`}
+                      >
+                        {material.is_published ? 'Publicado' : 'Rascunho'}
+                      </button>
                     </div>
                   </div>
 
-                  {/* Publish badge + actions */}
-                  <div className="flex items-center gap-2 flex-shrink-0 mt-0.5" onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={() => handleTogglePublish(material)}
-                      className={`text-xs px-2 py-1 rounded-full font-bold transition-colors ${material.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                    >
-                      {material.is_published ? 'Publicado' : 'Rascunho'}
-                    </button>
-                    <button
-                      onClick={() => { setDeletingId(material.id); setShowDeleteModal(true); }}
-                      className="w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <Icons.Trash2 size={14} />
-                    </button>
+                  {/* Info */}
+                  <div className="flex flex-col flex-1 p-3">
+                    <p className="font-black text-gray-800 text-sm line-clamp-2 leading-snug">{material.title}</p>
+                    <p className="text-gray-400 text-xs line-clamp-2 mt-1 leading-relaxed">{material.description || 'Sem descrição'}</p>
+
+                    {/* Footer: tags + delete */}
+                    <div className="flex items-center justify-between mt-auto pt-2">
+                      <div className="flex flex-wrap gap-1">
+                        {(material.tags ?? []).slice(0, 2).map(tag => (
+                          <span key={tag} className="text-[10px] bg-brand-primary/10 text-brand-primary px-1.5 py-0.5 rounded-full">{tag}</span>
+                        ))}
+                      </div>
+                      <div onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => { setDeletingId(material.id); setShowDeleteModal(true); }}
+                          className="w-7 h-7 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors"
+                        >
+                          <Icons.Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
