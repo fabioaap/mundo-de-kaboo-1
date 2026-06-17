@@ -1,6 +1,6 @@
 # Documentação de API
 
-**Atualizado em**: 17/06/2026, 17:14:06
+**Atualizado em**: 17/06/2026, 17:45:15
 
 ## Funções de API
 
