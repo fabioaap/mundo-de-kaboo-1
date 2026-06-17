@@ -872,9 +872,11 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                 {collection.title}
               </h1>
 
-              <p className="text-sm font-medium leading-relaxed text-gray-500 mb-4 max-w-2xl">
-                {collectionDetailSummary}
-              </p>
+              {collectionDetailSummary && (
+                <p className="text-sm font-medium leading-relaxed text-gray-500 mb-4 max-w-2xl">
+                  {collectionDetailSummary}
+                </p>
+              )}
 
               {collection.synopsis && (
                 <p className="text-sm text-gray-500 mt-2 mb-4 italic">{collection.synopsis}</p>

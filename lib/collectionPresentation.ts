@@ -31,11 +31,11 @@ export const normalizeSingleKitBookIds = (value?: string[] | null): string[] => 
 const COLLECTION_TYPE_META: Record<CollectionType, CollectionTypeMeta> = {
   book: {
     type: 'book',
-    label: 'Livro avulso',
+    label: 'Livro',
     shortLabel: 'Livro',
     softClassName: 'bg-sky-50 text-sky-700 border-sky-100',
     coverClassName: 'bg-sky-500/90 text-white border-white/30 shadow-lg shadow-sky-950/20',
-    detailSummary: 'Livro avulso com foco na leitura e nos recursos disponíveis para esta experiência.',
+    detailSummary: '',
   },
   kit: {
     type: 'kit',
