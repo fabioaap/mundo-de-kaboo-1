@@ -230,22 +230,23 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
           />
         </div>
         <div className="flex gap-1">
-          {([
-            { key: 'all', label: 'Todos', count: countAll },
-            { key: 'published', label: 'Publicado', count: countPublished },
-            { key: 'draft', label: 'Rascunho', count: countDraft },
-          ] as const).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setStatusFilter(tab.key)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-colors ${statusFilter === tab.key ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-            >
-              {tab.label}
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${statusFilter === tab.key ? 'bg-brand-primary/10 text-brand-primary' : 'bg-gray-100 text-gray-400'}`}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
+          {(['all', 'published', 'draft'] as const).map(key => {
+            const label = key === 'all' ? 'Todos' : key === 'published' ? 'Publicado' : 'Rascunho';
+            const count = key === 'all' ? countAll : key === 'published' ? countPublished : countDraft;
+            const active = statusFilter === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setStatusFilter(key)}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-colors ${active ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+              >
+                {label}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${active ? 'bg-brand-primary/10 text-brand-primary' : 'bg-gray-100 text-gray-400'}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
