@@ -236,7 +236,7 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
               <button
                 key={key}
                 onClick={() => setStatusFilter(key)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-colors ${active ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-bold border-b-2 transition-colors ${active ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
               >
                 {label}
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${active ? 'bg-brand-primary/10 text-brand-primary' : 'bg-gray-100 text-gray-400'}`}>
