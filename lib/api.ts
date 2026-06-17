@@ -797,6 +797,61 @@ const buildEmptyMediaHubResponse = (hub: MediaHub): MediaHubResponse => ({
   },
 });
 
+const buildMaterialLibraryItem = (material: Material): LibraryMockItem => {
+  const variant = material.asset_type === 'video'
+    ? 'video'
+    : material.asset_type === 'audio'
+      ? 'track'
+      : 'material';
+  return {
+    id: `material-${material.id}`,
+    variant,
+    eyebrow: 'Material',
+    title: material.title,
+    description: material.description ?? '',
+    meta: '',
+    ctaLabel: material.asset_type === 'video'
+      ? 'Assistir'
+      : material.asset_type === 'audio'
+        ? 'Ouvir'
+        : 'Abrir material',
+    coverImage: material.cover_image ?? undefined,
+    assetType: material.asset_type,
+    assetUrl: material.asset_url ?? undefined,
+    assetTitle: material.title,
+  };
+};
+
+/**
+ * Constrói a resposta do hub Materiais a partir da tabela `materials` (materiais
+ * avulsos do módulo admin Materiais). O hub só lia media_items/extra_material, então
+ * materiais publicados nessa tabela ficavam "publicados mas não listados" na vitrine.
+ * Mesclado em getMediaHub.
+ */
+const buildMaterialsTableHubResponse = (materials: Material[]): MediaHubResponse => {
+  const items = materials.map(buildMaterialLibraryItem);
+  const [heroItem, ...shelfItems] = items;
+  return {
+    hub: 'materials',
+    hero: heroItem ? buildMockMediaItemCard('materials', heroItem) : null,
+    shelves: shelfItems.length > 0
+      ? [{
+        id: 'materials-standalone',
+        hub: 'materials',
+        type: 'rail',
+        title: '',
+        description: '',
+        items: shelfItems.map((item) => buildMockMediaItemCard('materials', item)),
+      }]
+      : [],
+    counts: {
+      total: items.length,
+      favorites: 0,
+      continueWatching: 0,
+    },
+  };
+};
+
 const buildMockMediaHubResponse = (hub: MediaHub): MediaHubResponse => {
   const mock = LIBRARY_HUB_MOCKS[hub as LibraryHubKind];
   const hero = mock.featured ? buildMockMediaItemCard(hub, mock.featured) : null;
@@ -1924,7 +1979,35 @@ export const api = {
 
   async getMediaHub(hub: MediaHub): Promise<MediaHubResponse> {
     const collections = await this.getCollections();
-    const collectionBackedResponse = buildCollectionBackedMediaHubResponse(hub, collections);
+    let collectionBackedResponse = buildCollectionBackedMediaHubResponse(hub, collections);
+
+    // Materiais avulsos (tabela `materials`, módulo admin Materiais) também alimentam o
+    // hub Materiais. O hub só lia media_items/extra_material, então materiais publicados
+    // ali ficavam "publicados mas não listados". Busca e mescla aqui (escopado por marca).
+    if (hub === 'materials' && isSupabaseConfigured && !devMockSession) {
+      try {
+        const materialsBrandId = await resolveActiveBrandId();
+        if (materialsBrandId) {
+          const { data: materialRows, error: materialsError } = await supabase
+            .from('materials')
+            .select('*')
+            .eq('brand_id', materialsBrandId)
+            .eq('is_published', true)
+            .order('published_at', { ascending: false });
+          if (materialsError) {
+            if (!isMissingRelationError(materialsError, 'materials')) {
+              logger.error('Erro ao buscar materiais avulsos para o hub:', materialsError);
+            }
+          } else if (Array.isArray(materialRows) && materialRows.length > 0) {
+            const materialsResponse = buildMaterialsTableHubResponse(materialRows as Material[]);
+            collectionBackedResponse = mergeMediaHubResponses(materialsResponse, collectionBackedResponse);
+          }
+        }
+      } catch (materialsErr) {
+        logger.warn('Falha ao mesclar materiais avulsos no hub:', materialsErr);
+      }
+    }
+
     const staticFallbackResponse = buildEmptyMediaHubResponse(hub);
     const preferredFallbackResponse = getMediaHubResponseCount(collectionBackedResponse) > 0
       ? collectionBackedResponse
