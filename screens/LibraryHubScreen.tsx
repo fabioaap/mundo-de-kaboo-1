@@ -586,6 +586,7 @@ const adaptMediaCardToLibraryItem = (card: MediaItemCard): LibraryMockItem => {
     ctaLabel: assetType === 'video' ? 'Assistir agora' : assetType === 'audio' ? 'Ouvir agora' : 'Abrir PDF',
     assetType,
     assetTitle: card.title,
+    assetUrl: card.assetUrl ?? undefined,
   };
 };
 

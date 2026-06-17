@@ -295,6 +295,7 @@ export interface MediaItemCard {
   progressPercent: number;
   lastPositionSeconds?: number;
   badges?: string[];
+  assetUrl?: string | null;
 }
 
 export interface MediaRelatedCollection {

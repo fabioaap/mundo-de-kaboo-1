@@ -758,6 +758,7 @@ const buildMockMediaItemCard = (hub: MediaHub, item: LibraryMockItem): MediaItem
   progressPercent: item.progress ?? 0,
   lastPositionSeconds: undefined,
   badges: item.chips ?? [],
+  assetUrl: item.assetUrl ?? null,
 });
 
 const buildCollectionBackedMediaHubResponse = (hub: MediaHub, collections: Collection[]): MediaHubResponse => {
