@@ -242,11 +242,11 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
               return (
                 <div
                   key={material.id}
-                  className={`flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${editingId === material.id ? 'border-brand-primary bg-brand-primary/5' : 'border-gray-100 hover:border-gray-200 bg-white'}`}
+                  className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${editingId === material.id ? 'border-brand-primary bg-brand-primary/5' : 'border-gray-100 hover:border-gray-200 bg-white'}`}
                   onClick={() => openEdit(material)}
                 >
                   {/* Cover / Icon */}
-                  <div className="w-14 h-14 rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden">
+                  <div className="w-14 h-14 rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden mt-0.5">
                     {material.cover_image ? (
                       <img src={material.cover_image} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -259,7 +259,7 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-800 text-sm truncate">{material.title}</p>
-                    <p className="text-gray-500 text-xs truncate mt-0.5">{material.description || 'Sem descrição'}</p>
+                    <p className="text-gray-500 text-xs line-clamp-2 mt-0.5">{material.description || 'Sem descrição'}</p>
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                       <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase font-bold">{material.asset_type ?? 'pdf'}</span>
                       {(material.tags ?? []).slice(0, 2).map(tag => (
@@ -269,7 +269,7 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
                   </div>
 
                   {/* Publish badge + actions */}
-                  <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center gap-2 flex-shrink-0 mt-0.5" onClick={e => e.stopPropagation()}>
                     <button
                       onClick={() => handleTogglePublish(material)}
                       className={`text-xs px-2 py-1 rounded-full font-bold transition-colors ${material.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
