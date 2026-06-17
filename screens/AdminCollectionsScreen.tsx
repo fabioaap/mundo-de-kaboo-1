@@ -4445,7 +4445,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                                           <div className="min-w-0 flex-1 flex items-center justify-between gap-2 py-3 pr-3">
                                             <div className="min-w-0">
-                                              <p className={`text-sm font-semibold truncate ${isSelected ? 'text-brand-primary' : 'text-gray-800'}`}>
+                                              <p className={`text-sm font-semibold line-clamp-2 ${isSelected ? 'text-brand-primary' : 'text-gray-800'}`}>
                                                 {libraryItem.displayTitle}
                                               </p>
                                               <p className="text-xs text-gray-500 truncate">{libraryItem.collection.title}</p>
@@ -4596,7 +4596,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                                         <div className="min-w-0 flex-1 flex items-center justify-between gap-2 py-3 pr-3">
                                           <div className="min-w-0">
-                                            <p className={`text-sm font-semibold truncate ${isLinked ? 'text-brand-primary' : 'text-gray-800'}`}>
+                                            <p className={`text-sm font-semibold line-clamp-2 ${isLinked ? 'text-brand-primary' : 'text-gray-800'}`}>
                                               {libraryItem.displayTitle}
                                             </p>
                                             <p className="text-xs text-gray-500 truncate">{libraryItem.collection.title}</p>
