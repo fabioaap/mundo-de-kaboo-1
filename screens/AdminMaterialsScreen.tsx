@@ -236,57 +236,58 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
             <p className="text-gray-400 text-sm">Crie o primeiro material usando o botão acima</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
             {filtered.map(material => {
               const AssetIcon = ASSET_ICONS[material.asset_type ?? 'pdf'] ?? Icons.FileText;
               return (
                 <div
                   key={material.id}
-                  className={`flex flex-col rounded-2xl border overflow-hidden transition-all cursor-pointer group ${editingId === material.id ? 'border-brand-primary ring-2 ring-brand-primary/20' : 'border-gray-100 hover:border-gray-200 bg-white hover:shadow-md'}`}
+                  className={`flex gap-3 p-3 rounded-2xl border transition-all cursor-pointer group ${editingId === material.id ? 'border-brand-primary bg-brand-primary/5' : 'border-gray-100 hover:border-gray-200 bg-white hover:shadow-sm'}`}
                   onClick={() => openEdit(material)}
                 >
-                  {/* Cover */}
-                  <div className="relative aspect-square bg-gray-100 flex-shrink-0 overflow-hidden">
+                  {/* Cover — mesmo tamanho da vitrine */}
+                  <div className="w-[72px] h-[72px] rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden">
                     {material.cover_image ? (
-                      <img src={material.cover_image} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+                      <img src={material.cover_image} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <AssetIcon size={28} className="text-gray-300" />
+                        <AssetIcon size={22} className="text-gray-300" />
                       </div>
                     )}
-                    {/* Type badge (top-left) */}
-                    <span className="absolute top-2 left-2 text-[10px] bg-white/90 text-gray-600 px-2 py-0.5 rounded-full font-black uppercase tracking-wide shadow-sm">
-                      {material.asset_type ?? 'pdf'}
-                    </span>
-                    {/* Publish toggle (top-right) */}
-                    <div className="absolute top-2 right-2" onClick={e => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleTogglePublish(material)}
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-black transition-colors shadow-sm ${material.is_published ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-white/90 text-gray-500 hover:bg-gray-100'}`}
-                      >
-                        {material.is_published ? 'Publicado' : 'Rascunho'}
-                      </button>
-                    </div>
                   </div>
 
-                  {/* Info */}
-                  <div className="flex flex-col flex-1 p-3">
-                    <p className="font-black text-gray-800 text-sm line-clamp-2 leading-snug">{material.title}</p>
-                    <p className="text-gray-400 text-xs line-clamp-2 mt-1 leading-relaxed">{material.description || 'Sem descrição'}</p>
-
-                    {/* Footer: tags + delete */}
-                    <div className="flex items-center justify-between mt-auto pt-2">
-                      <div className="flex flex-wrap gap-1">
-                        {(material.tags ?? []).slice(0, 2).map(tag => (
-                          <span key={tag} className="text-[10px] bg-brand-primary/10 text-brand-primary px-1.5 py-0.5 rounded-full">{tag}</span>
-                        ))}
+                  {/* Content */}
+                  <div className="flex flex-col flex-1 min-w-0">
+                    {/* Top row: type badge + publish toggle */}
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-black uppercase tracking-wide">
+                        {material.asset_type ?? 'pdf'}
+                      </span>
+                      <div onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleTogglePublish(material)}
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-black transition-colors ${material.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                        >
+                          {material.is_published ? 'Publicado' : 'Rascunho'}
+                        </button>
                       </div>
+                    </div>
+
+                    {/* Title */}
+                    <p className="font-black text-gray-800 text-sm line-clamp-2 leading-snug">{material.title}</p>
+
+                    {/* Description */}
+                    <p className="text-gray-400 text-xs line-clamp-2 mt-0.5 leading-relaxed">{material.description || 'Sem descrição'}</p>
+
+                    {/* Bottom row: "Documento" label + delete */}
+                    <div className="flex items-center justify-between mt-auto pt-1.5">
+                      <span className="text-[11px] text-gray-400 font-medium">Documento</span>
                       <div onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => { setDeletingId(material.id); setShowDeleteModal(true); }}
-                          className="w-7 h-7 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors"
+                          className="w-6 h-6 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors"
                         >
-                          <Icons.Trash2 size={13} />
+                          <Icons.Trash2 size={12} />
                         </button>
                       </div>
                     </div>
