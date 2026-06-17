@@ -279,17 +279,12 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
                     {/* Description */}
                     <p className="text-gray-400 text-xs line-clamp-2 mt-0.5 leading-relaxed">{material.description || 'Sem descrição'}</p>
 
-                    {/* Bottom row: "Documento" label + delete */}
+                    {/* Bottom row: "Documento" label + editar CTA */}
                     <div className="flex items-center justify-between mt-auto pt-1.5">
                       <span className="text-[11px] text-gray-400 font-medium">Documento</span>
-                      <div onClick={e => e.stopPropagation()}>
-                        <button
-                          onClick={() => { setDeletingId(material.id); setShowDeleteModal(true); }}
-                          className="w-6 h-6 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors"
-                        >
-                          <Icons.Trash2 size={12} />
-                        </button>
-                      </div>
+                      <span className="text-[11px] text-brand-primary font-bold flex items-center gap-0.5">
+                        Editar <Icons.ChevronRight size={12} />
+                      </span>
                     </div>
                   </div>
                 </div>
