@@ -64,7 +64,8 @@ import {
   Baby,
   GraduationCap,
   Copy,
-  Sparkles
+  Sparkles,
+  Music2
 } from 'lucide-react';
 
 export const Icons = {
@@ -73,5 +74,5 @@ export const Icons = {
   Video, Paperclip, Download, FileText, Feather, Settings, LogOut,
   HelpCircle, Mail, Grid, Volume2, VolumeX, Maximize, Minimize,
   Eye, EyeOff, X, Filter, Check, Plus, Edit, Trash2, AlertCircle, AlertTriangle, CheckCircle, Database, Send, BarChart3, History, LineChart, RotateCcw, TrendingUp, Upload, ExternalLink, RotateCw, Smartphone, Image, Palette, Droplets, ArrowUpDown, ArrowDown, ArrowUp, ChevronDown, Ticket, Lock, Users, Type, Link,
-  Baby, GraduationCap, Copy, Sparkles
+  Baby, GraduationCap, Copy, Sparkles, Music2
 };

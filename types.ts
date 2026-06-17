@@ -132,6 +132,7 @@ export type CentralMaterialAudience = 'all' | 'educator' | 'family';
 export type CollectionAssetCategory =
   | 'reading'
   | 'storytelling'
+  | 'music'
   | 'animation'
   | 'accessible_video'
   | 'how_to_play'

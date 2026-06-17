@@ -233,6 +233,8 @@ const getLibraryAssetIcon = (asset: CollectionAsset): keyof typeof Icons => {
   switch (asset.category) {
     case 'storytelling':
       return 'Headphones';
+    case 'music':
+      return 'Music2';
     case 'animation':
     case 'accessible_video':
     case 'how_to_play':
@@ -310,7 +312,16 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     accept: 'audio/*',
     allowMetadata: true,
     titlePlaceholder: 'Ex.: A Cor do Sentir',
-    descriptionPlaceholder: 'Descrição opcional desta música ou contação.',
+    descriptionPlaceholder: 'Descrição opcional desta contação de história.',
+  },
+  {
+    category: 'music',
+    label: COLLECTION_ASSET_META.music.label,
+    folder: 'audio',
+    accept: 'audio/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: A Origem da Liga das Corujinhas',
+    descriptionPlaceholder: 'Descrição opcional desta música.',
   },
   {
     category: 'animation',
@@ -389,7 +400,7 @@ const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory
   books: ['reading'],
   // Vídeos: animação + contação + acessível + uso guiado + videoaula + formação.
   videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
-  music: ['storytelling'],
+  music: ['storytelling', 'music'],
   formations: ['teacher_guide', 'video_lesson'],
   // Materiais = extra_material apenas; reading pertence exclusivamente a Livros.
   materials: ['extra_material'],
@@ -399,6 +410,7 @@ const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory
 const SLOT_MEDIA_TYPE: Record<CollectionAssetCategory, { label: string; color: string }> = {
   reading:        { label: 'Livro',     color: 'bg-blue-50 text-blue-600 border-blue-200' },
   storytelling:   { label: 'Áudio Livro', color: 'bg-violet-50 text-violet-600 border-violet-200' },
+  music:          { label: 'Música',      color: 'bg-pink-50 text-pink-600 border-pink-200' },
   animation:      { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
   accessible_video: { label: 'Vídeo', color: 'bg-rose-50 text-rose-600 border-rose-200' },
   how_to_play:    { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
@@ -413,6 +425,7 @@ const SLOT_MEDIA_TYPE: Record<CollectionAssetCategory, { label: string; color: s
 const CATEGORY_REGISTER_HINT: Partial<Record<CollectionAssetCategory, string>> = {
   animation: 'na área de Vídeos',
   storytelling: 'na área de Áudios',
+  music: 'na área de Áudios',
   reading: 'na área de Livros',
   accessible_video: 'na área de Vídeos (variante Libras)',
   how_to_play: 'na área de Vídeos (Como Jogar)',
@@ -426,7 +439,7 @@ const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCat
   // Deve espelhar LIBRARY_AREA_PRIMARY_SLOTS.videos — senão vídeos criados em
   // categorias ausentes aqui salvam no banco mas somem da lista do hub.
   videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
-  music: ['storytelling'],
+  music: ['storytelling', 'music'],
   formations: ['teacher_guide', 'video_lesson'],
   // reading pertence exclusivamente a Livros; Materiais exibe apenas extra_material.
   materials: ['extra_material'],
