@@ -182,9 +182,19 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
     return 'video';
   };
 
-  const filtered = materials.filter(m =>
-    normalizeText(m.title).includes(normalizeText(searchQuery))
-  );
+  const [statusFilter, setStatusFilter] = React.useState<'all' | 'published' | 'draft'>('all');
+
+  const countAll = materials.length;
+  const countPublished = materials.filter(m => m.is_published).length;
+  const countDraft = materials.filter(m => !m.is_published).length;
+
+  const filtered = materials.filter(m => {
+    const matchesSearch = normalizeText(m.title).includes(normalizeText(searchQuery));
+    const matchesStatus = statusFilter === 'all'
+      || (statusFilter === 'published' && m.is_published)
+      || (statusFilter === 'draft' && !m.is_published);
+    return matchesSearch && matchesStatus;
+  });
 
   const ASSET_ICONS: Record<MaterialAssetType, React.FC<any>> = {
     pdf: Icons.FileText,
@@ -207,9 +217,9 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="px-6 py-3 border-b border-gray-100">
-        <div className="relative">
+      {/* Search + Status tabs */}
+      <div className="px-6 pt-3 pb-0 border-b border-gray-100">
+        <div className="relative mb-3">
           <Icons.Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
@@ -218,6 +228,24 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
             placeholder="Buscar materiais..."
             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
           />
+        </div>
+        <div className="flex gap-1">
+          {([
+            { key: 'all', label: 'Todos', count: countAll },
+            { key: 'published', label: 'Publicado', count: countPublished },
+            { key: 'draft', label: 'Rascunho', count: countDraft },
+          ] as const).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setStatusFilter(tab.key)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold border-b-2 transition-colors ${statusFilter === tab.key ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+              {tab.label}
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${statusFilter === tab.key ? 'bg-brand-primary/10 text-brand-primary' : 'bg-gray-100 text-gray-400'}`}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
