@@ -4224,9 +4224,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       {(isLibraryAreaMode
                         ? FIXED_MEDIA_SLOTS.filter((s) => {
                             const slots = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea!];
-                            // Hide individual slots when a type-selector is shown (multiple slots in library area)
-                            if (slots.length > 1) return false;
-                            return slots.includes(s.category);
+                            if (slots.length <= 1) return slots.includes(s.category);
+                            // Multi-slot: show URL input for the active category only (the dropdown above picks it)
+                            const existingCat = (slots as string[]).find((cat) =>
+                              formData.collection_assets.some((a) => a.category === cat && a.url?.trim())
+                            ) as FixedMediaSlotCategory | undefined;
+                            const activeCat: FixedMediaSlotCategory =
+                              selectedLibrarySlot ?? existingCat ?? (slots[0] as FixedMediaSlotCategory);
+                            return s.category === activeCat;
                           })
                         : isBooksCatalogMode
                           ? FIXED_MEDIA_SLOTS.filter((s) => s.category === 'reading')
