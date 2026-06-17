@@ -227,21 +227,27 @@ export const AdminMaterialsScreen: React.FC<AdminMaterialsScreenProps> = () => {
             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
           />
         </div>
-        <div className="flex gap-1">
-          {(['published', 'draft'] as const).map(key => {
-            const label = key === 'published' ? 'Publicado' : 'Rascunho';
-            const count = key === 'published' ? countPublished : countDraft;
-            const active = statusFilter === key;
+        <div className="flex items-center gap-1 border-b border-gray-200">
+          {([
+            { key: 'published' as const, label: 'Publicados', count: countPublished },
+            { key: 'draft' as const, label: 'Não publicados', count: countDraft },
+          ]).map((tab) => {
+            const isActive = statusFilter === tab.key;
             return (
               <button
-                key={key}
-                onClick={() => setStatusFilter(key)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-bold border-b-2 transition-colors ${active ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={`relative px-4 py-2.5 -mb-px text-sm font-bold transition-colors ${isActive ? 'text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                {label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${active ? 'bg-brand-primary/10 text-brand-primary' : 'bg-gray-100 text-gray-400'}`}>
-                  {count}
+                <span className="flex items-center gap-2">
+                  {tab.label}
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${isActive ? 'bg-brand-primary/10 text-brand-primary' : 'bg-gray-100 text-gray-500'}`}>
+                    {tab.count}
+                  </span>
                 </span>
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary rounded-full" />
+                )}
               </button>
             );
           })}
