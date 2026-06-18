@@ -72,3 +72,27 @@ supabase/backups/
 
 # AIOX: caminho bloqueado pelo push ruleset do repo (GitHub Copilot agents)
 .github/agents/
+
+# --- Repo hygiene: artefatos de debug/QA na raiz (não versionar) ---
+# Screenshots soltos na raiz (assets reais ficam em public/, assets/, docs/)
+/*.png
+# Scripts scratch de medição/debug na raiz
+/yt_*.mjs
+/jtbd_*.mjs
+/jtbd_*.cjs
+/measure_yt*.mjs
+/check_caveman*.mjs
+/tmp-*.mjs
+/debug_app.mjs
+/task_run.py
+/check-env.mjs
+/capture-voucher-screenshots.mjs
+# Dumps / relatórios soltos na raiz
+/admin-books-network.txt
+/cart-network.txt
+/*.patch
+/build-output.log
+/prodbuild.log
+/devserver.log
+/audit-report.json
+*.bak
