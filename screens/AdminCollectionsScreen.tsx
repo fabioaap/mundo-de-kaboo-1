@@ -881,7 +881,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       // library areas — derived from LIBRARY_AREA_PRIMARY_SLOTS excluding 'books'.
       const NON_BOOK_PRIMARY: CollectionAssetCategory[] = [
         'animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation',
-        'storytelling',
+        'storytelling', 'music',
         'teacher_guide',
         'extra_material',
       ];
@@ -1276,6 +1276,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         scope: COLLECTION_ASSET_META[category].scope,
         lyrics_url: libraryItem.asset.lyrics_url ?? null,
         offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
+        // Preserve the slot's existing published flag so re-linking doesn't reset it.
+        is_published: currentAsset?.is_published,
       });
 
       return buildNextFormFromAssets(currentFormData, nextAssets, category === 'reading'
@@ -1304,6 +1306,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
             scope: COLLECTION_ASSET_META.reading.scope,
             lyrics_url: libraryItem.asset.lyrics_url ?? null,
             offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
+            is_published: libraryItem.asset.is_published,
           },
         ];
 
@@ -1331,6 +1334,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
             scope: COLLECTION_ASSET_META.storytelling.scope,
             lyrics_url: libraryItem.asset.lyrics_url ?? null,
             offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
+            is_published: libraryItem.asset.is_published,
           },
         ];
 
@@ -1358,6 +1362,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
             scope: COLLECTION_ASSET_META.animation.scope,
             lyrics_url: libraryItem.asset.lyrics_url ?? null,
             offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
+            is_published: libraryItem.asset.is_published,
           },
         ];
 
@@ -1384,6 +1389,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
               scope: COLLECTION_ASSET_META[category].scope,
               lyrics_url: libraryItem.asset.lyrics_url ?? null,
               offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
+              is_published: libraryItem.asset.is_published,
             },
           ];
       return buildNextFormFromAssets(
@@ -1411,8 +1417,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
           scope: COLLECTION_ASSET_META[category].scope,
           lyrics_url: null,
           offline_available: false,
-          // Preserve existing flag when editing; default to false (draft) for new assets
-          is_published: currentAsset !== undefined ? currentAsset.is_published : false,
+          // Preserve existing flag when editing; in library-area mode, new assets
+          // inherit the current published state so toggle and listing stay in sync.
+          is_published: currentAsset !== undefined
+            ? currentAsset.is_published
+            : (isLibraryAreaMode ? currentFormData.is_published : false),
         });
       }
 
@@ -1574,7 +1583,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       if (collection.id === editingId) continue;
       for (const asset of (collection.collection_assets ?? [])) {
         if (!asset.url?.trim()) continue;
-        if (asset.is_published === false) continue;
+        // Reading assets (books) are always shown in the admin picker regardless of
+        // published status — an admin should be able to link even draft books.
+        if (asset.is_published === false && asset.category !== 'reading') continue;
         // Livros vinculáveis num kit devem ser SEMPRE livros reais (collection_type='book').
         // Sem este filtro, um kit que copiou um PDF aparecia como "livro" selecionável e
         // acabava gravado em kit_book_ids — vinculando uma coleção como se fosse livro.
@@ -1993,6 +2004,24 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       });
       if (fixedAssets.some((a, i) => a !== initialData.collection_assets[i])) {
         initialData = { ...initialData, collection_assets: fixedAssets };
+      }
+    }
+
+    // Sync formData.is_published from the primary asset's flag (not from the
+    // collection-level flag). The listing and card badge use asset.is_published,
+    // so the editor toggle must reflect the same value to avoid showing "Published"
+    // while the card shows "Rascunho".
+    if (isAssetLibraryAreaMode && initialLibraryArea && initialLibraryArea !== 'books') {
+      const primaryCats = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea];
+      const focusedAsset = options?.focusAssetId
+        ? initialData.collection_assets.find((a) => a.id === options.focusAssetId)
+        : options?.focusCategory
+        ? initialData.collection_assets.find((a) => a.category === options.focusCategory && a.url?.trim())
+        : undefined;
+      const primaryAsset = focusedAsset
+        ?? initialData.collection_assets.find((a) => primaryCats.includes(a.category) && a.url?.trim());
+      if (primaryAsset !== undefined) {
+        initialData = { ...initialData, is_published: primaryAsset.is_published !== false };
       }
     }
 
@@ -4269,6 +4298,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                         {SLOT_MEDIA_TYPE[slot.category].label}
                                       </span>
                                     )}
+                                    {libraryItems.length > 0 && (
+                                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">
+                                        {libraryItems.length}
+                                      </span>
+                                    )}
                                   </div>
                                   <p className="text-xs text-gray-500 mt-1">{slotHelperText}</p>
                                 </div>
@@ -4334,6 +4368,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 }}
                                 folder="pdfs"
                                 accept="application/pdf"
+                                hideUrlInput={true}
                                 collectionId={editingId || undefined}
                               />
                             ) : isLibraryAreaMode ? (

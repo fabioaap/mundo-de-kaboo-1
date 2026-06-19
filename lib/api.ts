@@ -9,6 +9,7 @@ import {
   CollectionAssetCategory,
   CollectionResource,
   CentralMaterial,
+  Material,
   MediaAccessMode,
   MediaHub,
   MediaHubResponse,

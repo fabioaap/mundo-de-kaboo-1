@@ -856,13 +856,12 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                   <>
                     <span className="text-brand-primary/40 text-xs font-bold">|</span>
                     {collection.age_grade.map((item, i) => (
-                      <button
+                      <span
                         key={i}
-                        onClick={() => handleTagClick(item)}
-                        className="px-3 py-1 rounded-full bg-brand-primary/10 text-brand-primary text-xs font-bold uppercase tracking-wide hover:bg-brand-primary/20 transition-colors cursor-pointer"
+                        className="px-3 py-1 rounded-full bg-brand-primary/10 text-brand-primary text-xs font-bold uppercase tracking-wide"
                       >
                         {item}
-                      </button>
+                      </span>
                     ))}
                   </>
                 )}
