@@ -110,7 +110,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
 
   const libraryNavItems: NavItem[] = ([
     { key: 'videos', screen: 'videos', icon: Icons.Video, label: 'Vídeos' },
-    { key: 'music', screen: 'music', icon: Icons.Headphones, label: 'Áudios' },
+    { key: 'music', screen: 'music', icon: Icons.Headphones, label: 'Músicas' },
     { key: 'formations', screen: 'formations', icon: Icons.BookOpen, label: 'Formações' },
     { key: 'materials', screen: 'materials', icon: Icons.FileText, label: 'Materiais' },
   ] as NavItem[]).filter(item => isMenuKeyEnabled(item.key));
