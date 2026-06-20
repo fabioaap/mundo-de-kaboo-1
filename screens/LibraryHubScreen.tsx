@@ -452,17 +452,23 @@ const renderMinimalLibraryCardBody = (item: LibraryMockItem, corujaTone: boolean
           {item.title}
         </h3>
 
-        {supportingText && (
+        {supportingText && supportingText !== item.relatedCollection && (
           <p className={`mt-1.5 text-[12px] leading-5 line-clamp-2 ${corujaTone ? 'text-[#D4DCF0]' : 'text-gray-500'}`}>
             {supportingText}
           </p>
         )}
 
-        <div className="mt-2.5 flex items-center gap-2">
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${corujaTone ? 'border-[#f2d87b]/25 bg-white/10 text-[#FFF0C6] shadow-[0_10px_24px_rgba(4,27,36,0.16)] backdrop-blur-sm' : 'border-brand-primary/10 bg-white text-brand-primary/72 shadow-sm'}`}>
             <BadgeIcon size={12} className={item.variant === 'video' ? 'fill-current stroke-none' : 'stroke-[2.1px]'} />
             {badgeLabel}
           </span>
+          {item.relatedCollection && (
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${corujaTone ? 'border-[#f2d87b]/15 bg-white/5 text-[#FFF0C6]/55' : 'border-brand-primary/10 bg-brand-primary/[0.04] text-brand-primary/50'}`}>
+              <Icons.BookOpen size={9} className="shrink-0 stroke-[2px]" />
+              {item.relatedCollection}
+            </span>
+          )}
         </div>
       </div>
 
