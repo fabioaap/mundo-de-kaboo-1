@@ -37,6 +37,16 @@ Deno.serve(async (req) => {
 
     if (!brandId) return json({ error: 'brand_id é obrigatório' }, 400, origin);
 
+    // Valida que a marca existe
+    const { data: brandRow, error: brandErr } = await adminClient
+      .from('brands')
+      .select('id')
+      .eq('id', brandId)
+      .maybeSingle();
+    if (brandErr || !brandRow) {
+      return json({ error: 'Marca não encontrada' }, 404, origin);
+    }
+
     const provider = getProvider(providerId);
     if (!provider) return json({ error: `provider inválido: ${providerId}` }, 400, origin);
 
