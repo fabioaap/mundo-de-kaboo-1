@@ -20,15 +20,20 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const [error, setError] = useState<string | null>(null);
   const [forcePortrait, setForcePortrait] = useState(false);
   const flipbookRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const readingKey = `kaboo_reading_${collection.id}_page`;
   const [currentPage, setCurrentPage] = useState(() => parseInt(localStorage.getItem(readingKey) ?? '0', 10));
   const [totalPages, setTotalPages] = useState(0);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const themeColor = collection.color_theme || '#5D1F58';
   const isLandscape = useOrientation();
   const isMobile = useIsMobile();
   const isMobileLandscape = isMobile && isLandscape;
   const readingAsset = collection.collection_assets?.find((asset) => asset.category === 'reading');
   const pdfUrl = readingAsset?.url?.trim() || collection.pdf_url?.trim() || '';
+  const audioUrl = collection.collection_assets?.find((asset) => asset.category === 'storytelling')?.url?.trim() || '';
   const {
     isAvailable: canDownloadOffline,
     isDownloaded: isOfflineDownloaded,
@@ -71,6 +76,18 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
       // Last page might be single
       return `${firstPageNum} de ${totalPages}`;
     }
+  };
+
+  const formatAudioTime = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+  const toggleAudio = () => {
+    if (!audioRef.current) return;
+    if (isAudioPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsAudioPlaying(!isAudioPlaying);
   };
 
   const flipNext = () => {
@@ -351,25 +368,71 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             </button>
           </div>
         ) : (
-          <FlipbookViewer
-            ref={flipbookRef}
-            pdfUrl={pdfUrl}
-            className="h-full w-full"
-            themeColor={themeColor}
-            onLoadSuccess={() => {
-              setIsLoading(false);
-              setError(null);
-            }}
-            onLoadError={(err: any) => {
-              setIsLoading(false);
-              setError(`Erro ao carregar PDF: ${err?.message || 'Erro desconhecido'}`);
-            }}
-            onPageChange={(currentPage, totalPages) => {
-              setCurrentPage(currentPage);
-              setTotalPages(totalPages);
-              localStorage.setItem(readingKey, String(currentPage));
-            }}
-          />
+          <>
+            <FlipbookViewer
+              ref={flipbookRef}
+              pdfUrl={pdfUrl}
+              className="h-full w-full"
+              themeColor={themeColor}
+              onLoadSuccess={() => {
+                setIsLoading(false);
+                setError(null);
+              }}
+              onLoadError={(err: any) => {
+                setIsLoading(false);
+                setError(`Erro ao carregar PDF: ${err?.message || 'Erro desconhecido'}`);
+              }}
+              onPageChange={(currentPage, totalPages) => {
+                setCurrentPage(currentPage);
+                setTotalPages(totalPages);
+                localStorage.setItem(readingKey, String(currentPage));
+              }}
+            />
+            {audioUrl && (
+              <>
+                <audio
+                  ref={audioRef}
+                  src={audioUrl}
+                  onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
+                  onTimeUpdate={(e) => setAudioCurrentTime(e.currentTarget.currentTime)}
+                  onEnded={() => setIsAudioPlaying(false)}
+                />
+                <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center gap-3 border-t border-white/10 bg-black/30 px-4 py-2.5 backdrop-blur-md">
+                  <button
+                    onClick={toggleAudio}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/15 text-white transition-colors hover:bg-white/25 active:scale-95"
+                    aria-label={isAudioPlaying ? 'Pausar narração' : 'Ouvir narração'}
+                  >
+                    {isAudioPlaying
+                      ? <Icons.Pause size={15} className="fill-white stroke-none" />
+                      : <Icons.Play size={15} className="fill-white stroke-none" />}
+                  </button>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <Icons.Headphones size={9} className="shrink-0 text-white/50" />
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-white/50">Narração</span>
+                    </div>
+                    <div
+                      className="relative h-1 cursor-pointer rounded-full bg-white/20"
+                      onClick={(e) => {
+                        if (!audioRef.current || !audioDuration) return;
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        audioRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * audioDuration;
+                      }}
+                    >
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full bg-white/70"
+                        style={{ width: audioDuration ? `${(audioCurrentTime / audioDuration) * 100}%` : '0%' }}
+                      />
+                    </div>
+                  </div>
+                  <span className="shrink-0 font-mono text-[10px] text-white/40">
+                    {formatAudioTime(audioCurrentTime)} / {formatAudioTime(audioDuration)}
+                  </span>
+                </div>
+              </>
+            )}
+          </>
         )}
       </div>
 

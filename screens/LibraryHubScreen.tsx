@@ -1024,7 +1024,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
       { label: 'Infantil' as VideoLibraryFilter, count: videoLibraryItems.filter((item) => matchesVideoLibraryFilter(item, 'Infantil')).length, active: videoActiveFilter === 'Infantil' },
       { label: 'Professor' as VideoLibraryFilter, count: videoLibraryItems.filter((item) => matchesVideoLibraryFilter(item, 'Professor')).length, active: videoActiveFilter === 'Professor' },
       { label: 'Acessível' as VideoLibraryFilter, count: videoLibraryItems.filter((item) => matchesVideoLibraryFilter(item, 'Acessível')).length, active: videoActiveFilter === 'Acessível' },
-    ]
+    ].filter((tab) => tab.label === 'Todos' || tab.count > 0)
     : [];
   const normalizedCompactQuery = normalizeLibraryText(compactQuery.trim());
   const compactFilterSource = !isVideoHub
@@ -1085,7 +1085,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
         ? compactLibraryItems.length
         : compactLibraryItems.filter((item) => matchesCompactLibraryFilter(item, label, screen)).length,
       active: compactActiveFilter === label,
-    }))
+    })).filter((tab) => tab.label === 'Todos' || tab.count > 0)
     : [];
   const compactEmptyStateMessage = isBaseCompactCatalogEmpty
     ? getLibraryEmptyStateMessage(screen, brandDisplayName)
