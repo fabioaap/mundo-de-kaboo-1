@@ -66,6 +66,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const [resolvedPlaybackUrl, setResolvedPlaybackUrl] = useState<string | null>(null);
   const [resolvedPlaybackTitle, setResolvedPlaybackTitle] = useState<string | null>(null);
   const [relatedTracks, setRelatedTracks] = useState<MediaItemCard[]>([]);
+  const [playlistTracks, setPlaylistTracks] = useState<MediaItemCard[]>([]);
   const [trackDescription, setTrackDescription] = useState<string>('');
 
   const [showSidebar, setShowSidebar] = useState(false);
@@ -246,6 +247,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
     let isActive = true;
 
     setRelatedTracks([]);
+    setPlaylistTracks([]);
     setTrackDescription('');
 
     const loadContext = async () => {
@@ -265,6 +267,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
         ];
         const unique = Array.from(new Map(allItems.map((item) => [item.id, item])).values());
 
+        setPlaylistTracks(unique);
         setRelatedTracks(unique.filter((item) => item.id !== mediaItemId).slice(0, 8));
         setTrackDescription(detail?.description ?? detail?.summary ?? collection.description ?? '');
       } catch {
@@ -575,6 +578,13 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
     });
   };
 
+  const playlistIndex = playlistTracks.findIndex((t) => t.id === mediaItemId);
+  const prevTrack = playlistIndex > 0 ? playlistTracks[playlistIndex - 1] : null;
+  const nextTrack = playlistIndex >= 0 && playlistIndex < playlistTracks.length - 1 ? playlistTracks[playlistIndex + 1] : null;
+
+  const handlePrevTrack = () => { if (prevTrack) openRelatedTrack(prevTrack); };
+  const handleNextTrack = () => { if (nextTrack) openRelatedTrack(nextTrack); };
+
   const mobileHeaderButtonClass = 'h-10 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/28 px-3 text-[11px] font-bold text-white/90 shadow-lg backdrop-blur-md transition-colors hover:bg-black/40';
   const mobileUtilityActionClass = 'flex min-h-[56px] items-center gap-3 rounded-[22px] border border-white/14 bg-black/26 px-4 text-left text-sm font-semibold text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_22px_rgba(0,0,0,0.18)] backdrop-blur-md transition-colors hover:bg-black/36';
   const transportButtonHitAreaClass = 'group relative inline-flex h-16 w-16 items-center justify-center rounded-full border border-transparent bg-transparent text-white outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/75';
@@ -644,8 +654,12 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => {
-            setIsPlaying(false);
             maybeSaveProgress(true);
+            if (nextTrack) {
+              openRelatedTrack(nextTrack);
+            } else {
+              setIsPlaying(false);
+            }
           }}
           onPlay={() => setIsPlaying(true)}
           onPause={() => {
@@ -903,7 +917,20 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
             </div>
 
             {/* Main Controls */}
-            <div className={`flex items-center justify-center ${isMobileLandscape ? 'gap-5' : 'gap-7'}`}>
+            <div className={`flex items-center justify-center ${isMobileLandscape ? 'gap-3' : 'gap-5'}`}>
+              {/* Prev Track */}
+              <button
+                type="button"
+                onClick={handlePrevTrack}
+                disabled={!prevTrack}
+                className={`${transportButtonHitAreaClass} disabled:opacity-30`}
+                aria-label="Faixa anterior"
+              >
+                <span className={transportButtonSurfaceClass}>
+                  <Icons.SkipBack size={20} fill="currentColor" strokeWidth={0} />
+                </span>
+              </button>
+
               {/* Skip Backward */}
               <button
                 type="button"
@@ -945,6 +972,19 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
               >
                 <span className={transportButtonSurfaceClass}>
                   <SkipTenGlyph direction="forward" size={24} />
+                </span>
+              </button>
+
+              {/* Next Track */}
+              <button
+                type="button"
+                onClick={handleNextTrack}
+                disabled={!nextTrack}
+                className={`${transportButtonHitAreaClass} disabled:opacity-30`}
+                aria-label="Próxima faixa"
+              >
+                <span className={transportButtonSurfaceClass}>
+                  <Icons.SkipForward size={20} fill="currentColor" strokeWidth={0} />
                 </span>
               </button>
             </div>
