@@ -7,13 +7,14 @@
 //
 // Body: { brand_id: string, action: string, input: object }
 
-import { corsHeaders, json, preflight } from '../_shared/http.ts';
+import { getCorsHeaders, json, preflight } from '../_shared/http.ts';
 import { requireOperator, canManageBrand } from '../_shared/auth.ts';
 import { getProvider } from '../_shared/providers/index.ts';
 import { getAction } from '../_shared/actions.ts';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return preflight();
+  const origin = req.headers.get('origin');
+  if (req.method === 'OPTIONS') return preflight(origin);
 
   try {
     const { adminClient, caller } = await requireOperator(req, ['admin', 'editor']);
@@ -22,13 +23,13 @@ Deno.serve(async (req) => {
     const actionId = String(body?.action ?? '');
     const input = (body?.input ?? {}) as Record<string, unknown>;
 
-    if (!brandId) return json({ error: 'brand_id é obrigatório' }, 400);
+    if (!brandId) return json({ error: 'brand_id é obrigatório' }, 400, origin);
 
     const action = getAction(actionId);
-    if (!action) return json({ error: `ação inválida: ${actionId}` }, 400);
+    if (!action) return json({ error: `ação inválida: ${actionId}` }, 400, origin);
 
     if (!(await canManageBrand(adminClient, caller.id, brandId))) {
-      return json({ error: 'Forbidden: sem permissão para esta marca' }, 403);
+      return json({ error: 'Forbidden: sem permissão para esta marca' }, 403, origin);
     }
 
     // Config de IA da marca (não-secreta).
@@ -43,12 +44,12 @@ Deno.serve(async (req) => {
         | undefined;
 
     if (!aiConfig || aiConfig.enabled !== true) {
-      return json({ error: 'ai_disabled' }, 200);
+      return json({ error: 'ai_disabled' }, 200, origin);
     }
 
     const providerId = String(aiConfig.provider ?? '');
     const provider = getProvider(providerId);
-    if (!provider) return json({ error: `provider inválido: ${providerId}` }, 200);
+    if (!provider) return json({ error: `provider inválido: ${providerId}` }, 200, origin);
     const model = (aiConfig.model as string | undefined) || provider.defaultModel;
 
     // Chave decifrada do Vault.
@@ -57,19 +58,19 @@ Deno.serve(async (req) => {
       p_provider: providerId,
     });
     if (keyErr || typeof key !== 'string' || !key) {
-      return json({ error: 'no_key' }, 200);
+      return json({ error: 'no_key' }, 200, origin);
     }
 
     const { system, prompt, maxTokens } = action.build(input);
     const result = await provider.call({ apiKey: key, model, system, prompt, maxTokens });
 
-    return json({ success: true, text: (result.text ?? '').trim() }, 200);
+    return json({ success: true, text: (result.text ?? '').trim() }, 200, origin);
   } catch (err) {
     const status = (err as { status?: number })?.status ?? 200;
     const message = (err as { message?: string })?.message ?? 'Internal error';
     return new Response(JSON.stringify({ error: message }), {
       status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
     });
   }
 });

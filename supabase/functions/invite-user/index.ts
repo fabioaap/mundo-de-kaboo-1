@@ -1,11 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getCorsHeaders } from '../_shared/http.ts';
+import { canManageBrand } from '../_shared/auth.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const VALID_ROLES = ['viewer', 'editor', 'admin'];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+
   // Preflight CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -78,6 +80,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Validação de entrada (T0.3)
+    if (typeof email !== 'string' || !EMAIL_RE.test(email)) {
+      return new Response(JSON.stringify({ error: 'Invalid email' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (role !== undefined && role !== null && !VALID_ROLES.includes(role)) {
+      return new Response(JSON.stringify({ error: 'Invalid role' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (typeof full_name !== 'string' || full_name.length < 1 || full_name.length > 100) {
+      return new Response(JSON.stringify({ error: 'Invalid name length' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (password !== undefined && password.length < 8) {
       return new Response(JSON.stringify({ success: false, error: 'Senha deve ter pelo menos 8 caracteres' }), {
         status: 200,
@@ -87,6 +109,28 @@ Deno.serve(async (req) => {
 
     const assignedRole = role ?? 'viewer';
     const isOperationalRole = assignedRole === 'admin' || assignedRole === 'editor';
+
+    // Brand-scope (T0.3): antes de criar o usuário ou associá-lo a qualquer marca,
+    // verifica que o CALLER pode gerenciar cada marca alvo. O RPC can_manage_brand
+    // depende de auth.uid() (null sob service_role), então usamos o helper
+    // compartilhado que espelha sua lógica via adminClient. Fail-fast aqui evita
+    // criar um usuário órfão de auth caso a autorização falhe.
+    const targetBrandIds = new Set<string>();
+    if (isOperationalRole) {
+      if (callerProfile.brand_id) targetBrandIds.add(callerProfile.brand_id);
+      for (const m of callerMemberships ?? []) {
+        if (m.brand_id) targetBrandIds.add(m.brand_id);
+      }
+    }
+    for (const brandId of targetBrandIds) {
+      const allowed = await canManageBrand(adminClient, caller.id, brandId);
+      if (!allowed) {
+        return new Response(JSON.stringify({ error: 'forbidden' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     let createdUser: any;
 

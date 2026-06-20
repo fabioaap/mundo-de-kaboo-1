@@ -16,12 +16,13 @@
 //   mode?: 'save' | 'test'   // 'test' faz um ping no provedor
 // }
 
-import { corsHeaders, json, preflight } from '../_shared/http.ts';
+import { getCorsHeaders, json, preflight } from '../_shared/http.ts';
 import { requireOperator, canManageBrand } from '../_shared/auth.ts';
 import { getProvider } from '../_shared/providers/index.ts';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return preflight();
+  const origin = req.headers.get('origin');
+  if (req.method === 'OPTIONS') return preflight(origin);
 
   try {
     const { adminClient, caller } = await requireOperator(req, ['admin']);
@@ -34,13 +35,13 @@ Deno.serve(async (req) => {
     const reason = (body?.reason ? String(body.reason) : '').trim();
     const mode = body?.mode === 'test' ? 'test' : 'save';
 
-    if (!brandId) return json({ error: 'brand_id é obrigatório' }, 400);
+    if (!brandId) return json({ error: 'brand_id é obrigatório' }, 400, origin);
 
     const provider = getProvider(providerId);
-    if (!provider) return json({ error: `provider inválido: ${providerId}` }, 400);
+    if (!provider) return json({ error: `provider inválido: ${providerId}` }, 400, origin);
 
     if (!(await canManageBrand(adminClient, caller.id, brandId))) {
-      return json({ error: 'Forbidden: sem permissão para esta marca' }, 403);
+      return json({ error: 'Forbidden: sem permissão para esta marca' }, 403, origin);
     }
 
     const resolvedModel = model || provider.defaultModel;
@@ -53,12 +54,12 @@ Deno.serve(async (req) => {
           p_brand_id: brandId,
           p_provider: providerId,
         });
-        if (rpcErr) return json({ ok: false, error: 'erro ao ler chave armazenada' }, 200);
+        if (rpcErr) return json({ ok: false, error: 'erro ao ler chave armazenada' }, 200, origin);
         keyToTest = typeof stored === 'string' ? stored : '';
       }
-      if (!keyToTest) return json({ ok: false, error: 'nenhuma chave configurada' }, 200);
+      if (!keyToTest) return json({ ok: false, error: 'nenhuma chave configurada' }, 200, origin);
       const result = await provider.test(keyToTest, resolvedModel);
-      return json(result, 200);
+      return json(result, 200, origin);
     }
 
     // --- Modo SAVE ---
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
         p_provider: providerId,
         p_secret: apiKey,
       });
-      if (setErr) return json({ error: 'falha ao gravar a chave com segurança' }, 200);
+      if (setErr) return json({ error: 'falha ao gravar a chave com segurança' }, 200, origin);
       keyConfigured = true;
       keyLast4 = apiKey.slice(-4);
     } else {
@@ -117,22 +118,22 @@ Deno.serve(async (req) => {
         .from('brand_settings')
         .update({ menu_config: nextMenuConfig, updated_at: nowIso })
         .eq('brand_id', brandId);
-      if (updErr) return json({ error: updErr.message }, 200);
+      if (updErr) return json({ error: updErr.message }, 200, origin);
     } else {
       const { error: insErr } = await adminClient
         .from('brand_settings')
         .insert({ brand_id: brandId, menu_config: nextMenuConfig, updated_at: nowIso });
-      if (insErr) return json({ error: insErr.message }, 200);
+      if (insErr) return json({ error: insErr.message }, 200, origin);
     }
 
     // Resposta SEM a chave — só o mascarado.
-    return json({ success: true, config: aiConfig }, 200);
+    return json({ success: true, config: aiConfig }, 200, origin);
   } catch (err) {
     const status = (err as { status?: number })?.status ?? 200;
     const message = (err as { message?: string })?.message ?? 'Internal error';
     return new Response(JSON.stringify({ error: message }), {
       status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
     });
   }
 });
