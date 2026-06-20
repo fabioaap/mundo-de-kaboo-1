@@ -672,13 +672,21 @@ const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection,
 const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]): LibraryMockItem[] => {
   const allowedCategories = COLLECTION_BACKED_HUB_CATEGORIES[hub];
 
-  // Cada hub filtra pelas SUAS categorias (allowedCategories). Materiais agora só inclui
-  // extra_material — o PDF do livro (reading) pertence só ao hub Livros — então não é
-  // preciso excluir coleções tipo "book": o Guia do Professor (extra_material) de um livro
-  // deve, sim, aparecer em Materiais.
+  // WS-2 — escopo: conteúdo com dono não vaza para os hubs globais.
+  // Kits: nunca aparecem em hub — seu conteúdo pertence à vitrine da coleção.
+  // Books com PDF (reading): seus assets pertencem ao hub Livros, não a vídeos/músicas.
+  // Exceção: hub 'materials' mostra extra_material de qualquer coleção (guia do professor etc.)
+  const isHubEligible = (collection: Collection): boolean => {
+    if (collection.collection_type === 'kit') return false;
+    if (hub !== 'materials' && collection.collection_type === 'book' &&
+        (collection.collection_assets ?? []).some((a) => a.category === 'reading')) return false;
+    return true;
+  };
+
   const collectionsById = new Map(collections.map((collection) => [collection.id, collection]));
 
   const pairs = collections
+    .filter(isHubEligible)
     .flatMap((collection) => (collection.collection_assets ?? [])
       // On the public storefront, hide assets that were explicitly unpublished (is_published=false).
       // undefined/null means published (backward-compat with assets created before per-asset flags).
@@ -2689,6 +2697,17 @@ export const api = {
     if (!existing) {
       logger.error('Collection not found or no access:', id);
       return null;
+    }
+
+    // Merge is_published from DB so wholesale saves never clobber values set
+    // by the set_collection_asset_published RPC (the sole owner of this flag).
+    if (payload.collection_assets && existing.collection_assets?.length) {
+      const dbById = new Map<string, CollectionAsset>(existing.collection_assets.map(a => [a.id, a]));
+      const dbByUrl = new Map<string, CollectionAsset>(existing.collection_assets.map(a => [a.url, a]));
+      payload.collection_assets = payload.collection_assets.map(a => {
+        const dbAsset: CollectionAsset | undefined = dbById.get(a.id) ?? dbByUrl.get(a.url);
+        return dbAsset !== undefined ? { ...a, is_published: dbAsset.is_published } : a;
+      });
     }
 
     // Perform the update with retry for missing columns

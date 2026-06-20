@@ -109,6 +109,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const [resolvedPlaybackUrl, setResolvedPlaybackUrl] = useState<string | null>(null);
   const [resolvedPlaybackTitle, setResolvedPlaybackTitle] = useState<string | null>(null);
   const [relatedItems, setRelatedItems] = useState<MediaItemCard[]>([]);
+  const [relatedFromCollection, setRelatedFromCollection] = useState(false);
   const [itemDescription, setItemDescription] = useState<string>('');
   const [showShortcutsHint, setShowShortcutsHint] = useState(true);
   const [showMobileQueue, setShowMobileQueue] = useState(false);
@@ -346,8 +347,51 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     // The hub re-fetch below will update the list correctly in the background.
     setItemDescription('');
 
+    const VIDEO_ASSET_CATEGORIES = new Set(['animation', 'accessible_video', 'story_video', 'how_to_play', 'video_lesson', 'formation']);
+
     const loadContext = async () => {
       try {
+        const currentUrl = (assetUrl ?? collection.video_url ?? '').trim();
+
+        // If the collection has other video assets, scope "Próximos" to that collection.
+        // This fixes the case of a video opened from within a collection/book (WS-15).
+        const collectionVideoItems = (collection.collection_assets ?? [])
+          .filter(a =>
+            VIDEO_ASSET_CATEGORIES.has(a.category) &&
+            a.url &&
+            a.url.trim() !== currentUrl &&
+            a.is_published !== false
+          )
+          .map(a => {
+            const ytId = a.url?.match(/(?:youtu\.be\/|[?&]v=|embed\/)([A-Za-z0-9_-]{6,})/i)?.[1] ?? null;
+            return {
+              id: a.id,
+              hub: 'videos' as const,
+              kind: 'video' as const,
+              title: a.title,
+              thumbnailUrl: ytId
+                ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+                : (collection.cover_image ?? null),
+              provider: ytId ? 'youtube' as const : 'internal' as const,
+              locked: false,
+              isFavorite: false,
+              progressPercent: 0,
+              assetUrl: a.url ?? null,
+              collectionId: collection.id,
+            };
+          });
+
+        if (collectionVideoItems.length > 0) {
+          if (!isActive) return;
+          setRelatedItems(collectionVideoItems);
+          setRelatedFromCollection(true);
+          const detail = mediaItemId ? await api.getMediaItem(mediaItemId) : null;
+          if (!isActive) return;
+          setItemDescription(detail?.description ?? detail?.summary ?? collection.description ?? '');
+          return;
+        }
+
+        setRelatedFromCollection(false);
         const [hub, detail] = await Promise.all([
           api.getMediaHub('videos'),
           mediaItemId ? api.getMediaItem(mediaItemId) : Promise.resolve(null),
@@ -366,7 +410,6 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         // video URL. The URL check is essential because the same video can be reached
         // without a mediaItemId (e.g. opened from a collection's materials list) and
         // because the same video may be referenced by more than one collection.
-        const currentUrl = (assetUrl ?? collection.video_url ?? '').trim();
         const unique = Array.from(new Map(allItems.map((item) => [item.id, item])).values());
         const filtered = unique
           .filter((item) => item.id !== mediaItemId)
@@ -390,7 +433,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     return () => {
       isActive = false;
     };
-  }, [collection.description, mediaItemId, assetUrl, collection.video_url]);
+  }, [collection.description, collection.id, collection.video_url, collection.collection_assets, collection.cover_image, mediaItemId, assetUrl]);
 
   useEffect(() => {
     setShowMobileQueue(false);
@@ -773,11 +816,19 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   };
 
   const openRelatedItem = (item: MediaItemCard) => {
-    onNavigate('player_video', {
-      collectionId: item.collectionId ?? collection.id,
-      mediaItemId: item.id,
-      assetTitle: item.title,
-    });
+    if (relatedFromCollection) {
+      onNavigate('player_video', {
+        collectionId: item.collectionId ?? collection.id,
+        assetUrl: item.assetUrl,
+        assetTitle: item.title,
+      });
+    } else {
+      onNavigate('player_video', {
+        collectionId: item.collectionId ?? collection.id,
+        mediaItemId: item.id,
+        assetTitle: item.title,
+      });
+    }
   };
 
   const toggleMobileQueuePanel = (event?: React.MouseEvent) => {

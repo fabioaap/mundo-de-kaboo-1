@@ -1276,6 +1276,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         scope: COLLECTION_ASSET_META[category].scope,
         lyrics_url: libraryItem.asset.lyrics_url ?? null,
         offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
+        is_published: currentAsset?.is_published,
       });
 
       return buildNextFormFromAssets(currentFormData, nextAssets, category === 'reading'
