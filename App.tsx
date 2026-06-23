@@ -1059,7 +1059,8 @@ const App: React.FC = () => {
           currentScreen: previousScreenState.screen,
           params: {
             ...(previousScreenState.params ?? {}),
-            collectionId: modalStackIds[modalStackIds.length - 1],
+            collectionId: modalStackIds[0],
+            ...(modalStackIds.length > 1 ? { modalStackIds } : {}),
           },
         };
 
