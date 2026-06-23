@@ -23,6 +23,9 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
   const [showContent, setShowContent] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [collectionStack, setCollectionStack] = useState<Collection[]>([]);
+  // Disables slide transition during initial stack reconstruction so the user
+  // goes straight to the active level without seeing intermediate levels animate.
+  const [skipTransition, setSkipTransition] = useState(false);
   const activeCollection = collectionStack[collectionStack.length - 1] || collection;
   // Índice do nível ativo na pilha — guia o slide horizontal (drill-down).
   const activeIndex = Math.max(0, collectionStack.length - 1);
@@ -62,6 +65,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
         };
       }
 
+      setSkipTransition(true);
       Promise.all(extraCollectionIds.map(async (id) => {
         try {
           return await api.getCollectionById(id);
@@ -79,6 +83,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
         ];
 
         setCollectionStack(nextStack);
+        requestAnimationFrame(() => setSkipTransition(false));
       });
 
       return () => {
@@ -189,7 +194,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
               Cada nível da pilha é um painel; o track desliza -100% por nível. */}
           {showContent && collectionStack.length > 0 && (
             <div
-              className="absolute inset-0 flex content-fade-in transition-transform duration-300 ease-out"
+              className={`absolute inset-0 flex content-fade-in ${skipTransition ? '' : 'transition-transform duration-300 ease-out'}`}
               style={{ transform: `translateX(-${activeIndex * 100}%)` }}
             >
               {collectionStack.map((levelCollection, index) => (
