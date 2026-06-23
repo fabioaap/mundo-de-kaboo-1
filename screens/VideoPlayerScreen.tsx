@@ -391,6 +391,20 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           return;
         }
 
+        // Sem outros vídeos na coleção. Se este vídeo pertence a uma OBRA (kit ou livro
+        // com PDF), ele não é item de hub → não mostrar "Próximos vídeos" globais; aparece
+        // sozinho (WS-15).
+        const isBoundObra = collection.collection_type === 'kit'
+          || (collection.collection_assets ?? []).some((a) => a.category === 'reading' && a.url?.trim());
+        if (isBoundObra) {
+          setRelatedFromCollection(true);
+          setRelatedItems([]);
+          const detail = mediaItemId ? await api.getMediaItem(mediaItemId) : null;
+          if (!isActive) return;
+          setItemDescription(detail?.description ?? detail?.summary ?? collection.description ?? '');
+          return;
+        }
+
         setRelatedFromCollection(false);
         const [hub, detail] = await Promise.all([
           api.getMediaHub('videos'),
@@ -1370,7 +1384,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => setIsPlayerCollapsed(false)}
+                          onClick={(e) => void toggleFullscreen(e)}
                           className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white/85 transition-colors hover:bg-white/10 active:scale-95"
                           title="Expandir para tela cheia"
                           aria-label="Expandir para tela cheia"
