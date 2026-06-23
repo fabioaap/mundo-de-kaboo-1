@@ -1014,15 +1014,15 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     return (
       <div
         ref={containerRef}
-        className="fixed inset-0 z-50 overflow-y-auto bg-[#0f0f0f] text-white"
+        className={`fixed inset-0 z-50 bg-[#0f0f0f] text-white ${isFullscreen ? 'overflow-hidden' : 'overflow-y-auto'}`}
         role="dialog"
         aria-modal="true"
         aria-label="Player de vídeo"
       >
-        <div className="min-h-full pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div className={isFullscreen ? 'h-full flex flex-col' : 'min-h-full pb-[max(1.5rem,env(safe-area-inset-bottom))]'}>
 
           {/* ── Sticky header ── */}
-          <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-[#0f0f0f]/95 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md">
+          <header className={`sticky top-0 z-30 border-b border-white/[0.08] bg-[#0f0f0f]/95 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md${isFullscreen ? ' hidden' : ''}`}>
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -1073,17 +1073,17 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           </header>
 
           {/* ── Content: responsive YouTube-style layout ── */}
-          <div className="mx-auto max-w-screen-xl lg:px-6 lg:py-5">
-            <div className="flex flex-col md:flex-row md:gap-6 md:items-start">
+          <div className={isFullscreen ? 'flex-1 min-h-0 flex flex-col' : 'mx-auto max-w-screen-xl lg:px-6 lg:py-5'}>
+            <div className={isFullscreen ? 'flex-1 min-h-0 flex flex-col' : 'flex flex-col md:flex-row md:gap-6 md:items-start'}>
 
               {/* ── Left column: video card + info ── */}
-              <div className="min-w-0 flex-1">
+              <div className={isFullscreen ? 'flex-1 min-h-0 flex flex-col' : 'min-w-0 flex-1'}>
 
                 {/* Video card */}
-                <div className="overflow-hidden bg-black lg:rounded-xl">
+                <div className={isFullscreen ? 'flex-1 min-h-0 flex flex-col bg-black' : 'overflow-hidden bg-black lg:rounded-xl'}>
 
                   {/* Video area — 16:9 */}
-                  <div className="relative aspect-video">
+                  <div className={isFullscreen ? 'flex-1 min-h-0 relative' : 'relative aspect-video'}>
                     {youtubeEmbedUrl ? (
                       <iframe
                         ref={ytIframeRef}
@@ -1386,10 +1386,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                           type="button"
                           onClick={(e) => void toggleFullscreen(e)}
                           className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white/85 transition-colors hover:bg-white/10 active:scale-95"
-                          title="Expandir para tela cheia"
-                          aria-label="Expandir para tela cheia"
+                          title={isFullscreen ? 'Sair da tela cheia' : 'Expandir para tela cheia'}
+                          aria-label={isFullscreen ? 'Sair da tela cheia' : 'Expandir para tela cheia'}
                         >
-                          <Icons.Maximize size={18} />
+                          {isFullscreen ? <Icons.Minimize size={18} /> : <Icons.Maximize size={18} />}
                         </button>
                       </div>
                     </div>
@@ -1397,7 +1397,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 </div>{/* end video card */}
 
                 {/* Title + meta + description */}
-                <div className="mt-5 space-y-3 px-4 lg:px-0">
+                {!isFullscreen && <div className="mt-5 space-y-3 px-4 lg:px-0">
                   <div>
                     <h2 className="text-base font-black leading-snug text-white lg:text-lg">
                       {resolvedTitle}
@@ -1411,10 +1411,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                       <p className="mt-2 text-sm leading-6 text-white/80">{itemDescription}</p>
                     </div>
                   )}
-                </div>
+                </div>}
 
                 {/* Related videos — mobile only (hidden on lg+, shown in sidebar there) */}
-                {relatedItems.length > 0 && (
+                {!isFullscreen && relatedItems.length > 0 && (
                   <div className="mt-6 px-4 pb-2 lg:hidden">
                     <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/50">
                       Próximos vídeos
@@ -1452,7 +1452,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
               </div>{/* end left column */}
 
               {/* ── Right column: related videos — desktop only ── */}
-              {relatedItems.length > 0 && (
+              {!isFullscreen && relatedItems.length > 0 && (
                 <aside className="hidden md:block w-[360px] shrink-0">
                   <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/50">
                     Próximos vídeos
