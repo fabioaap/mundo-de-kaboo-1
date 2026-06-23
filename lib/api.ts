@@ -20,6 +20,7 @@ import {
   MediaProvider,
   MediaRelatedCollection,
   MediaShelf,
+  Material,
   SaveMediaProgressInput,
   RegisterWithVoucherInput,
   RegisterWithVoucherResult,
@@ -313,7 +314,7 @@ export const stripMissingCollectionColumns = (
  * Propaga o renome de um livro para os kits que o embutem.
  *
  * Os assets do kit guardam um SNAPSHOT do título no momento do vínculo, então
- * renomear a mídia-fonte não refletia na coleção (o "Áudio Livro" continuava com
+ * renomear a mídia-fonte não refletia na coleção (o "Audiolivro" continuava com
  * o título antigo). Aqui atualizamos o título dos assets cujo `url` referencia o
  * id do livro renomeado, em todos os kits que o listam em `kit_book_ids`.
  * Best-effort: qualquer falha é logada e ignorada (não bloqueia o update).
@@ -410,8 +411,14 @@ const mapLibraryHubToMediaHub = (hub: LibraryHubKind): MediaHub => hub;
 const COLLECTION_BACKED_HUB_CATEGORIES: Record<MediaHub, CollectionAssetCategory[]> = {
   // Deve espelhar LIBRARY_AREA_LISTING_CATEGORIES.videos do admin — senão vídeos
   // publicados em story_video/formation aparecem no admin mas somem da vitrine.
-  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
-  music: ['storytelling', 'music'],
+  // Catálogo navegável no hub Vídeos: animação avulsa + contação em vídeo (+ overlap de
+  // Formações). Removidos os "acompanhamentos" de uma obra: accessible_video (Com Libras,
+  // variante da obra) e how_to_play (Como Jogar, instrução do kit) — acessíveis dentro da obra.
+  // Ver docs/decisao-arquitetura-hubs-2026-06.md.
+  videos: ['animation', 'story_video', 'video_lesson', 'formation'],
+  // Apenas faixas de música no hub "Músicas". Narração de livro (storytelling) é áudio
+  // com dono (1 faixa/livro) e fica acessível dentro do livro — não na exploração do hub.
+  music: ['music'],
   formations: ['teacher_guide', 'video_lesson'],
   // reading (PDF do livro) pertence EXCLUSIVAMENTE ao hub Livros — Materiais é só
   // material de apoio (extra_material). Alinhado ao admin (LIBRARY_AREA_LISTING_CATEGORIES).
@@ -616,6 +623,11 @@ const getCollectionBackedAssetThumbnail = (
   asset: CollectionAsset,
   collectionsById?: Map<string, Collection>,
 ): string | undefined => {
+  const ownCover = asset.cover_image?.trim();
+  if (ownCover && !isPlaceholderImageUrl(ownCover)) {
+    return ownCover;
+  }
+
   if (asset.media_type === 'video') {
     const youtubeThumb = getYoutubeThumbnailUrl(asset.url);
     if (youtubeThumb) {
@@ -690,6 +702,8 @@ const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]
     .flatMap((collection) => (collection.collection_assets ?? [])
       // On the public storefront, hide assets that were explicitly unpublished (is_published=false).
       // undefined/null means published (backward-compat with assets created before per-asset flags).
+      // Avulso vs vinculado é decidido pela ESTRUTURA (isHubEligible: obra com PDF/kit fica fora),
+      // não por flag — ver docs/architecture/modelo-conteudo-e-hubs.md.
       .filter((asset) => allowedCategories.includes(asset.category) && asset.is_published !== false)
       .map((asset) => ({ collection, asset })));
 
@@ -1933,9 +1947,11 @@ export const api = {
   async getCollectionById(id: string): Promise<Collection | null> {
     if (!isSupabaseConfigured || devMockSession) {
       const mockCollection = getMockCollectionByIdLive(id);
-      return mockCollection
-        ? filterCollectionsForBrand([mockCollection], _activeBrandSlugForApi, _activeBrandIdForApi)[0] ?? null
-        : null;
+      if (!mockCollection) return null;
+      // Stamp missing brand_id — mirrors getCollections mock path so the brand filter works.
+      const brandId = _activeBrandIdForApi;
+      const stamped = brandId && !mockCollection.brand_id ? { ...mockCollection, brand_id: brandId } : mockCollection;
+      return filterCollectionsForBrand([stamped], _activeBrandSlugForApi, _activeBrandIdForApi)[0] ?? null;
     }
 
     const activeBrandId = await resolveActiveBrandId();
