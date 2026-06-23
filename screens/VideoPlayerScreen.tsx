@@ -1014,12 +1014,12 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     return (
       <div
         ref={containerRef}
-        className={`fixed inset-0 z-50 bg-[#0f0f0f] text-white ${isFullscreen ? 'overflow-hidden' : 'overflow-y-auto'}`}
+        className={`fixed inset-0 z-50 bg-[#0f0f0f] text-white ${isFullscreen ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}
         role="dialog"
         aria-modal="true"
         aria-label="Player de vídeo"
       >
-        <div className={isFullscreen ? 'h-full flex flex-col' : 'min-h-full pb-[max(1.5rem,env(safe-area-inset-bottom))]'}>
+        <div className={isFullscreen ? 'flex-1 flex flex-col' : 'min-h-full pb-[max(1.5rem,env(safe-area-inset-bottom))]'}>
 
           {/* ── Sticky header ── */}
           <header className={`sticky top-0 z-30 border-b border-white/[0.08] bg-[#0f0f0f]/95 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md${isFullscreen ? ' hidden' : ''}`}>
@@ -1281,7 +1281,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                   </div>{/* end video area */}
 
                   {/* Controls bar — always visible, sits below the video in document flow */}
-                  <div className="border-t border-white/[0.08] bg-black px-4 pb-4 pt-3">
+                  <div className={`border-t border-white/[0.08] bg-black px-4 pb-4 pt-3${isFullscreen ? ' shrink-0' : ''}`}>
 
                     {/* Error banners */}
                     {playError && (
