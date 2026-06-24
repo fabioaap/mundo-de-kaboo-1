@@ -90,7 +90,7 @@ const DEFAULT_MENU: BrandMenuItem[] = [
     { key: 'collections', label: 'Coleções', route: 'home', enabled: true, order: 10 },
     { key: 'books', label: 'Livros', route: 'home', enabled: true, order: 20 },
     { key: 'videos', label: 'Vídeos', route: 'videos', enabled: true, order: 30 },
-    { key: 'music', label: 'Áudios', route: 'music', enabled: true, order: 40 },
+    { key: 'music', label: 'Músicas', route: 'music', enabled: true, order: 40 },
     { key: 'formations', label: 'Formações', route: 'formations', enabled: true, order: 50 },
     { key: 'materials', label: 'Materiais', route: 'materials', enabled: true, order: 60 },
 ];

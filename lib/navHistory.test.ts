@@ -39,6 +39,20 @@ describe('nav history helpers', () => {
     });
   });
 
+  it('round-trips the drill-down modal stack through the home hash', () => {
+    const url = getHashUrlForScreen('home', { collectionId: 'kit-1', modalStackIds: ['kit-1', 'book-1'] });
+    expect(url).toBe('#home?collectionId=kit-1&modalStack=kit-1%2Cbook-1');
+    expect(getNavStateFromHashString(url)).toEqual({
+      currentScreen: 'home',
+      params: { collectionId: 'kit-1', modalStackIds: ['kit-1', 'book-1'] },
+    });
+  });
+
+  it('ignores a single-entry modal stack (no drill-down to restore)', () => {
+    expect(getHashUrlForScreen('home', { collectionId: 'kit-1', modalStackIds: ['kit-1'] }))
+      .toBe('#home?collectionId=kit-1');
+  });
+
   it('keeps plain home hashes param-free', () => {
     expect(getHashScreen('#home')).toBe('home');
     expect(getNavStateFromHashString('#home')).toEqual({ currentScreen: 'home' });

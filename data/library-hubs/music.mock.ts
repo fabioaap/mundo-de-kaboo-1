@@ -1,10 +1,10 @@
 import { LibraryHubData } from './types';
 
 export const musicLibraryMock: LibraryHubData = {
-    title: 'Áudios',
+    title: 'Músicas',
     eyebrow: 'Biblioteca geral',
     badge: 'Escuta com curadoria',
-    heroTitle: 'Áudios com clima, sequência e escuta',
+    heroTitle: 'Músicas com clima, sequência e escuta',
     description: 'Aqui a biblioteca de áudios precisa soar como acervo vivo: poucas entradas fortes, continuidade clara e organização leve por clima, uso e obra relacionada.',
     supportNote: 'A interface ganha cara própria quando o áudio aparece como faixa, sequência e atmosfera, não como o mesmo card reaproveitado de outra mídia.',
     accentClassName: 'from-[#1d5667] via-[#2e7f96] to-[#70E000]',

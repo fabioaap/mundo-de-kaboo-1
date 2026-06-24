@@ -1,9 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders } from '../_shared/http.ts';
+import { canManageBrand } from '../_shared/auth.ts';
 
 type AuthAdminUser = {
   id: string;
@@ -14,6 +11,8 @@ type AuthAdminUser = {
 };
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -98,6 +97,23 @@ Deno.serve(async (req) => {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Brand scope: o caller só pode excluir usuários de marcas que ele gerencia.
+    const { data: targetProfile } = await adminClient
+      .from('profiles')
+      .select('brand_id')
+      .eq('id', targetUserId)
+      .single();
+
+    if (targetProfile?.brand_id) {
+      const canManage = await canManageBrand(adminClient, caller.id, targetProfile.brand_id);
+      if (!canManage) {
+        return new Response(JSON.stringify({ success: false, error: 'Você não tem permissão para excluir usuários desta marca.' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(targetUserId, false);

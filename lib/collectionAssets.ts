@@ -15,7 +15,7 @@ type CollectionAssetMeta = {
 
 export const COLLECTION_ASSET_META: Record<CollectionAssetCategory, CollectionAssetMeta> = {
     reading: { label: 'Leitura', mediaType: 'document', scope: 'primary' },
-    storytelling: { label: 'Áudio Livro', mediaType: 'audio', scope: 'primary' },
+    storytelling: { label: 'Audiolivro', mediaType: 'audio', scope: 'primary' },
     music: { label: 'Música', mediaType: 'audio', scope: 'primary' },
     animation: { label: 'Desenho Animado', mediaType: 'video', scope: 'primary' },
     accessible_video: { label: 'Com Libras', mediaType: 'video', scope: 'primary' },
@@ -221,6 +221,7 @@ const normalizeAsset = (
         description: normalizeText(asset.description) || null,
         scope: asset.scope ?? meta.scope,
         lyrics_url: normalizeText(asset.lyrics_url) || null,
+        ...(normalizeText(asset.cover_image) ? { cover_image: normalizeText(asset.cover_image) } : {}),
         // Preserve per-asset flags; undefined means "not set" (inherit / backward-compat default).
         ...(asset.offline_available !== undefined && asset.offline_available !== null
             ? { offline_available: asset.offline_available }
@@ -249,6 +250,7 @@ const mergeAssetCandidate = (
             description: normalizeText(current?.description) || candidate.description,
             scope: current?.scope ?? candidate.scope,
             lyrics_url: current?.lyrics_url ?? candidate.lyrics_url,
+            cover_image: current?.cover_image ?? candidate.cover_image,
             // Per-asset flags: prefer current (already-stored) value over candidate
             offline_available: current?.offline_available ?? candidate.offline_available,
             is_published: current?.is_published ?? candidate.is_published,

@@ -275,9 +275,9 @@ test.describe('JN-WL-006 — Feature Flags', () => {
         await page.getByRole('button', { name: 'Operações' }).click();
         await expect(page.getByRole('heading', { name: 'Feature Flags' })).toBeVisible({ timeout: 5_000 });
 
-        // Toggle "Menu: Áudios" está presente
-        await expect(page.getByText('Menu: Áudios')).toBeVisible();
-        const toggle = page.getByRole('switch', { name: /Áudios/i }).or(page.locator('button[role="switch"]').first());
+        // Toggle "Menu: Músicas" está presente
+        await expect(page.getByText('Menu: Músicas')).toBeVisible();
+        const toggle = page.getByRole('switch', { name: /Músicas/i }).or(page.locator('button[role="switch"]').first());
         await expect(toggle).toBeVisible();
 
         // Clicar no toggle deve alterar o estado
@@ -436,7 +436,7 @@ test.describe('JN-WL-011 — Preview runtime da marca', () => {
 
         await expect(page.getByRole('heading', { name: 'Bem-vindo à Central Coruja!' })).toBeVisible({ timeout: 10_000 });
         await expect(page.getByText('Histórias, vídeos e experiências de aprendizagem organizados para você começar pela busca e explorar com mais clareza.')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Áudios' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Músicas' })).toBeVisible();
         await expect(getCentralCorujaBrandAsset(page)).toBeVisible();
         await expect(page.getByText('Mundo de Kaboo © 2025')).toHaveCount(0);
     });

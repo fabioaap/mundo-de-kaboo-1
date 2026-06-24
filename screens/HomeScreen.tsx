@@ -2268,17 +2268,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     <span className={`inline-flex h-8 min-w-[2rem] items-center justify-center rounded-full px-2 text-[11px] font-black ${isCorujaHomeLayout ? 'text-white/70 bg-white/10' : 'text-gray-400 bg-gray-50'}`}>
                       {filteredCollections.length}
                     </span>
-                    <button
-                      onClick={handleRefresh}
-                      disabled={isRefreshing || loading}
-                      className={`h-8 w-8 rounded-full active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed ${isCorujaHomeLayout ? 'bg-white/10 hover:bg-white/14' : 'bg-gray-50 hover:bg-gray-100'}`}
-                      title="Atualizar coleções"
-                    >
-                      <Icons.RotateCw
-                        size={14}
-                        className={`${isCorujaHomeLayout ? 'text-white/80' : 'text-gray-600'} ${isRefreshing ? 'animate-spin' : ''}`}
-                      />
-                    </button>
                   </div>
                 )}
               </div>

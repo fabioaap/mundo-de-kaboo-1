@@ -24,7 +24,7 @@ const MODULE_META: Record<AdminModule, { icon: React.FC<{ className?: string }>;
     collections: { icon: Icons.Library, label: 'Coleções' },
     books: { icon: Icons.BookOpen, label: 'Livros' },
     videos: { icon: Icons.Video, label: 'Vídeos' },
-    music: { icon: Icons.Headphones, label: 'Áudios' },
+    music: { icon: Icons.Music2, label: 'Músicas' },
     formations: { icon: Icons.BookOpen, label: 'Formações' },
     materials: { icon: Icons.FileText, label: 'Materiais' },
     users: { icon: Icons.User, label: 'Usuários' },

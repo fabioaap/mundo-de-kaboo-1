@@ -5,7 +5,7 @@ const toSingular = (label: string) => {
     'Coleções': 'Coleção',
     'Livros': 'Livro',
     'Vídeos': 'Vídeo',
-    'Áudios': 'Áudio',
+    'Músicas': 'Música',
     'Materiais': 'Material',
     'Formações': 'Formação',
   };
@@ -391,7 +391,7 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
 const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
   books: 'Livros',
   videos: 'Vídeos',
-  music: 'Áudios',
+  music: 'Músicas',
   formations: 'Formações',
   materials: 'Materiais',
 };
@@ -400,7 +400,9 @@ const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory
   books: ['reading'],
   // Vídeos: animação + contação + acessível + uso guiado + videoaula + formação.
   videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
-  music: ['storytelling', 'music'],
+  // Músicas = só faixas de música. Audiolivro (storytelling) é narração de livro: gerido
+  // dentro do editor do Livro, não nesta área. Ver docs/architecture/modelo-conteudo-e-hubs.md.
+  music: ['music'],
   formations: ['teacher_guide', 'video_lesson'],
   // Materiais = extra_material apenas; reading pertence exclusivamente a Livros.
   materials: ['extra_material'],
@@ -409,7 +411,7 @@ const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory
 // Maps each asset category to a semantic media type label and color for the slot header badge.
 const SLOT_MEDIA_TYPE: Record<CollectionAssetCategory, { label: string; color: string }> = {
   reading:        { label: 'Livro',     color: 'bg-blue-50 text-blue-600 border-blue-200' },
-  storytelling:   { label: 'Áudio Livro', color: 'bg-violet-50 text-violet-600 border-violet-200' },
+  storytelling:   { label: 'Audiolivro', color: 'bg-violet-50 text-violet-600 border-violet-200' },
   music:          { label: 'Música',      color: 'bg-pink-50 text-pink-600 border-pink-200' },
   animation:      { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
   accessible_video: { label: 'Vídeo', color: 'bg-rose-50 text-rose-600 border-rose-200' },
@@ -424,8 +426,8 @@ const SLOT_MEDIA_TYPE: Record<CollectionAssetCategory, { label: string; color: s
 // Maps each asset category to a human-readable hint for the empty-state in the media picker.
 const CATEGORY_REGISTER_HINT: Partial<Record<CollectionAssetCategory, string>> = {
   animation: 'na área de Vídeos',
-  storytelling: 'na área de Áudios',
-  music: 'na área de Áudios',
+  storytelling: 'no editor do Livro',
+  music: 'na área de Músicas',
   reading: 'na área de Livros',
   accessible_video: 'na área de Vídeos (variante Libras)',
   how_to_play: 'na área de Vídeos (Como Jogar)',
@@ -439,7 +441,7 @@ const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCat
   // Deve espelhar LIBRARY_AREA_PRIMARY_SLOTS.videos — senão vídeos criados em
   // categorias ausentes aqui salvam no banco mas somem da lista do hub.
   videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
-  music: ['storytelling', 'music'],
+  music: ['music'],
   formations: ['teacher_guide', 'video_lesson'],
   // reading pertence exclusivamente a Livros; Materiais exibe apenas extra_material.
   materials: ['extra_material'],
@@ -458,10 +460,10 @@ const LIBRARY_AREA_UI_META: Record<LibraryAreaKey, {
     createLabel: 'Novo livro',
   },
   music: {
-    icon: 'Headphones',
-    searchPlaceholder: 'Buscar por áudio, coleção ou tema...',
-    emptyMessage: 'Nenhum áudio corresponde aos filtros.',
-    createLabel: 'Novo áudio',
+    icon: 'Music2',
+    searchPlaceholder: 'Buscar por música, coleção ou tema...',
+    emptyMessage: 'Nenhuma música corresponde aos filtros.',
+    createLabel: 'Nova música',
   },
   videos: {
     icon: 'Video',
@@ -745,6 +747,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const [highlightedAssetId, setHighlightedAssetId] = useState<string | null>(null);
   const [highlightedAssetCategory, setHighlightedAssetCategory] = useState<CollectionAssetCategory | null>(null);
   const [slotSearchTerms, setSlotSearchTerms] = useState<Record<string, string>>({});
+  // Combobox: a lista de livros só aparece ao focar/buscar no campo (não listada de cara).
+  const [openLibraryComboboxSlot, setOpenLibraryComboboxSlot] = useState<string | null>(null);
+  // Drawer de coleção: mídia agrupada por "Vídeo"/"Áudio" com seletor de tag (categoria),
+  // em vez de um slot por subtipo. A tag escolhida define a categoria do asset.
+  // Mídia agrupada (modelo lista por id): aceita N do mesmo tipo. Item em edição, grupo
+  // em "Adicionar", e o rascunho (tag + url) do item sendo adicionado.
+  const [editingMediaId, setEditingMediaId] = useState<string | null>(null);
+  const [addingMediaGroup, setAddingMediaGroup] = useState<'video' | 'audio' | null>(null);
+  const [newMediaTag, setNewMediaTag] = useState<FixedMediaSlotCategory>('animation');
+  const [newMediaUrl, setNewMediaUrl] = useState('');
 
   const handleSuggestSynopsis = useCallback(async () => {
     if (suggestingSynopsis || !activeBrandId) return;
@@ -1411,9 +1423,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
           id: currentAsset?.id || createAssetId(category),
           category,
           media_type: COLLECTION_ASSET_META[category].mediaType,
-          title: currentFormData.title || slot?.label || '',
+          title: currentAsset?.title || currentFormData.title || slot?.label || '',
           url: url.trim(),
-          description: null,
+          description: currentAsset?.description ?? null,
           scope: COLLECTION_ASSET_META[category].scope,
           lyrics_url: null,
           offline_available: false,
@@ -1422,6 +1434,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
           is_published: currentAsset !== undefined
             ? currentAsset.is_published
             : (isLibraryAreaMode ? currentFormData.is_published : false),
+          cover_image: currentAsset?.cover_image ?? null,
         });
       }
 
@@ -1487,6 +1500,171 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     }
   };
 
+  // Publicação por mídia é dona da RPC set_collection_asset_published (o save em massa
+  // ignora is_published de propósito — ver updateCollection). Por isso o toggle grava direto.
+  const handleToggleAssetPublished = async (asset: CollectionAsset) => {
+    if (!editingId) return;
+    const next = asset.is_published === false; // atualmente despublicado → publicar
+    const ok = next ? await api.publishAsset(editingId, asset.id) : await api.unpublishAsset(editingId, asset.id);
+    if (ok) {
+      setFormData((prev) => buildNextFormFromAssets(prev, prev.collection_assets.map((x) =>
+        x.id === asset.id ? { ...x, is_published: next } : x
+      )));
+      showToast(next ? 'Mídia publicada.' : 'Mídia despublicada.', 'success');
+    } else {
+      showToast('Não foi possível alterar a publicação desta mídia.', 'error');
+    }
+  };
+
+  // --- Modelo lista (por id): permite N mídias do mesmo tipo na coleção ---
+  const updateMediaAsset = (id: string, patch: Partial<CollectionAsset>) => {
+    setFormData((cur) => buildNextFormFromAssets(cur, cur.collection_assets.map((a) => a.id === id ? { ...a, ...patch } : a)));
+  };
+  const removeMediaAssetById = (id: string) => {
+    setFormData((cur) => buildNextFormFromAssets(cur, cur.collection_assets.filter((a) => a.id !== id)));
+    if (editingMediaId === id) setEditingMediaId(null);
+  };
+  const addMediaAsset = (category: FixedMediaSlotCategory, url: string): string | null => {
+    const u = url.trim();
+    if (!u) return null;
+    const id = createAssetId(category);
+    setFormData((cur) => buildNextFormFromAssets(cur, [
+      ...cur.collection_assets,
+      {
+        id,
+        category,
+        media_type: COLLECTION_ASSET_META[category].mediaType,
+        title: '',
+        url: u,
+        description: null,
+        scope: COLLECTION_ASSET_META[category].scope,
+        is_published: false,
+        cover_image: null,
+      },
+    ]));
+    return id;
+  };
+  const handleAddMedia = async (group: 'video' | 'audio', category: FixedMediaSlotCategory, url: string) => {
+    const id = addMediaAsset(category, url);
+    if (!id) return;
+    setNewMediaUrl('');
+    setAddingMediaGroup(null);
+    setEditingMediaId(id);
+    if (group === 'video') {
+      const ytId = url.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/i)?.[1] ?? url.match(/[?&]v=([A-Za-z0-9_-]{6,})/i)?.[1];
+      if (ytId) {
+        try {
+          const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.title) updateMediaAsset(id, { title: data.title });
+          }
+        } catch { /* título manual */ }
+      }
+    }
+  };
+  const handleAssetVideoUrlById = async (id: string, url: string) => {
+    updateMediaAsset(id, { url });
+    if (!url.trim()) return;
+    const ytId = url.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/i)?.[1] ?? url.match(/[?&]v=([A-Za-z0-9_-]{6,})/i)?.[1];
+    if (!ytId) return;
+    try {
+      const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.title) updateMediaAsset(id, { title: data.title });
+      }
+    } catch { /* título manual */ }
+  };
+
+  // Campos ricos de uma mídia (vídeo/áudio): título, capa, descrição, nível, publicação.
+  // Reusado no painel "Adicionar" (assim que o arquivo/link entra) e na edição da linha.
+  const renderMediaFields = (a: CollectionAsset, group: 'video' | 'audio') => {
+    const ytThumb = a.media_type === 'video'
+      ? (() => {
+          const id = a.url?.match(/youtu\.be\/([\w-]{6,})/i)?.[1] ?? a.url?.match(/[?&]v=([\w-]{6,})/i)?.[1] ?? a.url?.match(/youtube\.com\/embed\/([\w-]{6,})/i)?.[1];
+          return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
+        })()
+      : '';
+    const groupTags = FIXED_MEDIA_SLOTS.filter((s) =>
+      COLLECTION_ASSET_META[s.category].mediaType === group
+      && !(group === 'video' && (s.category === 'video_lesson' || s.category === 'formation'))
+      && !(isBooksCatalogMode && group === 'audio' && s.category !== 'storytelling')
+    );
+    return (
+    <>
+      <div>
+        <p className="mb-1 text-xs font-bold text-gray-600">Tag</p>
+        <select
+          value={a.category}
+          onChange={(e) => updateMediaAsset(a.id, { category: e.target.value as CollectionAssetCategory, media_type: COLLECTION_ASSET_META[e.target.value as CollectionAssetCategory].mediaType })}
+          className="w-full rounded-xl border border-gray-200 bg-white py-2 px-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+        >
+          {groupTags.map((s) => (
+            <option key={s.category} value={s.category}>{COLLECTION_ASSET_META[s.category].label}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <p className="mb-1 text-xs font-bold text-gray-600">Título</p>
+        <input
+          type="text"
+          value={a.title || ''}
+          onChange={(e) => updateMediaAsset(a.id, { title: e.target.value })}
+          placeholder={group === 'video' ? 'Nome do vídeo' : 'Nome do áudio'}
+          className="w-full rounded-xl border border-gray-200 bg-white py-2 px-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+        />
+      </div>
+      <div>
+        <p className="mb-1 text-xs font-bold text-gray-600">Capa {group === 'video' ? '(opcional — sobrepõe o thumbnail do YouTube)' : '(opcional)'}</p>
+        {!a.cover_image && ytThumb && (
+          <div className="mb-2">
+            <img src={ytThumb} alt="" aria-hidden="true" className="w-full aspect-video rounded-xl border border-gray-200 bg-gray-100 object-cover" />
+            <p className="mt-1 text-xs text-gray-500">Capa automática do YouTube. Faça upload para trocar.</p>
+          </div>
+        )}
+        <FileUpload
+          label=""
+          value={a.cover_image || ''}
+          onChange={(url) => updateMediaAsset(a.id, { cover_image: url.trim() || null })}
+          folder="covers"
+          accept="image/*"
+          collectionId={editingId || undefined}
+          hideUrlInput
+        />
+      </div>
+      <div>
+        <p className="mb-1 text-xs font-bold text-gray-600">Descrição</p>
+        <textarea
+          value={a.description || ''}
+          onChange={(e) => updateMediaAsset(a.id, { description: e.target.value || null })}
+          rows={3}
+          placeholder={group === 'video' ? 'Descrição do vídeo...' : 'Descrição do áudio...'}
+          className="w-full resize-none rounded-xl border border-gray-200 bg-white py-2 px-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+        />
+      </div>
+      <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3">
+        <div>
+          <p className="text-sm font-medium text-gray-900">Visível para o usuário</p>
+          <p className="text-xs text-gray-500">
+            {!originalFormData.collection_assets?.some((o) => o.id === a.id)
+              ? 'Salve a coleção para publicar esta mídia'
+              : (a.is_published === false ? 'Rascunho — oculto dentro da obra' : 'Visível dentro da obra')}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={!originalFormData.collection_assets?.some((o) => o.id === a.id)}
+          onClick={() => handleToggleAssetPublished(a)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-40 ${a.is_published !== false ? 'bg-green-500' : 'bg-gray-300'}`}
+        >
+          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${a.is_published !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+        </button>
+      </div>
+    </>
+    );
+  };
+
   const setAssetOfflineAvailable = (category: FixedMediaSlotCategory, value: boolean) => {
     const currentAsset = getAssetByCategory(category);
     if (!currentAsset) {
@@ -1496,16 +1674,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       asset.category === category ? { ...asset, offline_available: value } : asset
     );
     updateFormWithAssets(updatedAssets);
-  };
-
-  const setAssetPublished = (category: FixedMediaSlotCategory, value: boolean) => {
-    setFormData((currentFormData) => {
-      const nextAssets = currentFormData.collection_assets.map((asset) =>
-        asset.category === category ? { ...asset, is_published: value } : asset
-      );
-      const nextForm = buildNextFormFromAssets(currentFormData, nextAssets);
-      return isLibraryAreaMode ? { ...nextForm, is_published: value } : nextForm;
-    });
   };
 
   /**
@@ -1713,29 +1881,89 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     });
   };
 
-  const toggleExtraMaterialFromLibrary = (libraryItem: LibraryAssetListItem) => {
-    setFormData((currentFormData) => {
-      const currentExtraMaterialAssets = currentFormData.collection_assets.filter((asset) => asset.category === 'extra_material');
-      const assetsWithoutExtras = currentFormData.collection_assets.filter((asset) => asset.category !== 'extra_material');
-      const existingAsset = currentExtraMaterialAssets.find((asset) => asset.url === libraryItem.asset.url);
-      const nextExtraAssets = existingAsset
-        ? currentExtraMaterialAssets.filter((asset) => asset.url !== libraryItem.asset.url)
-        : [
-          ...currentExtraMaterialAssets,
-          {
-            id: createAssetId('extra_material'),
-            category: 'extra_material' as const,
-            media_type: libraryItem.asset.media_type,
-            title: libraryItem.displayTitle,
-            url: libraryItem.asset.url.trim(),
-            description: libraryItem.asset.description?.trim() || null,
-            scope: 'library' as const,
-            offline_available: libraryItem.asset.offline_available ?? libraryItem.collection.offline_available ?? null,
-          },
-        ];
-
-      return buildNextFormFromAssets(currentFormData, [...assetsWithoutExtras, ...nextExtraAssets]);
-    });
+  // Combobox de biblioteca reaproveitado (mesma UI do slot loop da coleção): busca +
+  // lista multi-seleção de mídias já publicadas. Usado no editor de livro p/ vincular.
+  const renderLibraryPicker = ({ pickerKey, label, items, isSelected, onToggle }: {
+    pickerKey: string;
+    label: string;
+    items: LibraryAssetListItem[];
+    isSelected: (item: LibraryAssetListItem) => boolean;
+    onToggle: (item: LibraryAssetListItem) => void;
+  }) => {
+    const search = slotSearchTerms[pickerKey] ?? '';
+    const filtered = search.trim()
+      ? (() => {
+          const norm = normalizeSearchableText(search);
+          return items.filter((item) =>
+            normalizeSearchableText(item.displayTitle).includes(norm) ||
+            normalizeSearchableText(item.collection.title).includes(norm) ||
+            item.searchText.includes(norm)
+          );
+        })()
+      : items;
+    const open = openLibraryComboboxSlot === pickerKey || search.trim().length > 0;
+    const selectedCount = items.filter(isSelected).length;
+    return (
+      <div className="space-y-2">
+        <div className="relative">
+          <Icons.Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSlotSearchTerms((prev) => ({ ...prev, [pickerKey]: e.target.value }))}
+            onFocus={() => setOpenLibraryComboboxSlot(pickerKey)}
+            onBlur={() => setTimeout(() => setOpenLibraryComboboxSlot((prev) => (prev === pickerKey ? null : prev)), 150)}
+            placeholder={selectedCount > 0 ? `${selectedCount} selecionado(s) — buscar para adicionar...` : `Clique para buscar ${label.toLowerCase()}...`}
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-8 pr-8 text-sm text-gray-700 placeholder-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSlotSearchTerms((prev) => ({ ...prev, [pickerKey]: '' }))}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
+            >
+              <Icons.X size={14} />
+            </button>
+          )}
+        </div>
+        {open && (
+          <div role="group" aria-label={label} className="flex flex-col gap-2 max-h-[32rem] overflow-y-auto pr-1">
+            {filtered.length === 0 ? (
+              <p className="py-4 text-center text-sm text-gray-400">
+                {search.trim() ? `Nenhum resultado para "${search}"` : 'Nenhuma mídia publicada disponível para vincular.'}
+              </p>
+            ) : filtered.map((libraryItem) => {
+              const selected = isSelected(libraryItem);
+              return (
+                <button
+                  key={libraryItem.key}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={selected}
+                  onClick={() => onToggle(libraryItem)}
+                  className={`w-full rounded-lg border text-left transition-all active:scale-[0.98] ${selected ? 'border-brand-primary bg-brand-primary/5 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'}`}
+                >
+                  <div className="flex items-stretch gap-3">
+                    <div className="w-12 shrink-0 overflow-hidden rounded-l-lg bg-gray-100">
+                      <img src={libraryItem.coverImage} alt="" aria-hidden="true" className="h-full w-full object-cover" style={{ minHeight: '64px' }} />
+                    </div>
+                    <div className="min-w-0 flex-1 flex items-center justify-between gap-2 py-3 pr-3">
+                      <div className="min-w-0">
+                        <p className={`text-sm font-semibold line-clamp-2 ${selected ? 'text-brand-primary' : 'text-gray-800'}`}>{libraryItem.displayTitle}</p>
+                        <p className="text-xs text-gray-500 truncate">{libraryItem.collection.title}</p>
+                      </div>
+                      <span className={`flex-none flex h-4 w-4 items-center justify-center rounded border ${selected ? 'border-brand-primary bg-brand-primary text-white' : 'border-gray-300 bg-white text-transparent'}`}>
+                        <Icons.Check size={10} />
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
   };
 
   useEffect(() => {
@@ -2030,6 +2258,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     setActiveTab(defaultCollectionTab);
     setFormData(initialData);
     setOriginalFormData(initialData);
+    setEditingMediaId(null);
+    setAddingMediaGroup(null);
+    setNewMediaUrl('');
     // In library-area mode the drawer is short and always starts at the top.
     // Highlight-scrolling would override the scroll-to-top effect and send the
     // user to the bottom of the form. Skip it — the ring glow is enough feedback.
@@ -3289,6 +3520,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         <div className="space-y-2">
                           <FileUpload
                             label="PDF do Livro"
+                            hideUrlInput
                             value={asset?.url || ''}
                             onChange={(url) => {
                               if (url) {
@@ -3363,130 +3595,237 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       );
                     })()}
 
-                    {/* Audiolivro */}
-                    {(() => {
-                      const asset = getAssetByCategory('storytelling');
-                      const assetIsPublished = asset ? asset.is_published !== false : false;
-                      return (
-                        <div className="space-y-2">
-                          <p className="text-sm font-bold text-gray-800">Audiolivro</p>
-                          <p className="text-xs text-gray-500">Narração completa da obra. Não obrigatório.</p>
-                          <FileUpload
-                            label="Arquivo de Áudio ou Link"
-                            value={asset?.url || ''}
-                            onChange={(url) => {
-                              if (url) {
-                                setFormData((currentFormData) => {
-                                  const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'storytelling');
-                                  const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'storytelling');
-                                  nextAssets.push({
-                                    id: currentAsset?.id || createAssetId('storytelling'),
-                                    category: 'storytelling',
-                                    media_type: 'audio',
-                                    title: currentFormData.title || 'Audiolivro',
-                                    url: url.trim(),
-                                    description: null,
-                                    scope: COLLECTION_ASSET_META.storytelling.scope,
-                                    lyrics_url: null,
-                                    offline_available: false,
-                                    is_published: currentAsset?.is_published ?? true,
-                                  });
-                                  return buildNextFormFromAssets(currentFormData, nextAssets);
-                                });
-                              } else {
-                                removeAsset('storytelling');
-                              }
-                            }}
-                            folder="audio"
-                            accept="audio/*"
-                            collectionId={editingId || undefined}
-                          />
-                          {asset && (
-                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
-                              <div>
-                                <p className="text-sm font-bold text-gray-800">Publicar audiolivro</p>
-                                <p className="text-xs text-gray-500">
-                                  {assetIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setAssetPublished('storytelling', !assetIsPublished)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${assetIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
-                              >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${assetIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                    {/* Vídeo e Áudio do Livro — modelo lista (N de cada tipo) */}
+                    {(['video', 'audio'] as const).map((group) => {
+                      const groupTags = FIXED_MEDIA_SLOTS.filter((s) =>
+                        COLLECTION_ASSET_META[s.category].mediaType === group
+                        && !(group === 'video' && (s.category === 'video_lesson' || s.category === 'formation'))
+                        && !(group === 'audio' && s.category !== 'storytelling')
                       );
-                    })()}
-
-                    {/* Vídeo do Livro */}
-                    {(() => {
-                      const asset = getAssetByCategory('animation');
-                      const assetIsPublished = asset ? asset.is_published !== false : false;
+                      const items = formData.collection_assets.filter((a) => COLLECTION_ASSET_META[a.category]?.mediaType === group && a.url?.trim());
+                      const isAdding = addingMediaGroup === group;
+                      const TypeIcon = group === 'video' ? Icons.Video : Icons.Music2;
+                      const defaultTag = (group === 'audio' ? 'storytelling' : 'animation') as FixedMediaSlotCategory;
+                      const addYtThumb = isAdding && group === 'video'
+                        ? (newMediaUrl.match(/youtu\.be\/([\w-]{6,})/i)?.[1] ?? newMediaUrl.match(/[?&]v=([\w-]{6,})/i)?.[1] ?? newMediaUrl.match(/youtube\.com\/embed\/([\w-]{6,})/i)?.[1] ?? '')
+                        : '';
                       return (
-                        <div className="space-y-2">
-                          <p className="text-sm font-bold text-gray-800">Vídeo do Livro</p>
-                          <p className="text-xs text-gray-500">Animação ou vídeocanção específica deste livro (opcional).</p>
-                          <div className="flex items-center gap-2 rounded-2xl bg-gray-50 px-4 py-3">
-                            <Icons.Link size={16} className="shrink-0 text-gray-400" />
-                            <input
-                              type="url"
-                              value={asset?.url || ''}
-                              onChange={(e) => {
-                                const url = e.target.value;
-                                if (url.trim()) {
-                                  setFormData((currentFormData) => {
-                                    const currentAsset = currentFormData.collection_assets.find((a) => a.category === 'animation');
-                                    const nextAssets = currentFormData.collection_assets.filter((a) => a.category !== 'animation');
-                                    nextAssets.push({
-                                      id: currentAsset?.id || createAssetId('animation'),
-                                      category: 'animation',
-                                      media_type: 'video',
-                                      title: currentFormData.title || 'Vídeo',
-                                      url: url.trim(),
-                                      description: null,
-                                      scope: COLLECTION_ASSET_META.animation.scope,
-                                      lyrics_url: null,
-                                      offline_available: false,
-                                      is_published: currentAsset?.is_published ?? true,
-                                    });
-                                    return buildNextFormFromAssets(currentFormData, nextAssets);
-                                  });
-                                } else {
-                                  removeAsset('animation');
-                                }
-                              }}
-                              placeholder="https://www.youtube.com/watch?v=..."
-                              className="flex-1 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none"
-                            />
-                            {asset?.url && (
-                              <button
-                                type="button"
-                                onClick={() => removeAsset('animation')}
-                                className="shrink-0 text-gray-400 hover:text-gray-600"
-                              >
-                                <Icons.X size={14} />
-                              </button>
+                        <div key={group} className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <TypeIcon size={18} className="text-gray-500" />
+                            <p className="text-sm font-bold text-gray-800">{group === 'video' ? 'Vídeos' : 'Áudios'}</p>
+                            {items.length > 0 && (
+                              <span className="ml-auto text-xs text-gray-400">
+                                {items.length} {items.length === 1 ? (group === 'video' ? 'vídeo' : 'áudio') : (group === 'video' ? 'vídeos' : 'áudios')}
+                              </span>
                             )}
                           </div>
-                          {asset && (
-                            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
-                              <div>
-                                <p className="text-sm font-bold text-gray-800">Publicar vídeo</p>
-                                <p className="text-xs text-gray-500">
-                                  {assetIsPublished ? 'Visível na vitrine pública' : 'Rascunho — apenas no admin'}
-                                </p>
+                          <p className="text-xs text-gray-500 -mt-1">
+                            {group === 'video'
+                              ? 'Cole o link do vídeo (YouTube, Vimeo, etc.). Pode adicionar quantos quiser.'
+                              : 'Só upload de arquivo. Pode adicionar quantos quiser.'}
+                          </p>
+
+                          {items.map((a) => {
+                            const slot = FIXED_MEDIA_SLOTS.find((s) => s.category === a.category)!;
+                            const isEditing = editingMediaId === a.id;
+                            const ytId = a.media_type === 'video'
+                              ? (a.url.match(/youtu\.be\/([\w-]{6,})/i)?.[1] ?? a.url.match(/[?&]v=([\w-]{6,})/i)?.[1] ?? a.url.match(/youtube\.com\/embed\/([\w-]{6,})/i)?.[1] ?? '')
+                              : '';
+                            const rowThumb = a.cover_image?.trim() || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : '');
+                            return (
+                              <div key={a.id} className="rounded-xl border border-gray-200 bg-white">
+                                <div className="flex items-center gap-3 p-2.5">
+                                  <span className="flex-none flex h-9 w-12 items-center justify-center overflow-hidden rounded-lg bg-gray-100 text-gray-500">
+                                    {rowThumb ? <img src={rowThumb} alt="" aria-hidden="true" className="h-full w-full object-cover" /> : <TypeIcon size={18} />}
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-bold ${SLOT_MEDIA_TYPE[a.category]?.color ?? 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                                      {COLLECTION_ASSET_META[a.category].label}
+                                    </span>
+                                    <p className="mt-0.5 truncate text-xs text-gray-500">{a.title?.trim() || a.url}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingMediaId(isEditing ? null : a.id)}
+                                    aria-label="Editar"
+                                    className={`flex-none rounded-lg p-2 transition-colors ${isEditing ? 'bg-brand-primary/10 text-brand-primary' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                                  >
+                                    <Icons.Edit size={16} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeMediaAssetById(a.id)}
+                                    aria-label="Remover"
+                                    className="flex-none rounded-lg p-2 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                                  >
+                                    <Icons.Trash2 size={16} />
+                                  </button>
+                                </div>
+                                {isEditing && (
+                                  <div className="space-y-3 border-t border-gray-100 p-3">
+                                    <div>
+                                      <p className="mb-1 text-xs font-bold text-gray-600">{group === 'video' ? 'Vídeo' : 'Áudio'}</p>
+                                      <FileUpload
+                                        label=""
+                                        value={a.url || ''}
+                                        onChange={(url) => group === 'video' ? handleAssetVideoUrlById(a.id, url) : updateMediaAsset(a.id, { url })}
+                                        folder={slot.folder}
+                                        accept={slot.accept}
+                                        collectionId={editingId || undefined}
+                                        hideUrlInput={group !== 'video'}
+                                        hideUpload={group === 'video'}
+                                      />
+                                    </div>
+                                    {renderMediaFields(a, group)}
+                                  </div>
+                                )}
                               </div>
+                            );
+                          })}
+
+                          {isAdding ? (
+                            <div className="space-y-2 rounded-xl border border-dashed border-brand-primary/40 bg-brand-primary/5 p-3">
+                              <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold text-gray-600">Nova mídia — Tag</label>
+                                <button type="button" onClick={() => { setAddingMediaGroup(null); setNewMediaUrl(''); }} aria-label="Cancelar" className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                                  <Icons.X size={16} />
+                                </button>
+                              </div>
+                              <select
+                                value={newMediaTag}
+                                onChange={(e) => setNewMediaTag(e.target.value as FixedMediaSlotCategory)}
+                                className="w-full rounded-xl border border-gray-200 bg-white py-2 px-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                              >
+                                {groupTags.map((s) => (
+                                  <option key={s.category} value={s.category}>{COLLECTION_ASSET_META[s.category].label}</option>
+                                ))}
+                              </select>
+                              {group === 'video' ? (
+                                <>
+                                  <input
+                                    type="url"
+                                    value={newMediaUrl}
+                                    onChange={(e) => setNewMediaUrl(e.target.value)}
+                                    placeholder="Cole o link (YouTube, Vimeo, etc.)"
+                                    className="w-full rounded-xl border border-gray-200 bg-white py-2 px-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                                  />
+                                  {addYtThumb && (
+                                    <div>
+                                      <img src={`https://img.youtube.com/vi/${addYtThumb}/hqdefault.jpg`} alt="" aria-hidden="true" className="w-full aspect-video rounded-xl border border-gray-200 bg-gray-100 object-cover" />
+                                      <p className="mt-1 text-xs text-gray-500">Capa automática do YouTube. Você pode trocar depois de adicionar.</p>
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <FileUpload
+                                  label=""
+                                  value={newMediaUrl}
+                                  onChange={(url) => setNewMediaUrl(url)}
+                                  folder="audio"
+                                  accept="audio/*"
+                                  collectionId={editingId || undefined}
+                                  hideUrlInput
+                                />
+                              )}
                               <button
                                 type="button"
-                                onClick={() => setAssetPublished('animation', !assetIsPublished)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${assetIsPublished ? 'bg-green-500' : 'bg-gray-300'}`}
+                                disabled={!newMediaUrl.trim()}
+                                onClick={() => handleAddMedia(group, newMediaTag, newMediaUrl)}
+                                className="w-full rounded-xl bg-brand-primary py-2 text-sm font-bold text-white transition-colors hover:bg-brand-primary/90 disabled:opacity-40"
                               >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${assetIsPublished ? 'translate-x-6' : 'translate-x-1'}`} />
+                                Adicionar à lista
                               </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => { setNewMediaTag(defaultTag); setNewMediaUrl(''); setAddingMediaGroup(group); }}
+                              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-transparent py-2.5 text-sm font-bold text-gray-500 transition-colors hover:border-brand-primary/40 hover:text-brand-primary"
+                            >
+                              <Icons.Plus size={16} /> {group === 'video' ? 'Adicionar vídeo' : 'Adicionar áudio'}
+                            </button>
+                          )}
+
+                          {(() => {
+                            const pickerItems = groupTags.flatMap((s) => mediaLibraryByCategory[s.category] ?? []);
+                            const selectedUrls = new Set(items.map((it) => it.url));
+                            return (
+                              <div className="rounded-xl border border-dashed border-gray-200 p-3">
+                                <p className="mb-2 text-xs font-bold text-gray-600">Ou vincular {group === 'video' ? 'vídeo' : 'áudio'} já cadastrado</p>
+                                {renderLibraryPicker({
+                                  pickerKey: `book-${group}`,
+                                  label: group === 'video' ? 'vídeo' : 'áudio',
+                                  items: pickerItems,
+                                  isSelected: (li) => selectedUrls.has(li.asset.url),
+                                  onToggle: (li) => toggleCategoryAssetFromLibrary(li.asset.category as FixedMediaSlotCategory, li),
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      );
+                    })}
+
+                    {(() => {
+                      const materialUrls = extraMaterialAssets.map((a) => a.url);
+                      const pickerItems = mediaLibraryByCategory.extra_material ?? [];
+                      const selectedUrls = new Set(materialUrls);
+                      return (
+                        <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Icons.Paperclip size={18} className="text-gray-500" />
+                            <p className="text-sm font-bold text-gray-800">Materiais do Livro</p>
+                            {extraMaterialAssets.length > 0 && (
+                              <span className="ml-auto text-xs text-gray-400">
+                                {extraMaterialAssets.length} {extraMaterialAssets.length === 1 ? 'material' : 'materiais'}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 -mt-1">Suba os materiais deste livro (PDF, imagem, etc.) ou vincule um já cadastrado.</p>
+
+                          {extraMaterialAssets.map((asset) => (
+                            <div key={asset.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-2.5">
+                              <span className="flex-none flex h-9 w-12 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
+                                <Icons.FileText size={18} />
+                              </span>
+                              <p className="min-w-0 flex-1 truncate text-sm text-gray-700">{asset.title || 'Material'}</p>
+                              <button
+                                type="button"
+                                onClick={() => setExtraMaterialUrls(materialUrls.filter((u) => u !== asset.url))}
+                                aria-label="Remover"
+                                className="flex-none rounded-lg p-2 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                              >
+                                <Icons.Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))}
+
+                          <div className="rounded-xl border border-dashed border-gray-300 p-3">
+                            <p className="mb-2 text-xs font-bold text-gray-600">Adicionar material</p>
+                            <FileUpload
+                              label=""
+                              value=""
+                              onChange={(url) => { if (url.trim()) setExtraMaterialUrls([...materialUrls, url.trim()]); }}
+                              folder="extras"
+                              accept="application/pdf,image/*"
+                              collectionId={editingId || undefined}
+                              hideUrlInput
+                            />
+                          </div>
+
+                          {(
+                            <div className="rounded-xl border border-dashed border-gray-200 p-3">
+                              <p className="mb-2 text-xs font-bold text-gray-600">Ou vincular material já cadastrado</p>
+                              {renderLibraryPicker({
+                                pickerKey: 'book-materials',
+                                label: 'material',
+                                items: pickerItems,
+                                isSelected: (li) => selectedUrls.has(li.asset.url),
+                                onToggle: (li) => selectedUrls.has(li.asset.url)
+                                  ? setExtraMaterialUrls(materialUrls.filter((u) => u !== li.asset.url))
+                                  : setExtraMaterialUrls([...materialUrls, li.asset.url]),
+                              })}
                             </div>
                           )}
                         </div>
@@ -3898,7 +4237,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           <span>
                             {isBooksCatalogMode
                               ? 'Faça upload ou cole o link do arquivo PDF do livro. O arquivo pode ser adicionado agora ou depois.'
-                              : 'Toque nos cards abaixo para vincular as mídias já cadastradas em Livros, Vídeos, Áudios, Formações e Materiais antes de salvar.'
+                              : 'Vincule os livros e adicione as mídias desta coleção (vídeo por link, áudio e materiais por upload). Cada mídia é cadastrada direto aqui.'
                             }
                           </span>
                         </div>
@@ -4264,7 +4603,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           })
                         : isBooksCatalogMode
                           ? FIXED_MEDIA_SLOTS.filter((s) => s.category === 'reading')
-                          : FIXED_MEDIA_SLOTS
+                          // Modo coleção: o loop renderiza só o combobox de Livros.
+                          // Vídeo e Áudio são agrupados em seções próprias (tag), abaixo.
+                          : FIXED_MEDIA_SLOTS.filter((s) => s.category === 'reading')
                       ).map((slot) => {
                         const asset = getAssetByCategory(slot.category);
                         const libraryItems = mediaLibraryByCategory[slot.category] ?? [];
@@ -4274,10 +4615,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         const hasUnavailableSelection = Boolean(!isLibraryAreaMode && asset?.url && !selectedLibraryItem);
                         const slotHelperText = isCollectionsCatalogMode
                           ? slot.category === 'reading'
-                            ? 'Escolha quantos livros quiser. O vínculo da coleção é sincronizado automaticamente.'
-                            : 'Escolha quantas mídias quiser.'
+                            ? 'Clique no campo e busque os livros para vincular. O vínculo é sincronizado automaticamente.'
+                            : (COLLECTION_ASSET_META[slot.category].mediaType === 'video'
+                                ? 'Cole o link do YouTube (ou de qualquer origem).'
+                                : 'Faça upload do arquivo.')
                           : isLibraryAreaMode
-                            ? 'Cole o link do YouTube ou do arquivo.'
+                            ? (COLLECTION_ASSET_META[slot.category].mediaType === 'video'
+                                ? 'Cole o link do YouTube (ou de qualquer origem).'
+                                : 'Faça upload do arquivo.')
                             : 'Escolha 1 opção já cadastrada.';
                         const isHighlightedSlot = highlightedAssetCategory === slot.category
                           || (highlightedAssetId ? asset?.id === highlightedAssetId : false);
@@ -4319,8 +4664,6 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 </button>
                               )}
                             </div>
-
-
 
                             {hasUnavailableSelection && asset && !(isBooksCatalogMode && slot.category === 'reading') && (
                               <div className="flex items-start gap-3 rounded-2xl border border-brand-primary/20 bg-brand-primary/5 px-4 py-3">
@@ -4371,21 +4714,23 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 hideUrlInput={true}
                                 collectionId={editingId || undefined}
                               />
-                            ) : isLibraryAreaMode ? (
-                              slot.category === 'storytelling' ? (
-                                /* Áudio: FileUpload (suporta upload de arquivo + URL) */
+                            ) : (isLibraryAreaMode || (isCollectionsCatalogMode && slot.category !== 'reading')) ? (
+                              COLLECTION_ASSET_META[slot.category].mediaType !== 'video' ? (
+                                /* Áudio (música/audiolivro) e documentos (PDF/material/guia):
+                                   só upload de arquivo — não existe "link do YouTube" pra eles. */
                                 <div className="space-y-2">
                                   <FileUpload
-                                    label="Arquivo de Áudio ou Link"
+                                    label={COLLECTION_ASSET_META[slot.category].mediaType === 'audio' ? 'Arquivo de áudio' : 'Arquivo (PDF ou documento)'}
                                     value={asset?.url || ''}
                                     onChange={(url) => setAssetDirectUrl(slot.category, url)}
-                                    folder="audio"
-                                    accept="audio/*"
+                                    folder={slot.folder}
+                                    accept={slot.accept}
                                     collectionId={editingId || undefined}
+                                    hideUrlInput
                                   />
                                 </div>
                               ) : (
-                                /* Registration mode: URL input field for non-audio slots */
+                                /* Vídeo: campo de link (YouTube ou qualquer outra origem) */
                                 <div className="space-y-2">
                                   <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-brand-primary focus-within:border-transparent">
                                     <Icons.Link size={16} className="shrink-0 text-gray-400" />
@@ -4444,6 +4789,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     );
                                   })()
                                 : libraryItems;
+                              // Combobox: lista só aparece ao focar/buscar; senão fica colapsada.
+                              const comboboxOpen = openLibraryComboboxSlot === slot.category || slotSearch.trim().length > 0;
+                              const selectedCount = isMultiSelect ? slotAssets.length : (asset?.url ? 1 : 0);
                               return (
                                 <div className="space-y-2">
                                   <div className="relative">
@@ -4452,7 +4800,9 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                       type="text"
                                       value={slotSearch}
                                       onChange={e => setSlotSearchTerms(prev => ({ ...prev, [slot.category]: e.target.value }))}
-                                      placeholder={`Buscar ${slot.label.toLowerCase()}...`}
+                                      onFocus={() => setOpenLibraryComboboxSlot(slot.category)}
+                                      onBlur={() => setTimeout(() => setOpenLibraryComboboxSlot(prev => prev === slot.category ? null : prev), 150)}
+                                      placeholder={selectedCount > 0 ? `${selectedCount} selecionado(s) — buscar para adicionar...` : `Clique para buscar ${slot.label.toLowerCase()}...`}
                                       className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-8 pr-8 text-sm text-gray-700 placeholder-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
                                     />
                                     {slotSearch && (
@@ -4465,6 +4815,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                       </button>
                                     )}
                                   </div>
+                                  {comboboxOpen && (
                                   <div role={isMultiSelect ? "group" : "radiogroup"} aria-label={slot.label} className="flex flex-col gap-2 max-h-[32rem] overflow-y-auto pr-1">
                                   {filteredLibraryItems.length === 0 && slotSearch.trim() ? (
                                     <p className="py-4 text-center text-sm text-gray-400">Nenhum resultado para "{slotSearch}"</p>
@@ -4518,6 +4869,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                     );
                                   })}
                                   </div>
+                                  )}
                                 </div>
                               );
                             })()}
@@ -4528,144 +4880,211 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                         );
                       })}
 
-                      {/* Extra materials section */}
-                      {!isBooksCatalogMode && (!isLibraryAreaMode || initialLibraryArea === 'materials') && (() => {
-                        const extraLibItems = mediaLibraryByCategory['extra_material'] ?? [];
-                        const linkedUrls = new Set(extraMaterialAssets.map((a) => a.url));
-                        const unavailableExtraAssets = extraMaterialAssets.filter(
-                          (asset) => !extraLibItems.some((item) => item.asset.url === asset.url)
+                      {/* Modo coleção: Vídeo e Áudio agrupados (adicionar mídia + tag) */}
+                      {isCollectionsCatalogMode && (['video', 'audio'] as const).map((group) => {
+                        // Tags oferecidas na obra (exclui Videoaula/Formação — categorias de hub).
+                        const groupTags = FIXED_MEDIA_SLOTS.filter((s) =>
+                          COLLECTION_ASSET_META[s.category].mediaType === group
+                          && !(group === 'video' && (s.category === 'video_lesson' || s.category === 'formation'))
                         );
+                        const items = formData.collection_assets.filter((a) => COLLECTION_ASSET_META[a.category].mediaType === group && a.url?.trim());
+                        const isAdding = addingMediaGroup === group;
+                        const TypeIcon = group === 'video' ? Icons.Video : Icons.Music2;
+                        const defaultTag = (group === 'audio' ? 'music' : 'animation') as FixedMediaSlotCategory;
+                        const addYtThumb = isAdding && group === 'video'
+                          ? (newMediaUrl.match(/youtu\.be\/([\w-]{6,})/i)?.[1] ?? newMediaUrl.match(/[?&]v=([\w-]{6,})/i)?.[1] ?? newMediaUrl.match(/youtube\.com\/embed\/([\w-]{6,})/i)?.[1] ?? '')
+                          : '';
+                        return (
+                          <div key={group} className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                              <TypeIcon size={18} className="text-gray-500" />
+                              <p className="text-sm font-bold text-gray-800">{group === 'video' ? 'Vídeos' : 'Áudios'}</p>
+                              {items.length > 0 && (
+                                <span className="ml-auto text-xs text-gray-400">
+                                  {items.length} {items.length === 1 ? (group === 'video' ? 'vídeo' : 'áudio') : (group === 'video' ? 'vídeos' : 'áudios')}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 -mt-1">
+                              {group === 'video'
+                                ? 'Cole o link do vídeo (YouTube, Vimeo, etc.). Pode adicionar quantos quiser.'
+                                : 'Só upload de arquivo. Pode adicionar quantos quiser.'}
+                            </p>
+
+                            {/* Lista das mídias (N do mesmo tipo) — editar abre o link/upload e os campos */}
+                            {items.map((a) => {
+                              const slot = FIXED_MEDIA_SLOTS.find((s) => s.category === a.category)!;
+                              const isEditing = editingMediaId === a.id;
+                              const ytId = a.media_type === 'video'
+                                ? (a.url.match(/youtu\.be\/([\w-]{6,})/i)?.[1] ?? a.url.match(/[?&]v=([\w-]{6,})/i)?.[1] ?? a.url.match(/youtube\.com\/embed\/([\w-]{6,})/i)?.[1] ?? '')
+                                : '';
+                              const rowThumb = a.cover_image?.trim() || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : '');
+                              return (
+                                <div key={a.id} className="rounded-xl border border-gray-200 bg-white">
+                                  <div className="flex items-center gap-3 p-2.5">
+                                    <span className="flex-none flex h-9 w-12 items-center justify-center overflow-hidden rounded-lg bg-gray-100 text-gray-500">
+                                      {rowThumb ? <img src={rowThumb} alt="" aria-hidden="true" className="h-full w-full object-cover" /> : <TypeIcon size={18} />}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                      <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-bold ${SLOT_MEDIA_TYPE[a.category]?.color ?? 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                                        {COLLECTION_ASSET_META[a.category].label}
+                                      </span>
+                                      <p className="mt-0.5 truncate text-xs text-gray-500">{a.title?.trim() || a.url}</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingMediaId(isEditing ? null : a.id)}
+                                      aria-label="Editar"
+                                      className={`flex-none rounded-lg p-2 transition-colors ${isEditing ? 'bg-brand-primary/10 text-brand-primary' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                                    >
+                                      <Icons.Edit size={16} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeMediaAssetById(a.id)}
+                                      aria-label="Remover"
+                                      className="flex-none rounded-lg p-2 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                                    >
+                                      <Icons.Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                  {isEditing && (
+                                    <div className="space-y-3 border-t border-gray-100 p-3">
+                                      <div>
+                                        <p className="mb-1 text-xs font-bold text-gray-600">{group === 'video' ? 'Vídeo' : 'Áudio'}</p>
+                                        <FileUpload
+                                          label=""
+                                          value={a.url || ''}
+                                          onChange={(url) => group === 'video' ? handleAssetVideoUrlById(a.id, url) : updateMediaAsset(a.id, { url })}
+                                          folder={slot.folder}
+                                          accept={slot.accept}
+                                          collectionId={editingId || undefined}
+                                          hideUrlInput={group !== 'video'}
+                                          hideUpload={group === 'video'}
+                                        />
+                                      </div>
+                                      {renderMediaFields(a, group)}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+
+                            {/* Adicionar nova mídia (N do mesmo tipo) */}
+                            {isAdding ? (
+                              <div className="space-y-2 rounded-xl border border-dashed border-brand-primary/40 bg-brand-primary/5 p-3">
+                                <div className="flex items-center justify-between">
+                                  <label className="text-xs font-bold text-gray-600">Nova mídia — Tag</label>
+                                  <button type="button" onClick={() => { setAddingMediaGroup(null); setNewMediaUrl(''); }} aria-label="Cancelar" className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                                    <Icons.X size={16} />
+                                  </button>
+                                </div>
+                                <select
+                                  value={newMediaTag}
+                                  onChange={(e) => setNewMediaTag(e.target.value as FixedMediaSlotCategory)}
+                                  className="w-full rounded-xl border border-gray-200 bg-white py-2 px-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                                >
+                                  {groupTags.map((s) => (
+                                    <option key={s.category} value={s.category}>{COLLECTION_ASSET_META[s.category].label}</option>
+                                  ))}
+                                </select>
+                                {group === 'video' ? (
+                                  <>
+                                    <input
+                                      type="url"
+                                      value={newMediaUrl}
+                                      onChange={(e) => setNewMediaUrl(e.target.value)}
+                                      placeholder="Cole o link (YouTube, Vimeo, etc.)"
+                                      className="w-full rounded-xl border border-gray-200 bg-white py-2 px-3 text-sm text-gray-800 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                                    />
+                                    {addYtThumb && (
+                                      <div>
+                                        <img src={`https://img.youtube.com/vi/${addYtThumb}/hqdefault.jpg`} alt="" aria-hidden="true" className="w-full aspect-video rounded-xl border border-gray-200 bg-gray-100 object-cover" />
+                                        <p className="mt-1 text-xs text-gray-500">Capa automática do YouTube. Você pode trocar depois de adicionar.</p>
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <FileUpload
+                                    label=""
+                                    value={newMediaUrl}
+                                    onChange={(url) => setNewMediaUrl(url)}
+                                    folder="audio"
+                                    accept="audio/*"
+                                    collectionId={editingId || undefined}
+                                    hideUrlInput
+                                  />
+                                )}
+                                <button
+                                  type="button"
+                                  disabled={!newMediaUrl.trim()}
+                                  onClick={() => handleAddMedia(group, newMediaTag, newMediaUrl)}
+                                  className="w-full rounded-xl bg-brand-primary py-2 text-sm font-bold text-white transition-colors hover:bg-brand-primary/90 disabled:opacity-40"
+                                >
+                                  Adicionar à lista
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => { setNewMediaTag(defaultTag); setNewMediaUrl(''); setAddingMediaGroup(group); }}
+                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-transparent py-2.5 text-sm font-bold text-gray-500 transition-colors hover:border-brand-primary/40 hover:text-brand-primary"
+                              >
+                                <Icons.Plus size={16} /> {group === 'video' ? 'Adicionar vídeo' : 'Adicionar áudio'}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Materiais da Coleção — upload direto na coleção */}
+                      {!isBooksCatalogMode && (!isLibraryAreaMode || initialLibraryArea === 'materials') && (() => {
+                        const materialUrls = extraMaterialAssets.map((a) => a.url);
                         return (
                           <div
                             ref={extraMaterialsSectionRef}
                             className={`rounded-2xl border p-4 bg-white space-y-3 transition-all ${isExtraMaterialsHighlighted ? 'border-brand-primary/35 ring-2 ring-brand-primary ring-offset-2 shadow-[0_0_0_6px_var(--color-brand-light)]' : 'border-gray-200'}`}
                           >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-bold text-gray-800">Materiais da Coleção</p>
-                                <p className="text-xs text-gray-500 mt-1">Selecione quantos materiais quiser para compor a coleção.</p>
-                              </div>
-                              {linkedUrls.size > 0 && (
-                                <button
-                                  type="button"
-                                  onClick={() => setExtraMaterialUrls([])}
-                                  className="shrink-0 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-red-600 transition-colors hover:bg-red-100"
-                                >
-                                  Limpar
-                                </button>
+                            <div className="flex items-center gap-2">
+                              <Icons.Paperclip size={18} className="text-gray-500" />
+                              <p className="text-sm font-bold text-gray-800">Materiais da Coleção</p>
+                              {extraMaterialAssets.length > 0 && (
+                                <span className="ml-auto text-xs text-gray-400">
+                                  {extraMaterialAssets.length} {extraMaterialAssets.length === 1 ? 'material' : 'materiais'}
+                                </span>
                               )}
                             </div>
+                            <p className="text-xs text-gray-500 -mt-1">Suba os materiais desta coleção (PDF, imagem, etc.).</p>
 
-                            {unavailableExtraAssets.length > 0 && (
-                              <div className="space-y-2">
-                                {unavailableExtraAssets.map((asset) => (
-                                  <div key={asset.id} className="flex items-start gap-3 rounded-2xl border border-brand-primary/20 bg-brand-primary/5 px-4 py-3">
-                                    <img
-                                      src={CATEGORY_COVER_URL.extra_material || placeholderImageUrl}
-                                      alt=""
-                                      aria-hidden="true"
-                                      className="h-16 w-12 shrink-0 rounded-xl border border-gray-200 bg-gray-100 object-cover"
-                                    />
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-bold text-brand-primary truncate">{asset.title || 'Material extra'}</p>
-                                      <p className="text-xs text-gray-500 mt-1">
-                                        Este material já estava vinculado, mas não está disponível na biblioteca para nova seleção.
-                                      </p>
-                                    </div>
-                                  </div>
-                                ))}
+                            {extraMaterialAssets.map((asset) => (
+                              <div key={asset.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-2.5">
+                                <span className="flex-none flex h-9 w-12 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
+                                  <Icons.FileText size={18} />
+                                </span>
+                                <p className="min-w-0 flex-1 truncate text-sm text-gray-700">{asset.title || 'Material'}</p>
+                                <button
+                                  type="button"
+                                  onClick={() => setExtraMaterialUrls(materialUrls.filter((u) => u !== asset.url))}
+                                  aria-label="Remover"
+                                  className="flex-none rounded-lg p-2 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                                >
+                                  <Icons.Trash2 size={16} />
+                                </button>
                               </div>
-                            )}
+                            ))}
 
-                            {/* Extra materials picker */}
-                            {extraLibItems.length === 0 ? (
-                              <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-center space-y-1">
-                                <p className="text-sm text-gray-400 font-medium">Nenhum material cadastrado</p>
-                                <p className="text-xs text-gray-400">
-                                  Registre materiais na área de Materiais antes de vincular.
-                                </p>
-                              </div>
-                            ) : (() => {
-                              const extraSearch = slotSearchTerms['extra_material'] ?? '';
-                              const filteredExtraItems = extraSearch.trim()
-                                ? (() => {
-                                    const extraSearchNorm = normalizeSearchableText(extraSearch);
-                                    return extraLibItems.filter(item =>
-                                      normalizeSearchableText(item.displayTitle).includes(extraSearchNorm) ||
-                                      normalizeSearchableText(item.collection.title).includes(extraSearchNorm) ||
-                                      item.searchText.includes(extraSearchNorm)
-                                    );
-                                  })()
-                                : extraLibItems;
-                              return (
-                              <div className="space-y-2">
-                                <div className="relative">
-                                  <Icons.Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                  <input
-                                    type="text"
-                                    value={extraSearch}
-                                    onChange={e => setSlotSearchTerms(prev => ({ ...prev, 'extra_material': e.target.value }))}
-                                    placeholder="Buscar materiais..."
-                                    className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-8 pr-8 text-sm text-gray-700 placeholder-gray-400 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
-                                  />
-                                  {extraSearch && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setSlotSearchTerms(prev => ({ ...prev, 'extra_material': '' }))}
-                                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-gray-400 hover:text-gray-600"
-                                    >
-                                      <Icons.X size={14} />
-                                    </button>
-                                  )}
-                                </div>
-                              <div className="flex flex-col gap-2 max-h-[32rem] overflow-y-auto pr-1">
-                                {filteredExtraItems.length === 0 && extraSearch.trim() ? (
-                                  <p className="py-4 text-center text-sm text-gray-400">Nenhum resultado para "{extraSearch}"</p>
-                                ) : filteredExtraItems.map((libraryItem) => {
-                                  const isLinked = linkedUrls.has(libraryItem.asset.url);
-                                  return (
-                                    <button
-                                      key={libraryItem.key}
-                                      type="button"
-                                      role="checkbox"
-                                      aria-checked={isLinked}
-                                      onClick={() => toggleExtraMaterialFromLibrary(libraryItem)}
-                                      className={`w-full rounded-lg border text-left transition-all active:scale-[0.98] ${
-                                        isLinked
-                                          ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
-                                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                                       }`}
-                                     >
-                                      <div className="flex items-stretch gap-3">
-                                        <div className="w-12 shrink-0 overflow-hidden rounded-l-lg bg-gray-100">
-                                          <img
-                                            src={libraryItem.coverImage}
-                                            alt=""
-                                            aria-hidden="true"
-                                            className="h-full w-full object-cover"
-                                            style={{ minHeight: '64px' }}
-                                          />
-                                        </div>
-
-                                        <div className="min-w-0 flex-1 flex items-center justify-between gap-2 py-3 pr-3">
-                                          <div className="min-w-0">
-                                            <p className={`text-sm font-semibold line-clamp-2 ${isLinked ? 'text-brand-primary' : 'text-gray-800'}`}>
-                                              {libraryItem.displayTitle}
-                                            </p>
-                                            <p className="text-xs text-gray-500 truncate">{libraryItem.collection.title}</p>
-                                          </div>
-                                          <span className={`flex-none flex h-4 w-4 items-center justify-center rounded border ${isLinked ? 'border-brand-primary bg-brand-primary text-white' : 'border-gray-300 bg-white text-transparent'}`}>
-                                            <Icons.Check size={10} />
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                              </div>
-                            );
-                            })()}
+                            <div className="rounded-xl border border-dashed border-gray-300 p-3">
+                              <p className="mb-2 text-xs font-bold text-gray-600">Adicionar material</p>
+                              <FileUpload
+                                label=""
+                                value=""
+                                onChange={(url) => { if (url.trim()) setExtraMaterialUrls([...materialUrls, url.trim()]); }}
+                                folder="extras"
+                                accept="application/pdf,image/*"
+                                collectionId={editingId || undefined}
+                                hideUrlInput
+                              />
+                            </div>
                           </div>
                         );
                       })()}
@@ -5368,7 +5787,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                 )}
               </div>
 
-              {/* Sem footer de ações — modal é somente visualização */}
+              {/* Sem footer de ações — modal é somente visualização (classificação é no drawer) */}
             </div>
           </div>
         );

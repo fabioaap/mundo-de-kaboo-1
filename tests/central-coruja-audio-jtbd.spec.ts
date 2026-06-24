@@ -171,7 +171,7 @@ const validatePublicAudiosListing = async (
   await page.reload();
 
   await expect(
-    page.getByRole('heading', { name: /Áudios/i }).first(),
+    page.getByRole('heading', { name: /Músicas/i }).first(),
   ).toBeVisible({ timeout: 15_000 });
 
   for (const fixture of fixtures.slice(0, 2)) {

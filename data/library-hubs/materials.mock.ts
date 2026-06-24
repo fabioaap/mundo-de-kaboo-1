@@ -45,6 +45,7 @@ export const materialsLibraryMock: LibraryHubData = {
         collectionId: '784b3238-0916-4922-af3c-8627d74cc16c',
         coverImage: '/mock/covers/kaboo-carta-misteriosa.png',
         chips: ['Professor', 'Mediação', 'PDF'],
+        filterTags: ['Uso imediato'],
         ctaLabel: 'Abrir coleção',
     },
     rails: [
@@ -66,6 +67,7 @@ export const materialsLibraryMock: LibraryHubData = {
                     collectionId: 'ce726511-73df-422d-b5fb-b2d0518e164a',
                     coverImage: '/mock/covers/papa-plano-furado.png',
                     chips: ['Professor', 'Criatividade'],
+                    filterTags: ['Uso imediato'],
                     ctaLabel: 'Abrir coleção',
                 },
                 {
@@ -80,6 +82,7 @@ export const materialsLibraryMock: LibraryHubData = {
                     collectionId: '66627622-235a-43f6-ba4b-35522086165c',
                     coverImage: '/mock/covers/gaio-hora-voar-alto.png',
                     chips: ['Coragem', 'Roda'],
+                    filterTags: ['Uso imediato'],
                     ctaLabel: 'Abrir coleção',
                 },
                 {
@@ -94,6 +97,7 @@ export const materialsLibraryMock: LibraryHubData = {
                     collectionId: 'c6334710-6117-426f-995c-07be8d87d872',
                     coverImage: '/mock/covers/mensageiro-cancao-certa.png',
                     chips: ['Professor', 'Apoio'],
+                    filterTags: ['Planejamento'],
                     ctaLabel: 'Abrir coleção',
                 },
             ],
@@ -116,6 +120,7 @@ export const materialsLibraryMock: LibraryHubData = {
                     collectionId: '6a93b60f-b4e9-4fe6-9fed-7c6f7391745c',
                     coverImage: '/mock/covers/baratinha-baratao-labirinto-eco.png',
                     chips: ['Grupo', 'Diálogo'],
+                    filterTags: ['Convivência'],
                     ctaLabel: 'Abrir coleção',
                 },
                 {
@@ -130,6 +135,7 @@ export const materialsLibraryMock: LibraryHubData = {
                     collectionId: 'ad037be3-ad9f-43d3-a913-549337aef9ef',
                     coverImage: '/mock/covers/kaboo-desafio-cores.png',
                     chips: ['Cores', 'Professor'],
+                    filterTags: ['Convivência'],
                     ctaLabel: 'Abrir coleção',
                 },
                 {
@@ -144,6 +150,7 @@ export const materialsLibraryMock: LibraryHubData = {
                     collectionId: '410acf81-6d7d-4569-85e4-02ed2fb28762',
                     coverImage: '/mock/covers/onde-esta-gaio.png',
                     chips: ['Cooperação', 'Pistas'],
+                    filterTags: ['Exploração'],
                     ctaLabel: 'Abrir coleção',
                 },
             ],

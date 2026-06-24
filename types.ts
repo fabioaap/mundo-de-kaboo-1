@@ -150,6 +150,8 @@ export interface CollectionAsset {
   url: string;
   description?: string | null;
   scope?: 'primary' | 'library';
+  /** Per-asset cover image (thumbnail). When set, overrides derived covers (YouTube frame, collection cover). */
+  cover_image?: string | null;
   lyrics_url?: string | null;
   /** Per-asset download flag. null/undefined = inherits collection-level offline_available. */
   offline_available?: boolean | null;

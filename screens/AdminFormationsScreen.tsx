@@ -47,7 +47,6 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
   const [formData, setFormData] = useState<typeof EMPTY_FORM>({ ...EMPTY_FORM });
   const [originalFormData, setOriginalFormData] = useState<typeof EMPTY_FORM>({ ...EMPTY_FORM });
 
-  const [tagInput, setTagInput] = useState('');
   const [newAsset, setNewAsset] = useState<FormationAsset>({ type: 'pdf', url: '', title: '' });
 
   const { toast, showToast, hideToast } = useToast();
@@ -71,7 +70,6 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
     setOriginalFormData(fresh);
     setEditingId(null);
     setShowCreateForm(true);
-    setTagInput('');
     setNewAsset({ type: 'pdf', url: '', title: '' });
   };
 
@@ -94,7 +92,6 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
     setOriginalFormData(data);
     setEditingId(formation.id);
     setShowCreateForm(false);
-    setTagInput('');
     setNewAsset({ type: 'pdf', url: '', title: '' });
   };
 
@@ -167,16 +164,13 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
     }
   };
 
-  const addTag = () => {
-    const tag = tagInput.trim();
-    if (tag && !formData.tags?.includes(tag)) {
-      setFormData(prev => ({ ...prev, tags: [...(prev.tags ?? []), tag] }));
-      setTagInput('');
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    setFormData(prev => ({ ...prev, tags: (prev.tags ?? []).filter(t => t !== tag) }));
+  const toggleTag = (tag: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: (prev.tags ?? []).includes(tag)
+        ? (prev.tags ?? []).filter(t => t !== tag)
+        : [...(prev.tags ?? []), tag],
+    }));
   };
 
   const addAsset = () => {
@@ -423,37 +417,24 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
             </div>
           </div>
 
-          {/* Tags */}
+          {/* Filtros da biblioteca */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Tags</label>
-            <div className="flex gap-2 mb-3">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={e => setTagInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
-                placeholder="Adicionar tag..."
-                className="flex-1 bg-gray-50 rounded-2xl p-3 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-brand-primary/30"
-              />
-              <button
-                onClick={addTag}
-                className="px-4 py-2 bg-brand-primary/10 text-brand-primary rounded-2xl font-bold text-sm hover:bg-brand-primary/20 transition-colors"
-              >
-                Adicionar
-              </button>
-            </div>
-            {(formData.tags ?? []).length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {(formData.tags ?? []).map(tag => (
-                  <span key={tag} className="flex items-center gap-1.5 px-3 py-1 bg-brand-primary/10 text-brand-primary rounded-full text-sm font-bold">
+            <label className="block text-sm font-bold text-gray-700 mb-2">Filtros da biblioteca</label>
+            <div className="flex flex-wrap gap-2">
+              {(['Acolhimento', 'Roda', 'Conflitos', 'Percurso curto'] as const).map(tag => {
+                const active = (formData.tags ?? []).includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleTag(tag)}
+                    className={`px-4 py-2 rounded-full text-sm font-bold transition-all border ${active ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-brand-primary/30'}`}
+                  >
                     {tag}
-                    <button onClick={() => removeTag(tag)} className="hover:text-red-500 transition-colors">
-                      <Icons.X size={12} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Assets */}

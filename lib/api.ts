@@ -314,7 +314,7 @@ export const stripMissingCollectionColumns = (
  * Propaga o renome de um livro para os kits que o embutem.
  *
  * Os assets do kit guardam um SNAPSHOT do título no momento do vínculo, então
- * renomear a mídia-fonte não refletia na coleção (o "Áudio Livro" continuava com
+ * renomear a mídia-fonte não refletia na coleção (o "Audiolivro" continuava com
  * o título antigo). Aqui atualizamos o título dos assets cujo `url` referencia o
  * id do livro renomeado, em todos os kits que o listam em `kit_book_ids`.
  * Best-effort: qualquer falha é logada e ignorada (não bloqueia o update).
@@ -411,8 +411,14 @@ const mapLibraryHubToMediaHub = (hub: LibraryHubKind): MediaHub => hub;
 const COLLECTION_BACKED_HUB_CATEGORIES: Record<MediaHub, CollectionAssetCategory[]> = {
   // Deve espelhar LIBRARY_AREA_LISTING_CATEGORIES.videos do admin — senão vídeos
   // publicados em story_video/formation aparecem no admin mas somem da vitrine.
-  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
-  music: ['storytelling', 'music'],
+  // Catálogo navegável no hub Vídeos: animação avulsa + contação em vídeo (+ overlap de
+  // Formações). Removidos os "acompanhamentos" de uma obra: accessible_video (Com Libras,
+  // variante da obra) e how_to_play (Como Jogar, instrução do kit) — acessíveis dentro da obra.
+  // Ver docs/decisao-arquitetura-hubs-2026-06.md.
+  videos: ['animation', 'story_video', 'video_lesson', 'formation'],
+  // Apenas faixas de música no hub "Músicas". Narração de livro (storytelling) é áudio
+  // com dono (1 faixa/livro) e fica acessível dentro do livro — não na exploração do hub.
+  music: ['music'],
   formations: ['teacher_guide', 'video_lesson'],
   // reading (PDF do livro) pertence EXCLUSIVAMENTE ao hub Livros — Materiais é só
   // material de apoio (extra_material). Alinhado ao admin (LIBRARY_AREA_LISTING_CATEGORIES).
@@ -617,6 +623,11 @@ const getCollectionBackedAssetThumbnail = (
   asset: CollectionAsset,
   collectionsById?: Map<string, Collection>,
 ): string | undefined => {
+  const ownCover = asset.cover_image?.trim();
+  if (ownCover && !isPlaceholderImageUrl(ownCover)) {
+    return ownCover;
+  }
+
   if (asset.media_type === 'video') {
     const youtubeThumb = getYoutubeThumbnailUrl(asset.url);
     if (youtubeThumb) {
@@ -673,16 +684,26 @@ const buildCollectionBackedLibraryItem = (hub: MediaHub, collection: Collection,
 const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]): LibraryMockItem[] => {
   const allowedCategories = COLLECTION_BACKED_HUB_CATEGORIES[hub];
 
-  // Cada hub filtra pelas SUAS categorias (allowedCategories). Materiais agora só inclui
-  // extra_material — o PDF do livro (reading) pertence só ao hub Livros — então não é
-  // preciso excluir coleções tipo "book": o Guia do Professor (extra_material) de um livro
-  // deve, sim, aparecer em Materiais.
+  // WS-2 — escopo: conteúdo com dono não vaza para os hubs globais.
+  // Kits: nunca aparecem em hub — seu conteúdo pertence à vitrine da coleção.
+  // Books com PDF (reading): seus assets pertencem ao hub Livros, não a vídeos/músicas.
+  // Exceção: hub 'materials' mostra extra_material de qualquer coleção (guia do professor etc.)
+  const isHubEligible = (collection: Collection): boolean => {
+    if (collection.collection_type === 'kit') return false;
+    if (hub !== 'materials' && collection.collection_type === 'book' &&
+        (collection.collection_assets ?? []).some((a) => a.category === 'reading')) return false;
+    return true;
+  };
+
   const collectionsById = new Map(collections.map((collection) => [collection.id, collection]));
 
   const pairs = collections
+    .filter(isHubEligible)
     .flatMap((collection) => (collection.collection_assets ?? [])
       // On the public storefront, hide assets that were explicitly unpublished (is_published=false).
       // undefined/null means published (backward-compat with assets created before per-asset flags).
+      // Avulso vs vinculado é decidido pela ESTRUTURA (isHubEligible: obra com PDF/kit fica fora),
+      // não por flag — ver docs/architecture/modelo-conteudo-e-hubs.md.
       .filter((asset) => allowedCategories.includes(asset.category) && asset.is_published !== false)
       .map((asset) => ({ collection, asset })));
 
@@ -1926,9 +1947,11 @@ export const api = {
   async getCollectionById(id: string): Promise<Collection | null> {
     if (!isSupabaseConfigured || devMockSession) {
       const mockCollection = getMockCollectionByIdLive(id);
-      return mockCollection
-        ? filterCollectionsForBrand([mockCollection], _activeBrandSlugForApi, _activeBrandIdForApi)[0] ?? null
-        : null;
+      if (!mockCollection) return null;
+      // Stamp missing brand_id — mirrors getCollections mock path so the brand filter works.
+      const brandId = _activeBrandIdForApi;
+      const stamped = brandId && !mockCollection.brand_id ? { ...mockCollection, brand_id: brandId } : mockCollection;
+      return filterCollectionsForBrand([stamped], _activeBrandSlugForApi, _activeBrandIdForApi)[0] ?? null;
     }
 
     const activeBrandId = await resolveActiveBrandId();
@@ -2690,6 +2713,17 @@ export const api = {
     if (!existing) {
       logger.error('Collection not found or no access:', id);
       return null;
+    }
+
+    // Merge is_published from DB so wholesale saves never clobber values set
+    // by the set_collection_asset_published RPC (the sole owner of this flag).
+    if (payload.collection_assets && existing.collection_assets?.length) {
+      const dbById = new Map<string, CollectionAsset>(existing.collection_assets.map(a => [a.id, a]));
+      const dbByUrl = new Map<string, CollectionAsset>(existing.collection_assets.map(a => [a.url, a]));
+      payload.collection_assets = payload.collection_assets.map(a => {
+        const dbAsset: CollectionAsset | undefined = dbById.get(a.id) ?? dbByUrl.get(a.url);
+        return dbAsset !== undefined ? { ...a, is_published: dbAsset.is_published } : a;
+      });
     }
 
     // Perform the update with retry for missing columns

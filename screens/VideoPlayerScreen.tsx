@@ -109,6 +109,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   const [resolvedPlaybackUrl, setResolvedPlaybackUrl] = useState<string | null>(null);
   const [resolvedPlaybackTitle, setResolvedPlaybackTitle] = useState<string | null>(null);
   const [relatedItems, setRelatedItems] = useState<MediaItemCard[]>([]);
+  const [relatedFromCollection, setRelatedFromCollection] = useState(false);
   const [itemDescription, setItemDescription] = useState<string>('');
   const [showShortcutsHint, setShowShortcutsHint] = useState(true);
   const [showMobileQueue, setShowMobileQueue] = useState(false);
@@ -346,8 +347,65 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     // The hub re-fetch below will update the list correctly in the background.
     setItemDescription('');
 
+    const VIDEO_ASSET_CATEGORIES = new Set(['animation', 'accessible_video', 'story_video', 'how_to_play', 'video_lesson', 'formation']);
+
     const loadContext = async () => {
       try {
+        const currentUrl = (assetUrl ?? collection.video_url ?? '').trim();
+
+        // If the collection has other video assets, scope "Próximos" to that collection.
+        // This fixes the case of a video opened from within a collection/book (WS-15).
+        const collectionVideoItems = (collection.collection_assets ?? [])
+          .filter(a =>
+            VIDEO_ASSET_CATEGORIES.has(a.category) &&
+            a.url &&
+            a.url.trim() !== currentUrl &&
+            a.is_published !== false
+          )
+          .map(a => {
+            const ytId = a.url?.match(/(?:youtu\.be\/|[?&]v=|embed\/)([A-Za-z0-9_-]{6,})/i)?.[1] ?? null;
+            return {
+              id: a.id,
+              hub: 'videos' as const,
+              kind: 'video' as const,
+              title: a.title,
+              thumbnailUrl: ytId
+                ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+                : (collection.cover_image ?? null),
+              provider: ytId ? 'youtube' as const : 'internal' as const,
+              locked: false,
+              isFavorite: false,
+              progressPercent: 0,
+              assetUrl: a.url ?? null,
+              collectionId: collection.id,
+            };
+          });
+
+        if (collectionVideoItems.length > 0) {
+          if (!isActive) return;
+          setRelatedItems(collectionVideoItems);
+          setRelatedFromCollection(true);
+          const detail = mediaItemId ? await api.getMediaItem(mediaItemId) : null;
+          if (!isActive) return;
+          setItemDescription(detail?.description ?? detail?.summary ?? collection.description ?? '');
+          return;
+        }
+
+        // Sem outros vídeos na coleção. Se este vídeo pertence a uma OBRA (kit ou livro
+        // com PDF), ele não é item de hub → não mostrar "Próximos vídeos" globais; aparece
+        // sozinho (WS-15).
+        const isBoundObra = collection.collection_type === 'kit'
+          || (collection.collection_assets ?? []).some((a) => a.category === 'reading' && a.url?.trim());
+        if (isBoundObra) {
+          setRelatedFromCollection(true);
+          setRelatedItems([]);
+          const detail = mediaItemId ? await api.getMediaItem(mediaItemId) : null;
+          if (!isActive) return;
+          setItemDescription(detail?.description ?? detail?.summary ?? collection.description ?? '');
+          return;
+        }
+
+        setRelatedFromCollection(false);
         const [hub, detail] = await Promise.all([
           api.getMediaHub('videos'),
           mediaItemId ? api.getMediaItem(mediaItemId) : Promise.resolve(null),
@@ -366,7 +424,6 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         // video URL. The URL check is essential because the same video can be reached
         // without a mediaItemId (e.g. opened from a collection's materials list) and
         // because the same video may be referenced by more than one collection.
-        const currentUrl = (assetUrl ?? collection.video_url ?? '').trim();
         const unique = Array.from(new Map(allItems.map((item) => [item.id, item])).values());
         const filtered = unique
           .filter((item) => item.id !== mediaItemId)
@@ -390,7 +447,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     return () => {
       isActive = false;
     };
-  }, [collection.description, mediaItemId, assetUrl, collection.video_url]);
+  }, [collection.description, collection.id, collection.video_url, collection.collection_assets, collection.cover_image, mediaItemId, assetUrl]);
 
   useEffect(() => {
     setShowMobileQueue(false);
@@ -773,11 +830,19 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   };
 
   const openRelatedItem = (item: MediaItemCard) => {
-    onNavigate('player_video', {
-      collectionId: item.collectionId ?? collection.id,
-      mediaItemId: item.id,
-      assetTitle: item.title,
-    });
+    if (relatedFromCollection) {
+      onNavigate('player_video', {
+        collectionId: item.collectionId ?? collection.id,
+        assetUrl: item.assetUrl,
+        assetTitle: item.title,
+      });
+    } else {
+      onNavigate('player_video', {
+        collectionId: item.collectionId ?? collection.id,
+        mediaItemId: item.id,
+        assetTitle: item.title,
+      });
+    }
   };
 
   const toggleMobileQueuePanel = (event?: React.MouseEvent) => {
@@ -949,15 +1014,15 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     return (
       <div
         ref={containerRef}
-        className="fixed inset-0 z-50 overflow-y-auto bg-[#0f0f0f] text-white"
+        className={`fixed inset-0 z-50 bg-[#0f0f0f] text-white ${isFullscreen ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}
         role="dialog"
         aria-modal="true"
         aria-label="Player de vídeo"
       >
-        <div className="min-h-full pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div className={isFullscreen ? 'flex-1 flex flex-col' : 'min-h-full pb-[max(1.5rem,env(safe-area-inset-bottom))]'}>
 
           {/* ── Sticky header ── */}
-          <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-[#0f0f0f]/95 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md">
+          <header className={`sticky top-0 z-30 border-b border-white/[0.08] bg-[#0f0f0f]/95 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md${isFullscreen ? ' hidden' : ''}`}>
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -1008,17 +1073,17 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
           </header>
 
           {/* ── Content: responsive YouTube-style layout ── */}
-          <div className="mx-auto max-w-screen-xl lg:px-6 lg:py-5">
-            <div className="flex flex-col md:flex-row md:gap-6 md:items-start">
+          <div className={isFullscreen ? 'flex-1 min-h-0 flex flex-col' : 'mx-auto max-w-screen-xl lg:px-6 lg:py-5'}>
+            <div className={isFullscreen ? 'flex-1 min-h-0 flex flex-col' : 'flex flex-col md:flex-row md:gap-6 md:items-start'}>
 
               {/* ── Left column: video card + info ── */}
-              <div className="min-w-0 flex-1">
+              <div className={isFullscreen ? 'flex-1 min-h-0 flex flex-col' : 'min-w-0 flex-1'}>
 
                 {/* Video card */}
-                <div className="overflow-hidden bg-black lg:rounded-xl">
+                <div className={isFullscreen ? 'flex-1 min-h-0 flex flex-col bg-black' : 'overflow-hidden bg-black lg:rounded-xl'}>
 
                   {/* Video area — 16:9 */}
-                  <div className="relative aspect-video">
+                  <div className={isFullscreen ? 'flex-1 min-h-0 relative' : 'relative aspect-video'}>
                     {youtubeEmbedUrl ? (
                       <iframe
                         ref={ytIframeRef}
@@ -1216,7 +1281,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                   </div>{/* end video area */}
 
                   {/* Controls bar — always visible, sits below the video in document flow */}
-                  <div className="border-t border-white/[0.08] bg-black px-4 pb-4 pt-3">
+                  <div className={`border-t border-white/[0.08] bg-black px-4 pb-4 pt-3${isFullscreen ? ' shrink-0' : ''}`}>
 
                     {/* Error banners */}
                     {playError && (
@@ -1319,12 +1384,12 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => setIsPlayerCollapsed(false)}
+                          onClick={(e) => void toggleFullscreen(e)}
                           className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white/85 transition-colors hover:bg-white/10 active:scale-95"
-                          title="Expandir para tela cheia"
-                          aria-label="Expandir para tela cheia"
+                          title={isFullscreen ? 'Sair da tela cheia' : 'Expandir para tela cheia'}
+                          aria-label={isFullscreen ? 'Sair da tela cheia' : 'Expandir para tela cheia'}
                         >
-                          <Icons.Maximize size={18} />
+                          {isFullscreen ? <Icons.Minimize size={18} /> : <Icons.Maximize size={18} />}
                         </button>
                       </div>
                     </div>
@@ -1332,7 +1397,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 </div>{/* end video card */}
 
                 {/* Title + meta + description */}
-                <div className="mt-5 space-y-3 px-4 lg:px-0">
+                {!isFullscreen && <div className="mt-5 space-y-3 px-4 lg:px-0">
                   <div>
                     <h2 className="text-base font-black leading-snug text-white lg:text-lg">
                       {resolvedTitle}
@@ -1346,10 +1411,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                       <p className="mt-2 text-sm leading-6 text-white/80">{itemDescription}</p>
                     </div>
                   )}
-                </div>
+                </div>}
 
                 {/* Related videos — mobile only (hidden on lg+, shown in sidebar there) */}
-                {relatedItems.length > 0 && (
+                {!isFullscreen && relatedItems.length > 0 && (
                   <div className="mt-6 px-4 pb-2 lg:hidden">
                     <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/50">
                       Próximos vídeos
@@ -1387,7 +1452,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
               </div>{/* end left column */}
 
               {/* ── Right column: related videos — desktop only ── */}
-              {relatedItems.length > 0 && (
+              {!isFullscreen && relatedItems.length > 0 && (
                 <aside className="hidden md:block w-[360px] shrink-0">
                   <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/50">
                     Próximos vídeos

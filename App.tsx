@@ -1086,7 +1086,7 @@ const App: React.FC = () => {
           params: {
             ...(previousScreenState.params ?? {}),
             collectionId: modalStackIds[0],
-            modalStackIds,
+            ...(modalStackIds.length > 1 ? { modalStackIds } : {}),
           },
         };
 
@@ -1288,6 +1288,7 @@ const App: React.FC = () => {
             lyricsUrl={currentParams?.lyricsUrl}
             assetOfflineAvailable={currentParams?.assetOfflineAvailable}
             coverImage={currentParams?.coverImage as string | undefined}
+            autoplay={Boolean(currentParams?.autoplay)}
             onNavigate={navigate}
             onBack={goBack}
           />

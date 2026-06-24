@@ -1,9 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getCorsHeaders } from '../_shared/http.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const PAGE_MIN = 1;
+const PAGE_MAX = 50;
+const PER_PAGE_MIN = 1;
+const PER_PAGE_MAX = 100;
 
 type AuthAdminUser = {
   id: string;
@@ -31,6 +32,7 @@ type ProfileRow = {
   full_name?: string | null;
   avatar_id?: string | null;
   role?: string | null;
+  brand_id?: string | null;
   voucher_id?: string | null;
   access_starts_at?: string | null;
   access_expires_at?: string | null;
@@ -56,11 +58,31 @@ const getAuthStatus = (user: AuthAdminUser) => {
 };
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    const url = new URL(req.url);
+    const pageParam = url.searchParams.get('page');
+    const perPageParam = url.searchParams.get('per_page');
+
+    const page = pageParam !== null ? parseInt(pageParam, 10) : 1;
+    const perPage = perPageParam !== null ? parseInt(perPageParam, 10) : 50;
+
+    if (
+      !Number.isInteger(page) || page < PAGE_MIN || page > PAGE_MAX ||
+      !Number.isInteger(perPage) || perPage < PER_PAGE_MIN || perPage > PER_PAGE_MAX
+    ) {
+      return new Response(
+        JSON.stringify({ success: false, error: `page deve estar entre ${PAGE_MIN}-${PAGE_MAX}, per_page entre ${PER_PAGE_MIN}-${PER_PAGE_MAX}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
@@ -95,9 +117,10 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Inclui brand_id para brand scope
     const { data: callerProfile, error: callerProfileError } = await adminClient
       .from('profiles')
-      .select('role')
+      .select('role, brand_id')
       .eq('id', caller.id)
       .single();
 
@@ -108,11 +131,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const authUsers: AuthAdminUser[] = [];
-    const perPage = 200;
+    // NULL = super-admin multi-marca; caso contrário só vê sua marca
+    const callerBrandId: string | null = callerProfile.brand_id ?? null;
 
-    for (let page = 1; page <= 10; page += 1) {
-      const listResp = await fetch(`${supabaseUrl}/auth/v1/admin/users?page=${page}&per_page=${perPage}`, {
+    const authUsers: AuthAdminUser[] = [];
+    const fetchPerPage = 200;
+
+    for (let fetchPage = 1; fetchPage <= 10; fetchPage += 1) {
+      const listResp = await fetch(`${supabaseUrl}/auth/v1/admin/users?page=${fetchPage}&per_page=${fetchPerPage}`, {
         headers: { Authorization: `Bearer ${supabaseServiceKey}`, apikey: supabaseServiceKey },
       });
 
@@ -128,7 +154,7 @@ Deno.serve(async (req) => {
       const usersPage = Array.isArray(payload?.users) ? payload.users as AuthAdminUser[] : [];
       authUsers.push(...usersPage);
 
-      if (usersPage.length < perPage) {
+      if (usersPage.length < fetchPerPage) {
         break;
       }
     }
@@ -137,16 +163,23 @@ Deno.serve(async (req) => {
     const userIds = scopedAuthUsers.map((user) => user.id);
 
     if (userIds.length === 0) {
-      return new Response(JSON.stringify({ success: true, users: [] }), {
+      return new Response(JSON.stringify({ success: true, users: [], total: 0, page, per_page: perPage }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { data: profiles, error: profilesError } = await adminClient
+    let profileQuery = adminClient
       .from('profiles')
-      .select('id, email, full_name, avatar_id, role, voucher_id, access_starts_at, access_expires_at, access_status, created_at, updated_at')
+      .select('id, email, full_name, avatar_id, role, brand_id, voucher_id, access_starts_at, access_expires_at, access_status, created_at, updated_at')
       .in('id', userIds);
+
+    // Brand scope: caller com marca só vê usuários da mesma marca
+    if (callerBrandId !== null) {
+      profileQuery = profileQuery.eq('brand_id', callerBrandId);
+    }
+
+    const { data: profiles, error: profilesError } = await profileQuery;
 
     if (profilesError) {
       return new Response(JSON.stringify({ success: false, error: profilesError.message }), {
@@ -160,7 +193,10 @@ Deno.serve(async (req) => {
       profileMap.set(profile.id, profile as ProfileRow);
     }
 
-    const users = scopedAuthUsers
+    // Mantém só usuários que passaram no brand scope
+    const brandScopedAuthUsers = scopedAuthUsers.filter((u) => profileMap.has(u.id));
+
+    const allUsers = brandScopedAuthUsers
       .map((authUser) => {
         const profile = profileMap.get(authUser.id);
         const confirmedAt = authUser.confirmed_at ?? authUser.email_confirmed_at ?? null;
@@ -172,6 +208,7 @@ Deno.serve(async (req) => {
           avatar_id: profile?.avatar_id ?? null,
           created_by: authUser.app_metadata?.created_by ?? null,
           role: profile?.role ?? 'viewer',
+          brand_id: profile?.brand_id ?? null,
           voucher_id: profile?.voucher_id ?? null,
           access_starts_at: profile?.access_starts_at ?? null,
           access_expires_at: profile?.access_expires_at ?? null,
@@ -190,7 +227,11 @@ Deno.serve(async (req) => {
         return rightDate - leftDate;
       });
 
-    return new Response(JSON.stringify({ success: true, users }), {
+    const total = allUsers.length;
+    const offset = (page - 1) * perPage;
+    const users = allUsers.slice(offset, offset + perPage);
+
+    return new Response(JSON.stringify({ success: true, users, total, page, per_page: perPage }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

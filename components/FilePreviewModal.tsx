@@ -1,4 +1,5 @@
 ﻿import React from 'react';
+import { createPortal } from 'react-dom';
 import { Icons } from './Icons';
 
 interface FilePreviewModalProps {
@@ -17,6 +18,7 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   onClose
 }) => {
   if (!isOpen) return null;
+  if (typeof document === 'undefined' || !document.body) return null;
 
   const stripUrlDecorators = (url: string) => {
     return url.split('#')[0]?.split('?')[0] ?? url;
@@ -33,8 +35,8 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
   const actualFileType = fileType === 'other' ? getFileTypeFromUrl(fileUrl) : fileType;
 
-  return (
-    <div 
+  return createPortal(
+    <div
       className="fixed inset-0 z-[200] flex items-center justify-center p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -43,7 +45,7 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-100" />
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-md animate-in fade-in duration-100" />
       
       {/* Modal Content */}
       <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-100 flex flex-col">
@@ -119,6 +121,7 @@ export const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

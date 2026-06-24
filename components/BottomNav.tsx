@@ -112,7 +112,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     { key: 'videos', screen: 'videos', icon: Icons.Video, label: 'Vídeos' },
     { key: 'music', screen: 'music', icon: Icons.Headphones, label: 'Músicas' },
     { key: 'formations', screen: 'formations', icon: Icons.BookOpen, label: 'Formações' },
-    { key: 'materials', screen: 'materials', icon: Icons.FileText, label: 'Materiais' },
+    { key: 'materials', screen: 'materials', icon: Icons.FileText, label: 'Materiais extras' },
   ] as NavItem[]).filter(item => isMenuKeyEnabled(item.key));
 
   // Add admin collections item if user has permission.
