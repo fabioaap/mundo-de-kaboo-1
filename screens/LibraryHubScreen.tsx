@@ -546,6 +546,12 @@ const buildLibraryItemMetaFromMediaCard = (
   }
 
   if (variant === 'track') {
+    // collection-backed items carry 'faixa • <CategoryLabel>' in card.summary —
+    // preserve it so the badge shows 'Música' / 'Áudio Livro' instead of 'Faixa'.
+    const fromSummary = card.summary?.trim();
+    if (fromSummary && /^faixa/i.test(fromSummary)) {
+      return fromSummary;
+    }
     return `faixa${durationLabel ? ` • ${durationLabel}` : ''}`;
   }
 
@@ -815,7 +821,10 @@ const renderItemPreview = (item: LibraryMockItem, featured: boolean = false, cor
     ? (usesVideoFrame ? 'aspect-video' : FEATURED_PREVIEW_ASPECT[item.variant])
     : (usesVideoFrame ? 'aspect-video' : CARD_PREVIEW_ASPECT[item.variant]);
   const hasCover = Boolean(item.coverImage);
-  const itemTypeLabel = ITEM_LABELS[item.variant].toUpperCase();
+  const itemTypeLabel = (item.variant === 'track'
+    ? getLibraryBadgeLabel(item)
+    : ITEM_LABELS[item.variant]
+  ).toUpperCase();
   const isPlayable = item.variant === 'video' || item.variant === 'track';
   const videoProgressPercent = item.variant === 'video'
     ? Math.max(0, Math.min(100, Math.round(item.progress ?? 0)))

@@ -22,6 +22,7 @@ const sidebars: SidebarsConfig = {
         'architecture/tech-stack',
         'architecture/data-models',
         'architecture/colecao-artefatos',
+        'architecture/deploy-environments',
       ],
     },
     {

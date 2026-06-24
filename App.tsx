@@ -51,6 +51,11 @@ import { LOGO_URL } from './constants';
 const STORAGE_NAV_STATE = 'kaboo_nav_state';
 const STORAGE_PREVIOUS_STATE = 'kaboo_previous_state';
 
+// Deployment single-brand: cada container/domínio serve UMA marca (VITE_BRAND_SLUG
+// fixado no build). Nesse modo NÃO há portal de seleção — a entrada cai direto no
+// login da marca. O portal só existe no deploy multi-marca (sem VITE_BRAND_SLUG).
+const IS_SINGLE_BRAND_DEPLOYMENT = Boolean(import.meta.env.VITE_BRAND_SLUG);
+
 const PLAYER_SCREENS: ScreenName[] = ['player_audio', 'player_book', 'player_video', 'tools'];
 const HASH_ADDRESSABLE_SCREENS = new Set<ScreenName>([
   'portal',
@@ -184,6 +189,12 @@ const getNavStateFromHistoryState = (historyState: unknown): NavState | null => 
     return null;
   }
 
+  // 'portal' salvo em history.state (de uma visita anterior à imagem multi-marca)
+  // não pode ressuscitar o seletor num container single-brand.
+  if (candidate.screen === 'portal' && IS_SINGLE_BRAND_DEPLOYMENT) {
+    return null;
+  }
+
   return normalizeNavState({
     currentScreen: candidate.screen as ScreenName,
     adminModule: normalizeAdminModule(candidate.adminModule),
@@ -198,6 +209,11 @@ const getNavStateFromHash = (): NavState | null => {
 
   const hashScreen = getHashScreen(window.location.hash);
   if (!hashScreen || PLAYER_SCREENS.includes(hashScreen)) {
+    return null;
+  }
+
+  // #portal não é navegável em deployment single-brand — cai no login.
+  if (hashScreen === 'portal' && IS_SINGLE_BRAND_DEPLOYMENT) {
     return null;
   }
 
@@ -219,6 +235,11 @@ const getNavStateFromHash = (): NavState | null => {
 };
 
 const isPortalEntryPath = (): boolean => {
+  // Container single-brand não tem portal — entra direto no login da marca.
+  if (IS_SINGLE_BRAND_DEPLOYMENT) {
+    return false;
+  }
+
   if (typeof window === 'undefined') {
     return false;
   }
@@ -440,6 +461,11 @@ const App: React.FC = () => {
 
     const saved = loadNavState();
     if (saved) {
+      // 'portal' salvo no localStorage (visita anterior à imagem multi-marca) não pode
+      // ressuscitar o seletor num container single-brand → cai no login da marca.
+      if (saved.currentScreen === 'portal' && IS_SINGLE_BRAND_DEPLOYMENT) {
+        return { currentScreen: getDefaultPublicScreen() };
+      }
       // Don't restore player screens without collectionId - they'll be handled after session check
       if (PLAYER_SCREENS.includes(saved.currentScreen)) {
         if (!saved.params?.collectionId) {
