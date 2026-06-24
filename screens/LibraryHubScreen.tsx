@@ -1109,7 +1109,9 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
     ? (isBaseCompactCatalogEmpty ? 'Nenhum material publicado ainda.' : 'Documentos para abrir agora.')
     : isFormationsHub
       ? (isBaseCompactCatalogEmpty ? 'Nenhum roteiro publicado ainda.' : 'Escolha o roteiro pelo momento da conversa.')
-      : `${sortedCompactItems.length} entradas disponíveis para explorar.`;
+      : isMusicHub
+        ? (isBaseCompactCatalogEmpty ? 'Nenhuma música publicada ainda.' : `${sortedCompactItems.length} entradas disponíveis para explorar.`)
+        : `${sortedCompactItems.length} entradas disponíveis para explorar.`;
   const compactGridClassName = isCorujaLibraryHub ? 'md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4' : 'md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
   const videoEmptyStateMessage = isBaseVideoCatalogEmpty
     ? getLibraryEmptyStateMessage('videos', brandDisplayName)
