@@ -1045,7 +1045,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
   const compactFilterSource = !isVideoHub
     ? (compactLibraryItems.length === 0 ? [] : COMPACT_FILTER_LABELS[screen as CompactLibraryKind] ?? config.quickFilters)
     : [];
-  const compactFilterLabels = !isVideoHub ? ['Todos', ...compactFilterSource] : [];
+  const compactFilterLabels = !isVideoHub && compactLibraryItems.length > 0 ? ['Todos', ...compactFilterSource] : [];
   const filteredCompactItems = !isVideoHub
     ? compactLibraryItems.filter((item) => {
       if (!matchesLibraryCollectionFilters(item, libraryCollectionFilters)) {
