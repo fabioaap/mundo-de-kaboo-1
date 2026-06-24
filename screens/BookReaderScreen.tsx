@@ -27,13 +27,16 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [audioDuration, setAudioDuration] = useState(0);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
   const themeColor = collection.color_theme || '#5D1F58';
   const isLandscape = useOrientation();
   const isMobile = useIsMobile();
   const isMobileLandscape = isMobile && isLandscape;
   const readingAsset = collection.collection_assets?.find((asset) => asset.category === 'reading');
   const pdfUrl = readingAsset?.url?.trim() || collection.pdf_url?.trim() || '';
-  const audioUrl = collection.collection_assets?.find((asset) => asset.category === 'storytelling')?.url?.trim() || '';
+  const storytellingAsset = collection.collection_assets?.find((asset) => asset.category === 'storytelling');
+  const audioUrl = storytellingAsset?.url?.trim() || '';
+  const audioTitle = storytellingAsset?.title?.trim() || collection.title;
   const {
     isAvailable: canDownloadOffline,
     isDownloaded: isOfflineDownloaded,
@@ -397,49 +400,105 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
                   onTimeUpdate={(e) => setAudioCurrentTime(e.currentTarget.currentTime)}
                   onEnded={() => setIsAudioPlaying(false)}
                 />
-                <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center gap-3 border-t border-white/10 bg-black/30 px-4 py-2.5 backdrop-blur-md">
-                  <button
-                    onClick={toggleAudio}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/15 text-white transition-colors hover:bg-white/25 active:scale-95"
-                    aria-label={isAudioPlaying ? 'Pausar narração' : 'Ouvir narração'}
-                  >
-                    {isAudioPlaying
-                      ? <Icons.Pause size={15} className="fill-white stroke-none" />
-                      : <Icons.Play size={15} className="fill-white stroke-none" />}
-                  </button>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <Icons.Headphones size={9} className="shrink-0 text-white/50" />
-                      <span className="text-[10px] font-semibold uppercase tracking-widest text-white/50">Narração</span>
-                    </div>
-                    <div
-                      className="relative h-1 cursor-pointer rounded-full bg-white/20"
-                      onClick={(e) => {
-                        if (!audioRef.current || !audioDuration) return;
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        audioRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * audioDuration;
-                      }}
-                    >
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-full bg-white/70"
-                        style={{ width: audioDuration ? `${(audioCurrentTime / audioDuration) * 100}%` : '0%' }}
-                      />
+                {isPlayerExpanded ? (
+                  /* Expanded: classic 2-row player footer */
+                  <div className="absolute bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-black/70 px-4 py-3 backdrop-blur-md">
+                    <div className="flex items-center gap-3">
+                      {/* Play/pause — centered across both rows */}
+                      <button
+                        onClick={toggleAudio}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white shadow-md transition-colors hover:bg-white/90 active:scale-95"
+                        style={{ color: themeColor }}
+                        aria-label={isAudioPlaying ? 'Pausar narração' : 'Ouvir narração'}
+                      >
+                        {isAudioPlaying
+                          ? <Icons.Pause size={18} className="fill-current stroke-none" />
+                          : <Icons.Play size={18} className="fill-current stroke-none ml-0.5" />}
+                      </button>
+                      {/* Content: row 1 = title + time, row 2 = seekbar */}
+                      <div className="flex min-w-0 flex-1 flex-col gap-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="truncate text-[12px] font-semibold text-white/90">{audioTitle}</span>
+                            <span className="shrink-0 rounded-full bg-violet-500/40 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-violet-200">narração</span>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-3">
+                            <span className="font-mono text-[11px] text-white/50">{formatAudioTime(audioCurrentTime)} / {formatAudioTime(audioDuration)}</span>
+                            <button
+                              onClick={() => setIsPlayerExpanded(false)}
+                              className="text-[10px] text-white/30 transition-colors hover:text-white/60"
+                              aria-label="Recolher player"
+                            >
+                              recolher ↑
+                            </button>
+                          </div>
+                        </div>
+                        {/* Seekbar row */}
+                        <div
+                          className="relative h-2 cursor-pointer rounded-full bg-white/20"
+                          onClick={(e) => {
+                            if (!audioRef.current || !audioDuration) return;
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            audioRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * audioDuration;
+                          }}
+                        >
+                          <div
+                            className="absolute inset-y-0 left-0 rounded-full bg-white/80"
+                            style={{ width: audioDuration ? `${(audioCurrentTime / audioDuration) * 100}%` : '0%' }}
+                          />
+                          <div
+                            className="absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-white shadow"
+                            style={{ left: audioDuration ? `calc(${(audioCurrentTime / audioDuration) * 100}% - 7px)` : '-7px' }}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <span className="shrink-0 font-mono text-[10px] text-white/40">
-                    {formatAudioTime(audioCurrentTime)} / {formatAudioTime(audioDuration)}
-                  </span>
-                </div>
+                ) : (
+                  /* Collapsed: floating pill bottom-right */
+                  <button
+                    onClick={() => setIsPlayerExpanded(true)}
+                    className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-black/60 py-2 pl-2 pr-3 shadow-lg backdrop-blur-md transition-all hover:bg-black/70 active:scale-95"
+                    aria-label="Abrir player de narração"
+                  >
+                    <div
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white transition-all ${isAudioPlaying ? 'ring-2 ring-white/40 ring-offset-1 ring-offset-black/60' : ''}`}
+                      style={{ color: themeColor }}
+                    >
+                      {isAudioPlaying
+                        ? <Icons.Pause size={11} className="fill-current stroke-none" />
+                        : <Icons.Play size={11} className="fill-current stroke-none ml-0.5" />}
+                    </div>
+                    <span className="text-[11px] font-semibold text-white/80">Narração</span>
+                  </button>
+                )}
+              </>
+            )}
+            {!isMobileLandscape && !showOrientationPrompt && (
+              <>
+                <button
+                  onClick={flipPrev}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
+                  aria-label="Página anterior"
+                >
+                  <Icons.ChevronLeft size={28} strokeWidth={2.5} />
+                </button>
+                <button
+                  onClick={flipNext}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
+                  aria-label="Próxima página"
+                >
+                  <Icons.ChevronLeft size={28} className="rotate-180" strokeWidth={2.5} />
+                </button>
               </>
             )}
           </>
         )}
       </div>
 
-      {/* Navigation Controls */}
-      {!showOrientationPrompt && isMobileLandscape ? (
+      {/* Navigation Controls - mobile landscape only */}
+      {!showOrientationPrompt && isMobileLandscape && (
         <>
-          {/* Left Arrow - Center far left corner */}
           <button
             onClick={flipPrev}
             className="fixed left-4 top-1/2 -translate-y-1/2 z-30 w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30"
@@ -447,8 +506,6 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
           >
             <Icons.ChevronLeft size={28} strokeWidth={2.5} />
           </button>
-
-          {/* Right Arrow - Center far right corner */}
           <button
             onClick={flipNext}
             className="fixed right-4 top-1/2 -translate-y-1/2 z-30 w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30"
@@ -457,32 +514,7 @@ export const BookReaderScreen: React.FC<BookReaderScreenProps> = ({ collection, 
             <Icons.ChevronLeft size={28} className="rotate-180" strokeWidth={2.5} />
           </button>
         </>
-      ) : !showOrientationPrompt ? (
-        <div className="relative z-20 pb-6 pt-4 flex items-center justify-center gap-6 flex-shrink-0">
-          <button
-            onClick={flipPrev}
-            className="w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
-            aria-label="Página anterior"
-          >
-            <Icons.ChevronLeft size={28} strokeWidth={2.5} />
-          </button>
-
-          {/* Pagination temporarily hidden */}
-          {/* <div className="bg-black/40 backdrop-blur-md rounded-full px-6 py-2 shadow-lg border border-white/10">
-            <span className="text-sm font-bold text-white">
-              {getPaginationText()}
-            </span>
-          </div> */}
-
-          <button
-            onClick={flipNext}
-            className="w-14 h-14 rounded-full bg-black/20 backdrop-blur-md shadow-xl flex items-center justify-center text-white border border-white/30 transition-all active:scale-95 hover:bg-black/30 hover:scale-110"
-            aria-label="Próxima página"
-          >
-            <Icons.ChevronLeft size={28} className="rotate-180" strokeWidth={2.5} />
-          </button>
-        </div>
-      ) : null}
+      )}
     </div>
   );
 };

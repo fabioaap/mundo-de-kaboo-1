@@ -17,6 +17,7 @@ interface FileUploadProps {
   collectionId?: string;
   disabled?: boolean;
   hideUrlInput?: boolean; // For cover images, hide URL input
+  hideUpload?: boolean; // Link-only: hide the upload button + format hint (e.g. YouTube videos)
   onFile?: (file: File) => void; // Called with the raw File object when a file is selected
   showAsIcon?: boolean; // Show as file icon instead of URL input
   inputId?: string;
@@ -32,6 +33,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   collectionId,
   disabled = false,
   hideUrlInput = false,
+  hideUpload = false,
   showAsIcon = false,
   inputId,
   previewSize = 'md',
@@ -237,7 +239,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               value={value}
               onChange={(e) => onChange(e.target.value)}
               className="flex-1 bg-gray-50 border-none rounded-2xl p-4 text-gray-800 focus:ring-2 focus:ring-brand-primary outline-none"
-              placeholder="URL ou faça upload de um arquivo..."
+              placeholder={hideUpload ? 'Cole o link (YouTube, Vimeo, etc.)' : 'URL ou faça upload de um arquivo...'}
               disabled={disabled || uploading}
             />
             {value && !isImage && (
@@ -270,8 +272,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </button>
         )}
 
-        {/* File Upload Button - Always visible for non-image types */}
-        {!isImage && (
+        {/* File Upload Button - Always visible for non-image types (unless link-only) */}
+        {!isImage && !hideUpload && (
           <div className="flex items-center gap-2">
             <label
               htmlFor={resolvedInputId}
@@ -306,6 +308,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         )}
 
         {/* File Type Hints */}
+        {!hideUpload && (
         <p className="mt-1 text-xs text-gray-500">
           {folder === 'covers' && 'Formatos aceitos: JPG, PNG, WebP (máx. 500MB)'}
           {folder === 'characters' && 'Formatos aceitos: JPG, PNG, WebP e SVG (máx. 500MB)'}
@@ -314,6 +317,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           {folder === 'video' && 'Formatos aceitos: MP4, WebM (máx. 500MB)'}
           {folder === 'extras' && 'Formatos aceitos: JPG, PNG, WebP e SVG (máx. 500MB)'}
         </p>
+        )}
       </div>
 
       <ConfirmationModal

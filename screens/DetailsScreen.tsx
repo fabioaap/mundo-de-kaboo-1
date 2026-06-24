@@ -104,9 +104,6 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
   const presentationCopy = getCollectionPresentationCopy(collection);
   const isKit = collectionTypeMeta.type === 'kit';
   const collectionDisplayLabel = isKit ? 'Coleção' : collectionTypeMeta.label;
-  const collectionDetailSummary = isKit
-    ? 'Coleção com livro, mídia e materiais de apoio reunidos na mesma experiência.'
-    : collectionTypeMeta.detailSummary;
   const collectionMaterialsDescription = isKit
     ? 'Materiais de apoio e recursos complementares desta coleção.'
     : presentationCopy.materialsDescription;
@@ -145,12 +142,12 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
   const primaryReadingAsset = visiblePrimaryAssets.find((asset) => asset.category === 'reading')
     ?? primaryAssets.find((asset) => asset.category === 'reading')
     ?? null;
-  const bookAudiolivroAsset = !isKit
-    ? (primaryAssets.find((a) => a.category === 'storytelling' && a.is_published !== false) ?? null)
-    : null;
-  const bookVideoAsset = !isKit
-    ? (primaryAssets.find((a) => a.category === 'animation' && a.is_published !== false) ?? null)
-    : null;
+  const bookAudioAssets = !isKit
+    ? primaryAssets.filter((a) => a.media_type === 'audio' && a.is_published !== false)
+    : [];
+  const bookVideoAssets = !isKit
+    ? primaryAssets.filter((a) => a.media_type === 'video' && a.is_published !== false)
+    : [];
   const libraryAssets = collectionAssets.filter((asset) => asset.scope === 'library');
   const hasLegacyExtraMaterials = (collection.extra_materials?.length ?? 0) > 0;
   const hasResources = libraryAssets.length > 0 || resources.length > 0 || hasLegacyExtraMaterials;
@@ -453,7 +450,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
       return;
     }
 
-    if (asset.category === 'storytelling') {
+    if (asset.media_type === 'audio') {
       onNavigate('player_audio', {
         collectionId: collection.id,
         assetUrl: asset.url,
@@ -467,7 +464,7 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
       return;
     }
 
-    if (asset.category === 'animation' || asset.category === 'accessible_video') {
+    if (asset.media_type === 'video') {
       onNavigate('player_video', {
         collectionId: collection.id,
         assetUrl: asset.url,
@@ -593,8 +590,9 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
 
   const getAssetIcon = (asset: CollectionAsset, size: number) =>
     asset.category === 'reading' ? <Icons.BookOpen size={size} />
-      : asset.category === 'storytelling' ? <Icons.Headphones size={size} />
-        : <Icons.Video size={size} />;
+      : asset.media_type === 'audio' ? <Icons.Headphones size={size} />
+        : asset.media_type === 'video' ? <Icons.Video size={size} />
+          : <Icons.FileText size={size} />;
 
   // Extracts the source collection id from a storage asset URL, e.g.
   // ".../object/public/collections/pdfs/<collectionId>/file.pdf".
@@ -795,8 +793,10 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                       <div className="flex items-center gap-2 md:ml-auto md:flex-shrink-0 w-full md:w-auto">
                         <button
                           onClick={() => {
-                            // Video must not open a modal-over-modal: redirect to the
-                            // dedicated player instead of the in-page preview.
+                            // Fecha o menu de materiais antes de abrir a mídia — senão o preview/player
+                            // abre por cima dele (modal sobre modal).
+                            setShowExtraTools(false);
+                            // Vídeo vai pro player dedicado, não pro preview in-page.
                             if (item.media_type === 'video') {
                               onNavigate('player_video', {
                                 collectionId: collection.id,
@@ -871,17 +871,11 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                 {collection.title}
               </h1>
 
-              {collectionDetailSummary && (
-                <p className="text-sm font-medium leading-relaxed text-gray-500 mb-4 max-w-2xl">
-                  {collectionDetailSummary}
-                </p>
-              )}
-
               {collection.synopsis && (
                 <p className="text-sm text-gray-500 mt-2 mb-4 italic">{collection.synopsis}</p>
               )}
 
-              {!isKit && (primaryReadingAsset || collection.pdf_url || bookAudiolivroAsset || bookVideoAsset) && (
+              {!isKit && (primaryReadingAsset || collection.pdf_url || bookAudioAssets.length > 0 || bookVideoAssets.length > 0) && (
                 <div className="mb-8 flex flex-wrap gap-4">
                   {(primaryReadingAsset || collection.pdf_url) && (
                     <button
@@ -896,32 +890,34 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
                       <span className="text-[1.125rem] font-bold leading-none">Ler livro</span>
                     </button>
                   )}
-                  {bookAudiolivroAsset && (
+                  {bookAudioAssets.map((audio) => (
                     <button
+                      key={audio.id}
                       type="button"
-                      onClick={() => handlePrimaryAssetAction(bookAudiolivroAsset)}
-                      aria-label="Ouvir audiolivro"
+                      onClick={() => handlePrimaryAssetAction(audio)}
+                      aria-label={`Ouvir ${getAssetItemName(audio)}`}
                       className="flex w-[168px] max-w-full min-h-[154px] flex-col items-start justify-between rounded-[30px] border border-brand-primary/10 bg-white px-5 py-4 text-left text-[#1F2940] shadow-[0_12px_24px_rgba(31,41,64,0.10),0_2px_6px_rgba(31,41,64,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(31,41,64,0.14),0_4px_10px_rgba(31,41,64,0.08)] active:translate-y-0 active:scale-[0.985]"
                     >
                       <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-brand-primary/15 bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
                         <Icons.Headphones size={24} />
                       </span>
-                      <span className="text-[1.125rem] font-bold leading-none">Ouvir</span>
+                      <span className="text-[1.125rem] font-bold leading-tight line-clamp-2">{getAssetItemName(audio)}</span>
                     </button>
-                  )}
-                  {bookVideoAsset && (
+                  ))}
+                  {bookVideoAssets.map((video) => (
                     <button
+                      key={video.id}
                       type="button"
-                      onClick={() => handlePrimaryAssetAction(bookVideoAsset)}
-                      aria-label="Assistir vídeo do livro"
+                      onClick={() => handlePrimaryAssetAction(video)}
+                      aria-label={`Assistir ${getAssetItemName(video)}`}
                       className="flex w-[168px] max-w-full min-h-[154px] flex-col items-start justify-between rounded-[30px] border border-brand-primary/10 bg-white px-5 py-4 text-left text-[#1F2940] shadow-[0_12px_24px_rgba(31,41,64,0.10),0_2px_6px_rgba(31,41,64,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(31,41,64,0.14),0_4px_10px_rgba(31,41,64,0.08)] active:translate-y-0 active:scale-[0.985]"
                     >
                       <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-brand-primary/15 bg-brand-primary/[0.08] text-brand-primary shadow-sm ring-1 ring-brand-primary/10">
                         <Icons.Play size={24} />
                       </span>
-                      <span className="text-[1.125rem] font-bold leading-none">Assistir</span>
+                      <span className="text-[1.125rem] font-bold leading-tight line-clamp-2">{getAssetItemName(video)}</span>
                     </button>
-                  )}
+                  ))}
                 </div>
               )}
 

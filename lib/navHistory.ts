@@ -75,6 +75,9 @@ export const getNavStateFromHashString = (hash: string): NavState | null => {
       ? ('books' as const)
       : undefined;
     const collectionId = hashParams.get('collectionId')?.trim() || undefined;
+    // Drill-down stack (kit → book → …) so returning from a player restores the
+    // active level instead of collapsing to the collection root.
+    const modalStackIds = hashParams.get('modalStack')?.split(',').map((id) => id.trim()).filter(Boolean);
 
     if (collectionGroup || collectionId) {
       return {
@@ -82,6 +85,7 @@ export const getNavStateFromHashString = (hash: string): NavState | null => {
         params: {
           ...(collectionGroup ? { collectionGroup } : {}),
           ...(collectionId ? { collectionId } : {}),
+          ...(modalStackIds && modalStackIds.length > 1 ? { modalStackIds } : {}),
         },
       };
     }
@@ -100,6 +104,10 @@ export const getHashUrlForScreen = (screen: ScreenName, params?: NavState['param
 
     if (typeof params?.collectionId === 'string' && params.collectionId.trim()) {
       hashParams.set('collectionId', params.collectionId.trim());
+    }
+
+    if (Array.isArray(params?.modalStackIds) && params.modalStackIds.length > 1) {
+      hashParams.set('modalStack', params.modalStackIds.join(','));
     }
   }
 

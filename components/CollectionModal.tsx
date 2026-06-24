@@ -5,6 +5,11 @@ import { DetailsScreen } from '../screens/DetailsScreen';
 import { ModalSkeleton } from './ModalSkeleton';
 import { api } from '../lib/api';
 
+// Holds the full drill-down stack at the moment a player is launched, so returning
+// from the player rebuilds the exact levels synchronously — no async refetch and no
+// kit→book flash. Survives the modal unmount/remount that happens around the player.
+let cachedPlayerStack: Collection[] = [];
+
 interface CollectionModalProps {
   collection: Collection | null;
   isOpen: boolean;
@@ -26,6 +31,9 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
   // Disables slide transition during initial stack reconstruction so the user
   // goes straight to the active level without seeing intermediate levels animate.
   const [skipTransition, setSkipTransition] = useState(false);
+  // True while a multi-level stack is still being fetched. Keeps the skeleton up so
+  // the kit level is never painted as an intermediate frame before the book.
+  const [reconstructing, setReconstructing] = useState(false);
   const activeCollection = collectionStack[collectionStack.length - 1] || collection;
   // Índice do nível ativo na pilha — guia o slide horizontal (drill-down).
   const activeIndex = Math.max(0, collectionStack.length - 1);
@@ -46,6 +54,26 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
   useEffect(() => {
     let isCancelled = false;
 
+    // Fast path: returning from a player. Match purely on initialStackIds — the cache
+    // already holds the root object, so a momentarily-stale `collection` prop (App
+    // refetches it async on back) can't root the stack on the wrong level and flash.
+    if (isOpen) {
+      const restoreIds = Array.isArray(initialStackIds) && initialStackIds.length > 1
+        ? initialStackIds.filter((id): id is string => typeof id === 'string' && id.length > 0)
+        : [];
+      if (restoreIds.length > 1
+        && cachedPlayerStack.length === restoreIds.length
+        && restoreIds.every((id, index) => cachedPlayerStack[index]?.id === id)) {
+        setSkipTransition(true);
+        setReconstructing(false);
+        setCollectionStack(cachedPlayerStack);
+        requestAnimationFrame(() => setSkipTransition(false));
+        return () => {
+          isCancelled = true;
+        };
+      }
+    }
+
     if (isOpen && collection) {
       const normalizedStackIds = Array.isArray(initialStackIds) && initialStackIds.length > 0
         ? initialStackIds.filter((id): id is string => typeof id === 'string' && id.length > 0)
@@ -57,15 +85,18 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       ];
       const extraCollectionIds = orderedStackIds.slice(1);
 
-      setCollectionStack([collection]);
-
       if (extraCollectionIds.length === 0) {
+        setReconstructing(false);
+        setCollectionStack([collection]);
         return () => {
           isCancelled = true;
         };
       }
 
+      // Extra levels to fetch (e.g. reload of a drill-down). Hold the skeleton — do NOT
+      // render the root level yet — until the whole stack resolves, then reveal at once.
       setSkipTransition(true);
+      setReconstructing(true);
       Promise.all(extraCollectionIds.map(async (id) => {
         try {
           return await api.getCollectionById(id);
@@ -83,6 +114,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
         ];
 
         setCollectionStack(nextStack);
+        setReconstructing(false);
         requestAnimationFrame(() => setSkipTransition(false));
       });
 
@@ -126,7 +158,9 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       return;
     }
 
-    if (!activeCollection) {
+    // While the multi-level stack is still resolving, keep the skeleton up so the kit
+    // level is never shown before the book.
+    if (!activeCollection || reconstructing) {
       setShowContent(false);
       setShowSkeleton(true);
       return;
@@ -153,7 +187,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       window.clearTimeout(skeletonTimer);
       window.clearTimeout(contentTimer);
     };
-  }, [isOpen, activeCollection?.id, showContent]);
+  }, [isOpen, activeCollection?.id, showContent, reconstructing]);
 
   if (!isOpen) return null;
 
@@ -208,6 +242,8 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
                     onNavigate={(screen, params) => {
                       // Close modal when navigating to player screens
                       if (['player_book', 'player_audio', 'player_video'].includes(screen)) {
+                        // Cache the live stack so back-from-player restores it synchronously.
+                        cachedPlayerStack = collectionStack;
                         onClose();
                       }
                       onNavigate(screen, ['player_book', 'player_audio', 'player_video'].includes(screen)

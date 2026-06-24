@@ -323,7 +323,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const healthUpdatedAt = contextChangedAt ?? healthCheck?.timestamp ?? null;
     const healthSummaryCards = useMemo(() => {
         const enabledFeatureLabels = [
-            menuMusicEnabled ? 'Áudios' : null,
+            menuMusicEnabled ? 'Músicas' : null,
             heroParallaxMode !== 'off' ? `Parallax ${heroParallaxModeLabel.toLowerCase()}` : null,
             contentOfflineEnabled ? 'Offline' : null,
         ].filter(Boolean) as string[];
@@ -1073,8 +1073,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                         <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                                             <div className="flex items-start justify-between gap-4">
                                                 <div>
-                                                    <p className="text-sm font-bold text-gray-900">Menu: Áudios</p>
-                                                    <p className="mt-1 text-sm text-gray-500">Liga ou desliga o item de menu de áudios para a marca.</p>
+                                                    <p className="text-sm font-bold text-gray-900">Menu: Músicas</p>
+                                                    <p className="mt-1 text-sm text-gray-500">Liga ou desliga o item de menu de músicas para a marca.</p>
                                                 </div>
                                                 <button
                                                     type="button"

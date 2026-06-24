@@ -31,6 +31,9 @@ interface AudioPlayerScreenProps {
   // the media being played, NOT of the collection it was opened from. Prevents an audio
   // reused inside a kit from showing the kit's cover. Falls back to the collection cover.
   coverImage?: string;
+  // When true (set on prev/next/related navigation), the freshly loaded track
+  // starts playing automatically instead of waiting for a manual play press.
+  autoplay?: boolean;
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
 }
@@ -43,6 +46,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   lyricsUrl,
   assetOfflineAvailable,
   coverImage,
+  autoplay,
   onNavigate,
   onBack,
 }) => {
@@ -78,6 +82,8 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rotationIntervalRef = useRef<number | null>(null);
+  // Guards autoplay so each new track plays at most once (canPlay can fire repeatedly).
+  const autoplayDoneRef = useRef(false);
   const lastSavedAtRef = useRef(0);
   const lastSavedPositionRef = useRef(0);
   const saveInFlightRef = useRef(false);
@@ -249,6 +255,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
     setRelatedTracks([]);
     setPlaylistTracks([]);
     setTrackDescription('');
+    autoplayDoneRef.current = false;
 
     const loadContext = async () => {
       try {
@@ -575,12 +582,30 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       collectionId: item.collectionId ?? collection.id,
       mediaItemId: item.id,
       assetTitle: item.title,
+      // Switching tracks within a playlist (prev/next, auto-advance, related click)
+      // should keep playing — the user already chose to listen.
+      autoplay: true,
     });
   };
 
   const playlistIndex = playlistTracks.findIndex((t) => t.id === mediaItemId);
-  const prevTrack = playlistIndex > 0 ? playlistTracks[playlistIndex - 1] : null;
-  const nextTrack = playlistIndex >= 0 && playlistIndex < playlistTracks.length - 1 ? playlistTracks[playlistIndex + 1] : null;
+
+  // Player controls are driven by the content TYPE of the asset playing, not by where it
+  // was opened from. Music tracks ('music') get playlist nav + auto-advance and no speed;
+  // narration/audiobook ('storytelling') gets speed and no playlist nav.
+  // mediaItemId may be a hub id ("collection-asset:<hub>:<collId>:<assetId>") or a raw asset id.
+  const resolvedAssetId = mediaItemId?.match(/^collection-asset:[^:]+:[^:]+:(.+)$/)?.[1] ?? mediaItemId;
+  const currentCategory = (collection.collection_assets ?? []).find((a) => a.id === resolvedAssetId)?.category ?? null;
+  // Fallback: anything sitting in the music hub playlist is a music track (the hub holds
+  // only 'music' assets), so treat it as music even if the asset lookup misses.
+  const isMusicTrack = currentCategory === 'music' || (currentCategory === null && playlistIndex >= 0);
+
+  // Prev/next track + auto-advance only apply to music tracks within the playlist.
+  const showTrackNav = isMusicTrack && playlistIndex >= 0 && playlistTracks.length > 1;
+  // Speed control is for spoken content (narration/audiobook); music hides it.
+  const showSpeedControl = !isMusicTrack;
+  const prevTrack = showTrackNav && playlistIndex > 0 ? playlistTracks[playlistIndex - 1] : null;
+  const nextTrack = showTrackNav && playlistIndex < playlistTracks.length - 1 ? playlistTracks[playlistIndex + 1] : null;
 
   const handlePrevTrack = () => { if (prevTrack) openRelatedTrack(prevTrack); };
   const handleNextTrack = () => { if (nextTrack) openRelatedTrack(nextTrack); };
@@ -667,7 +692,15 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
             maybeSaveProgress(true);
           }}
           onWaiting={() => setIsBuffering(true)}
-          onCanPlay={() => setIsBuffering(false)}
+          onCanPlay={() => {
+            setIsBuffering(false);
+            if (autoplay && !autoplayDoneRef.current && audioRef.current?.paused) {
+              autoplayDoneRef.current = true;
+              audioRef.current.play().catch(() => {
+                setIsPlaying(false);
+              });
+            }
+          }}
         />
       )}
 
@@ -839,7 +872,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       <div className={`relative z-10 flex-1 overflow-hidden ${isMobileLandscape ? 'px-4 pb-4' : 'flex flex-col lg:flex-row'}`}>
 
         {/* Player Column */}
-        <div className={`min-w-0 flex-1 ${isMobileLandscape ? 'flex h-full items-center justify-center gap-5 overflow-hidden' : 'flex flex-col items-center justify-start overflow-y-auto pt-3'}`}>
+        <div className={`min-w-0 flex-1 ${isMobileLandscape ? 'flex h-full items-center justify-center gap-5 overflow-hidden' : 'flex flex-col items-center justify-center overflow-y-auto'}`}>
           {/* CD/Vinyl Disc */}
           <div className={`relative ${isMobileLandscape ? 'shrink-0' : 'mb-2'}`}>
             <div
@@ -905,31 +938,36 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
               </div>
             </div>
 
-            {/* Speed Control */}
-            <div className="flex justify-center">
-              <button
-                onClick={toggleSpeed}
-                aria-label={`Velocidade: ${playbackRate}x`}
-                className="px-5 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/30 text-white font-bold text-sm hover:bg-black/30 transition-all active:scale-95"
-              >
-                {playbackRate}x
-              </button>
-            </div>
+            {/* Speed Control — só faz sentido em conteúdo falado (audiolivro/narração).
+                Numa faixa de música acelerar distorce o áudio, então fica oculto. */}
+            {showSpeedControl && (
+              <div className="flex justify-center">
+                <button
+                  onClick={toggleSpeed}
+                  aria-label={`Velocidade: ${playbackRate}x`}
+                  className="px-5 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/30 text-white font-bold text-sm hover:bg-black/30 transition-all active:scale-95"
+                >
+                  {playbackRate}x
+                </button>
+              </div>
+            )}
 
             {/* Main Controls */}
             <div className={`flex items-center justify-center ${isMobileLandscape ? 'gap-3' : 'gap-5'}`}>
-              {/* Prev Track */}
-              <button
-                type="button"
-                onClick={handlePrevTrack}
-                disabled={!prevTrack}
-                className={`${transportButtonHitAreaClass} disabled:opacity-30`}
-                aria-label="Faixa anterior"
-              >
-                <span className={transportButtonSurfaceClass}>
-                  <Icons.SkipBack size={20} fill="currentColor" strokeWidth={0} />
-                </span>
-              </button>
+              {/* Prev Track — only in the music playlist context */}
+              {showTrackNav && (
+                <button
+                  type="button"
+                  onClick={handlePrevTrack}
+                  disabled={!prevTrack}
+                  className={`${transportButtonHitAreaClass} disabled:opacity-30`}
+                  aria-label="Faixa anterior"
+                >
+                  <span className={transportButtonSurfaceClass}>
+                    <Icons.SkipBack size={20} fill="currentColor" strokeWidth={0} />
+                  </span>
+                </button>
+              )}
 
               {/* Skip Backward */}
               <button
@@ -975,18 +1013,20 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                 </span>
               </button>
 
-              {/* Next Track */}
-              <button
-                type="button"
-                onClick={handleNextTrack}
-                disabled={!nextTrack}
-                className={`${transportButtonHitAreaClass} disabled:opacity-30`}
-                aria-label="Próxima faixa"
-              >
-                <span className={transportButtonSurfaceClass}>
-                  <Icons.SkipForward size={20} fill="currentColor" strokeWidth={0} />
-                </span>
-              </button>
+              {/* Next Track — only in the music playlist context */}
+              {showTrackNav && (
+                <button
+                  type="button"
+                  onClick={handleNextTrack}
+                  disabled={!nextTrack}
+                  className={`${transportButtonHitAreaClass} disabled:opacity-30`}
+                  aria-label="Próxima faixa"
+                >
+                  <span className={transportButtonSurfaceClass}>
+                    <Icons.SkipForward size={20} fill="currentColor" strokeWidth={0} />
+                  </span>
+                </button>
+              )}
             </div>
 
             {/* Play Error Message */}
