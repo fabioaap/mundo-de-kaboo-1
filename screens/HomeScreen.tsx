@@ -2217,8 +2217,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     <p className={`text-sm mt-1 line-clamp-1 ${isCorujaHomeLayout ? 'text-white/70' : 'text-gray-500'}`}>Pesquisando por “{searchTerm.trim()}”</p>
                   )}
                 </div>
-                {!isCorujaHomeLayout && (
-                  <div className="relative flex items-center gap-1.5 rounded-full border border-gray-200/80 bg-white/90 px-2 py-1 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+                <div className="relative flex items-center gap-1.5 rounded-full border border-gray-200/80 bg-white/90 px-2 py-1 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
                     {/* Chip Idade */}
                     {(() => {
                       const activeCount = activeFilters.age.filter(isAgeValue).length;
@@ -2269,7 +2268,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       {filteredCollections.length}
                     </span>
                   </div>
-                )}
               </div>
 
               {filteredCollections.length > 0 ? (
