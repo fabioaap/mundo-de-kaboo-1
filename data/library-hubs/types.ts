@@ -26,6 +26,8 @@ export interface LibraryMockItem {
     coverImage?: string;
     progress?: number;
     chips?: string[];
+    /** Explicit filter tags from DB (Formation.tags / Material.tags). When present, bypass keyword inference. */
+    filterTags?: string[];
     ctaLabel: string;
     assetType?: LibraryMockItemAssetType;
     assetUrl?: string;

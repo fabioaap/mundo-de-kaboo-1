@@ -47,6 +47,7 @@ export const formationsLibraryMock: LibraryHubData = {
         coverImage: '/mock/covers/kaboo-carta-misteriosa-kit.svg',
         progress: 24,
         chips: ['Professor', 'Roda', 'Sequência curta'],
+        filterTags: ['Acolhimento', 'Roda'],
         ctaLabel: 'Abrir guia',
     },
     rails: [
@@ -69,6 +70,7 @@ export const formationsLibraryMock: LibraryHubData = {
                     collectionId: '784b3238-0916-4922-af3c-8627d74cc16c',
                     coverImage: '/mock/covers/kaboo-carta-misteriosa.png',
                     chips: ['Acolhimento', 'Professor'],
+                    filterTags: ['Acolhimento', 'Percurso curto'],
                     ctaLabel: 'Abrir guia',
                 },
                 {
@@ -84,6 +86,7 @@ export const formationsLibraryMock: LibraryHubData = {
                     collectionId: 'c6334710-6117-426f-995c-07be8d87d872',
                     coverImage: '/mock/covers/mensageiro-cancao-certa.png',
                     chips: ['Som', 'Presença'],
+                    filterTags: ['Roda'],
                     ctaLabel: 'Abrir guia',
                 },
                 {
@@ -99,6 +102,7 @@ export const formationsLibraryMock: LibraryHubData = {
                     collectionId: '6a93b60f-b4e9-4fe6-9fed-7c6f7391745c',
                     coverImage: '/mock/covers/baratinha-baratao-labirinto-eco.png',
                     chips: ['Grupo', 'Escuta'],
+                    filterTags: ['Roda', 'Conflitos', 'Percurso curto'],
                     ctaLabel: 'Abrir guia',
                 },
             ],
@@ -122,6 +126,7 @@ export const formationsLibraryMock: LibraryHubData = {
                     collectionId: '66627622-235a-43f6-ba4b-35522086165c',
                     coverImage: '/mock/covers/gaio-hora-voar-alto.png',
                     chips: ['Professor', 'Roda'],
+                    filterTags: ['Acolhimento', 'Percurso curto'],
                     ctaLabel: 'Abrir guia',
                 },
                 {
@@ -137,6 +142,7 @@ export const formationsLibraryMock: LibraryHubData = {
                     collectionId: 'ad037be3-ad9f-43d3-a913-549337aef9ef',
                     coverImage: '/mock/covers/kaboo-desafio-cores.png',
                     chips: ['Convivência', 'Diálogo'],
+                    filterTags: ['Conflitos', 'Percurso curto'],
                     ctaLabel: 'Abrir guia',
                 },
                 {
@@ -152,6 +158,7 @@ export const formationsLibraryMock: LibraryHubData = {
                     collectionId: 'ce726511-73df-422d-b5fb-b2d0518e164a',
                     coverImage: '/mock/covers/papa-plano-furado.png',
                     chips: ['Criatividade', 'Recomeço'],
+                    filterTags: ['Percurso curto'],
                     ctaLabel: 'Abrir guia',
                 },
             ],

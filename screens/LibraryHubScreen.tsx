@@ -290,6 +290,10 @@ const matchesCompactLibraryFilter = (item: LibraryMockItem, filter: string, hub:
     return true;
   }
 
+  if (item.filterTags && item.filterTags.length > 0) {
+    return item.filterTags.includes(filter);
+  }
+
   const searchableText = buildLibrarySearchText(item);
   const normalizedFilter = normalizeLibraryText(filter);
 
@@ -640,6 +644,7 @@ const formationToLibraryItem = (f: Formation): LibraryMockItem => ({
   meta: `${f.steps_count ?? 1} etapa${(f.steps_count ?? 1) !== 1 ? 's' : ''}${f.duration_label ? ' • ' + f.duration_label : ''}`,
   coverImage: f.cover_image ?? undefined,
   chips: f.tags ?? [],
+  filterTags: f.tags ?? [],
   ctaLabel: 'Explorar',
 });
 
@@ -654,6 +659,7 @@ const materialToLibraryItem = (m: Material): LibraryMockItem => ({
   assetUrl: m.asset_url ?? undefined,
   assetType: m.asset_type as any,
   chips: m.tags ?? [],
+  filterTags: m.tags ?? [],
   ctaLabel: 'Abrir',
 });
 
@@ -1661,25 +1667,43 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                 <span className={isCorujaLibraryHub ? 'text-white/78' : 'text-brand-primary/72'}>Vídeos</span>
               </div>
 
-              <section className={`animate-fade-in-up rounded-[1.35rem] px-4 py-3.5 md:px-5 ${isCorujaLibraryHub ? corujaStageShellClass : defaultVideoShellClass}`}>
-                <div className="flex w-full flex-col gap-3">
-                  <div className={desktopSearchBarLayoutClass}>
-                    <label className={isCorujaLibraryHub ? corujaSearchFieldClass : defaultSearchFieldClass}>
-                      <Icons.Search size={18} className={isCorujaLibraryHub ? 'text-white/60 shrink-0' : 'text-brand-primary/55 shrink-0'} />
-                      <input
-                        type="search"
-                        value={videoQuery}
-                        onChange={(event) => setVideoQuery(event.target.value)}
-                        placeholder="Pesquisar por título, coleção ou contexto de uso"
-                        aria-label="Pesquisar vídeos"
-                        className={`min-w-0 flex-1 bg-transparent text-[14px] outline-none ${isCorujaLibraryHub ? 'text-white placeholder:text-white/42' : 'text-brand-primary placeholder:text-gray-400'}`}
-                      />
-                    </label>
+              <section className={isCorujaLibraryHub ? `animate-fade-in-up rounded-[1.35rem] px-4 py-3.5 md:px-5 ${corujaStageShellClass}` : 'animate-fade-in-up'}>
+                <div className="space-y-3 md:space-y-4">
+                  <div className="relative z-10 flex w-full flex-col gap-3 lg:flex-row lg:items-center">
+                    {isCorujaLibraryHub ? (
+                      <label className={corujaSearchFieldClass}>
+                        <Icons.Search size={18} className="text-white/60 shrink-0" />
+                        <input
+                          type="search"
+                          value={videoQuery}
+                          onChange={(event) => setVideoQuery(event.target.value)}
+                          placeholder="Pesquisar por título, coleção ou contexto de uso"
+                          aria-label="Pesquisar vídeos"
+                          className="min-w-0 flex-1 bg-transparent text-[14px] outline-none text-white placeholder:text-white/42"
+                        />
+                      </label>
+                    ) : (
+                      <div className="relative min-w-0 flex-1">
+                        <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+                          <Icons.Search size={18} aria-hidden="true" />
+                        </div>
+                        <input
+                          type="search"
+                          value={videoQuery}
+                          onChange={(event) => setVideoQuery(event.target.value)}
+                          placeholder="Pesquisar por título, coleção ou contexto de uso"
+                          aria-label="Pesquisar vídeos"
+                          className="w-full h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-4 shadow-sm text-gray-900 placeholder:text-gray-400 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-brand-primary/30 hover:border-brand-primary/24 focus:border-brand-primary text-[14px]"
+                        />
+                      </div>
+                    )}
 
-                    <div className={desktopSearchMetaClass}>
-                      <span className={isCorujaLibraryHub ? corujaSearchResultBadgeClass : defaultSearchResultBadgeClass}>
-                        {sortedVideoItems.length} resultados
-                      </span>
+                    <div className={isCorujaLibraryHub ? desktopSearchMetaClass : 'flex flex-wrap items-center gap-2 lg:shrink-0'}>
+                      {isCorujaLibraryHub && (
+                        <span className={corujaSearchResultBadgeClass}>
+                          {sortedVideoItems.length} resultados
+                        </span>
+                      )}
                       {hasCollectionFilterOptions && (
                       <button
                         type="button"
@@ -1687,8 +1711,8 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                         className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 md:px-4 transition-all active:scale-95 ${isCorujaLibraryHub
                           ? (activeLibraryFilterCount > 0 || showLibraryFilters ? corujaSortActiveClass : corujaSortIdleClass)
                           : activeLibraryFilterCount > 0 || showLibraryFilters
-                            ? 'border-brand-primary bg-brand-primary text-white shadow-brand-primary/20'
-                            : 'border-gray-200 bg-gray-50 text-gray-600 shadow-sm hover:border-brand-primary/20 hover:bg-white'}`}
+                            ? 'border-brand-primary bg-brand-primary text-white shadow-md shadow-brand-primary/20'
+                            : 'bg-white text-brand-primary border-gray-200 shadow-sm hover:border-brand-primary/24'}`}
                         title="Refinar busca"
                       >
                         <Icons.Filter size={18} strokeWidth={activeLibraryFilterCount > 0 || showLibraryFilters ? 2.5 : 2} />
@@ -1760,14 +1784,16 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                             key={`video-filter-${filter.label}`}
                             type="button"
                             onClick={() => setVideoActiveFilter(filter.label)}
-                            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all duration-200 ${filter.active
-                              ? (isCorujaLibraryHub ? corujaSortActiveClass : ACTIVE_LIBRARY_TAB_CLASS)
-                              : (isCorujaLibraryHub ? corujaSortIdleClass : NEUTRAL_LIBRARY_TAB_CLASS)}`}
+                            className={isCorujaLibraryHub
+                              ? `inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all duration-200 ${filter.active ? corujaSortActiveClass : corujaSortIdleClass}`
+                              : `px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border active:scale-95 ${filter.active ? 'bg-brand-primary text-white border-brand-primary shadow-sm' : 'bg-white border-gray-200 text-gray-700 hover:border-brand-primary/24'}`}
                           >
-                            <span>{filter.label}</span>
-                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] leading-none ${isCorujaLibraryHub ? (filter.active ? 'bg-white/18 text-white' : 'bg-white/10 text-white/72') : 'bg-black/[0.04] text-brand-primary/70'}`}>
-                              {filter.count}
-                            </span>
+                            {filter.label}
+                            {isCorujaLibraryHub && (
+                              <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[9px] leading-none ${filter.active ? 'bg-white/18 text-white' : 'bg-white/10 text-white/72'}`}>
+                                {filter.count}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </HorizontalFilterRail>
@@ -1857,25 +1883,43 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                 <span className={isCorujaLibraryHub ? 'text-white/78' : 'text-brand-primary/72'}>{config.title}</span>
               </div>
 
-              <section className={`animate-fade-in-up rounded-[1.35rem] px-4 py-3.5 md:px-5 ${isCorujaLibraryHub ? corujaStageShellClass : defaultCompactShellClass}`}>
-                <div className="flex w-full flex-col gap-3">
-                  <div className={desktopSearchBarLayoutClass}>
-                    <label className={isCorujaLibraryHub ? corujaSearchFieldClass : defaultSearchFieldClass}>
-                      <Icons.Search size={18} className={isCorujaLibraryHub ? 'text-white/60 shrink-0' : 'text-brand-primary/55 shrink-0'} />
-                      <input
-                        type="search"
-                        value={compactQuery}
-                        onChange={(event) => setCompactQuery(event.target.value)}
-                        placeholder="Pesquisar por título, coleção ou contexto de uso"
-                        aria-label={`Pesquisar em ${config.title}`}
-                        className={`min-w-0 flex-1 bg-transparent text-[14px] outline-none ${isCorujaLibraryHub ? 'text-white placeholder:text-white/42' : 'text-brand-primary placeholder:text-gray-400'}`}
-                      />
-                    </label>
+              <section className={isCorujaLibraryHub ? `animate-fade-in-up rounded-[1.35rem] px-4 py-3.5 md:px-5 ${corujaStageShellClass}` : 'animate-fade-in-up'}>
+                <div className="space-y-3 md:space-y-4">
+                  <div className="relative z-10 flex w-full flex-col gap-3 lg:flex-row lg:items-center">
+                    {isCorujaLibraryHub ? (
+                      <label className={corujaSearchFieldClass}>
+                        <Icons.Search size={18} className="text-white/60 shrink-0" />
+                        <input
+                          type="search"
+                          value={compactQuery}
+                          onChange={(event) => setCompactQuery(event.target.value)}
+                          placeholder="Pesquisar por título, coleção ou contexto de uso"
+                          aria-label={`Pesquisar em ${config.title}`}
+                          className="min-w-0 flex-1 bg-transparent text-[14px] outline-none text-white placeholder:text-white/42"
+                        />
+                      </label>
+                    ) : (
+                      <div className="relative min-w-0 flex-1">
+                        <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+                          <Icons.Search size={18} aria-hidden="true" />
+                        </div>
+                        <input
+                          type="search"
+                          value={compactQuery}
+                          onChange={(event) => setCompactQuery(event.target.value)}
+                          placeholder="Pesquisar por título, coleção ou contexto de uso"
+                          aria-label={`Pesquisar em ${config.title}`}
+                          className="w-full h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-4 shadow-sm text-gray-900 placeholder:text-gray-400 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-brand-primary/30 hover:border-brand-primary/24 focus:border-brand-primary text-[14px]"
+                        />
+                      </div>
+                    )}
 
-                    <div className={desktopSearchMetaClass}>
-                      <span className={isCorujaLibraryHub ? corujaSearchResultBadgeClass : defaultSearchResultBadgeClass}>
-                        {sortedCompactItems.length} resultados
-                      </span>
+                    <div className={isCorujaLibraryHub ? desktopSearchMetaClass : 'flex flex-wrap items-center gap-2 lg:shrink-0'}>
+                      {isCorujaLibraryHub && (
+                        <span className={corujaSearchResultBadgeClass}>
+                          {sortedCompactItems.length} resultados
+                        </span>
+                      )}
                       {hasCollectionFilterOptions && (
                       <button
                         type="button"
@@ -1883,8 +1927,8 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                         className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 md:px-4 transition-all active:scale-95 ${isCorujaLibraryHub
                           ? (activeLibraryFilterCount > 0 || showLibraryFilters ? corujaSortActiveClass : corujaSortIdleClass)
                           : activeLibraryFilterCount > 0 || showLibraryFilters
-                            ? 'border-brand-primary bg-brand-primary text-white shadow-brand-primary/20'
-                            : 'border-gray-200 bg-gray-50 text-gray-600 shadow-sm hover:border-brand-primary/20 hover:bg-white'}`}
+                            ? 'border-brand-primary bg-brand-primary text-white shadow-md shadow-brand-primary/20'
+                            : 'bg-white text-brand-primary border-gray-200 shadow-sm hover:border-brand-primary/24'}`}
                         title="Refinar busca"
                       >
                         <Icons.Filter size={18} strokeWidth={activeLibraryFilterCount > 0 || showLibraryFilters ? 2.5 : 2} />
@@ -1956,14 +2000,16 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                             key={`compact-filter-${filter.label}`}
                             type="button"
                             onClick={() => setCompactActiveFilter(filter.label)}
-                            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all duration-200 ${filter.active
-                              ? (isCorujaLibraryHub ? corujaSortActiveClass : ACTIVE_LIBRARY_TAB_CLASS)
-                              : (isCorujaLibraryHub ? corujaSortIdleClass : NEUTRAL_LIBRARY_TAB_CLASS)}`}
+                            className={isCorujaLibraryHub
+                              ? `inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all duration-200 ${filter.active ? corujaSortActiveClass : corujaSortIdleClass}`
+                              : `px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border active:scale-95 ${filter.active ? 'bg-brand-primary text-white border-brand-primary shadow-sm' : 'bg-white border-gray-200 text-gray-700 hover:border-brand-primary/24'}`}
                           >
-                            <span>{filter.label}</span>
-                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] leading-none ${isCorujaLibraryHub ? (filter.active ? 'bg-white/18 text-white' : 'bg-white/10 text-white/72') : 'bg-black/[0.04] text-brand-primary/70'}`}>
-                              {filter.count}
-                            </span>
+                            {filter.label}
+                            {isCorujaLibraryHub && (
+                              <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[9px] leading-none ${filter.active ? 'bg-white/18 text-white' : 'bg-white/10 text-white/72'}`}>
+                                {filter.count}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </HorizontalFilterRail>
