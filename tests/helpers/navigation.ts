@@ -42,6 +42,6 @@ export async function navigateToWhiteLabel(page: Page): Promise<void> {
     const wlButton = page.getByRole('button', { name: 'White Label' }).first();
     await wlButton.waitFor({ state: 'visible', timeout: 10_000 });
     await wlButton.click();
-    // Aguarda o header "Gestão de Marca" ser visível
-    await expect(page.getByRole('heading', { name: 'Gestão de Marca' })).toBeVisible({ timeout: 10_000 });
+    // Aguarda o header "Configurações" ser visível (renomeado na refatoração single-brand 2026-06-15)
+    await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible({ timeout: 10_000 });
 }

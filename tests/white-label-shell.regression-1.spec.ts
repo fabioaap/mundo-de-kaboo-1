@@ -1,21 +1,21 @@
 import { test, expect, Page } from '@playwright/test';
-import { setupAdminSession } from './fixtures/auth';
-import { navigateToWhiteLabel, waitForAuthenticatedScreen } from './helpers/navigation';
+import { setupOperationalSession } from './fixtures/auth';
 
 // Regression: WL-SHELL-001 — browser title e metas do app shell não acompanhavam a troca de marca
 // Found by /qa on 2026-05-13
 // Report: manual repro em http://127.0.0.1:4100/#admin -> White Label -> Home
+//
+// Reescrito single-brand (2026-06-15): o seletor de marca foi removido do admin. A
+// regressão (título/metas do shell = marca ativa) é validada carregando cada marca
+// diretamente na Home, em vez de alternar dentro do painel.
 
-async function openWhiteLabelAsAdmin(page: Page): Promise<void> {
-    await setupAdminSession(page);
-    await waitForAuthenticatedScreen(page);
-    await navigateToWhiteLabel(page);
-}
-
-async function returnToWhiteLabelFromHome(page: Page): Promise<void> {
-    await page.getByRole('button', { name: 'Gerenciar' }).click();
-    await page.getByRole('button', { name: 'White Label' }).click();
-    await expect(page.getByRole('heading', { name: 'Gestão de Marca' })).toBeVisible({ timeout: 10_000 });
+async function loadHomeForBrand(page: Page, brandSlug: 'kaboo' | 'central-coruja'): Promise<void> {
+    await setupOperationalSession(page, {
+        role: 'admin',
+        brandSlug,
+        navState: { currentScreen: 'home' },
+        initialUrl: brandSlug === 'central-coruja' ? '/?brand=central-coruja#home' : '/#home',
+    });
 }
 
 async function expectBrandShell(
@@ -27,7 +27,6 @@ async function expectBrandShell(
         themeColor: string;
     },
 ): Promise<void> {
-    await page.getByRole('button', { name: 'Ir para o Início' }).click();
     await expect(page.getByRole('heading', { name: options.heading, level: options.headingLevel })).toBeVisible({ timeout: 10_000 });
     await expect.poll(async () => page.title()).toBe(options.title);
     await expect
@@ -44,23 +43,18 @@ async function expectBrandShell(
 }
 
 test.describe('REG-WL-SHELL-001 — Metadados do shell acompanham a marca ativa', () => {
-    test('trocar entre Kaboo e Central Coruja atualiza título e metas fora do admin', async ({ page }) => {
-        await openWhiteLabelAsAdmin(page);
-
-        await page.getByRole('button', { name: 'Central Coruja' }).click();
-        await expect(page.getByText('central-coruja')).toBeVisible({ timeout: 10_000 });
-        await expect(page.getByText(/Contexto alterado.*Central Coruja/i)).toBeVisible({ timeout: 5_000 });
+    test('shell da Central Coruja tem título e metas próprios', async ({ page }) => {
+        await loadHomeForBrand(page, 'central-coruja');
         await expectBrandShell(page, {
             title: 'Central Coruja',
             heading: 'Bem-vindo à Central Coruja!',
             headingLevel: 2,
             themeColor: '#0c1a34',
         });
+    });
 
-        await returnToWhiteLabelFromHome(page);
-        await page.getByRole('button', { name: 'Mundo de Kaboo' }).click();
-        await expect(page.getByText('kaboo').first()).toBeVisible({ timeout: 10_000 });
-        await expect(page.getByText(/Contexto alterado.*Mundo de Kaboo/i)).toBeVisible({ timeout: 5_000 });
+    test('shell do Mundo de Kaboo tem título e metas próprios', async ({ page }) => {
+        await loadHomeForBrand(page, 'kaboo');
         await expectBrandShell(page, {
             title: 'Mundo de Kaboo',
             heading: 'Bem-vindo ao Mundo de Kaboo!',

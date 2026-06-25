@@ -15,7 +15,7 @@ import { getProfileAccessStatus, isAccessBlocked, canAccessCollection } from './
 import { VoucherUpsellModal } from './components/VoucherUpsellModal';
 import { getVoucherUpsellStoreUrl } from './constants';
 import { setActiveBrandForCharacters } from './lib/characters';
-import { getAccessibleNavState, PROTECTED_SCREENS } from './lib/navigationAccess';
+import { getAccessibleNavState, getMenuAccessibleNavState, PROTECTED_SCREENS } from './lib/navigationAccess';
 import { logger } from './lib/logger';
 import { clearPendingPasswordSetup, hasPendingPasswordSetup, isInvitedAuthUser, markPendingPasswordSetup } from './lib/passwordSetupFlow';
 import { setMockActiveBrand } from './lib/mockData';
@@ -515,10 +515,16 @@ const App: React.FC = () => {
   const brandPrimaryColor = brandBootstrap.settings.primary_color || DEFAULT_BRAND_PRIMARY_COLOR;
   const brandIconUrl = brandLogoUrl || DEFAULT_FAVICON_URL;
   const brandAppleTouchIconUrl = brandLogoUrl || DEFAULT_APPLE_TOUCH_ICON_URL;
-  const getAccessibleStateForSession = (state: NavState): NavState =>
-    sessionChecked
-      ? getAccessibleNavState(state, Boolean(accessProfile), getDefaultPublicScreen())
-      : state;
+  const getAccessibleStateForSession = (state: NavState): NavState => {
+    if (!sessionChecked) return state;
+    const authGated = getAccessibleNavState(state, Boolean(accessProfile), getDefaultPublicScreen());
+    // Gating por menu só se aplica a usuário autenticado permanecendo numa tela de app;
+    // se o auth gate já redirecionou para login/portal, não há menu a aplicar.
+    if (!accessProfile || authGated.currentScreen !== state.currentScreen) {
+      return authGated;
+    }
+    return getMenuAccessibleNavState(authGated, enabledMenuItems);
+  };
   const resolvedNavState = sessionChecked
     ? getAccessibleStateForSession(navState)
     : navState;

@@ -444,3 +444,80 @@ test.describe('JN-WL-014 — Bootstrap do painel pela marca ativa', () => {
         await expect(page.getByLabel('Nome exibido')).toHaveValue('Central Coruja', { timeout: 10_000 });
     });
 });
+
+// ===========================================================================
+// JORNADA 15 — Tab Integrações de IA
+// ===========================================================================
+// Nota de ambiente: os testes E2E rodam em modo mock (as fixtures setam
+// `kaboo_dev_mock_session`), logo `canUseRemoteWhiteLabel()` é sempre `false`.
+// Isso torna o banner de mock e os botões desabilitados determinísticos —
+// e torna o fluxo real de salvar/testar IA não-testável aqui (ver test.skip).
+test.describe('JN-WL-015 — Integrações de IA', () => {
+    test('clicar na aba Integrações de IA mostra o formulário de configuração', async ({ page }) => {
+        await adminAtWhiteLabel(page);
+
+        await page.getByRole('button', { name: 'Integrações de IA', exact: true }).click();
+
+        // Cabeçalho e campos do provedor
+        await expect(page.getByRole('heading', { name: 'Provedor de IA' })).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByText('Ativar IA para esta marca')).toBeVisible();
+        await expect(page.getByRole('combobox')).toBeVisible(); // seletor de Provedor
+        await expect(page.getByPlaceholder('Cole a chave do provedor')).toBeVisible();
+        await expect(page.getByRole('button', { name: /Salvar configuração/ })).toBeVisible();
+        await expect(page.getByRole('button', { name: /Testar conexão/ })).toBeVisible();
+    });
+
+    test('modo mock exibe banner azul e desabilita Salvar/Testar', async ({ page }) => {
+        await adminAtWhiteLabel(page);
+        await page.getByRole('button', { name: 'Integrações de IA', exact: true }).click();
+        await expect(page.getByRole('heading', { name: 'Provedor de IA' })).toBeVisible({ timeout: 5_000 });
+
+        // Banner azul de modo local/mock (remoteEnabled === false nas fixtures E2E)
+        await expect(
+            page.getByText('Modo local/mock: salvar e testar a IA exige o ambiente real (edge functions).'),
+        ).toBeVisible();
+
+        // Botões desabilitados quando !remoteEnabled
+        await expect(page.getByRole('button', { name: /Salvar configuração/ })).toBeDisabled();
+        await expect(page.getByRole('button', { name: /Testar conexão/ })).toBeDisabled();
+    });
+
+    // TODO(env-mock): o guard de não-admin não é testável neste ambiente. O módulo
+    // "Configurações" (white_label) só existe em ALL_MODULES (admin); EDITOR_MODULES
+    // não inclui white_label (ver screens/AdminScreen.tsx). Logo, um usuário não-admin
+    // nunca chega a esta aba para validar o banner "Apenas administradores..." nem os
+    // controles desabilitados. Requer fixture/rota que exponha a tela a não-admin.
+    test.skip('não-admin vê banner de bloqueio e controles desabilitados', async () => {});
+
+    // TODO(env-mock): ativar IA sem chave dispara o toast "Informe a chave de API para
+    // ativar a IA." apenas em handleSaveAIConfig — mas o botão "Salvar configuração" está
+    // disabled quando !remoteEnabled, o que é sempre o caso no mock E2E. O toast nunca
+    // chega a disparar aqui. Requer ambiente com edge functions (remoteEnabled === true).
+    test.skip('ativar IA sem chave exibe toast de erro e não persiste', async () => {});
+});
+
+// ===========================================================================
+// JORNADA 16 — Tab Auditoria: estado e rollback
+// ===========================================================================
+test.describe('JN-WL-016 — Auditoria e rollback', () => {
+    test('aba Auditoria mostra estado vazio quando não há eventos (mock)', async ({ page }) => {
+        await adminAtWhiteLabel(page);
+        await page.getByRole('button', { name: 'Auditoria', exact: true }).click();
+
+        await expect(page.getByRole('heading', { name: 'Auditoria recente' })).toBeVisible({ timeout: 5_000 });
+        // listWhiteLabelAudit() retorna [] em modo mock → estado vazio determinístico
+        await expect(page.getByText('Sem eventos recentes para esta marca.')).toBeVisible();
+    });
+
+    // TODO(env-mock): listWhiteLabelAudit() retorna [] quando !canUseRemoteWhiteLabel()
+    // (ver lib/whiteLabelAdminApi.ts). Sem backend real, nenhuma entrada de auditoria
+    // é renderizada, então o botão "Reverter" não existe no DOM neste ambiente.
+    // Cenário: com entradas reais, "Reverter" aparece e fica desabilitado quando
+    // entry.enabled_before === null (entrada de init). Requer remoteEnabled === true.
+    test.skip('botão Reverter aparece e está desabilitado em entrada de init', async () => {});
+
+    // TODO(env-mock): mesmo motivo acima — sem entradas de auditoria no mock não há
+    // botão "Reverter" para clicar. O fluxo de rollback (rollbackAuditEntry →
+    // setWhiteLabelFeature) só é exercitável com backend real e auditoria populada.
+    test.skip('clicar Reverter em entrada reversível dispara o fluxo de reversão', async () => {});
+});

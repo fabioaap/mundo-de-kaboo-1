@@ -62,11 +62,11 @@ async function openNewCollectionDrawer(page: Page) {
 }
 
 async function switchToMediaTab(page: Page) {
-  const tab = drawer(page).getByRole('button', { name: /Mídias vinculadas/i });
+  // Wizard de 2 passos (2026-06-15): o passo "Mídias vinculadas" tem um badge de contagem.
+  // O regex /Mídias vinculadas/i também casa o toggle de publicação (via title), então
+  // usamos um nome ancorado com o badge numérico para selecionar só o botão do passo.
+  const tab = drawer(page).getByRole('button', { name: /^Mídias vinculadas\s*\d+$/ });
   await tab.click();
-  await expect(tab).toHaveAttribute('aria-selected', 'true', { timeout: 5_000 }).catch(() => {
-    // Some tab implementations don't use aria-selected
-  });
 }
 
 async function switchToDataTab(page: Page) {
@@ -156,9 +156,10 @@ test.describe('JN-COL-003 · Navegação entre abas', () => {
     await openNewCollectionDrawer(page);
     await switchToMediaTab(page);
 
-    // Fixed slots should be visible
-    const leituraLabel = drawer(page).getByText('Leitura', { exact: true });
-    await expect(leituraLabel).toBeVisible({ timeout: 10_000 });
+    // Wizard 2 passos (2026-06-15): a aba de mídias agora vincula conteúdos já cadastrados.
+    // Âncoras estáveis: título da etapa + botão de voltar para "Dados da coleção".
+    await expect(drawer(page).getByRole('heading', { name: 'Mídias vinculadas' })).toBeVisible({ timeout: 10_000 });
+    await expect(drawer(page).getByRole('button', { name: /Voltar para Dados da coleção/i })).toBeVisible({ timeout: 10_000 });
   });
 
   test('voltar para aba Dados preserva título preenchido', async ({ page }) => {
@@ -648,11 +649,12 @@ test.describe('EDGE-006 · Vídeos — drawer de criação', () => {
 
     await page.waitForTimeout(1_000);
 
-    // Title field
-    const titleInput = drawer(page).getByPlaceholder(/Título/i).first();
+    // Title field — no modo biblioteca (vídeos) o placeholder é "Nome do vídeo que os alunos verão",
+    // então localizamos o campo de título pela primeira caixa de texto do drawer.
+    const titleInput = drawer(page).getByPlaceholder(/Nome do vídeo|Título/i).first();
     await expect(titleInput).toBeVisible();
 
-    // Segment buttons
+    // Segment buttons ("Nível": Ed. Infantil / E.F. Anos Iniciais)
     const segmentBtns = drawer(page).getByRole('button').filter({ hasText: /Ed\. Infantil|E\.F\. Anos/i });
     const count = await segmentBtns.count();
     expect(count).toBeGreaterThanOrEqual(1);

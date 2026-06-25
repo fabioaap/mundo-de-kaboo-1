@@ -235,8 +235,15 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
         try {
             const identity = await getWhiteLabelBrandIdentity(brandId);
-            loadedIdentity = identity;
-            setBrandIdentity(identity);
+            const s = brandBootstrap.settings;
+            loadedIdentity = {
+                ...identity,
+                logo_url: identity.logo_url || s?.logo_url || '',
+                font_family: identity.font_family || s?.font_family || '',
+                home_hero_image_url: identity.home_hero_image_url || s?.home_hero_image_url || '',
+                login_background_url: identity.login_background_url || s?.login_background_url || '',
+            };
+            setBrandIdentity(loadedIdentity);
         } catch (err) {
             console.error('[AdminWhiteLabelScreen] brand identity load error:', err);
             setBrandIdentity(DEFAULT_BRAND_IDENTITY);
@@ -276,7 +283,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             console.error('[AdminWhiteLabelScreen] audit load error:', err);
             setAuditEntries([]);
         }
-    }, [brandBootstrap.menu]);
+    }, [brandBootstrap]);
 
     useEffect(() => {
         let cancelled = false;
@@ -336,6 +343,28 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         };
     }, [activeTab, isBrandIdentityDirty]);
 
+    // Escrita crua de uma feature flag (sem efeitos de UI). Use dentro de um
+    // try/finally que controle `saving`, e chame refreshAfterWrite() ao final.
+    const writeFeature = async (featureKey: string, enabled: boolean, config: Record<string, unknown>, reason?: string) => {
+        await setWhiteLabelFeature({
+            brandId: selectedBrandId,
+            featureKey,
+            enabled,
+            config,
+            reason: reason ?? (featureReason.trim() || undefined),
+        });
+    };
+
+    // Invalida o cache do bootstrap e re-hidrata a tela. Centralizado para que
+    // nenhum handler de escrita esqueça a invalidação (causa de bugs recorrentes).
+    const refreshAfterWrite = async () => {
+        const targetSlug = selectedBrand?.slug;
+        if (targetSlug) {
+            invalidateBrandBootstrapCache(targetSlug);
+        }
+        await hydrateBrandFeatures(selectedBrandId);
+    };
+
     const persistFeature = async (featureKey: string, enabled: boolean, config: Record<string, unknown>) => {
         if (!selectedBrandId || saving) {
             return;
@@ -344,18 +373,9 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         try {
             setSaving(true);
             setError(null);
-            await setWhiteLabelFeature({
-                brandId: selectedBrandId,
-                featureKey,
-                enabled,
-                config,
-                reason: featureReason.trim() || undefined,
-            });
-            const targetSlug = selectedBrand?.slug;
-            if (targetSlug) {
-                invalidateBrandBootstrapCache(targetSlug);
-            }
-            await hydrateBrandFeatures(selectedBrandId);
+            await writeFeature(featureKey, enabled, config);
+            await refreshAfterWrite();
+            showToast('Alteração salva com sucesso.', 'success');
         } catch (err) {
             setError('Falha ao salvar alteração de feature flag.');
             console.error('[AdminWhiteLabelScreen] persistFeature error:', err);
@@ -413,21 +433,28 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     };
 
     const applyDefaultBaseline = async () => {
-        if (!selectedBrandId) {
+        if (!selectedBrandId || saving) {
             return;
         }
 
         try {
+            setSaving(true);
+            setError(null);
             for (const item of brandBootstrap.menu) {
                 if (!['admin', 'gestao'].includes(item.key)) {
-                    await persistFeature(`menu.${item.key}`, true, {});
+                    await writeFeature(`menu.${item.key}`, true, {});
                 }
             }
-            await persistFeature('hero.parallax', false, { mode: 'off' });
-            await persistFeature('content.offline', false, {});
+            await writeFeature('hero.parallax', false, { mode: 'off' });
+            await writeFeature('content.offline', false, {});
+            await refreshAfterWrite();
             showToast('Baseline padrão aplicado com sucesso!', 'success');
         } catch (err) {
+            setError('Falha ao aplicar baseline padrão.');
             showToast('Erro ao aplicar baseline padrão.', 'error');
+            console.error('[AdminWhiteLabelScreen] applyDefaultBaseline error:', err);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -439,14 +466,14 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         try {
             setSaving(true);
             setError(null);
-            await setWhiteLabelFeature({
-                brandId: selectedBrandId,
-                featureKey: entry.feature_key,
-                enabled: entry.enabled_before,
-                config: entry.config_before ?? {},
-                reason: featureReason.trim() || `Rollback da auditoria ${entry.id}`,
-            });
-            await hydrateBrandFeatures(selectedBrandId);
+            await writeFeature(
+                entry.feature_key,
+                entry.enabled_before,
+                entry.config_before ?? {},
+                featureReason.trim() || `Rollback da auditoria ${entry.id}`,
+            );
+            await refreshAfterWrite();
+            showToast('Alteração revertida com sucesso.', 'success');
         } catch (err) {
             setError('Falha ao reverter alteração de feature flag.');
             console.error('[AdminWhiteLabelScreen] rollbackAuditEntry error:', err);
@@ -773,13 +800,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                             >
                                                 <div className="absolute inset-0 bg-black/10" />
                                                 <div className="relative z-10 flex flex-col gap-4">
-                                                    {brandIdentity.logo_url ? (
-                                                        <img src={brandIdentity.logo_url} alt={brandIdentity.display_name} className="h-10 w-auto max-w-[140px] object-contain" />
-                                                    ) : (
-                                                        <div className="flex h-10 w-28 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm" style={{ borderRadius: brandIdentity.radius_xl || undefined }}>
-                                                            <span className="text-[11px] font-bold text-white/80">Sem logo</span>
-                                                        </div>
-                                                    )}
+                                                    <img src={brandPreviewLogo} alt={brandIdentity.display_name} className="h-10 w-auto max-w-[140px] object-contain" />
 
                                                     <div className="max-w-[200px] rounded-2xl bg-white/92 p-3 shadow-lg backdrop-blur-sm" style={{ borderRadius: brandIdentity.radius_2xl || undefined }}>
                                                         <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: brandIdentity.primary_color }}>
@@ -794,11 +815,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                             <div className="space-y-3 p-3" style={{ backgroundColor: brandIdentity.bg_color, fontFamily: brandIdentity.font_family || undefined }}>
                                                 <div className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 shadow-sm" style={{ borderRadius: brandIdentity.radius_xl || undefined }}>
                                                     <p className="text-xs font-bold text-gray-900">{brandIdentity.display_name}</p>
-                                                    {brandIdentity.logo_url ? (
-                                                        <img src={brandIdentity.logo_url} alt="" className="h-7 w-auto max-w-[80px] object-contain" />
-                                                    ) : (
-                                                        <div className="h-7 w-14 rounded-lg bg-gray-200" style={{ borderRadius: brandIdentity.radius_xl || undefined }} />
-                                                    )}
+                                                    <img src={brandPreviewLogo} alt="" className="h-7 w-auto max-w-[80px] object-contain" />
                                                 </div>
 
                                                 {brandIdentity.home_hero_image_url && (
@@ -1045,6 +1062,47 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                         {/* ═══ Tab: Integrações de IA ═══ */}
                         {activeTab === 'ia' && (
                             <div className="space-y-5">
+                                {aiConfig && (
+                                    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span
+                                                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ${
+                                                    aiConfig.enabled
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : 'bg-gray-200 text-gray-600'
+                                                }`}
+                                            >
+                                                {aiConfig.enabled ? 'IA ativa' : 'IA desligada'}
+                                            </span>
+                                            {!aiConfig.key_configured && (
+                                                <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
+                                                    chave não configurada
+                                                </span>
+                                            )}
+                                        </div>
+                                        <dl className="space-y-1 text-sm text-gray-700">
+                                            <div className="flex gap-1.5">
+                                                <dt className="font-semibold">Provider/modelo:</dt>
+                                                <dd>{aiProvider} · {aiModel}</dd>
+                                            </div>
+                                            {aiConfig.key_configured && (
+                                                <div className="flex gap-1.5">
+                                                    <dt className="font-semibold">Chave:</dt>
+                                                    <dd>••••{aiConfig.key_last4 ?? ''}</dd>
+                                                </div>
+                                            )}
+                                        </dl>
+                                        {aiConfig.updated_at && (
+                                            <p className="text-xs text-gray-500">
+                                                Atualizada em {new Date(aiConfig.updated_at).toLocaleString('pt-BR')}
+                                                {aiConfig.updated_by ? ` por ${aiConfig.updated_by}` : ''}
+                                            </p>
+                                        )}
+                                        {aiConfig.last_reason && (
+                                            <p className="text-xs text-gray-500">Último motivo: {aiConfig.last_reason}</p>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="space-y-5">
                                     <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                                         <div>
