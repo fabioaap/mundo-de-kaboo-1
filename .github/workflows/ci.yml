@@ -76,11 +76,12 @@ jobs:
         with:
           version: latest
 
-      - name: Disable DB seed for the isolated guard test
-        # rls_profiles_guard.sql cria os próprios fixtures (brands + auth.users) em
-        # transação revertida e NÃO precisa do seed. O seed.sql falha num DB limpo
-        # (blocker pré-existente), então o desligamos só neste job (checkout efêmero do CI).
-        run: printf '\n[db.seed]\nenabled = false\n' >> supabase/config.toml
+      - name: Neutralize broken seed for the isolated guard test
+        # config.toml já tem [db.seed] enabled=true, sql_paths=["./seed.sql"].
+        # O seed.sql falha num DB limpo (blocker pré-existente) e o pgTAP guard cria
+        # os próprios fixtures (brands + auth.users). Esvaziamos o seed só neste job
+        # (checkout efêmero do CI) — o seed roda vazio = no-op e o db start conclui.
+        run: ': > supabase/seed.sql'
 
       - name: Start local Supabase
         run: supabase db start
