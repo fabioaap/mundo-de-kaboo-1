@@ -12,10 +12,10 @@
 --
 -- ⚠️ COMPATIBILIDADE COM redeem_voucher: o RPC redeem_voucher (SECURITY DEFINER,
 -- owner=postgres) faz `UPDATE profiles SET brand_id = voucher.brand_id` (t22:59) na
--- atribuição inicial. O guard precisa permitir isso. Duas salvaguardas garantem que não quebra:
---   1) current_user dentro de um SECURITY DEFINER owned by postgres = 'postgres' → privilegiado.
---   2) atribuição inicial NULL -> valor é permitida mesmo sem privilégio.
--- Bloqueia apenas o ataque real: troca/limpeza de brand_id já existente por sessão de usuário.
+-- atribuição inicial. O guard permite isso pela salvaguarda NULL -> valor (sempre
+-- permitida): redeem_voucher só seta brand_id na 1ª redenção; nas seguintes o valor
+-- é igual, então não há mudança. Bloqueia apenas o ataque real: troca/limpeza de
+-- brand_id JÁ existente por sessão de usuário autenticado.
 
 -- 1. Política UPDATE com WITH CHECK (a linha continua pertencendo ao próprio usuário)
 DROP POLICY IF EXISTS "Usuário atualiza o próprio perfil" ON public.profiles;
@@ -34,10 +34,14 @@ AS $$
 DECLARE
   is_privileged boolean;
 BEGIN
-  -- Privilegiado = service_role (edge functions), conexões internas, RPCs SECURITY DEFINER
-  -- (owner postgres), ou super admin white-label.
+  -- Privilegiado = contexto backend (migration/service direto, sem JWT de usuário),
+  -- service_role (edge functions), ou super admin white-label.
+  -- ATENÇÃO: NÃO usar current_user aqui — esta função é SECURITY DEFINER, então
+  -- current_user é o DONO (postgres), não o chamador, tornando o guard inócuo.
+  -- auth.uid()/auth.role() leem o JWT e funcionam corretamente sob SECURITY DEFINER.
+  -- (Bug pego na validação txn-rollback contra prod em 2026-06-26.)
   is_privileged :=
-       current_user IN ('postgres', 'supabase_admin', 'service_role')
+       auth.uid() IS NULL
     OR coalesce(auth.role(), '') = 'service_role'
     OR public.is_white_label_super_admin(auth.uid());
 
