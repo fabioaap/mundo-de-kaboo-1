@@ -30,7 +30,7 @@ const MODULE_META: Record<AdminModule, { icon: React.FC<{ className?: string }>;
     users: { icon: Icons.User, label: 'Usuários' },
     vouchers: { icon: Icons.Ticket, label: 'Vouchers' },
     characters: { icon: Icons.Users, label: 'Personagens' },
-    white_label: { icon: Icons.Settings, label: 'White Label' },
+    white_label: { icon: Icons.Settings, label: 'Configurações' },
 };
 
 const ALL_MODULES: AdminModule[] = ['collections', 'books', 'videos', 'music', 'formations', 'materials', 'users', 'characters', 'vouchers', 'white_label'];

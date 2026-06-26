@@ -19,38 +19,21 @@ import {
     type WhiteLabelAIConfig,
 } from '../lib/aiIntegrationApi';
 import {
-    getWhiteLabelAlertingConfig,
     getWhiteLabelBrandIdentity,
     canUseRemoteWhiteLabel,
-    dispatchWhiteLabelOperationalAlerts,
-    dispatchWhiteLabelAlertTest,
-    getWhiteLabelAlertDispatchHistory,
-    getWhiteLabelOperationalTimeline,
-    getWhiteLabelHealthCheck,
     getWhiteLabelPublicationState,
     getWhiteLabelFeatures,
-    getWhiteLabelRolloutConfig,
-    getWhiteLabelRolloutMetrics,
     HeroParallaxMode,
     listWhiteLabelAudit,
     listWhiteLabelBrands,
     publishWhiteLabelBrand,
     resolveHeroParallaxMode,
     setWhiteLabelBrandIdentity,
-    setWhiteLabelAlertingConfig,
-    setWhiteLabelRolloutWave,
     setWhiteLabelFeature,
-    WhiteLabelAlertingConfig,
-    WhiteLabelAlertDispatchEntry,
     WhiteLabelAuditEntry,
     WhiteLabelBrandRow,
-    WhiteLabelHealthCheck,
-    WhiteLabelOperationalEvent,
     WhiteLabelPublicationState,
     WhiteLabelBrandIdentity,
-    WhiteLabelRolloutConfig,
-    WhiteLabelRolloutMetrics,
-    WhiteLabelRolloutWave,
 } from '../lib/whiteLabelAdminApi';
 
 const MODE_OPTIONS: Array<{ value: HeroParallaxMode; label: string; description: string }> = [
@@ -58,25 +41,6 @@ const MODE_OPTIONS: Array<{ value: HeroParallaxMode; label: string; description:
     { value: 'subtle', label: 'Suave', description: 'Profundidade leve para validação visual inicial.' },
     { value: 'standard', label: 'Padrão', description: 'Profundidade mais rica para a marca.' },
 ];
-
-// Faixa de destaque do resumo: derivada da cor primária da marca (via CSS var
-// brand-primary), funciona para qualquer marca — sem hardcode por slug.
-const BRAND_ACCENT = 'from-brand-primary/10 via-brand-primary/[0.04] to-transparent';
-
-const DEFAULT_ALERTING_CONFIG: WhiteLabelAlertingConfig = {
-    enabled: false,
-    webhook_url: '',
-    channel: '',
-    changes_24h_threshold: 10,
-    notify_on_general_without_publish: true,
-    updated_at: null,
-    last_reason: null,
-    last_dispatch_at: null,
-    last_dispatch_status: 'idle',
-    last_dispatch_http_status: null,
-    last_dispatch_error: null,
-    last_live_alert_signature: null,
-};
 
 const DEFAULT_BRAND_IDENTITY: WhiteLabelBrandIdentity = {
     display_name: '',
@@ -119,28 +83,20 @@ const serializeBrandIdentity = (identity: WhiteLabelBrandIdentity) => JSON.strin
 export const AdminWhiteLabelScreen: React.FC = () => {
     // Marca desta instância (resolvida pelo app — single-brand). As Configurações
     // sempre editam essa marca, sem seletor.
-    const { slug: appBrandSlug } = useBrandConfig();
+    const { slug: appBrandSlug, bootstrap: brandBootstrap } = useBrandConfig();
     const [brands, setBrands] = useState<WhiteLabelBrandRow[]>([]);
     const [selectedBrandId, setSelectedBrandId] = useState<string>('');
     const [menuMusicEnabled, setMenuMusicEnabled] = useState<boolean>(true);
+    const [menuFlags, setMenuFlags] = useState<Record<string, boolean>>({});
     const [heroParallaxEnabled, setHeroParallaxEnabled] = useState<boolean>(false);
     const [heroParallaxMode, setHeroParallaxMode] = useState<HeroParallaxMode>('off');
     const [contentOfflineEnabled, setContentOfflineEnabled] = useState<boolean>(false);
     const [auditEntries, setAuditEntries] = useState<WhiteLabelAuditEntry[]>([]);
     const [publicationState, setPublicationState] = useState<WhiteLabelPublicationState>({ version: 1, published_at: null });
-    const [rolloutConfig, setRolloutConfig] = useState<WhiteLabelRolloutConfig>({ enabled: true, wave: 'pilot', started_at: null, last_changed_at: null, last_reason: null });
-    const [rolloutMetrics, setRolloutMetrics] = useState<WhiteLabelRolloutMetrics>({ enabled_flags: 0, total_changes: 0, changes_24h: 0, last_publish_at: null });
-    const [alertingConfig, setAlertingConfig] = useState<WhiteLabelAlertingConfig>(DEFAULT_ALERTING_CONFIG);
     const [brandIdentity, setBrandIdentity] = useState<WhiteLabelBrandIdentity>(DEFAULT_BRAND_IDENTITY);
     const [brandIdentityBaseline, setBrandIdentityBaseline] = useState(() => serializeBrandIdentity(DEFAULT_BRAND_IDENTITY));
-    const [activeTab, setActiveTab] = useState<'identidade' | 'operacoes' | 'auditoria' | 'ia'>('identidade');
-    const [alertDispatchHistory, setAlertDispatchHistory] = useState<WhiteLabelAlertDispatchEntry[]>([]);
-    const [operationalTimeline, setOperationalTimeline] = useState<WhiteLabelOperationalEvent[]>([]);
-    const [healthCheck, setHealthCheck] = useState<WhiteLabelHealthCheck | null>(null);
+    const [activeTab, setActiveTab] = useState<'identidade' | 'operacoes' | 'menus' | 'auditoria' | 'ia'>('identidade');
     const [featureReason, setFeatureReason] = useState('');
-    const [rolloutReason, setRolloutReason] = useState('');
-    const [alertingReason, setAlertingReason] = useState('');
-    const [contextChangedAt, setContextChangedAt] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -258,120 +214,14 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         () => serializeBrandIdentity(brandIdentity) !== brandIdentityBaseline,
         [brandIdentity, brandIdentityBaseline],
     );
-    const derivedRolloutMetrics = useMemo(
-        () => ({ ...rolloutMetrics, enabled_flags: activeFeatureCount }),
-        [activeFeatureCount, rolloutMetrics],
-    );
-
     const selectedBrandLabel = selectedBrand?.display_name || selectedBrand?.name || 'Nenhuma marca';
-    const selectedBrandAccent = BRAND_ACCENT;
     const brandPreviewLogo = brandIdentity.logo_url || LOGO_URL;
 
-    const rolloutLabel = rolloutConfig.wave === 'pilot'
-        ? 'Piloto'
-        : rolloutConfig.wave === 'group'
-            ? 'Grupo'
-            : 'Geral';
     const heroParallaxModeLabel = heroParallaxMode === 'standard'
         ? 'Padrão'
         : heroParallaxMode === 'subtle'
             ? 'Suave'
             : 'Desligado';
-
-    const operationalAlerts = useMemo(() => {
-        const alerts: Array<{ level: 'critical' | 'warning'; title: string; description: string }> = [];
-
-        if (alertingConfig.notify_on_general_without_publish && rolloutConfig.wave === 'general' && !rolloutMetrics.last_publish_at) {
-            alerts.push({
-                level: 'critical',
-                title: 'Rollout geral sem publicação',
-                description: 'A marca está em rollout geral, mas não há publicação registrada para essa versão.',
-            });
-        }
-
-        if (rolloutMetrics.changes_24h >= alertingConfig.changes_24h_threshold) {
-            alerts.push({
-                level: 'warning',
-                title: 'Alta taxa de alterações em 24h',
-                description: `Foram registradas ${rolloutMetrics.changes_24h} alterações nas últimas 24h.`,
-            });
-        }
-
-        if (derivedRolloutMetrics.enabled_flags === 0) {
-            alerts.push({
-                level: 'warning',
-                title: 'Nenhuma flag ativa',
-                description: 'Não há flags ativas para a marca selecionada; valide o baseline e as dependências.',
-            });
-        }
-
-        return alerts;
-    }, [alertingConfig.changes_24h_threshold, alertingConfig.notify_on_general_without_publish, derivedRolloutMetrics.enabled_flags, rolloutConfig.wave, rolloutMetrics.changes_24h, rolloutMetrics.last_publish_at]);
-
-    const resolvedHealthStatus = useMemo(() => {
-        if (healthCheck?.status === 'critical' || operationalAlerts.some((alert) => alert.level === 'critical')) {
-            return 'critical';
-        }
-
-        if (healthCheck?.status === 'warning' || operationalAlerts.length > 0) {
-            return 'warning';
-        }
-
-        return 'healthy';
-    }, [healthCheck?.status, operationalAlerts]);
-
-    const healthUpdatedAt = contextChangedAt ?? healthCheck?.timestamp ?? null;
-    const healthSummaryCards = useMemo(() => {
-        const enabledFeatureLabels = [
-            menuMusicEnabled ? 'Músicas' : null,
-            heroParallaxMode !== 'off' ? `Parallax ${heroParallaxModeLabel.toLowerCase()}` : null,
-            contentOfflineEnabled ? 'Offline' : null,
-        ].filter(Boolean) as string[];
-
-        return [
-            {
-                title: 'Feature Flags',
-                value: activeFeatureCount === 0 ? 'Nenhuma ativa' : `${activeFeatureCount} ${activeFeatureCount === 1 ? 'flag ativa' : 'flags ativas'}`,
-                description: enabledFeatureLabels.length > 0 ? enabledFeatureLabels.join(' · ') : 'Nenhuma capacidade habilitada nesta aplicação.',
-                tone: activeFeatureCount === 0 ? 'warning' : 'positive',
-                icon: <Icons.Settings size={14} />,
-            },
-        ];
-    }, [activeFeatureCount, contentOfflineEnabled, heroParallaxMode, heroParallaxModeLabel, menuMusicEnabled]);
-
-    const operationalAlertPayload = useMemo(() => {
-        return {
-            brand: selectedBrand ? { id: selectedBrand.id, slug: selectedBrand.slug, name: selectedBrand.display_name || selectedBrand.name } : null,
-            rollout: {
-                wave: rolloutConfig.wave,
-                last_changed_at: rolloutConfig.last_changed_at,
-            },
-            metrics: derivedRolloutMetrics,
-            active_alerts: operationalAlerts,
-            destination: {
-                channel: alertingConfig.channel,
-                webhook_url: alertingConfig.webhook_url ? '[configured]' : '[missing]',
-            },
-            generated_at: new Date().toISOString(),
-        };
-    }, [alertingConfig.channel, alertingConfig.webhook_url, derivedRolloutMetrics, operationalAlerts, rolloutConfig.last_changed_at, rolloutConfig.wave, selectedBrand]);
-
-    const activeAlertSignature = useMemo(() => {
-        return JSON.stringify({
-            brandId: selectedBrandId,
-            wave: rolloutConfig.wave,
-            metrics: {
-                enabled_flags: derivedRolloutMetrics.enabled_flags,
-                changes_24h: derivedRolloutMetrics.changes_24h,
-                last_publish_at: derivedRolloutMetrics.last_publish_at,
-            },
-            alerts: operationalAlerts,
-        });
-    }, [derivedRolloutMetrics.changes_24h, derivedRolloutMetrics.enabled_flags, derivedRolloutMetrics.last_publish_at, operationalAlerts, rolloutConfig.wave, selectedBrandId]);
-
-    const alertPayloadPreview = useMemo(() => {
-        return JSON.stringify(operationalAlertPayload, null, 2);
-    }, [operationalAlertPayload]);
 
     const updateBrandIdentityField = useCallback(<T extends keyof WhiteLabelBrandIdentity>(field: T, value: WhiteLabelBrandIdentity[T]) => {
         setBrandIdentity((current) => ({
@@ -385,8 +235,15 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
         try {
             const identity = await getWhiteLabelBrandIdentity(brandId);
-            loadedIdentity = identity;
-            setBrandIdentity(identity);
+            const s = brandBootstrap.settings;
+            loadedIdentity = {
+                ...identity,
+                logo_url: identity.logo_url || s?.logo_url || '',
+                font_family: identity.font_family || s?.font_family || '',
+                home_hero_image_url: identity.home_hero_image_url || s?.home_hero_image_url || '',
+                login_background_url: identity.login_background_url || s?.login_background_url || '',
+            };
+            setBrandIdentity(loadedIdentity);
         } catch (err) {
             console.error('[AdminWhiteLabelScreen] brand identity load error:', err);
             setBrandIdentity(DEFAULT_BRAND_IDENTITY);
@@ -394,11 +251,19 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
         setBrandIdentityBaseline(serializeBrandIdentity(loadedIdentity));
 
-        const features = await getWhiteLabelFeatures(brandId, ['menu.music', 'hero.parallax', 'content.offline']);
-        setMenuMusicEnabled(features['menu.music']?.enabled ?? true);
+        const allMenuKeys = brandBootstrap.menu.map((item) => `menu.${item.key}`);
+        const featureKeys = [...allMenuKeys, 'hero.parallax', 'content.offline'];
+        const features = await getWhiteLabelFeatures(brandId, featureKeys);
         setHeroParallaxEnabled(features['hero.parallax']?.enabled ?? false);
         setHeroParallaxMode(resolveHeroParallaxMode(features['hero.parallax']));
         setContentOfflineEnabled(features['content.offline']?.enabled ?? false);
+
+        const nextMenuFlags: Record<string, boolean> = {};
+        for (const item of brandBootstrap.menu) {
+            nextMenuFlags[item.key] = features[`menu.${item.key}`]?.enabled ?? item.enabled;
+        }
+        setMenuFlags(nextMenuFlags);
+        setMenuMusicEnabled(features['menu.music']?.enabled ?? true);
 
         try {
             const publication = await getWhiteLabelPublicationState(brandId);
@@ -408,9 +273,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             setPublicationState({ version: 1, published_at: null });
         }
 
-        // Rollout, métricas de rollout e alerting (config + histórico de dispatch)
-        // foram removidos da UI single-brand. Estado fica nos defaults — o
-        // auto-dispatch de alertas nunca dispara (alertingConfig.enabled = false).
+        // Rollout, métricas, alerting, health check e timeline operacional foram
+        // removidos da UI single-brand.
 
         try {
             const audit = await listWhiteLabelAudit(brandId, 12);
@@ -419,23 +283,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             console.error('[AdminWhiteLabelScreen] audit load error:', err);
             setAuditEntries([]);
         }
-
-        try {
-            const timeline = await getWhiteLabelOperationalTimeline(brandId, 50);
-            setOperationalTimeline(timeline);
-        } catch (err) {
-            console.error('[AdminWhiteLabelScreen] operational timeline load error:', err);
-            setOperationalTimeline([]);
-        }
-
-        try {
-            const health = await getWhiteLabelHealthCheck(brandId);
-            setHealthCheck(health);
-        } catch (err) {
-            console.error('[AdminWhiteLabelScreen] health check load error:', err);
-            setHealthCheck(null);
-        }
-    }, []);
+    }, [brandBootstrap]);
 
     useEffect(() => {
         let cancelled = false;
@@ -459,7 +307,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
                 if (initialBrandId) {
                     await hydrateBrandFeatures(initialBrandId);
-                    setContextChangedAt(new Date().toISOString());
                 }
             } catch (err) {
                 if (!cancelled) {
@@ -496,6 +343,28 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         };
     }, [activeTab, isBrandIdentityDirty]);
 
+    // Escrita crua de uma feature flag (sem efeitos de UI). Use dentro de um
+    // try/finally que controle `saving`, e chame refreshAfterWrite() ao final.
+    const writeFeature = async (featureKey: string, enabled: boolean, config: Record<string, unknown>, reason?: string) => {
+        await setWhiteLabelFeature({
+            brandId: selectedBrandId,
+            featureKey,
+            enabled,
+            config,
+            reason: reason ?? (featureReason.trim() || undefined),
+        });
+    };
+
+    // Invalida o cache do bootstrap e re-hidrata a tela. Centralizado para que
+    // nenhum handler de escrita esqueça a invalidação (causa de bugs recorrentes).
+    const refreshAfterWrite = async () => {
+        const targetSlug = selectedBrand?.slug;
+        if (targetSlug) {
+            invalidateBrandBootstrapCache(targetSlug);
+        }
+        await hydrateBrandFeatures(selectedBrandId);
+    };
+
     const persistFeature = async (featureKey: string, enabled: boolean, config: Record<string, unknown>) => {
         if (!selectedBrandId || saving) {
             return;
@@ -504,14 +373,9 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         try {
             setSaving(true);
             setError(null);
-            await setWhiteLabelFeature({
-                brandId: selectedBrandId,
-                featureKey,
-                enabled,
-                config,
-                reason: featureReason.trim() || undefined,
-            });
-            await hydrateBrandFeatures(selectedBrandId);
+            await writeFeature(featureKey, enabled, config);
+            await refreshAfterWrite();
+            showToast('Alteração salva com sucesso.', 'success');
         } catch (err) {
             setError('Falha ao salvar alteração de feature flag.');
             console.error('[AdminWhiteLabelScreen] persistFeature error:', err);
@@ -569,17 +433,28 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     };
 
     const applyDefaultBaseline = async () => {
-        if (!selectedBrandId) {
+        if (!selectedBrandId || saving) {
             return;
         }
 
         try {
-            await persistFeature('menu.music', true, {});
-            await persistFeature('hero.parallax', false, { mode: 'off' });
-            await persistFeature('content.offline', false, {});
+            setSaving(true);
+            setError(null);
+            for (const item of brandBootstrap.menu) {
+                if (!['admin', 'gestao'].includes(item.key)) {
+                    await writeFeature(`menu.${item.key}`, true, {});
+                }
+            }
+            await writeFeature('hero.parallax', false, { mode: 'off' });
+            await writeFeature('content.offline', false, {});
+            await refreshAfterWrite();
             showToast('Baseline padrão aplicado com sucesso!', 'success');
         } catch (err) {
+            setError('Falha ao aplicar baseline padrão.');
             showToast('Erro ao aplicar baseline padrão.', 'error');
+            console.error('[AdminWhiteLabelScreen] applyDefaultBaseline error:', err);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -591,14 +466,14 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         try {
             setSaving(true);
             setError(null);
-            await setWhiteLabelFeature({
-                brandId: selectedBrandId,
-                featureKey: entry.feature_key,
-                enabled: entry.enabled_before,
-                config: entry.config_before ?? {},
-                reason: featureReason.trim() || `Rollback da auditoria ${entry.id}`,
-            });
-            await hydrateBrandFeatures(selectedBrandId);
+            await writeFeature(
+                entry.feature_key,
+                entry.enabled_before,
+                entry.config_before ?? {},
+                featureReason.trim() || `Rollback da auditoria ${entry.id}`,
+            );
+            await refreshAfterWrite();
+            showToast('Alteração revertida com sucesso.', 'success');
         } catch (err) {
             setError('Falha ao reverter alteração de feature flag.');
             console.error('[AdminWhiteLabelScreen] rollbackAuditEntry error:', err);
@@ -632,77 +507,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     return (
         <div className="min-h-full bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_24%)] p-4 md:p-6">
             <div className="mx-auto max-w-6xl space-y-5">
-                {/* ─── Health Check ─── */}
-                {healthCheck && (
-                    <section className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-sm">
-                        <div className={`h-1.5 w-full bg-gradient-to-r ${selectedBrandAccent}`} />
-                        <div className="p-5 md:p-6">
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className={`flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border ${resolvedHealthStatus === 'critical'
-                                        ? 'border-red-200 bg-red-50'
-                                        : resolvedHealthStatus === 'warning'
-                                            ? 'border-amber-200 bg-amber-50'
-                                            : 'border-emerald-200 bg-emerald-50'
-                                        }`}>
-                                        <img src={brandPreviewLogo} alt={selectedBrandLabel} className="h-8 w-8 object-contain" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Resumo operacional</p>
-                                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                                            <h3 className="text-lg font-black tracking-tight text-gray-900">{selectedBrandLabel}</h3>
-                                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${resolvedHealthStatus === 'critical'
-                                                ? 'bg-red-50 text-red-700'
-                                                : resolvedHealthStatus === 'warning'
-                                                    ? 'bg-amber-50 text-amber-700'
-                                                    : 'bg-emerald-50 text-emerald-700'
-                                                }`}>
-                                                {resolvedHealthStatus === 'critical' ? 'Crítico' : resolvedHealthStatus === 'warning' ? 'Atenção' : 'Saudável'}
-                                            </span>
-                                        </div>
-                                        <p className="mt-1 text-sm text-gray-500">Visão rápida das decisões operacionais visíveis nesta marca.</p>
-                                    </div>
-                                </div>
-                                {healthUpdatedAt && (
-                                    <span className="text-xs text-gray-500">Atualizado às {new Date(healthUpdatedAt).toLocaleTimeString('pt-BR')}</span>
-                                )}
-                            </div>
-
-                            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                {healthSummaryCards.map((card) => (
-                                    <div
-                                        key={card.title}
-                                        className={`rounded-2xl border px-4 py-3 ${card.tone === 'critical'
-                                            ? 'border-red-200 bg-red-50'
-                                            : card.tone === 'warning'
-                                                ? 'border-amber-200 bg-amber-50'
-                                                : card.tone === 'positive'
-                                                    ? 'border-emerald-200 bg-emerald-50'
-                                                    : 'border-gray-200 bg-gray-50'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
-                                            <span className={`${card.tone === 'critical'
-                                                ? 'text-red-600'
-                                                : card.tone === 'warning'
-                                                    ? 'text-amber-600'
-                                                    : card.tone === 'positive'
-                                                        ? 'text-emerald-600'
-                                                        : 'text-gray-500'
-                                                }`}>
-                                                {card.icon}
-                                            </span>
-                                            {card.title}
-                                        </div>
-                                        <p className="mt-3 text-base font-black tracking-tight text-gray-900">{card.value}</p>
-                                        <p className="mt-1 text-xs leading-relaxed text-gray-600">{card.description}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </section>
-                )}
-
                 {/* ─── Page Header ─── */}
                 <header className="flex flex-col gap-3 rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between md:p-6">
                     <div>
@@ -729,6 +533,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                             {([
                                 { key: 'identidade' as const, label: 'Identidade Visual', icon: <Icons.Palette size={16} /> },
                                 { key: 'operacoes' as const, label: 'Operações', icon: <Icons.Settings size={16} /> },
+                                { key: 'menus' as const, label: 'Menus', icon: <Icons.Grid size={16} /> },
                                 { key: 'ia' as const, label: 'Integrações de IA', icon: <Icons.Link size={16} /> },
                                 { key: 'auditoria' as const, label: 'Auditoria', icon: <Icons.History size={16} /> },
                             ]).map((tab) => (
@@ -995,13 +800,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                             >
                                                 <div className="absolute inset-0 bg-black/10" />
                                                 <div className="relative z-10 flex flex-col gap-4">
-                                                    {brandIdentity.logo_url ? (
-                                                        <img src={brandIdentity.logo_url} alt={brandIdentity.display_name} className="h-10 w-auto max-w-[140px] object-contain" />
-                                                    ) : (
-                                                        <div className="flex h-10 w-28 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm" style={{ borderRadius: brandIdentity.radius_xl || undefined }}>
-                                                            <span className="text-[11px] font-bold text-white/80">Sem logo</span>
-                                                        </div>
-                                                    )}
+                                                    <img src={brandPreviewLogo} alt={brandIdentity.display_name} className="h-10 w-auto max-w-[140px] object-contain" />
 
                                                     <div className="max-w-[200px] rounded-2xl bg-white/92 p-3 shadow-lg backdrop-blur-sm" style={{ borderRadius: brandIdentity.radius_2xl || undefined }}>
                                                         <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: brandIdentity.primary_color }}>
@@ -1016,11 +815,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                             <div className="space-y-3 p-3" style={{ backgroundColor: brandIdentity.bg_color, fontFamily: brandIdentity.font_family || undefined }}>
                                                 <div className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 shadow-sm" style={{ borderRadius: brandIdentity.radius_xl || undefined }}>
                                                     <p className="text-xs font-bold text-gray-900">{brandIdentity.display_name}</p>
-                                                    {brandIdentity.logo_url ? (
-                                                        <img src={brandIdentity.logo_url} alt="" className="h-7 w-auto max-w-[80px] object-contain" />
-                                                    ) : (
-                                                        <div className="h-7 w-14 rounded-lg bg-gray-200" style={{ borderRadius: brandIdentity.radius_xl || undefined }} />
-                                                    )}
+                                                    <img src={brandPreviewLogo} alt="" className="h-7 w-auto max-w-[80px] object-contain" />
                                                 </div>
 
                                                 {brandIdentity.home_hero_image_url && (
@@ -1208,9 +1003,106 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                             </div>
                         )}
 
+                        {/* ═══ Tab: Menus ═══ */}
+                        {activeTab === 'menus' && (
+                            <div className="space-y-5">
+                                <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900">Menus da navegação</h3>
+                                        <p className="mt-1 text-sm text-gray-500">Ative ou desative itens de navegação desta marca. As alterações refletem imediatamente para novos acessos.</p>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {brandBootstrap.menu
+                                            .filter((item) => !['admin', 'gestao'].includes(item.key))
+                                            .sort((a, b) => a.order - b.order)
+                                            .map((item) => {
+                                                const isEnabled = menuFlags[item.key] ?? item.enabled;
+                                                const isCollections = item.key === 'collections';
+                                                return (
+                                                    <div key={item.key} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                                                        <div className="flex items-start justify-between gap-4">
+                                                            <div>
+                                                                <p className="text-sm font-bold text-gray-900">{item.label}</p>
+                                                                {isCollections && (
+                                                                    <p className="mt-1 text-xs text-amber-600">Ao desligar, o app redirecionará para o primeiro menu disponível.</p>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                role="switch"
+                                                                aria-checked={isEnabled}
+                                                                onClick={() => persistFeature(`menu.${item.key}`, !isEnabled, {})}
+                                                                className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${isEnabled ? 'bg-brand-primary' : 'bg-gray-300'}`}
+                                                                disabled={loading || saving || !selectedBrand}
+                                                            >
+                                                                <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${isEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="menu-feature-reason">
+                                            Contexto da alteração
+                                        </label>
+                                        <textarea
+                                            id="menu-feature-reason"
+                                            value={featureReason}
+                                            onChange={(event) => setFeatureReason(event.target.value)}
+                                            placeholder="Opcional. Ex.: desativando músicas por ausência de catálogo."
+                                            className="min-h-[72px] w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
+                                        />
+                                        <p className="mt-1 text-xs text-gray-400">O contexto acompanha cada alteração no log de auditoria.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* ═══ Tab: Integrações de IA ═══ */}
                         {activeTab === 'ia' && (
-                            <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
+                            <div className="space-y-5">
+                                {aiConfig && (
+                                    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span
+                                                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ${
+                                                    aiConfig.enabled
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : 'bg-gray-200 text-gray-600'
+                                                }`}
+                                            >
+                                                {aiConfig.enabled ? 'IA ativa' : 'IA desligada'}
+                                            </span>
+                                            {!aiConfig.key_configured && (
+                                                <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
+                                                    chave não configurada
+                                                </span>
+                                            )}
+                                        </div>
+                                        <dl className="space-y-1 text-sm text-gray-700">
+                                            <div className="flex gap-1.5">
+                                                <dt className="font-semibold">Provider/modelo:</dt>
+                                                <dd>{aiProvider} · {aiModel}</dd>
+                                            </div>
+                                            {aiConfig.key_configured && (
+                                                <div className="flex gap-1.5">
+                                                    <dt className="font-semibold">Chave:</dt>
+                                                    <dd>••••{aiConfig.key_last4 ?? ''}</dd>
+                                                </div>
+                                            )}
+                                        </dl>
+                                        {aiConfig.updated_at && (
+                                            <p className="text-xs text-gray-500">
+                                                Atualizada em {new Date(aiConfig.updated_at).toLocaleString('pt-BR')}
+                                                {aiConfig.updated_by ? ` por ${aiConfig.updated_by}` : ''}
+                                            </p>
+                                        )}
+                                        {aiConfig.last_reason && (
+                                            <p className="text-xs text-gray-500">Último motivo: {aiConfig.last_reason}</p>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="space-y-5">
                                     <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                                         <div>
@@ -1331,45 +1223,12 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                         )}
                                     </div>
                                 </div>
-
-                                {/* Lateral: status */}
-                                <aside className="space-y-4">
-                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
-                                        <h4 className="text-sm font-bold text-gray-900 mb-3">Status atual</h4>
-                                        <dl className="space-y-2 text-sm">
-                                            <div className="flex justify-between gap-2">
-                                                <dt className="text-gray-500">IA</dt>
-                                                <dd className="font-bold text-gray-800">{aiConfig?.enabled ? 'Ativa' : 'Inativa'}</dd>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <dt className="text-gray-500">Provedor</dt>
-                                                <dd className="font-bold text-gray-800">{aiConfig?.provider ?? '—'}</dd>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <dt className="text-gray-500">Modelo</dt>
-                                                <dd className="font-bold text-gray-800 truncate max-w-[160px]" title={aiConfig?.model ?? ''}>{aiConfig?.model ?? '—'}</dd>
-                                            </div>
-                                            <div className="flex justify-between gap-2">
-                                                <dt className="text-gray-500">Chave</dt>
-                                                <dd className="font-bold text-gray-800">
-                                                    {aiConfig?.key_configured ? `••••${aiConfig.key_last4 ?? ''}` : 'não configurada'}
-                                                </dd>
-                                            </div>
-                                            {aiConfig?.updated_at && (
-                                                <div className="flex justify-between gap-2">
-                                                    <dt className="text-gray-500">Atualizada</dt>
-                                                    <dd className="text-gray-600">{new Date(aiConfig.updated_at).toLocaleString('pt-BR')}</dd>
-                                                </div>
-                                            )}
-                                        </dl>
-                                    </div>
-                                </aside>
                             </div>
                         )}
 
                         {/* ═══ Tab: Auditoria ═══ */}
                         {activeTab === 'auditoria' && (
-                            <div className="grid gap-5 lg:grid-cols-2">
+                            <div className="space-y-5">
                                 {/* Audit entries */}
                                 <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
                                     <h3 className="text-lg font-bold text-gray-900">Auditoria recente</h3>
@@ -1405,58 +1264,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Timeline */}
-                                <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
-                                    <h3 className="text-lg font-bold text-gray-900">Timeline operacional</h3>
-                                    <div className="mt-3">
-                                        {operationalTimeline.length === 0 ? (
-                                            <p className="text-sm text-gray-500">Sem eventos operacionais registrados.</p>
-                                        ) : (
-                                            <div className="max-h-[500px] space-y-2 overflow-y-auto">
-                                                {operationalTimeline.map((event) => {
-                                                    let icon: React.ReactNode = null;
-                                                    let label: string = '';
-                                                    let details: string = '';
-
-                                                    if (event.type === 'alert_dispatch') {
-                                                        icon = <Icons.Send size={12} />;
-                                                        label = `Alerta ${event.data.dispatch?.mode === 'live' ? 'live' : 'teste'}`;
-                                                        details = `Canal: ${event.data.dispatch?.channel} · ${event.data.dispatch?.status}`;
-                                                    } else if (event.type === 'flag_change') {
-                                                        icon = <Icons.Settings size={12} />;
-                                                        label = `Flag: ${event.data.flag?.feature_key}`;
-                                                        details = `${event.data.flag?.enabled_before === null ? 'init' : event.data.flag?.enabled_before ? 'on' : 'off'} → ${event.data.flag?.enabled_after ? 'on' : 'off'}`;
-                                                    } else if (event.type === 'rollout_wave') {
-                                                        icon = <Icons.TrendingUp size={12} />;
-                                                        label = `Rollout: ${event.data.rollout?.wave_after}`;
-                                                        details = `Wave anterior: ${event.data.rollout?.wave_before}`;
-                                                    } else if (event.type === 'publication') {
-                                                        icon = <Icons.CheckCircle size={12} />;
-                                                        label = `Publicação`;
-                                                        details = `Versão: ${event.data.publication?.version}`;
-                                                    }
-
-                                                    return (
-                                                        <div key={event.id} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
-                                                            <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
-                                                                <div className="flex items-center gap-2 font-bold text-gray-700">
-                                                                    {icon}
-                                                                    <span>{label}</span>
-                                                                </div>
-                                                                <span className="text-gray-400">{new Date(event.occurred_at).toLocaleString('pt-BR')}</span>
-                                                            </div>
-                                                            <div className="mt-1 text-xs text-gray-600">{details}</div>
-                                                            {event.reason && (
-                                                                <p className="mt-1 text-xs text-gray-400">Motivo: {event.reason}</p>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
                                             </div>
                                         )}
                                     </div>

@@ -9,6 +9,7 @@ git config core.hooksPath .githooks
 
 # Torna os hooks executáveis
 chmod +x .githooks/pre-commit
+chmod +x .githooks/pre-push
 
 echo ""
 echo "✅ Git hooks configurados com sucesso!"

@@ -82,7 +82,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     : null;
   const effectiveProfile = profile ?? fallbackProfile;
   const effectiveRole = profile?.role ?? fallbackRole;
-  const canEdit = effectiveRole === 'admin' || effectiveRole === 'editor';
+  // canEdit requires a real authenticated profile — never grant from mock fallback
+  // when no real session exists, to avoid showing "Gerenciar" to unauthenticated visitors.
+  const canEdit = Boolean(profile) && (effectiveRole === 'admin' || effectiveRole === 'editor');
   const isProfileSection = currentScreen === 'profile' || currentScreen === 'my_data';
   const currentCollectionGroup = currentParams?.collectionGroup === 'books' ? 'books' : 'kits';
 

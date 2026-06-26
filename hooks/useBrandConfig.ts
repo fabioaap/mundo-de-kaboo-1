@@ -145,18 +145,20 @@ const MOCK_BRAND_OVERRIDES: Record<string, Partial<BrandBootstrap>> = {
 
 /** Resolve o slug da marca a partir de env > hostname > fallback. */
 function resolveBrandSlug(): string {
+    // VITE_BRAND_SLUG é autoritativo: cada front é de uma única marca (single-brand
+    // deployment). Em deploys single-brand, ignora ?brand= para não permitir
+    // re-escopo da camada de dados via query string.
+    const fromEnv = import.meta.env.VITE_BRAND_SLUG as string | undefined;
+    if (fromEnv) return fromEnv;
+
+    // Apenas em deploys multi-marca (sem VITE_BRAND_SLUG) honra ?brand= para
+    // o portal de preview e seleção de marca.
     if (typeof window !== 'undefined') {
         const fromSearch = resolveBrandSlugFromSearch(window.location.search);
         if (fromSearch) {
             return fromSearch;
         }
     }
-
-    // VITE_BRAND_SLUG é autoritativo: cada front é de uma única marca (single-brand
-    // deployment). Fica ACIMA do preview override (localStorage) para que uma sessão
-    // de preview antiga não troque a marca silenciosamente.
-    const fromEnv = import.meta.env.VITE_BRAND_SLUG as string | undefined;
-    if (fromEnv) return fromEnv;
 
     const previewSettings = getWhiteLabelPreviewSettings();
     if (previewSettings.previewEnabled) {

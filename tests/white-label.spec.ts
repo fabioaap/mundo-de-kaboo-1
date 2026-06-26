@@ -1,19 +1,30 @@
 // tests/white-label.spec.ts
-// Jornadas de White Label — Gestão de Marca
-// JN-WL-001 a JN-WL-010
+// Jornadas de White Label — Configurações (single-brand, refatoração 2026-06-15)
+// JN-WL-001 a JN-WL-014
 
 import { test, expect, Page } from '@playwright/test';
-import { setupAdminSession } from './fixtures/auth';
+import { setupAdminSession, setupOperationalSession } from './fixtures/auth';
 import { waitForAuthenticatedScreen, navigateToWhiteLabel } from './helpers/navigation';
 
 const WHITE_LABEL_PREVIEW_KEY = 'kaboo:white-label-preview-settings';
 const NAV_STATE_KEY = 'kaboo_nav_state';
 const DEV_MOCK_SESSION_KEY = 'kaboo_dev_mock_session';
-const HEALTH_STATUS_LABEL = /Crítico|Atenção|Saudável/;
-
 // ─── Setup compartilhado ───
 async function adminAtWhiteLabel(page: Page): Promise<void> {
     await setupAdminSession(page);
+    await waitForAuthenticatedScreen(page);
+    await navigateToWhiteLabel(page);
+}
+
+// Single-brand (2026-06-15): abre as Configurações com a marca ativa = `brandSlug`
+// (resolvida via preview-settings, já que não há mais seletor de marca no admin).
+async function adminAtConfiguracoesForBrand(page: Page, brandSlug: 'kaboo' | 'central-coruja'): Promise<void> {
+    await setupOperationalSession(page, {
+        role: 'admin',
+        brandSlug,
+        navState: { currentScreen: 'home' },
+        initialUrl: brandSlug === 'central-coruja' ? '/?brand=central-coruja#home' : '/#home',
+    });
     await waitForAuthenticatedScreen(page);
     await navigateToWhiteLabel(page);
 }
@@ -57,10 +68,6 @@ async function seedCentralCorujaPreview(
     );
 }
 
-function getHealthSummarySection(page: Page) {
-    return page.locator('section').filter({ has: page.getByText('Resumo operacional') }).first();
-}
-
 function getCentralCorujaBrandAsset(page: Page) {
     return page.getByAltText('Central Coruja').first();
 }
@@ -69,27 +76,21 @@ function getCentralCorujaBrandAsset(page: Page) {
 // JORNADA 1 — Acesso e estrutura da tela
 // ===========================================================================
 test.describe('JN-WL-001 — Acesso e estrutura geral', () => {
-    test('admin acessa White Label e vê header, brand selector e tabs', async ({ page }) => {
+    test('admin acessa Configurações e vê header e tabs', async ({ page }) => {
         await adminAtWhiteLabel(page);
 
-        // Header
-        await expect(page.getByRole('heading', { name: 'Gestão de Marca' })).toBeVisible();
-        await expect(page.getByText('Console White Label')).toBeVisible();
+        // Header (renomeado de "Gestão de Marca" para "Configurações" na refatoração single-brand)
+        await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible();
+        await expect(page.getByText('Identidade visual, feature flags e integrações desta aplicação.')).toBeVisible();
 
         // Data source badge
         await expect(page.getByText(/Supabase|Mock local/)).toBeVisible();
 
-        // Brand selector pills
-        await expect(page.getByRole('button', { name: 'Mundo de Kaboo' })).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Central Coruja' })).toBeVisible();
-
-        // Context badges
-        await expect(page.getByText('kaboo', { exact: true })).toBeVisible();
-        await expect(page.getByText(/Rollout:/)).toBeVisible();
-
-        // Tabs
+        // Tabs (single-brand: sem seletor de marca; aba "Menus" adicionada)
         await expect(page.getByRole('button', { name: 'Identidade Visual', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Operações', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Menus', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Integrações de IA', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Auditoria', exact: true })).toBeVisible();
     });
 });
@@ -98,38 +99,12 @@ test.describe('JN-WL-001 — Acesso e estrutura geral', () => {
 // JORNADA 2 — Troca de contexto de marca
 // ===========================================================================
 test.describe('JN-WL-002 — Troca de contexto de marca', () => {
-    test('trocar para Central Coruja atualiza contexto e exibe toast', async ({ page }) => {
-        await adminAtWhiteLabel(page);
+    // TODO(single-brand): feature removida na refatoração 2026-06-15 — o seletor de marca
+    // (pills Mundo de Kaboo / Central Coruja) foi removido; o admin opera apenas a marca da instância.
+    test.skip('trocar para Central Coruja atualiza contexto e exibe toast', async () => {});
 
-        // Slug inicial é kaboo
-        await expect(page.getByText('kaboo').first()).toBeVisible();
-
-        // Clicar em Central Coruja
-        await page.getByRole('button', { name: 'Central Coruja' }).click();
-
-        // Slug deve mudar para central-coruja
-        await expect(page.getByText('central-coruja')).toBeVisible({ timeout: 10_000 });
-
-        // Toast de confirmação
-        await expect(page.getByText(/Contexto alterado.*Central Coruja/i)).toBeVisible({ timeout: 5_000 });
-
-        // Botão Central Coruja deve ter estilo ativo (check icon)
-        const activeBtn = page.getByRole('button', { name: 'Central Coruja' });
-        await expect(activeBtn).toBeVisible();
-    });
-
-    test('trocar de volta para Kaboo restaura contexto', async ({ page }) => {
-        await adminAtWhiteLabel(page);
-
-        // Ir para Central Coruja primeiro
-        await page.getByRole('button', { name: 'Central Coruja' }).click();
-        await expect(page.getByText('central-coruja')).toBeVisible({ timeout: 10_000 });
-
-        // Voltar para Kaboo
-        await page.getByRole('button', { name: 'Mundo de Kaboo' }).click();
-        await expect(page.getByText('kaboo').first()).toBeVisible({ timeout: 10_000 });
-        await expect(page.getByText(/Contexto alterado.*Mundo de Kaboo/i)).toBeVisible({ timeout: 5_000 });
-    });
+    // TODO(single-brand): feature removida na refatoração 2026-06-15 — sem seletor de marca, não há troca de contexto.
+    test.skip('trocar de volta para Kaboo restaura contexto', async () => {});
 });
 
 // ===========================================================================
@@ -246,11 +221,10 @@ test.describe('JN-WL-005 — Navegação entre tabs', () => {
         // Clicar em Auditoria
         await page.getByRole('button', { name: 'Auditoria' }).click();
 
-        // Seções de auditoria visíveis
+        // Seções de auditoria visíveis (single-brand: "Histórico de entregas" e
+        // "Payload de alertas" foram removidos junto com o dispatch de alertas)
+        // Timeline operacional removida na refatoração 2026-06-25 (apenas Auditoria recente permanece)
         await expect(page.getByRole('heading', { name: 'Auditoria recente' })).toBeVisible({ timeout: 5_000 });
-        await expect(page.getByRole('heading', { name: 'Timeline operacional' })).toBeVisible();
-        await expect(page.getByRole('heading', { name: 'Histórico de entregas' })).toBeVisible();
-        await expect(page.getByRole('heading', { name: 'Payload de alertas' })).toBeVisible();
     });
 
     test('voltar para Identidade Visual restaura a view', async ({ page }) => {
@@ -302,7 +276,8 @@ test.describe('JN-WL-006 — Feature Flags', () => {
     test('campo de motivo para auditoria está presente', async ({ page }) => {
         await adminAtWhiteLabel(page);
         await page.getByRole('button', { name: 'Operações' }).click();
-        await expect(page.getByLabel('Motivo da mudança')).toBeVisible({ timeout: 5_000 });
+        // Renomeado de "Motivo da mudança" para "Contexto da alteração" na refatoração single-brand
+        await expect(page.getByLabel('Contexto da alteração')).toBeVisible({ timeout: 5_000 });
     });
 });
 
@@ -318,121 +293,68 @@ test.describe('JN-WL-007 — Publicação e Rollout', () => {
         await expect(page.getByRole('button', { name: /Publicar agora|Publicar nova versão/ })).toBeVisible();
     });
 
-    test('rollout por ondas mostra 3 opções', async ({ page }) => {
-        await adminAtWhiteLabel(page);
-        await page.getByRole('button', { name: 'Operações' }).click();
+    // TODO(single-brand): feature removida na refatoração 2026-06-15 — Rollout por Ondas
+    // (pilot/group/general) foi removido da UI single-brand.
+    test.skip('rollout por ondas mostra 3 opções', async () => {});
 
-        await expect(page.getByRole('heading', { name: 'Rollout por Ondas' })).toBeVisible({ timeout: 5_000 });
-        await expect(page.getByRole('button', { name: /Piloto/i }).first()).toBeVisible();
-        await expect(page.getByRole('button', { name: /Grupo/i }).first()).toBeVisible();
-        await expect(page.getByRole('button', { name: /Geral/i }).first()).toBeVisible();
-    });
-
-    test('métricas exibem flags ativas, mudanças 24h e total', async ({ page }) => {
-        await adminAtWhiteLabel(page);
-        await page.getByRole('button', { name: 'Operações' }).click();
-
-        await expect(page.getByRole('heading', { name: 'Métricas' })).toBeVisible({ timeout: 5_000 });
-        await expect(page.getByText('Flags ativas')).toBeVisible();
-        await expect(page.getByText('Mudanças 24h', { exact: true })).toBeVisible();
-        await expect(page.getByText('Total', { exact: true })).toBeVisible();
-    });
+    // TODO(single-brand): feature removida na refatoração 2026-06-15 — a seção "Métricas"
+    // (flags ativas / mudanças 24h / total) de rollout foi removida.
+    test.skip('métricas exibem flags ativas, mudanças 24h e total', async () => {});
 });
 
 // ===========================================================================
 // JORNADA 8 — Tab Operações: Alertas
 // ===========================================================================
 test.describe('JN-WL-008 — Alertas operacionais e externos', () => {
-    test('seção de alertas operacionais está visível', async ({ page }) => {
-        await adminAtWhiteLabel(page);
-        await page.getByRole('button', { name: 'Operações' }).click();
+    // TODO(single-brand): feature removida na refatoração 2026-06-15 — a seção de
+    // "Alertas operacionais" foi removida da aba Operações.
+    test.skip('seção de alertas operacionais está visível', async () => {});
 
-        await expect(page.getByRole('heading', { name: 'Alertas operacionais' })).toBeVisible({ timeout: 5_000 });
-    });
-
-    test('alertas externos tem campos webhook, canal e threshold', async ({ page }) => {
-        await adminAtWhiteLabel(page);
-        await page.getByRole('button', { name: 'Operações' }).click();
-
-        await expect(page.getByRole('heading', { name: 'Alertas externos' })).toBeVisible({ timeout: 5_000 });
-        await expect(page.getByText('Habilitar alertas externos')).toBeVisible();
-        await expect(page.getByPlaceholder(/hooks\.exemplo/)).toBeVisible();
-        await expect(page.getByPlaceholder(/ops-central/)).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Salvar alertas' })).toBeVisible();
-    });
+    // TODO(single-brand): feature removida na refatoração 2026-06-15 — a config de
+    // alertas externos (webhook/canal/threshold + Salvar alertas) foi removida.
+    test.skip('alertas externos tem campos webhook, canal e threshold', async () => {});
 });
 
 // ===========================================================================
 // JORNADA 9 — Tab Auditoria: Conteúdo e payload
 // ===========================================================================
 test.describe('JN-WL-009 — Auditoria e payload', () => {
-    test('payload de alertas contém dados da marca ativa', async ({ page }) => {
-        await adminAtWhiteLabel(page);
-        await page.getByRole('button', { name: 'Auditoria' }).click();
+    // TODO(single-brand): feature removida na refatoração 2026-06-15 — o card "Payload de
+    // alertas" foi removido junto com o dispatch de alertas externos.
+    test.skip('payload de alertas contém dados da marca ativa', async () => {});
 
-        await expect(page.getByRole('heading', { name: 'Payload de alertas' })).toBeVisible({ timeout: 5_000 });
-        // Payload deve conter a marca kaboo
-        await expect(page.getByText('"slug": "kaboo"')).toBeVisible();
-    });
-
-    test('trocar marca atualiza payload na aba Auditoria', async ({ page }) => {
-        await adminAtWhiteLabel(page);
-
-        // Trocar para Central Coruja
-        await page.getByRole('button', { name: 'Central Coruja' }).click();
-        await expect(page.getByText('central-coruja').first()).toBeVisible({ timeout: 10_000 });
-
-        // Ir para Auditoria
-        await page.getByRole('button', { name: 'Auditoria' }).click();
-        await expect(page.getByRole('heading', { name: 'Payload de alertas' })).toBeVisible({ timeout: 5_000 });
-        await expect(page.getByText('"slug": "central-coruja"')).toBeVisible();
-    });
+    // TODO(single-brand): feature removida na refatoração 2026-06-15 — sem seletor de marca
+    // e sem payload de alertas, este cenário não se aplica.
+    test.skip('trocar marca atualiza payload na aba Auditoria', async () => {});
 });
 
 // ===========================================================================
 // JORNADA 10 — Health Check
 // ===========================================================================
 test.describe('JN-WL-010 — Health Check banner', () => {
-    test('health check banner está visível no topo', async ({ page }) => {
-        await adminAtWhiteLabel(page);
+    // TODO(refactor-2026-06-25): Health Check (Resumo operacional) removido da tela —
+    // era um painel de leitura sem edição, fora da diretriz "só itens editáveis".
+    test.skip('health check banner está visível no topo', async () => {});
 
-        const healthSection = getHealthSummarySection(page);
-        await expect(healthSection).toBeVisible({ timeout: 10_000 });
-        await expect(healthSection.getByText(HEALTH_STATUS_LABEL)).toBeVisible({ timeout: 10_000 });
-    });
-
-    test('health check muda ao trocar de marca', async ({ page }) => {
-        await adminAtWhiteLabel(page);
-
-        const initialSection = getHealthSummarySection(page);
-        const initialStatus = await initialSection.getByText(HEALTH_STATUS_LABEL).textContent();
-
-        // Trocar para Central Coruja
-        await page.getByRole('button', { name: 'Central Coruja' }).click();
-        await page.waitForTimeout(1500);
-
-        const newSection = getHealthSummarySection(page);
-        const newStatus = await newSection.getByText(HEALTH_STATUS_LABEL).textContent();
-        expect(newStatus).toBeTruthy();
-
-        // Se kaboo é "Crítico" (rollout geral sem publicação) e coruja é "Saudável" (piloto), devem diferir
-        if (initialStatus?.trim() === 'Crítico') {
-            expect(newStatus?.trim()).toBe('Saudável');
-        }
-    });
+    // TODO(single-brand): feature removida na refatoração 2026-06-15 — sem seletor de marca
+    // não há troca de contexto para comparar health check entre marcas.
+    test.skip('health check muda ao trocar de marca', async () => {});
 });
 
 // ===========================================================================
 // JORNADA 11 — Propagação do contexto para a Home
 // ===========================================================================
 test.describe('JN-WL-011 — Preview runtime da marca', () => {
+    // Reescrito single-brand (2026-06-15): sem seletor de marca no admin, o runtime
+    // da Central Coruja é validado via preview-settings + navegação direta à Home.
     test('contexto Central Coruja reflete na Home e no menu', async ({ page }) => {
-        await adminAtWhiteLabel(page);
-
-        await page.getByRole('button', { name: 'Central Coruja' }).click();
-        await expect(page.getByText('central-coruja')).toBeVisible({ timeout: 10_000 });
-
-        await page.getByRole('button', { name: 'Ir para o Início' }).click();
+        // Marca ativa = Central Coruja via preview-settings (substitui o antigo seletor de marca)
+        await setupOperationalSession(page, {
+            role: 'admin',
+            brandSlug: 'central-coruja',
+            navState: { currentScreen: 'home' },
+            initialUrl: '/?brand=central-coruja#home',
+        });
 
         await expect(page.getByRole('heading', { name: 'Bem-vindo à Central Coruja!' })).toBeVisible({ timeout: 10_000 });
         await expect(page.getByText('Histórias, vídeos e experiências de aprendizagem organizados para você começar pela busca e explorar com mais clareza.')).toBeVisible();
@@ -464,7 +386,9 @@ test.describe('JN-WL-012 — Auth runtime da marca', () => {
             devMockSession: true,
         });
 
-        await page.goto('/#set_password');
+        // Inclui ?brand=central-coruja na URL (alinhado aos demais cenários de auth runtime
+        // após a mudança de resolução de marca 2026-06-15).
+        await page.goto('/?brand=central-coruja#set_password');
 
         await expect(getCentralCorujaBrandAsset(page)).toBeVisible({ timeout: 10_000 });
         await expect(page.getByRole('heading', { name: 'Criar sua senha' })).toBeVisible();
@@ -487,10 +411,9 @@ test.describe('JN-WL-012 — Auth runtime da marca', () => {
 // ===========================================================================
 test.describe('JN-WL-013 — Tipografia e tokens de design', () => {
     test('white label salva tipografia e tokens no runtime', async ({ page }) => {
-        await adminAtWhiteLabel(page);
-
-        await page.getByRole('button', { name: 'Central Coruja' }).click();
-        await expect(page.getByText('central-coruja')).toBeVisible({ timeout: 10_000 });
+        // Single-brand (2026-06-15): a marca ativa vem do preview-settings (Central Coruja),
+        // não mais de um seletor dentro do admin.
+        await adminAtConfiguracoesForBrand(page, 'central-coruja');
 
         await page.getByLabel('Família tipográfica').fill('Poppins, ui-sans-serif');
         await page.getByLabel('Cor de sucesso').fill('#2F7D4D');
@@ -512,12 +435,89 @@ test.describe('JN-WL-013 — Tipografia e tokens de design', () => {
 // JORNADA 14 — Seleção inicial sincronizada com preview salvo
 // ===========================================================================
 test.describe('JN-WL-014 — Bootstrap do painel pela marca ativa', () => {
+    // Single-brand (2026-06-15): sem seletor de marca; o painel é escopado para a marca
+    // ativa (resolvida via preview-settings). Validamos que ele bootstrapa na Central Coruja.
     test('painel White Label abre na Central Coruja quando o preview salvo está ativo', async ({ page }) => {
-        await seedCentralCorujaPreview(page);
+        await adminAtConfiguracoesForBrand(page, 'central-coruja');
+
+        // A identidade carregada é a da Central Coruja (health-check removido em 2026-06-25).
+        await expect(page.getByLabel('Nome exibido')).toHaveValue('Central Coruja', { timeout: 10_000 });
+    });
+});
+
+// ===========================================================================
+// JORNADA 15 — Tab Integrações de IA
+// ===========================================================================
+// Nota de ambiente: os testes E2E rodam em modo mock (as fixtures setam
+// `kaboo_dev_mock_session`), logo `canUseRemoteWhiteLabel()` é sempre `false`.
+// Isso torna o banner de mock e os botões desabilitados determinísticos —
+// e torna o fluxo real de salvar/testar IA não-testável aqui (ver test.skip).
+test.describe('JN-WL-015 — Integrações de IA', () => {
+    test('clicar na aba Integrações de IA mostra o formulário de configuração', async ({ page }) => {
         await adminAtWhiteLabel(page);
 
-        await expect(page.getByText('central-coruja')).toBeVisible({ timeout: 10_000 });
-        await expect(page.getByRole('button', { name: 'Central Coruja' }).locator('svg, img')).toHaveCount(1);
-        await expect(page.getByRole('button', { name: 'Mundo de Kaboo' }).locator('svg, img')).toHaveCount(0);
+        await page.getByRole('button', { name: 'Integrações de IA', exact: true }).click();
+
+        // Cabeçalho e campos do provedor
+        await expect(page.getByRole('heading', { name: 'Provedor de IA' })).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByText('Ativar IA para esta marca')).toBeVisible();
+        await expect(page.getByRole('combobox')).toBeVisible(); // seletor de Provedor
+        await expect(page.getByPlaceholder('Cole a chave do provedor')).toBeVisible();
+        await expect(page.getByRole('button', { name: /Salvar configuração/ })).toBeVisible();
+        await expect(page.getByRole('button', { name: /Testar conexão/ })).toBeVisible();
     });
+
+    test('modo mock exibe banner azul e desabilita Salvar/Testar', async ({ page }) => {
+        await adminAtWhiteLabel(page);
+        await page.getByRole('button', { name: 'Integrações de IA', exact: true }).click();
+        await expect(page.getByRole('heading', { name: 'Provedor de IA' })).toBeVisible({ timeout: 5_000 });
+
+        // Banner azul de modo local/mock (remoteEnabled === false nas fixtures E2E)
+        await expect(
+            page.getByText('Modo local/mock: salvar e testar a IA exige o ambiente real (edge functions).'),
+        ).toBeVisible();
+
+        // Botões desabilitados quando !remoteEnabled
+        await expect(page.getByRole('button', { name: /Salvar configuração/ })).toBeDisabled();
+        await expect(page.getByRole('button', { name: /Testar conexão/ })).toBeDisabled();
+    });
+
+    // TODO(env-mock): o guard de não-admin não é testável neste ambiente. O módulo
+    // "Configurações" (white_label) só existe em ALL_MODULES (admin); EDITOR_MODULES
+    // não inclui white_label (ver screens/AdminScreen.tsx). Logo, um usuário não-admin
+    // nunca chega a esta aba para validar o banner "Apenas administradores..." nem os
+    // controles desabilitados. Requer fixture/rota que exponha a tela a não-admin.
+    test.skip('não-admin vê banner de bloqueio e controles desabilitados', async () => {});
+
+    // TODO(env-mock): ativar IA sem chave dispara o toast "Informe a chave de API para
+    // ativar a IA." apenas em handleSaveAIConfig — mas o botão "Salvar configuração" está
+    // disabled quando !remoteEnabled, o que é sempre o caso no mock E2E. O toast nunca
+    // chega a disparar aqui. Requer ambiente com edge functions (remoteEnabled === true).
+    test.skip('ativar IA sem chave exibe toast de erro e não persiste', async () => {});
+});
+
+// ===========================================================================
+// JORNADA 16 — Tab Auditoria: estado e rollback
+// ===========================================================================
+test.describe('JN-WL-016 — Auditoria e rollback', () => {
+    test('aba Auditoria mostra estado vazio quando não há eventos (mock)', async ({ page }) => {
+        await adminAtWhiteLabel(page);
+        await page.getByRole('button', { name: 'Auditoria', exact: true }).click();
+
+        await expect(page.getByRole('heading', { name: 'Auditoria recente' })).toBeVisible({ timeout: 5_000 });
+        // listWhiteLabelAudit() retorna [] em modo mock → estado vazio determinístico
+        await expect(page.getByText('Sem eventos recentes para esta marca.')).toBeVisible();
+    });
+
+    // TODO(env-mock): listWhiteLabelAudit() retorna [] quando !canUseRemoteWhiteLabel()
+    // (ver lib/whiteLabelAdminApi.ts). Sem backend real, nenhuma entrada de auditoria
+    // é renderizada, então o botão "Reverter" não existe no DOM neste ambiente.
+    // Cenário: com entradas reais, "Reverter" aparece e fica desabilitado quando
+    // entry.enabled_before === null (entrada de init). Requer remoteEnabled === true.
+    test.skip('botão Reverter aparece e está desabilitado em entrada de init', async () => {});
+
+    // TODO(env-mock): mesmo motivo acima — sem entradas de auditoria no mock não há
+    // botão "Reverter" para clicar. O fluxo de rollback (rollbackAuditEntry →
+    // setWhiteLabelFeature) só é exercitável com backend real e auditoria populada.
+    test.skip('clicar Reverter em entrada reversível dispara o fluxo de reversão', async () => {});
 });
