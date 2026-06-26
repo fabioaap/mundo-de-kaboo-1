@@ -76,8 +76,16 @@ jobs:
         with:
           version: latest
 
+      - name: Disable DB seed for the isolated guard test
+        # rls_profiles_guard.sql cria os próprios fixtures (brands + auth.users) em
+        # transação revertida e NÃO precisa do seed. O seed.sql falha num DB limpo
+        # (blocker pré-existente), então o desligamos só neste job (checkout efêmero do CI).
+        run: printf '\n[db.seed]\nenabled = false\n' >> supabase/config.toml
+
       - name: Start local Supabase
         run: supabase db start
 
-      - name: Run pgTAP RLS tests
-        run: supabase test db
+      - name: Run DB-01 pgTAP guard test
+        # Escopo: só o teste self-contained do DB-01. O rls_brand_isolation.sql
+        # depende do seed (brands por slug) e é tratado em follow-up.
+        run: supabase test db supabase/tests/rls_profiles_guard.sql

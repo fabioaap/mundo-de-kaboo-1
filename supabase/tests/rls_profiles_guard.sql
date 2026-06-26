@@ -34,9 +34,26 @@ BEGIN
 END $$;
 
 -- ============================================================
--- SETUP: perfis fictícios injetados para os testes
+-- SETUP: fixtures injetados para os testes
 -- (a transação faz ROLLBACK no final — nada persiste)
 -- ============================================================
+
+-- Marcas (profiles.brand_id e collections/formations/materials.brand_id têm FK p/ brands).
+INSERT INTO public.brands (id, slug, name)
+VALUES
+  ('00000000-0000-0000-0000-000000000001'::uuid, 'test-kaboo',  '[TEST] Kaboo'),
+  ('00000000-0000-0000-0000-000000000002'::uuid, 'test-coruja', '[TEST] Coruja')
+ON CONFLICT (id) DO NOTHING;
+
+-- Usuários de auth (profiles.id tem FK p/ auth.users; o trigger handle_new_user
+-- cria a linha em public.profiles automaticamente no INSERT abaixo).
+INSERT INTO auth.users (id, instance_id, aud, role, email, created_at, updated_at)
+VALUES
+  ('00000000-0000-0000-0000-000000000010'::uuid, '00000000-0000-0000-0000-000000000000'::uuid,
+   'authenticated', 'authenticated', 'viewer-kaboo@test.local',  NOW(), NOW()),
+  ('00000000-0000-0000-0000-000000000030'::uuid, '00000000-0000-0000-0000-000000000000'::uuid,
+   'authenticated', 'authenticated', 'viewer-nobrand@test.local', NOW(), NOW())
+ON CONFLICT (id) DO NOTHING;
 
 -- viewer_kaboo — brand_id já atribuído, role viewer
 INSERT INTO public.profiles (id, brand_id, role)
@@ -62,7 +79,7 @@ ON CONFLICT (id) DO UPDATE
 
 -- fixtures de collections/characters/formations/materials por marca
 -- (usadas na seção de SELECT cross-brand)
-INSERT INTO public.collections (id, brand_id, name, is_published)
+INSERT INTO public.collections (id, brand_id, title, is_published)
 VALUES
   ('cccccccc-0000-0000-0000-000000000001'::uuid,
    '00000000-0000-0000-0000-000000000001'::uuid,
