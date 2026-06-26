@@ -2490,6 +2490,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
               pdf_url: synced.pdf_url,
               video_url: synced.video_url,
               cover_image: synced.cover_image,
+              character_ids: synced.character_ids,
+              characters: synced.characters,
             });
           }
         }
