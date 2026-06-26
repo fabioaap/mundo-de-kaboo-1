@@ -1,0 +1,13 @@
+-- ROLLBACK de 20260620390000_t40_capture_formations_materials.sql (DB-02)
+-- ⚠️ DOCUMENTAÇÃO — não roda automaticamente.
+--
+-- ⛔ NÃO execute em PROD: as tabelas têm dados reais (materials = 15 linhas) e são
+-- consultadas em runtime por lib/api.ts. Dropá-las apaga conteúdo e quebra o app.
+--
+-- Este rollback só faz sentido num ambiente LIMPO de teste onde a migration criou as
+-- tabelas vazias e você quer desfazê-la. Em prod, a migration é no-op (IF NOT EXISTS),
+-- então não há o que reverter — não rode nada.
+
+-- Apenas para env de teste limpo:
+-- DROP TABLE IF EXISTS public.formations;
+-- DROP TABLE IF EXISTS public.materials;

@@ -1414,6 +1414,16 @@ const App: React.FC = () => {
         );
 
       case 'admin':
+        if (!accessProfile) {
+          // Session checked but no profile — navigate to login
+          navigate('login');
+          return null;
+        }
+        if (accessProfile.role !== 'admin' && accessProfile.role !== 'editor') {
+          // Authenticated but lacks permission — redirect to home
+          navigate('home');
+          return null;
+        }
         return (
           <AdminScreen
             onNavigate={navigate}

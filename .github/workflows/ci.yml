@@ -1,0 +1,83 @@
+name: CI
+
+# Deterministic validation gate. Runs on every PR and on pushes to the
+# main branches. These checks were previously only documented (CLAUDE.md),
+# never enforced — see docs/qa/AUDITORIA-FULLSTACK-2026-06-25.md.
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop, v1.1]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: QA gate (secret-scan + destructive SQL)
+        # On PRs, block destructive SQL in newly-changed migrations (diff vs base).
+        # On direct pushes, secret-scan the whole tree (historical SQL only warns).
+        run: |
+          if [ -n "${{ github.base_ref }}" ]; then
+            git fetch origin "${{ github.base_ref }}" --depth=1
+            node scripts/qa/check-staged.mjs --base="origin/${{ github.base_ref }}"
+          else
+            node scripts/qa/check-staged.mjs --all
+          fi
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:unit
+
+  e2e-brand-isolation:
+    # Brand isolation is the core white-label guarantee — gate it before deploy.
+    # Playwright auto-starts the dev server in mock mode (no secrets needed).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Brand-isolation & auth-guard E2E
+        run: npx playwright test --config playwright.config.ts white-label auth-guard
+
+  rls-tests:
+    # Deterministic pgTAP gate: brand isolation + DB-01 privilege guard.
+    # Runs against a local Supabase instance — no prod connection required.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase
+        run: supabase db start
+
+      - name: Run pgTAP RLS tests
+        run: supabase test db

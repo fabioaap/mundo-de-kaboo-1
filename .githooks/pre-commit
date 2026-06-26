@@ -1,11 +1,21 @@
 #!/bin/bash
 # .git/hooks/pre-commit
-# Hook automático para atualizar documentação antes de fazer commit
+# 1) Gate determinístico (secret-scan + SQL destrutivo) — BLOQUEIA o commit em violação.
+# 2) Auto-update de documentação (não bloqueia).
 
 # Cores
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# ── Gate determinístico (bloqueante) ──────────────────────────────────
+echo -e "${YELLOW}🛡️  QA gate: secret-scan + SQL destrutivo (staged)...${NC}"
+node scripts/qa/check-staged.mjs
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Commit bloqueado pelo QA gate. Corrija os itens acima.${NC}"
+    exit 1
+fi
 
 echo -e "${YELLOW}🔄 Atualizando documentações...${NC}"
 
