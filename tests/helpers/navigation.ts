@@ -39,7 +39,7 @@ export async function navigateTo(
 /** Navega até a aba White Label dentro do painel admin */
 export async function navigateToWhiteLabel(page: Page): Promise<void> {
     await navigateTo(page, 'admin');
-    const wlButton = page.getByRole('button', { name: 'White Label' }).first();
+    const wlButton = page.getByRole('button', { name: 'Configurações', exact: true }).first();
     await wlButton.waitFor({ state: 'visible', timeout: 10_000 });
     await wlButton.click();
     // Aguarda o header "Configurações" ser visível (renomeado na refatoração single-brand 2026-06-15)
