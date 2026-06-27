@@ -36,6 +36,16 @@ import {
     WhiteLabelBrandIdentity,
 } from '../lib/whiteLabelAdminApi';
 
+/** Labels canônicos dos itens de menu — fonte de verdade para o admin (independente do DB). */
+const NAV_CANONICAL_LABELS: Record<string, string> = {
+    collections: 'Coleções',
+    books: 'Livros',
+    videos: 'Vídeos',
+    music: 'Músicas',
+    formations: 'Formações',
+    materials: 'Materiais extras',
+};
+
 const MODE_OPTIONS: Array<{ value: HeroParallaxMode; label: string; description: string }> = [
     { value: 'off', label: 'Desligado', description: 'Desliga completamente o movimento do hero.' },
     { value: 'subtle', label: 'Suave', description: 'Profundidade leve para validação visual inicial.' },
@@ -1022,7 +1032,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     <div key={item.key} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                                                         <div className="flex items-start justify-between gap-4">
                                                             <div>
-                                                                <p className="text-sm font-bold text-gray-900">{item.label}</p>
+                                                                <p className="text-sm font-bold text-gray-900">{NAV_CANONICAL_LABELS[item.key] ?? item.label}</p>
                                                                 {isCollections && (
                                                                     <p className="mt-1 text-xs text-amber-600">Ao desligar, o app redirecionará para o primeiro menu disponível.</p>
                                                                 )}
