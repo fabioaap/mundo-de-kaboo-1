@@ -5,7 +5,7 @@ import { Toast } from '../components/Toast';
 import { FileUpload } from '../components/FileUpload';
 import { useToast } from '../hooks/useToast';
 import { api } from '../lib/api';
-import { Formation, FormationLevel, FormationAsset, MaterialAssetType, ScreenName } from '../types';
+import { Formation, FormationLevel, FormationAsset, FormationLesson, MaterialAssetType, ScreenName } from '../types';
 
 const normalizeText = (v: string) => (v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
@@ -26,6 +26,7 @@ const EMPTY_FORM: Omit<Formation, 'id' | 'created_at' | 'updated_at'> = {
   duration_label: '',
   related_collection_ids: [],
   assets: [],
+  lessons: [],
   is_published: false,
   published_at: null,
   brand_id: null,
@@ -84,6 +85,7 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
       duration_label: formation.duration_label ?? '',
       related_collection_ids: formation.related_collection_ids ?? [],
       assets: formation.assets ?? [],
+      lessons: formation.lessons ?? [],
       is_published: formation.is_published ?? false,
       published_at: formation.published_at ?? null,
       brand_id: formation.brand_id ?? null,
@@ -112,9 +114,10 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
   const handleSave = async () => {
     if (!formData.title.trim()) { showToast('Título é obrigatório', 'error'); return; }
     setSaving(true);
+    const payload = { ...formData, steps_count: formData.lessons?.length ?? 0 };
     try {
       if (editingId) {
-        const result = await api.updateFormation(editingId, formData);
+        const result = await api.updateFormation(editingId, payload);
         if (result) {
           showToast('Formação atualizada!', 'success');
           setOriginalFormData({ ...formData });
@@ -123,7 +126,7 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
           showToast('Erro ao atualizar formação', 'error');
         }
       } else {
-        const result = await api.createFormation(formData);
+        const result = await api.createFormation(payload);
         if (result) {
           showToast('Formação criada!', 'success');
           closeDrawer();
@@ -181,6 +184,41 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
 
   const removeAsset = (idx: number) => {
     setFormData(prev => ({ ...prev, assets: (prev.assets ?? []).filter((_, i) => i !== idx) }));
+  };
+
+  const addLesson = () => {
+    const newLesson: FormationLesson = {
+      id: crypto.randomUUID(),
+      title: '',
+      video_url: null,
+      pdf_url: null,
+    };
+    setFormData(prev => ({ ...prev, lessons: [...(prev.lessons ?? []), newLesson] }));
+  };
+
+  const removeLesson = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      lessons: (prev.lessons ?? []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateLesson = (index: number, field: keyof FormationLesson, value: string | null) => {
+    setFormData(prev => {
+      const lessons = [...(prev.lessons ?? [])];
+      lessons[index] = { ...lessons[index], [field]: value };
+      return { ...prev, lessons };
+    });
+  };
+
+  const moveLesson = (index: number, direction: -1 | 1) => {
+    setFormData(prev => {
+      const lessons = [...(prev.lessons ?? [])];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= lessons.length) return prev;
+      [lessons[index], lessons[newIndex]] = [lessons[newIndex], lessons[index]];
+      return { ...prev, lessons };
+    });
   };
 
   const filtered = formations.filter(f =>
@@ -393,17 +431,13 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
             </select>
           </div>
 
-          {/* Steps count + Duration */}
+          {/* Steps count (derived) + Duration */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Nº de etapas</label>
-              <input
-                type="number"
-                min={1}
-                value={formData.steps_count ?? 1}
-                onChange={e => setFormData(prev => ({ ...prev, steps_count: Math.max(1, Number(e.target.value)) }))}
-                className="w-full bg-gray-50 rounded-2xl p-4 text-gray-800 outline-none focus:ring-2 focus:ring-brand-primary/30"
-              />
+              <label className="block text-sm font-bold text-gray-700 mb-2">Nº de aulas</label>
+              <div className="w-full bg-gray-50 rounded-2xl p-4 text-gray-500 flex items-center">
+                {(formData.lessons ?? []).length} aula(s)
+              </div>
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">Duração</label>
@@ -499,6 +533,81 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Aulas do Curso */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Aulas do curso</label>
+
+            {(formData.lessons ?? []).length > 0 && (
+              <div className="space-y-3 mb-3">
+                {(formData.lessons ?? []).map((lesson, index) => (
+                  <div key={lesson.id} className="p-3 bg-gray-50 rounded-xl space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 flex-shrink-0 rounded-full bg-brand-primary/10 text-brand-primary text-xs font-bold flex items-center justify-center">
+                        {index + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={lesson.title}
+                        onChange={e => updateLesson(index, 'title', e.target.value)}
+                        placeholder="Título da aula"
+                        className="flex-1 bg-white rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
+                      />
+                    </div>
+                    <input
+                      type="url"
+                      value={lesson.video_url ?? ''}
+                      onChange={e => updateLesson(index, 'video_url', e.target.value || null)}
+                      placeholder="URL do vídeo (YouTube)"
+                      className="w-full bg-white rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
+                    />
+                    <input
+                      type="url"
+                      value={lesson.pdf_url ?? ''}
+                      onChange={e => updateLesson(index, 'pdf_url', e.target.value || null)}
+                      placeholder="URL do PDF"
+                      className="w-full bg-white rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => moveLesson(index, -1)}
+                        disabled={index === 0}
+                        className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-brand-primary disabled:opacity-30 transition-colors"
+                      >
+                        <Icons.ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveLesson(index, 1)}
+                        disabled={index === (formData.lessons?.length ?? 0) - 1}
+                        className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-brand-primary disabled:opacity-30 transition-colors"
+                      >
+                        <Icons.ArrowDown size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeLesson(index)}
+                        className="ml-auto px-3 h-8 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 text-sm font-bold transition-colors flex items-center gap-1"
+                      >
+                        <Icons.Trash2 size={14} />
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={addLesson}
+              className="w-full py-3 border border-dashed border-gray-200 rounded-xl text-sm font-bold text-brand-primary hover:bg-brand-primary/5 transition-colors flex items-center justify-center gap-2"
+            >
+              <Icons.Plus size={14} />
+              Adicionar aula
+            </button>
           </div>
 
         </div>

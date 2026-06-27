@@ -97,6 +97,17 @@ export interface UserProgress {
   progress_percent: number;
 }
 
+export interface UserFormationProgress {
+  id: string;
+  user_id: string;
+  formation_id: string;
+  completed_lesson_ids: string[];
+  last_lesson_id: string | null;
+  progress_percent: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export type CharacterStatus = 'active' | 'inactive';
 
 export interface Character {
@@ -236,6 +247,14 @@ export interface FormationAsset {
   description?: string | null;
 }
 
+export interface FormationLesson {
+  id: string;           // gerado com crypto.randomUUID() no admin — chave estável de progresso
+  title: string;
+  description?: string | null;
+  video_url?: string | null;
+  pdf_url?: string | null;
+}
+
 export interface Formation {
   id: string;
   title: string;
@@ -247,6 +266,7 @@ export interface Formation {
   duration_label?: string | null;
   related_collection_ids?: string[];
   assets?: FormationAsset[];
+  lessons?: FormationLesson[];
   is_published?: boolean;
   published_at?: string | null;
   brand_id?: string | null;
@@ -465,6 +485,7 @@ export type ScreenName =
   | 'player_book'
   | 'player_audio'
   | 'player_video'
+  | 'formation_player'
   | 'tools'
   | 'support'
   | 'email_confirmation'

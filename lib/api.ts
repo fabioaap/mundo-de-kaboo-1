@@ -3425,6 +3425,76 @@ export const api = {
     return this.updateFormation(id, { is_published: false, published_at: null });
   },
 
+  // ── Formation progress ────────────────────────────────────
+
+  async getFormationProgress(formationId: string): Promise<import('../types').UserFormationProgress | null> {
+    if (!isSupabaseConfigured || isDevMockSession()) return null;
+
+    const userId = await getCurrentUserId();
+    if (!userId) return null;
+
+    const { data, error } = await supabase
+      .from('user_formation_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('formation_id', formationId)
+      .maybeSingle();
+
+    if (error) { logger.error('getFormationProgress error:', error); return null; }
+    return data as import('../types').UserFormationProgress | null;
+  },
+
+  async saveFormationProgress(params: {
+    formationId: string;
+    completedLessonIds: string[];
+    lastLessonId: string | null;
+    progressPercent: number;
+  }): Promise<void> {
+    if (!isSupabaseConfigured || isDevMockSession()) return;
+
+    const userId = await getCurrentUserId();
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from('user_formation_progress')
+      .upsert({
+        user_id: userId,
+        formation_id: params.formationId,
+        completed_lesson_ids: params.completedLessonIds,
+        last_lesson_id: params.lastLessonId,
+        progress_percent: params.progressPercent,
+      }, {
+        onConflict: 'user_id,formation_id',
+      });
+
+    if (error) logger.error('saveFormationProgress error:', error);
+  },
+
+  async toggleLessonComplete(
+    formationId: string,
+    lessonId: string,
+    allLessons: import('../types').FormationLesson[],
+    currentCompleted: string[],
+  ): Promise<{ completedLessonIds: string[]; progressPercent: number }> {
+    const isCompleted = currentCompleted.includes(lessonId);
+    const newCompleted = isCompleted
+      ? currentCompleted.filter(id => id !== lessonId)
+      : [...currentCompleted, lessonId];
+
+    const progressPercent = allLessons.length > 0
+      ? Math.round((newCompleted.length / allLessons.length) * 100)
+      : 0;
+
+    this.saveFormationProgress({
+      formationId,
+      completedLessonIds: newCompleted,
+      lastLessonId: lessonId,
+      progressPercent,
+    }).catch((e) => logger.error('toggleLessonComplete persist error:', e));
+
+    return { completedLessonIds: newCompleted, progressPercent };
+  },
+
   // ── Materials ─────────────────────────────────────────────
 
   async getMaterials(adminMode: boolean = false): Promise<import('../types').Material[]> {

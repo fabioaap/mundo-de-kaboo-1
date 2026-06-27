@@ -40,6 +40,7 @@ import { AdminScreen } from './screens/AdminScreen';
 import { CharactersScreen } from './screens/CharactersScreen';
 import { DesignSystemScreen } from './screens/DesignSystemScreen';
 import { LibraryHubScreen } from './screens/LibraryHubScreen';
+import { FormationPlayerScreen } from './screens/FormationPlayerScreen';
 
 // Components
 import { BottomNav } from './components/BottomNav';
@@ -56,7 +57,7 @@ const STORAGE_PREVIOUS_STATE = 'kaboo_previous_state';
 // login da marca. O portal só existe no deploy multi-marca (sem VITE_BRAND_SLUG).
 const IS_SINGLE_BRAND_DEPLOYMENT = Boolean(import.meta.env.VITE_BRAND_SLUG);
 
-const PLAYER_SCREENS: ScreenName[] = ['player_audio', 'player_book', 'player_video', 'tools'];
+const PLAYER_SCREENS: ScreenName[] = ['player_audio', 'player_book', 'player_video', 'tools', 'formation_player'];
 const HASH_ADDRESSABLE_SCREENS = new Set<ScreenName>([
   'portal',
   'login',
@@ -1379,6 +1380,15 @@ const App: React.FC = () => {
           />
         );
       }
+
+      case 'formation_player':
+        return (
+          <FormationPlayerScreen
+            formationId={currentParams?.formationId as string}
+            onBack={goBack}
+            onNavigate={navigate}
+          />
+        );
 
       case 'tools':
         if (!currentCollection) {

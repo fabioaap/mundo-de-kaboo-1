@@ -708,6 +708,19 @@ const CardContainer: React.FC<{
   onOpen: (item: LibraryMockItem) => void;
   children: React.ReactNode;
 }> = ({ item, className, onOpen, children }) => {
+  // Formação sempre abre o player de curso via onOpen, independente de assetType/url.
+  if (item.variant === 'formation') {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpen(item)}
+        className={`${className} cursor-pointer text-left`}
+      >
+        {children}
+      </button>
+    );
+  }
+
   if (!item.collectionId && !item.assetUrl && !item.assetType) {
     return <article className={className}>{children}</article>;
   }
@@ -1174,6 +1187,12 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
   };
 
   const openItem = async (item: LibraryMockItem) => {
+    // Formação abre o player de curso (read-only), não cai no fluxo de mídia/coleção.
+    if (item.variant === 'formation') {
+      onNavigate('formation_player', { formationId: item.id });
+      return;
+    }
+
     const fallbackCollectionId = item.collectionId || FALLBACK_LIBRARY_COLLECTION_ID;
     // Abre janela em branco ANTES do await para preservar o gesto do usuário.
     // Não usar noopener aqui: no Chrome moderno window.open com noopener retorna null,
