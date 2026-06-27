@@ -22,6 +22,8 @@ interface BottomNavProps {
    * Quando omitido, todos os itens canônicos são exibidos (comportamento padrão).
    */
   enabledMenuKeys?: Set<string>;
+  /** Labels customizados por chave de menu (vêm do bootstrap/DB). Sobrescrevem os hardcoded. */
+  menuLabels?: Record<string, string>;
 }
 
 type NavItem = {
@@ -34,7 +36,7 @@ type NavItem = {
 
 const STORAGE_SIDEBAR_COLLAPSED = 'kaboo_sidebar_collapsed';
 
-export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate, currentParams, profile, brandSlug, brandLogoUrl, brandName, enabledMenuKeys }) => {
+export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate, currentParams, profile, brandSlug, brandLogoUrl, brandName, enabledMenuKeys, menuLabels }) => {
   /** Retorna true se a chave de menu deve aparecer. Sem restrição = tudo habilitado. */
   const isMenuKeyEnabled = (key: string): boolean =>
     !enabledMenuKeys || enabledMenuKeys.has(key);
@@ -105,16 +107,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentScreen, onNavigate,
     return currentScreen === item.screen;
   };
 
+  const lbl = (key: string, fallback: string) => menuLabels?.[key] ?? fallback;
+
   const catalogNavItems: NavItem[] = ([
-    { key: 'collections', screen: 'home', icon: Icons.Library, label: 'Coleções', params: { collectionGroup: 'kits' } },
-    { key: 'books', screen: 'home', icon: Icons.BookOpen, label: 'Livros', params: { collectionGroup: 'books' } },
+    { key: 'collections', screen: 'home', icon: Icons.Library, label: lbl('collections', 'Coleções'), params: { collectionGroup: 'kits' } },
+    { key: 'books', screen: 'home', icon: Icons.BookOpen, label: lbl('books', 'Livros'), params: { collectionGroup: 'books' } },
   ] as NavItem[]).filter(item => isMenuKeyEnabled(item.key));
 
   const libraryNavItems: NavItem[] = ([
-    { key: 'videos', screen: 'videos', icon: Icons.Video, label: 'Vídeos' },
-    { key: 'music', screen: 'music', icon: Icons.Headphones, label: 'Músicas' },
-    { key: 'formations', screen: 'formations', icon: Icons.BookOpen, label: 'Formações' },
-    { key: 'materials', screen: 'materials', icon: Icons.FileText, label: 'Materiais extras' },
+    { key: 'videos', screen: 'videos', icon: Icons.Video, label: lbl('videos', 'Vídeos') },
+    { key: 'music', screen: 'music', icon: Icons.Headphones, label: lbl('music', 'Músicas') },
+    { key: 'formations', screen: 'formations', icon: Icons.BookOpen, label: lbl('formations', 'Formações') },
+    { key: 'materials', screen: 'materials', icon: Icons.FileText, label: lbl('materials', 'Materiais extras') },
   ] as NavItem[]).filter(item => isMenuKeyEnabled(item.key));
 
   // Add admin collections item if user has permission.

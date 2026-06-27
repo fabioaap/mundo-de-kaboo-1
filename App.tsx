@@ -498,6 +498,7 @@ const App: React.FC = () => {
   // Brand config — bootstrapada uma vez por sessão; aplica tema e resolve menu flags.
   const { bootstrap: brandBootstrap, enabledMenuItems } = useBrandConfig();
   const brandEnabledMenuKeys = new Set(enabledMenuItems.map(item => item.key));
+  const brandMenuLabels = Object.fromEntries(enabledMenuItems.map(item => [item.key, item.label]));
   const brandSlug = brandBootstrap.brand.slug;
 
   // Sync brand slug into mock data and API modules so collection storage is isolated per brand.
@@ -1472,6 +1473,7 @@ const App: React.FC = () => {
           brandLogoUrl={brandLogoUrl}
           brandName={brandDisplayName}
           enabledMenuKeys={brandEnabledMenuKeys}
+          menuLabels={brandMenuLabels}
         />
       )}
 
