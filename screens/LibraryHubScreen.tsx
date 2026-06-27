@@ -61,6 +61,7 @@ const ACTIVE_LIBRARY_TAB_CLASS = 'border-brand-primary/14 bg-brand-primary/[0.08
 type CompactLibraryKind = Exclude<LibraryHubKind, 'videos'>;
 
 const COMPACT_FILTER_LABELS: Partial<Record<CompactLibraryKind, string[]>> = {
+  music: ['Escuta calma', 'Cantiga curta', 'Roda'],
   formations: ['Acolhimento', 'Roda', 'Conflitos', 'Percurso curto'],
   materials: ['Uso imediato', 'Planejamento', 'Convivência', 'Exploração'],
 };
@@ -307,7 +308,7 @@ const matchesCompactLibraryFilter = (item: LibraryMockItem, filter: string, hub:
     }
 
     if (normalizedFilter.includes('cantiga')) {
-      return searchableText.includes('curta') || searchableText.includes('2 min') || searchableText.includes('3 min') || searchableText.includes('faixa');
+      return searchableText.includes('curta') || searchableText.includes('2 min') || searchableText.includes('3 min');
     }
 
     if (normalizedFilter.includes('roda')) {

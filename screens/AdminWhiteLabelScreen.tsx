@@ -36,6 +36,16 @@ import {
     WhiteLabelBrandIdentity,
 } from '../lib/whiteLabelAdminApi';
 
+/** Labels canônicos dos itens de menu — fonte de verdade para o admin (independente do DB). */
+const NAV_CANONICAL_LABELS: Record<string, string> = {
+    collections: 'Coleções',
+    books: 'Livros',
+    videos: 'Vídeos',
+    music: 'Músicas',
+    formations: 'Formações',
+    materials: 'Materiais extras',
+};
+
 const MODE_OPTIONS: Array<{ value: HeroParallaxMode; label: string; description: string }> = [
     { value: 'off', label: 'Desligado', description: 'Desliga completamente o movimento do hero.' },
     { value: 'subtle', label: 'Suave', description: 'Profundidade leve para validação visual inicial.' },
@@ -535,7 +545,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                 { key: 'operacoes' as const, label: 'Operações', icon: <Icons.Settings size={16} /> },
                                 { key: 'menus' as const, label: 'Menus', icon: <Icons.Grid size={16} /> },
                                 { key: 'ia' as const, label: 'Integrações de IA', icon: <Icons.Link size={16} /> },
-                                { key: 'auditoria' as const, label: 'Auditoria', icon: <Icons.History size={16} /> },
+                                { key: 'auditoria' as const, label: 'Auditoria de menus', icon: <Icons.History size={16} /> },
                             ]).map((tab) => (
                                 <button
                                     key={tab.key}
@@ -1022,7 +1032,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     <div key={item.key} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                                                         <div className="flex items-start justify-between gap-4">
                                                             <div>
-                                                                <p className="text-sm font-bold text-gray-900">{item.label}</p>
+                                                                <p className="text-sm font-bold text-gray-900">{NAV_CANONICAL_LABELS[item.key] ?? item.label}</p>
                                                                 {isCollections && (
                                                                     <p className="mt-1 text-xs text-amber-600">Ao desligar, o app redirecionará para o primeiro menu disponível.</p>
                                                                 )}
@@ -1231,7 +1241,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                             <div className="space-y-5">
                                 {/* Audit entries */}
                                 <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
-                                    <h3 className="text-lg font-bold text-gray-900">Auditoria recente</h3>
+                                    <h3 className="text-lg font-bold text-gray-900">Auditoria de menus</h3>
                                     <div className="mt-3">
                                         {auditEntries.length === 0 ? (
                                             <p className="text-sm text-gray-500">Sem eventos recentes para esta marca.</p>

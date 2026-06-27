@@ -686,11 +686,11 @@ const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]
 
   // WS-2 — escopo: conteúdo com dono não vaza para os hubs globais.
   // Kits: nunca aparecem em hub — seu conteúdo pertence à vitrine da coleção.
-  // Books com PDF (reading): seus assets pertencem ao hub Livros, não a vídeos/músicas.
-  // Exceção: hub 'materials' mostra extra_material de qualquer coleção (guia do professor etc.)
+  // Books com PDF (reading): seus assets (vídeo, música, material) ficam dentro da obra,
+  // não aparecem em nenhum hub. Materiais avulsos do admin vêm da tabela `materials`.
   const isHubEligible = (collection: Collection): boolean => {
     if (collection.collection_type === 'kit') return false;
-    if (hub !== 'materials' && collection.collection_type === 'book' &&
+    if (collection.collection_type === 'book' &&
         (collection.collection_assets ?? []).some((a) => a.category === 'reading')) return false;
     return true;
   };
