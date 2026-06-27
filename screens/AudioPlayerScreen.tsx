@@ -663,12 +663,14 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const playButtonHitAreaClass = 'group relative inline-flex h-20 w-20 items-center justify-center rounded-full border border-transparent bg-transparent text-white outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/75';
   const playButtonSurfaceClass = 'pointer-events-none flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full border-2 border-white/40 bg-white/20 shadow-2xl backdrop-blur-md transition-all duration-150 group-hover:scale-[1.05] group-hover:bg-white/30';
 
-  const renderRelatedTracksList = (cardClassName: string) => (
+  const renderRelatedTracksList = (cardClassName: string, showHeader = true) => (
     <>
-      <div className="px-1">
-        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Catálogo relacionado</p>
-        <h2 className="mt-1 text-sm font-black text-white">Sugestões da biblioteca</h2>
-      </div>
+      {showHeader && (
+        <div className="px-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Catálogo relacionado</p>
+          <h2 className="mt-1 text-sm font-black text-white">Sugestões da biblioteca</h2>
+        </div>
+      )}
 
       {relatedTracks.length === 0 && (
         <p className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/75">
@@ -915,7 +917,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
 
 
       {/* Main Content - two-column layout on desktop */}
-      <div className={`relative z-10 flex-1 overflow-hidden ${isMobileLandscape ? 'px-4 pb-4' : 'flex flex-col lg:flex-row'}`}>
+      <div className={`relative z-10 flex-1 overflow-hidden ${isMobileLandscape ? 'px-4 pb-4' : 'flex flex-col md:flex-row'}`}>
 
         {/* Player Column */}
         <div className={`min-w-0 flex-1 ${isMobileLandscape ? 'flex h-full items-center justify-center gap-5 overflow-hidden' : 'flex flex-col items-center justify-center overflow-y-auto'}`}>
@@ -1122,20 +1124,24 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
           </div>
         )}
 
-        {/* Sidebar — catálogo relacionado */}
-        {!isMobile && (
+        {/* Sidebar — próximas músicas, sempre visível no desktop (paridade com VideoPlayerScreen) */}
+        <aside
+          className={`${relatedTracks.length === 0 ? 'hidden' : 'hidden md:flex md:flex-col'} w-[360px] shrink-0 border-l border-white/10 bg-black/25 backdrop-blur-md overflow-hidden`}
+        >
+          <div className="flex items-baseline justify-between gap-2 px-4 pt-4 pb-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximas músicas</p>
+            <span className="text-[11px] font-bold text-white/55">{relatedTracks.length}</span>
+          </div>
           <div
-            className={`flex-shrink-0 overflow-y-auto transition-all duration-300 border-t lg:border-t-0 lg:border-l border-white/10 bg-black/25 backdrop-blur-md ${showSidebar
-              ? 'w-full h-72 lg:h-auto lg:w-80 xl:w-96'
-              : 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none border-0'
-              }`}
+            className="flex-1 space-y-2 overflow-y-auto px-4 pb-4"
             style={{ scrollbarWidth: 'none' } as React.CSSProperties}
           >
-            <div className="min-w-[280px] space-y-3 p-4">
-              {renderRelatedTracksList('flex w-full items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10 text-white')}
-            </div>
+            {renderRelatedTracksList(
+              'flex w-full items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10 text-white',
+              false
+            )}
           </div>
-        )}
+        </aside>
 
       </div>
 
