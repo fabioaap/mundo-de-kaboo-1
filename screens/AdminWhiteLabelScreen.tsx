@@ -545,7 +545,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                 { key: 'operacoes' as const, label: 'Operações', icon: <Icons.Settings size={16} /> },
                                 { key: 'menus' as const, label: 'Menus', icon: <Icons.Grid size={16} /> },
                                 { key: 'ia' as const, label: 'Integrações de IA', icon: <Icons.Link size={16} /> },
-                                { key: 'auditoria' as const, label: 'Auditoria', icon: <Icons.History size={16} /> },
+                                { key: 'auditoria' as const, label: 'Auditoria de menus', icon: <Icons.History size={16} /> },
                             ]).map((tab) => (
                                 <button
                                     key={tab.key}
@@ -1241,7 +1241,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                             <div className="space-y-5">
                                 {/* Audit entries */}
                                 <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
-                                    <h3 className="text-lg font-bold text-gray-900">Auditoria recente</h3>
+                                    <h3 className="text-lg font-bold text-gray-900">Auditoria de menus</h3>
                                     <div className="mt-3">
                                         {auditEntries.length === 0 ? (
                                             <p className="text-sm text-gray-500">Sem eventos recentes para esta marca.</p>
