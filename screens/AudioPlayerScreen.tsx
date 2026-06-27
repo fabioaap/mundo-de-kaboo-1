@@ -259,6 +259,52 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
 
     const loadContext = async () => {
       try {
+        const currentUrl = (assetUrl ?? '').trim();
+
+        // Se a coleção tem outras faixas de música, escopa "Próximas" à coleção (WS-15).
+        const allCollectionMusic = (collection.collection_assets ?? [])
+          .filter(a => a.category === 'music' && a.url && a.is_published !== false)
+          .map(a => ({
+            id: a.id,
+            hub: 'music' as const,
+            kind: 'audio' as const,
+            title: a.title,
+            thumbnailUrl: a.cover_image ?? collection.cover_image ?? null,
+            provider: 'internal' as const,
+            locked: false,
+            isFavorite: false,
+            progressPercent: 0,
+            assetUrl: a.url ?? null,
+            collectionId: collection.id,
+          }));
+
+        const otherCollectionMusic = allCollectionMusic.filter(
+          a => a.id !== mediaItemId && a.assetUrl?.trim() !== currentUrl
+        );
+
+        if (otherCollectionMusic.length > 0) {
+          if (!isActive) return;
+          setPlaylistTracks(allCollectionMusic);
+          setRelatedTracks(otherCollectionMusic.slice(0, 8));
+          const detail = mediaItemId ? await api.getMediaItem(mediaItemId) : null;
+          if (!isActive) return;
+          setTrackDescription(detail?.description ?? detail?.summary ?? collection.description ?? '');
+          return;
+        }
+
+        // Narração de obra (kit ou livro com PDF): sem navegação para hub global.
+        const isBoundObra = collection.collection_type === 'kit'
+          || (collection.collection_assets ?? []).some(a => a.category === 'reading' && a.url?.trim());
+        if (isBoundObra) {
+          if (!isActive) return;
+          setRelatedTracks([]);
+          setPlaylistTracks([]);
+          const detail = mediaItemId ? await api.getMediaItem(mediaItemId) : null;
+          if (!isActive) return;
+          setTrackDescription(detail?.description ?? detail?.summary ?? collection.description ?? '');
+          return;
+        }
+
         const [hub, detail] = await Promise.all([
           api.getMediaHub('music'),
           mediaItemId ? api.getMediaItem(mediaItemId) : Promise.resolve(null),
