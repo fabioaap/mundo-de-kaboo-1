@@ -1,12 +1,12 @@
 # Documentação de Telas (Screens)
 
-**Atualizado em**: 27/06/2026, 02:10:06
+**Atualizado em**: 27/06/2026, 15:03:33
 
 ## Resumo
 
-- **Total de telas**: 26
+- **Total de telas**: 27
 - **Telas protegidas**: 0
-- **Telas públicas**: 26
+- **Telas públicas**: 27
 
 ## Telas Públicas
 
@@ -36,6 +36,7 @@
 - **SetPasswordScreen** (`screens/SetPasswordScreen.tsx`)
 - **VideoPlayerScreen** (`screens/VideoPlayerScreen.tsx`)
 - **VouchersModule** (`screens/VouchersModule.tsx`)
+- **WrongBrandScreen** (`screens/WrongBrandScreen.tsx`)
 
 ## Telas Protegidas (Requer autenticação)
 
