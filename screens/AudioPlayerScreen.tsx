@@ -1031,7 +1031,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                   aria-label="Faixa anterior"
                 >
                   <span className={transportButtonSurfaceClass}>
-                    <Icons.SkipBack size={20} fill="currentColor" strokeWidth={0} />
+                    <Icons.SkipBack size={20} strokeWidth={2} />
                   </span>
                 </button>
               )}
@@ -1090,7 +1090,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                   aria-label="Próxima faixa"
                 >
                   <span className={transportButtonSurfaceClass}>
-                    <Icons.SkipForward size={20} fill="currentColor" strokeWidth={0} />
+                    <Icons.SkipForward size={20} strokeWidth={2} />
                   </span>
                 </button>
               )}
@@ -1145,18 +1145,20 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
 
         {/* Sidebar — próximas músicas, sempre visível no desktop (paridade com VideoPlayerScreen) */}
         <aside
-          className={`${relatedTracks.length === 0 ? 'hidden' : 'hidden md:flex md:flex-col'} w-[360px] shrink-0 border-l border-white/10 bg-black/25 backdrop-blur-md overflow-hidden`}
+          className={`${relatedTracks.length === 0 ? 'hidden' : 'hidden md:flex md:flex-col'} w-[340px] shrink-0 my-3 mr-3 rounded-2xl border border-white/10 bg-black/28 backdrop-blur-md overflow-hidden`}
         >
-          <div className="flex items-baseline justify-between gap-2 px-4 pt-4 pb-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximas músicas</p>
-            <span className="text-[11px] font-bold text-white/55">{relatedTracks.length}</span>
+          <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60">Próximas músicas</p>
+            <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-white/12 px-2 text-[11px] font-black text-white/70">
+              {relatedTracks.length}
+            </span>
           </div>
           <div
-            className="flex-1 space-y-2 overflow-y-auto px-4 pb-4"
+            className="flex-1 space-y-1.5 overflow-y-auto p-3"
             style={{ scrollbarWidth: 'none' } as React.CSSProperties}
           >
             {renderRelatedTracksList(
-              'flex w-full items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10 text-white',
+              'flex w-full items-center gap-3 rounded-xl border border-white/12 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10 text-white',
               false
             )}
           </div>
