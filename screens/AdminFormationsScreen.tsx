@@ -45,6 +45,7 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
   const [formations, setFormations] = useState<Formation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'published' | 'draft'>('published');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -230,8 +231,11 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
     });
   };
 
+  const searchMatch = (f: Formation) => normalizeText(f.title).includes(normalizeText(searchQuery));
+  const countPublished = formations.filter(f => f.is_published && searchMatch(f)).length;
+  const countDraft = formations.filter(f => !f.is_published && searchMatch(f)).length;
   const filtered = formations.filter(f =>
-    normalizeText(f.title).includes(normalizeText(searchQuery))
+    searchMatch(f) && (statusFilter === 'published' ? f.is_published : !f.is_published)
   );
 
   const ASSET_TYPE_ICONS: Record<MaterialAssetType, React.FC<any>> = {
@@ -255,9 +259,9 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
         </button>
       </div>
 
-      {/* Search */}
-      <div className="px-6 py-3 border-b border-gray-100">
-        <div className="relative">
+      {/* Search + Status tabs */}
+      <div className="px-6 pt-3 pb-0 border-b border-gray-100">
+        <div className="relative mb-3">
           <Icons.Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
@@ -266,6 +270,29 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
             placeholder="Buscar formações..."
             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
           />
+        </div>
+        <div className="flex items-center gap-1 border-b border-gray-200">
+          {([
+            { key: 'published' as const, label: 'Publicadas', count: countPublished },
+            { key: 'draft' as const, label: 'Não publicadas', count: countDraft },
+          ]).map((tab) => {
+            const isActive = statusFilter === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={`relative px-4 py-2.5 -mb-px text-sm font-bold transition-colors ${isActive ? 'text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <span className="flex items-center gap-2">
+                  {tab.label}
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${isActive ? 'bg-brand-primary/10 text-brand-primary' : 'bg-gray-100 text-gray-500'}`}>
+                    {tab.count}
+                  </span>
+                </span>
+                {isActive && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary rounded-full" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 
