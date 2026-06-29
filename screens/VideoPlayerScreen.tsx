@@ -1454,9 +1454,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
               {/* ── Right column: related videos — desktop only ── */}
               {!isFullscreen && relatedItems.length > 0 && (
                 <aside className="hidden md:block w-[360px] shrink-0">
-                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-brand-accent">
-                    Próximos vídeos
-                  </p>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-accent">Próximos vídeos</p>
+                    <span className="text-[11px] font-bold text-brand-accent">{relatedItems.length}</span>
+                  </div>
                   <div className="space-y-1">
                     {relatedItems.map((item) => (
                       <button
@@ -2056,7 +2057,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
                     {showMobileQueue && (
                       <div className="mt-3">
-                        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos</p>
+                        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos <span className="font-bold opacity-70">({relatedItems.length})</span></p>
                         {relatedItems.length === 0 ? (
                           <p className="rounded-xl border border-white/20 bg-white/8 px-3 py-2 text-xs text-white/70">
                             Sem relacionados para este vídeo.
@@ -2183,7 +2184,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
       <section className={`pointer-events-auto absolute left-4 right-4 z-30 rounded-2xl border border-brand-accent/25 bg-brand-primary/50 p-3 backdrop-blur-xl transition-all duration-300 lg:hidden ${isMobileLandscape ? 'opacity-0 pointer-events-none hidden' : showMobileQueue ? 'bottom-4 max-h-[52vh]' : isMobilePortrait ? 'bottom-4 max-h-[112px]' : 'bottom-20 max-h-[72px]'}`} onClick={(event) => event.stopPropagation()}>
         <div className="mb-2 flex items-center justify-between px-0.5">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-accent">Próximos vídeos</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-accent">Próximos vídeos <span className="font-bold opacity-70">({relatedItems.length})</span></p>
           <button
             type="button"
             onClick={toggleMobileQueuePanel}
