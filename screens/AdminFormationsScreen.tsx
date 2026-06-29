@@ -313,7 +313,6 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
         ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {filtered.map((formation, formationIndex) => {
-              const palette = FORMATION_CARD_PALETTES[formationIndex % FORMATION_CARD_PALETTES.length];
               const isEditing = editingId === formation.id;
               const metaLabel = formation.lessons?.length
                 ? `${formation.lessons.length} aula${formation.lessons.length !== 1 ? 's' : ''}${formation.duration_label ? ' · ' + formation.duration_label : ''}`
@@ -321,7 +320,7 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
               return (
                 <div
                   key={formation.id}
-                  className={`group rounded-[1.6rem] border overflow-hidden shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 cursor-pointer md:hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/20' : palette.border} ${palette.bg}`}
+                  className={`group rounded-[1.6rem] border overflow-hidden shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 cursor-pointer md:hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] bg-white ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/20' : 'border-gray-100'}`}
                   onClick={() => openEdit(formation)}
                 >
                   <div className="relative flex flex-col min-h-[152px] p-4">
@@ -334,13 +333,13 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
                           <Icons.BookOpen size={44} className="opacity-[0.12]" />
                         </div>
                       )}
-                      <div className={`absolute inset-0 bg-gradient-to-r ${palette.gradient} to-transparent`} />
+                      <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent" />
                     </div>
 
                     {/* Left content */}
                     <div className="pr-[44%] flex flex-col flex-1 gap-2">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] ${palette.badge}`}>
+                        <span className="inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] bg-brand-primary/10 text-brand-primary">
                           Formação
                         </span>
                         <div onClick={e => e.stopPropagation()} className="flex items-center gap-1">
