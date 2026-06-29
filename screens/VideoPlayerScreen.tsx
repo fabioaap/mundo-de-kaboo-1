@@ -427,8 +427,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         const unique = Array.from(new Map(allItems.map((item) => [item.id, item])).values());
         const filtered = unique
           .filter((item) => item.id !== mediaItemId)
-          .filter((item) => !currentUrl || ((item as { assetUrl?: string | null }).assetUrl ?? '').trim() !== currentUrl)
-          .slice(0, 10);
+          .filter((item) => !currentUrl || ((item as { assetUrl?: string | null }).assetUrl ?? '').trim() !== currentUrl);
 
         setRelatedItems(filtered);
         setItemDescription(detail?.description ?? detail?.summary ?? collection.description ?? '');
@@ -1456,7 +1455,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 <aside className="hidden md:block w-[360px] shrink-0">
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-accent">Próximos vídeos</p>
-                    <span className="text-[11px] font-bold text-brand-accent">{relatedItems.length}</span>
+                    <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-brand-accent/25 px-2 text-[11px] font-black text-brand-accent">
+                      {relatedItems.length}
+                    </span>
                   </div>
                   <div className="space-y-1">
                     {relatedItems.map((item) => (
