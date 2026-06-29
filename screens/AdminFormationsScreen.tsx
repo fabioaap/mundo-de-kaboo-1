@@ -311,7 +311,7 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
             <p className="text-gray-400 text-sm">Crie a primeira formação usando o botão acima</p>
           </div>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {filtered.map((formation, formationIndex) => {
               const isEditing = editingId === formation.id;
               const metaLabel = formation.lessons?.length
