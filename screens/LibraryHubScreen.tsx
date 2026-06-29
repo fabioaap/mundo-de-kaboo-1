@@ -1501,6 +1501,22 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
               )}
             </div>
 
+            {/* Progress bar */}
+            {item.progress !== undefined && (
+              <div className="pr-[44%] mt-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-black uppercase tracking-[0.13em] text-brand-primary/50">Progresso</span>
+                  <span className="text-[10px] font-black text-brand-primary/60">{item.progress}%</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-900/8">
+                  <div
+                    className="h-full rounded-full bg-brand-primary transition-all duration-300"
+                    style={{ width: `${item.progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Footer */}
             <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-900/8 pr-[44%]">
               <span className="text-[11px] font-bold text-gray-500">{item.meta}</span>

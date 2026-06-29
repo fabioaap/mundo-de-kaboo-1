@@ -875,7 +875,7 @@ const buildMaterialsTableHubResponse = (materials: Material[]): MediaHubResponse
   };
 };
 
-const buildFormationLibraryItem = (formation: import('../types').Formation): LibraryMockItem => ({
+const buildFormationLibraryItem = (formation: import('../types').Formation, progressPercent?: number): LibraryMockItem => ({
   id: formation.id,
   variant: 'formation',
   eyebrow: 'Formação',
@@ -884,10 +884,11 @@ const buildFormationLibraryItem = (formation: import('../types').Formation): Lib
   meta: formation.duration_label ?? (formation.steps_count ? `${formation.steps_count} aulas` : ''),
   ctaLabel: 'Ver percurso',
   coverImage: formation.cover_image ?? undefined,
+  progress: progressPercent && progressPercent > 0 ? progressPercent : undefined,
 });
 
-const buildFormationsTableHubResponse = (formations: import('../types').Formation[]): MediaHubResponse => {
-  const items = formations.map(buildFormationLibraryItem);
+const buildFormationsTableHubResponse = (formations: import('../types').Formation[], progressMap: Record<string, number> = {}): MediaHubResponse => {
+  const items = formations.map(f => buildFormationLibraryItem(f, progressMap[f.id]));
   const [heroItem, ...shelfItems] = items;
   return {
     hub: 'formations',
@@ -2084,7 +2085,23 @@ export const api = {
               logger.error('Erro ao buscar formações para o hub:', formationsError);
             }
           } else if (Array.isArray(formationRows) && formationRows.length > 0) {
-            const formationsResponse = buildFormationsTableHubResponse(formationRows as import('../types').Formation[]);
+            let formationProgressMap: Record<string, number> = {};
+            try {
+              const userId = await getCurrentUserId();
+              if (userId) {
+                const { data: progressRows } = await supabase
+                  .from('user_formation_progress')
+                  .select('formation_id, progress_percent')
+                  .eq('user_id', userId)
+                  .in('formation_id', formationRows.map((f: any) => f.id));
+                if (progressRows) {
+                  for (const row of progressRows as Array<{ formation_id: string; progress_percent: number }>) {
+                    formationProgressMap[row.formation_id] = row.progress_percent;
+                  }
+                }
+              }
+            } catch (_) {}
+            const formationsResponse = buildFormationsTableHubResponse(formationRows as import('../types').Formation[], formationProgressMap);
             collectionBackedResponse = mergeMediaHubResponses(formationsResponse, collectionBackedResponse);
           }
         }
