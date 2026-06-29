@@ -614,12 +614,13 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
                       placeholder="URL do vídeo (YouTube)"
                       className="w-full bg-white rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
                     />
-                    <input
-                      type="url"
+                    <FileUpload
+                      label="PDF da aula"
                       value={lesson.pdf_url ?? ''}
-                      onChange={e => updateLesson(index, 'pdf_url', e.target.value || null)}
-                      placeholder="URL do PDF"
-                      className="w-full bg-white rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
+                      onChange={url => updateLesson(index, 'pdf_url', url || null)}
+                      folder="pdfs"
+                      accept="application/pdf"
+                      inputId={`lesson-pdf-${lesson.id}`}
                     />
                     <div className="flex items-center gap-2">
                       <button
