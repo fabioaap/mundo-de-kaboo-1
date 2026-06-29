@@ -35,6 +35,18 @@ const getYouTubeVideoId = (value?: string | null): string | null => {
 const LessonVideo: React.FC<{ lesson: FormationLesson }> = ({ lesson }) => {
   const youTubeId = getYouTubeVideoId(lesson.video_url);
 
+  if (!lesson.video_url && lesson.pdf_url) {
+    return (
+      <div className="w-full overflow-hidden rounded-[20px] border border-brand-primary/10 shadow-[0_16px_34px_rgba(15,23,42,0.12)]" style={{ height: '60vh' }}>
+        <iframe
+          src={lesson.pdf_url}
+          title={lesson.title}
+          className="h-full w-full"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full overflow-hidden rounded-[20px] border border-brand-primary/10 bg-black shadow-[0_16px_34px_rgba(15,23,42,0.12)]">
       <div className="aspect-video w-full">
