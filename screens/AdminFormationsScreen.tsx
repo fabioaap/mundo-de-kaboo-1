@@ -323,47 +323,45 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
                   className={`group rounded-[1.6rem] border overflow-hidden shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 cursor-pointer md:hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] bg-white ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/20' : 'border-gray-100'}`}
                   onClick={() => openEdit(formation)}
                 >
-                  <div className="relative flex flex-col min-h-[152px] p-4">
-                    {/* Cover/icon — absolute right */}
-                    <div className="absolute right-0 top-0 bottom-0 w-[42%] pointer-events-none select-none">
-                      {formation.cover_image ? (
-                        <img src={formation.cover_image} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center">
-                          <Icons.BookOpen size={44} className="opacity-[0.12]" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent" />
+                  {/* Banner */}
+                  <div className="h-[160px] w-full shrink-0 overflow-hidden">
+                    {formation.cover_image ? (
+                      <img src={formation.cover_image} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-brand-primary/5">
+                        <Icons.BookOpen size={44} className="text-brand-primary/20" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex flex-col gap-4 p-6">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] bg-brand-primary/10 text-brand-primary">
+                        Formação
+                      </span>
+                      <div onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleTogglePublish(formation)}
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-black transition-colors ${formation.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}
+                        >
+                          {formation.is_published ? 'Publicada' : 'Rascunho'}
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Left content */}
-                    <div className="pr-[44%] flex flex-col flex-1 gap-2">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] bg-brand-primary/10 text-brand-primary">
-                          Formação
-                        </span>
-                        <div onClick={e => e.stopPropagation()} className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleTogglePublish(formation)}
-                            className={`text-[10px] px-2 py-0.5 rounded-full font-black transition-colors ${formation.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}
-                          >
-                            {formation.is_published ? 'Publicada' : 'Rascunho'}
-                          </button>
-                        </div>
-                      </div>
-
-                      <h3 className="font-black text-gray-800 text-[1rem] leading-[1.2] tracking-[-0.02em] line-clamp-2">
+                    <div className="flex flex-col gap-2">
+                      <h3 className="font-black text-[#1e2939] text-[1rem] leading-[1.2] tracking-[-0.02em] line-clamp-2">
                         {formation.title}
                       </h3>
                       {formation.description && (
-                        <p className="text-xs text-gray-500 line-clamp-2 leading-5">
+                        <p className="text-[13px] text-gray-500 line-clamp-2 leading-[1.4]">
                           {formation.description}
                         </p>
                       )}
                     </div>
 
-                    {/* Footer */}
-                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-900/8 pr-[44%]">
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-900/8">
                       <span className="text-[11px] font-bold text-gray-500">{metaLabel}</span>
                       <span className="inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-transform duration-150 group-hover:translate-x-0.5">
                         Editar <Icons.ChevronRight size={14} />

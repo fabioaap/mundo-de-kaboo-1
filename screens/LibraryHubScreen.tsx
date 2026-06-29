@@ -1462,54 +1462,48 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
           onOpen={openItem}
           className="group rounded-[1.6rem] border border-gray-100 overflow-hidden shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] bg-white"
         >
-          <div className="relative flex flex-col min-h-[152px] p-4">
-            {/* Cover image — absolute right */}
-            <div className="absolute right-0 top-0 bottom-0 w-[42%] pointer-events-none select-none">
-              {item.coverImage ? (
-                <img src={item.coverImage} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center">
-                  <PreviewIcon size={44} className="opacity-[0.12]" />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent" />
-            </div>
+          {/* Banner — imagem full-width no topo */}
+          <div className="h-[160px] w-full shrink-0 overflow-hidden">
+            {item.coverImage ? (
+              <img src={item.coverImage} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center bg-brand-primary/5">
+                <PreviewIcon size={44} className="text-brand-primary/20" />
+              </div>
+            )}
+          </div>
 
-            {/* Left content */}
-            <div className="pr-[44%] flex flex-col flex-1 gap-2">
-              {item.eyebrow && (
-                <span className="inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] bg-brand-primary/10 text-brand-primary">
-                  {item.eyebrow}
-                </span>
-              )}
-              <h3 className="font-black text-gray-800 text-[1rem] leading-[1.2] tracking-[-0.02em] line-clamp-2">
+          {/* Content */}
+          <div className="flex flex-col gap-4 p-6">
+            {item.eyebrow && (
+              <span className="inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] bg-brand-primary/10 text-brand-primary">
+                {item.eyebrow}
+              </span>
+            )}
+            <div className="flex flex-col gap-2">
+              <h3 className="font-black text-[#1e2939] text-[1rem] leading-[1.2] tracking-[-0.02em]">
                 {item.title}
               </h3>
               {item.description && (
-                <p className="text-xs text-gray-500 line-clamp-2 leading-5">
+                <p className="text-[13px] text-gray-500 leading-[1.4] line-clamp-2">
                   {item.description}
                 </p>
               )}
             </div>
 
-            {/* Progress bar */}
             {item.progress !== undefined && (
-              <div className="pr-[44%] mt-2">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-black uppercase tracking-[0.13em] text-brand-primary/50">Progresso</span>
-                  <span className="text-[10px] font-black text-brand-primary/60">{item.progress}%</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.13em]">
+                  <span className="text-brand-primary/50">Progresso</span>
+                  <span className="text-brand-primary/60">{item.progress}%</span>
                 </div>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-900/8">
-                  <div
-                    className="h-full rounded-full bg-brand-primary transition-all duration-300"
-                    style={{ width: `${item.progress}%` }}
-                  />
+                  <div className="h-full rounded-full bg-brand-primary transition-all duration-300" style={{ width: `${item.progress}%` }} />
                 </div>
               </div>
             )}
 
-            {/* Footer */}
-            <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-900/8 pr-[44%]">
+            <div className="flex items-center justify-between pt-3 border-t border-gray-900/8">
               <span className="text-[11px] font-bold text-gray-500">{item.meta}</span>
               <span className="inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-transform duration-150 group-hover:translate-x-0.5">
                 {item.ctaLabel}
