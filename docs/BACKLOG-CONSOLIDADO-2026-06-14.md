@@ -95,6 +95,7 @@
 - [ ] **Decisão: "Baratinha e Baratão no Labirinto do Eco" existe como book + kit** — manter os dois? (Conteúdo)
 - [ ] **Modal deslizante** (Coleção→Livro→Player sem empilhar modais) — `backlog-modal-deslizante.md`. (UX)
 - [ ] **Taxonomia/categorias de vídeo** (formação, contação, desenho, treinamento). (Conteúdo)
+- [ ] **Auto-conclusão de aula por progresso do vídeo (≥ 90%)** — Hoje o professor clica em "Marcar como concluída" manualmente (MVP, já funcional). V2: detectar assistido ≥ 90% via YouTube IFrame API (`YT.Player` + `onStateChange` + polling `getCurrentTime/getDuration`) e auto-marcar ou exibir sugestão inline "Aula concluída? Marcar ✓". PDF: manter botão manual. Requer migrar `<iframe>` simples para `YT.Player` no `FormationPlayerScreen` — custo médio-alto, risco de regressão. Adiar até validar que professores abandonam sem clicar. (UX/Formações)
 - [ ] **Padronizar player de YouTube embed** + redimensionamento de imagens nos breakpoints + margens do admin — notas Gemini. (UX)
 - [ ] **Atualizar copyright do rodapé para 2026** (verificar se já aplicado). (UX)
 

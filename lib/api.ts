@@ -875,6 +875,42 @@ const buildMaterialsTableHubResponse = (materials: Material[]): MediaHubResponse
   };
 };
 
+const buildFormationLibraryItem = (formation: import('../types').Formation, progressPercent?: number): LibraryMockItem => ({
+  id: formation.id,
+  variant: 'formation',
+  eyebrow: 'Formação',
+  title: formation.title,
+  description: formation.description ?? '',
+  meta: formation.duration_label ?? (formation.steps_count ? `${formation.steps_count} aulas` : ''),
+  ctaLabel: 'Ver percurso',
+  coverImage: formation.cover_image ?? undefined,
+  progress: progressPercent && progressPercent > 0 ? progressPercent : undefined,
+});
+
+const buildFormationsTableHubResponse = (formations: import('../types').Formation[], progressMap: Record<string, number> = {}): MediaHubResponse => {
+  const items = formations.map(f => buildFormationLibraryItem(f, progressMap[f.id]));
+  const [heroItem, ...shelfItems] = items;
+  return {
+    hub: 'formations',
+    hero: heroItem ? buildMockMediaItemCard('formations', heroItem) : null,
+    shelves: shelfItems.length > 0
+      ? [{
+        id: 'formations-standalone',
+        hub: 'formations',
+        type: 'rail',
+        title: '',
+        description: '',
+        items: shelfItems.map((item) => buildMockMediaItemCard('formations', item)),
+      }]
+      : [],
+    counts: {
+      total: items.length,
+      favorites: 0,
+      continueWatching: 0,
+    },
+  };
+};
+
 const buildMockMediaHubResponse = (hub: MediaHub): MediaHubResponse => {
   const mock = LIBRARY_HUB_MOCKS[hub as LibraryHubKind];
   const hero = mock.featured ? buildMockMediaItemCard(hub, mock.featured) : null;
@@ -2030,6 +2066,47 @@ export const api = {
         }
       } catch (materialsErr) {
         logger.warn('Falha ao mesclar materiais avulsos no hub:', materialsErr);
+      }
+    }
+
+    // Formações da tabela `formations` (módulo admin Formações) alimentam o hub Formações.
+    if (hub === 'formations' && isSupabaseConfigured && !devMockSession) {
+      try {
+        const formationsBrandId = await resolveActiveBrandId();
+        if (formationsBrandId) {
+          const { data: formationRows, error: formationsError } = await supabase
+            .from('formations')
+            .select('*')
+            .eq('brand_id', formationsBrandId)
+            .eq('is_published', true)
+            .order('published_at', { ascending: false });
+          if (formationsError) {
+            if (!isMissingRelationError(formationsError, 'formations')) {
+              logger.error('Erro ao buscar formações para o hub:', formationsError);
+            }
+          } else if (Array.isArray(formationRows) && formationRows.length > 0) {
+            let formationProgressMap: Record<string, number> = {};
+            try {
+              const userId = await getCurrentUserId();
+              if (userId) {
+                const { data: progressRows } = await supabase
+                  .from('user_formation_progress')
+                  .select('formation_id, progress_percent')
+                  .eq('user_id', userId)
+                  .in('formation_id', formationRows.map((f: any) => f.id));
+                if (progressRows) {
+                  for (const row of progressRows as Array<{ formation_id: string; progress_percent: number }>) {
+                    formationProgressMap[row.formation_id] = row.progress_percent;
+                  }
+                }
+              }
+            } catch (_) {}
+            const formationsResponse = buildFormationsTableHubResponse(formationRows as import('../types').Formation[], formationProgressMap);
+            collectionBackedResponse = mergeMediaHubResponses(formationsResponse, collectionBackedResponse);
+          }
+        }
+      } catch (formationsErr) {
+        logger.warn('Falha ao mesclar formações no hub:', formationsErr);
       }
     }
 
@@ -3423,6 +3500,76 @@ export const api = {
 
   async unpublishFormation(id: string): Promise<import('../types').Formation | null> {
     return this.updateFormation(id, { is_published: false, published_at: null });
+  },
+
+  // ── Formation progress ────────────────────────────────────
+
+  async getFormationProgress(formationId: string): Promise<import('../types').UserFormationProgress | null> {
+    if (!isSupabaseConfigured || isDevMockSession()) return null;
+
+    const userId = await getCurrentUserId();
+    if (!userId) return null;
+
+    const { data, error } = await supabase
+      .from('user_formation_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('formation_id', formationId)
+      .maybeSingle();
+
+    if (error) { logger.error('getFormationProgress error:', error); return null; }
+    return data as import('../types').UserFormationProgress | null;
+  },
+
+  async saveFormationProgress(params: {
+    formationId: string;
+    completedLessonIds: string[];
+    lastLessonId: string | null;
+    progressPercent: number;
+  }): Promise<void> {
+    if (!isSupabaseConfigured || isDevMockSession()) return;
+
+    const userId = await getCurrentUserId();
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from('user_formation_progress')
+      .upsert({
+        user_id: userId,
+        formation_id: params.formationId,
+        completed_lesson_ids: params.completedLessonIds,
+        last_lesson_id: params.lastLessonId,
+        progress_percent: params.progressPercent,
+      }, {
+        onConflict: 'user_id,formation_id',
+      });
+
+    if (error) logger.error('saveFormationProgress error:', error);
+  },
+
+  async toggleLessonComplete(
+    formationId: string,
+    lessonId: string,
+    allLessons: import('../types').FormationLesson[],
+    currentCompleted: string[],
+  ): Promise<{ completedLessonIds: string[]; progressPercent: number }> {
+    const isCompleted = currentCompleted.includes(lessonId);
+    const newCompleted = isCompleted
+      ? currentCompleted.filter(id => id !== lessonId)
+      : [...currentCompleted, lessonId];
+
+    const progressPercent = allLessons.length > 0
+      ? Math.round((newCompleted.length / allLessons.length) * 100)
+      : 0;
+
+    this.saveFormationProgress({
+      formationId,
+      completedLessonIds: newCompleted,
+      lastLessonId: lessonId,
+      progressPercent,
+    }).catch((e) => logger.error('toggleLessonComplete persist error:', e));
+
+    return { completedLessonIds: newCompleted, progressPercent };
   },
 
   // ── Materials ─────────────────────────────────────────────

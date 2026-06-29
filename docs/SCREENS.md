@@ -1,12 +1,12 @@
 # Documentação de Telas (Screens)
 
-**Atualizado em**: 27/06/2026, 15:03:33
+**Atualizado em**: 29/06/2026, 14:37:25
 
 ## Resumo
 
-- **Total de telas**: 27
+- **Total de telas**: 28
 - **Telas protegidas**: 0
-- **Telas públicas**: 27
+- **Telas públicas**: 28
 
 ## Telas Públicas
 
@@ -25,6 +25,7 @@
 - **EmailConfirmationScreen** (`screens/EmailConfirmationScreen.tsx`)
 - **ExtraToolsScreen** (`screens/ExtraToolsScreen.tsx`)
 - **ForgotPasswordScreen** (`screens/ForgotPasswordScreen.tsx`)
+- **FormationPlayerScreen** (`screens/FormationPlayerScreen.tsx`)
 - **HomeScreen** (`screens/HomeScreen.tsx`)
 - **LibraryHubScreen** (`screens/LibraryHubScreen.tsx`)
 - **LibraryScreen** (`screens/LibraryScreen.tsx`)

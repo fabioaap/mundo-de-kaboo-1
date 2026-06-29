@@ -598,9 +598,9 @@ const adaptMediaCardToLibraryItem = (card: MediaItemCard): LibraryMockItem => {
     relatedCollection: card.collectionTitle ?? undefined,
     collectionId: card.collectionId ?? undefined,
     coverImage: card.thumbnailUrl ?? undefined,
-    progress: isVideo ? card.progressPercent : undefined,
+    progress: (isVideo || variant === 'formation') && card.progressPercent > 0 ? card.progressPercent : undefined,
     chips,
-    ctaLabel: assetType === 'video' ? 'Assistir agora' : assetType === 'audio' ? 'Ouvir agora' : 'Abrir PDF',
+    ctaLabel: assetType === 'video' ? 'Assistir agora' : assetType === 'audio' ? 'Ouvir agora' : variant === 'formation' ? 'Ver percurso' : 'Abrir PDF',
     assetType,
     assetTitle: card.title,
     assetUrl: card.assetUrl ?? undefined,
@@ -708,6 +708,19 @@ const CardContainer: React.FC<{
   onOpen: (item: LibraryMockItem) => void;
   children: React.ReactNode;
 }> = ({ item, className, onOpen, children }) => {
+  // Formação sempre abre o player de curso via onOpen, independente de assetType/url.
+  if (item.variant === 'formation') {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpen(item)}
+        className={`${className} cursor-pointer text-left`}
+      >
+        {children}
+      </button>
+    );
+  }
+
   if (!item.collectionId && !item.assetUrl && !item.assetType) {
     return <article className={className}>{children}</article>;
   }
@@ -1174,6 +1187,12 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
   };
 
   const openItem = async (item: LibraryMockItem) => {
+    // Formação abre o player de curso (read-only), não cai no fluxo de mídia/coleção.
+    if (item.variant === 'formation') {
+      onNavigate('formation_player', { formationId: item.id });
+      return;
+    }
+
     const fallbackCollectionId = item.collectionId || FALLBACK_LIBRARY_COLLECTION_ID;
     // Abre janela em branco ANTES do await para preservar o gesto do usuário.
     // Não usar noopener aqui: no Chrome moderno window.open com noopener retorna null,
@@ -1434,15 +1453,6 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
     }
 
     if (isFormationsHub) {
-      const ILLUSTRATED_PALETTES = [
-        { bg: 'bg-violet-50', border: 'border-violet-200/60', badge: 'bg-violet-100 text-violet-700', gradient: 'from-violet-50' },
-        { bg: 'bg-rose-50', border: 'border-rose-200/60', badge: 'bg-rose-100 text-rose-700', gradient: 'from-rose-50' },
-        { bg: 'bg-amber-50', border: 'border-amber-200/60', badge: 'bg-amber-100 text-amber-700', gradient: 'from-amber-50' },
-        { bg: 'bg-sky-50', border: 'border-sky-200/60', badge: 'bg-sky-100 text-sky-700', gradient: 'from-sky-50' },
-        { bg: 'bg-emerald-50', border: 'border-emerald-200/60', badge: 'bg-emerald-100 text-emerald-700', gradient: 'from-emerald-50' },
-        { bg: 'bg-orange-50', border: 'border-orange-200/60', badge: 'bg-orange-100 text-orange-700', gradient: 'from-orange-50' },
-      ] as const;
-      const palette = ILLUSTRATED_PALETTES[itemIndex % ILLUSTRATED_PALETTES.length];
       const PreviewIcon = getLibraryBadgeIcon(item);
 
       return (
@@ -1450,40 +1460,50 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
           key={`${item.id}-${itemIndex}`}
           item={item}
           onOpen={openItem}
-          className={`group rounded-[1.6rem] border overflow-hidden shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] ${palette.border} ${palette.bg}`}
+          className="group rounded-[1.6rem] border border-gray-100 overflow-hidden shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] bg-white"
         >
-          <div className="relative flex flex-col min-h-[152px] p-4">
-            {/* Cover image — absolute right */}
-            <div className="absolute right-0 top-0 bottom-0 w-[42%] pointer-events-none select-none">
-              {item.coverImage ? (
-                <img src={item.coverImage} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center">
-                  <PreviewIcon size={44} className="opacity-[0.12]" />
-                </div>
-              )}
-              <div className={`absolute inset-0 bg-gradient-to-r ${palette.gradient} to-transparent`} />
-            </div>
+          {/* Banner — imagem full-width no topo */}
+          <div className="h-[160px] w-full shrink-0 overflow-hidden">
+            {item.coverImage ? (
+              <img src={item.coverImage} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center bg-brand-primary/5">
+                <PreviewIcon size={44} className="text-brand-primary/20" />
+              </div>
+            )}
+          </div>
 
-            {/* Left content */}
-            <div className="pr-[44%] flex flex-col flex-1 gap-2">
-              {item.eyebrow && (
-                <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] ${palette.badge}`}>
-                  {item.eyebrow}
-                </span>
-              )}
-              <h3 className="font-black text-gray-800 text-[1rem] leading-[1.2] tracking-[-0.02em] line-clamp-2">
+          {/* Content */}
+          <div className="flex flex-col gap-4 p-6">
+            {item.eyebrow && (
+              <span className="inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] bg-brand-primary/10 text-brand-primary">
+                {item.eyebrow}
+              </span>
+            )}
+            <div className="flex flex-col gap-2">
+              <h3 className="font-black text-[#1e2939] text-[1rem] leading-[1.2] tracking-[-0.02em]">
                 {item.title}
               </h3>
               {item.description && (
-                <p className="text-xs text-gray-500 line-clamp-2 leading-5">
+                <p className="text-[13px] text-gray-500 leading-[1.4] line-clamp-2">
                   {item.description}
                 </p>
               )}
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-900/8 pr-[44%]">
+            {item.progress !== undefined && (
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.13em]">
+                  <span className="text-brand-primary/50">Progresso</span>
+                  <span className="text-brand-primary/60">{item.progress}%</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-900/8">
+                  <div className="h-full rounded-full bg-brand-primary transition-all duration-300" style={{ width: `${item.progress}%` }} />
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-3 border-t border-gray-900/8">
               <span className="text-[11px] font-bold text-gray-500">{item.meta}</span>
               <span className="inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-transform duration-150 group-hover:translate-x-0.5">
                 {item.ctaLabel}

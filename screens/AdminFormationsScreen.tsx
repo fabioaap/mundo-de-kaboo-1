@@ -5,9 +5,18 @@ import { Toast } from '../components/Toast';
 import { FileUpload } from '../components/FileUpload';
 import { useToast } from '../hooks/useToast';
 import { api } from '../lib/api';
-import { Formation, FormationLevel, FormationAsset, MaterialAssetType, ScreenName } from '../types';
+import { Formation, FormationLevel, FormationAsset, FormationLesson, MaterialAssetType, ScreenName } from '../types';
 
 const normalizeText = (v: string) => (v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
+const FORMATION_CARD_PALETTES = [
+  { bg: 'bg-violet-50', border: 'border-violet-200/60', badge: 'bg-violet-100 text-violet-700', gradient: 'from-violet-50' },
+  { bg: 'bg-rose-50', border: 'border-rose-200/60', badge: 'bg-rose-100 text-rose-700', gradient: 'from-rose-50' },
+  { bg: 'bg-amber-50', border: 'border-amber-200/60', badge: 'bg-amber-100 text-amber-700', gradient: 'from-amber-50' },
+  { bg: 'bg-sky-50', border: 'border-sky-200/60', badge: 'bg-sky-100 text-sky-700', gradient: 'from-sky-50' },
+  { bg: 'bg-emerald-50', border: 'border-emerald-200/60', badge: 'bg-emerald-100 text-emerald-700', gradient: 'from-emerald-50' },
+  { bg: 'bg-orange-50', border: 'border-orange-200/60', badge: 'bg-orange-100 text-orange-700', gradient: 'from-orange-50' },
+] as const;
 
 interface AdminFormationsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
@@ -26,6 +35,7 @@ const EMPTY_FORM: Omit<Formation, 'id' | 'created_at' | 'updated_at'> = {
   duration_label: '',
   related_collection_ids: [],
   assets: [],
+  lessons: [],
   is_published: false,
   published_at: null,
   brand_id: null,
@@ -35,6 +45,7 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
   const [formations, setFormations] = useState<Formation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'published' | 'draft'>('published');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -84,6 +95,7 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
       duration_label: formation.duration_label ?? '',
       related_collection_ids: formation.related_collection_ids ?? [],
       assets: formation.assets ?? [],
+      lessons: formation.lessons ?? [],
       is_published: formation.is_published ?? false,
       published_at: formation.published_at ?? null,
       brand_id: formation.brand_id ?? null,
@@ -112,9 +124,10 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
   const handleSave = async () => {
     if (!formData.title.trim()) { showToast('Título é obrigatório', 'error'); return; }
     setSaving(true);
+    const payload = { ...formData, steps_count: formData.lessons?.length ?? 0 };
     try {
       if (editingId) {
-        const result = await api.updateFormation(editingId, formData);
+        const result = await api.updateFormation(editingId, payload);
         if (result) {
           showToast('Formação atualizada!', 'success');
           setOriginalFormData({ ...formData });
@@ -123,7 +136,7 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
           showToast('Erro ao atualizar formação', 'error');
         }
       } else {
-        const result = await api.createFormation(formData);
+        const result = await api.createFormation(payload);
         if (result) {
           showToast('Formação criada!', 'success');
           closeDrawer();
@@ -183,8 +196,46 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
     setFormData(prev => ({ ...prev, assets: (prev.assets ?? []).filter((_, i) => i !== idx) }));
   };
 
+  const addLesson = () => {
+    const newLesson: FormationLesson = {
+      id: crypto.randomUUID(),
+      title: '',
+      video_url: null,
+      pdf_url: null,
+    };
+    setFormData(prev => ({ ...prev, lessons: [...(prev.lessons ?? []), newLesson] }));
+  };
+
+  const removeLesson = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      lessons: (prev.lessons ?? []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateLesson = (index: number, field: keyof FormationLesson, value: string | null) => {
+    setFormData(prev => {
+      const lessons = [...(prev.lessons ?? [])];
+      lessons[index] = { ...lessons[index], [field]: value };
+      return { ...prev, lessons };
+    });
+  };
+
+  const moveLesson = (index: number, direction: -1 | 1) => {
+    setFormData(prev => {
+      const lessons = [...(prev.lessons ?? [])];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= lessons.length) return prev;
+      [lessons[index], lessons[newIndex]] = [lessons[newIndex], lessons[index]];
+      return { ...prev, lessons };
+    });
+  };
+
+  const searchMatch = (f: Formation) => normalizeText(f.title).includes(normalizeText(searchQuery));
+  const countPublished = formations.filter(f => f.is_published && searchMatch(f)).length;
+  const countDraft = formations.filter(f => !f.is_published && searchMatch(f)).length;
   const filtered = formations.filter(f =>
-    normalizeText(f.title).includes(normalizeText(searchQuery))
+    searchMatch(f) && (statusFilter === 'published' ? f.is_published : !f.is_published)
   );
 
   const ASSET_TYPE_ICONS: Record<MaterialAssetType, React.FC<any>> = {
@@ -208,9 +259,9 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
         </button>
       </div>
 
-      {/* Search */}
-      <div className="px-6 py-3 border-b border-gray-100">
-        <div className="relative">
+      {/* Search + Status tabs */}
+      <div className="px-6 pt-3 pb-0 border-b border-gray-100">
+        <div className="relative mb-3">
           <Icons.Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
@@ -219,6 +270,29 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
             placeholder="Buscar formações..."
             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
           />
+        </div>
+        <div className="flex items-center gap-1 border-b border-gray-200">
+          {([
+            { key: 'published' as const, label: 'Publicadas', count: countPublished },
+            { key: 'draft' as const, label: 'Não publicadas', count: countDraft },
+          ]).map((tab) => {
+            const isActive = statusFilter === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={`relative px-4 py-2.5 -mb-px text-sm font-bold transition-colors ${isActive ? 'text-brand-primary' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <span className="flex items-center gap-2">
+                  {tab.label}
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${isActive ? 'bg-brand-primary/10 text-brand-primary' : 'bg-gray-100 text-gray-500'}`}>
+                    {tab.count}
+                  </span>
+                </span>
+                {isActive && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary rounded-full" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -237,55 +311,66 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
             <p className="text-gray-400 text-sm">Crie a primeira formação usando o botão acima</p>
           </div>
         ) : (
-          <div className="grid gap-3">
-            {filtered.map(formation => (
-              <div
-                key={formation.id}
-                className={`flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${editingId === formation.id ? 'border-brand-primary bg-brand-primary/5' : 'border-gray-100 hover:border-gray-200 bg-white'}`}
-                onClick={() => openEdit(formation)}
-              >
-                {/* Cover */}
-                <div className="w-14 h-14 rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden">
-                  {formation.cover_image ? (
-                    <img src={formation.cover_image} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Icons.BookOpen size={20} className="text-gray-400" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-gray-800 text-sm truncate">{formation.title}</p>
-                  <p className="text-gray-500 text-xs truncate mt-0.5">{formation.description || 'Sem descrição'}</p>
-                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    {formation.level && (
-                      <span className="text-xs bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-full font-bold">{formation.level}</span>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {filtered.map((formation, formationIndex) => {
+              const isEditing = editingId === formation.id;
+              const metaLabel = formation.lessons?.length
+                ? `${formation.lessons.length} aula${formation.lessons.length !== 1 ? 's' : ''}${formation.duration_label ? ' · ' + formation.duration_label : ''}`
+                : formation.duration_label || 'Sem aulas';
+              return (
+                <div
+                  key={formation.id}
+                  className={`group rounded-[1.6rem] border overflow-hidden shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 cursor-pointer md:hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] bg-white ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/20' : 'border-gray-100'}`}
+                  onClick={() => openEdit(formation)}
+                >
+                  {/* Banner */}
+                  <div className="h-[160px] w-full shrink-0 overflow-hidden">
+                    {formation.cover_image ? (
+                      <img src={formation.cover_image} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-brand-primary/5">
+                        <Icons.BookOpen size={44} className="text-brand-primary/20" />
+                      </div>
                     )}
-                    {(formation.tags ?? []).slice(0, 2).map(tag => (
-                      <span key={tag} className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{tag}</span>
-                    ))}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex flex-col gap-4 p-6">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] bg-brand-primary/10 text-brand-primary">
+                        Formação
+                      </span>
+                      <div onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleTogglePublish(formation)}
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-black transition-colors ${formation.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}
+                        >
+                          {formation.is_published ? 'Publicada' : 'Rascunho'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <h3 className="font-black text-[#1e2939] text-[1rem] leading-[1.2] tracking-[-0.02em] line-clamp-2">
+                        {formation.title}
+                      </h3>
+                      {formation.description && (
+                        <p className="text-[13px] text-gray-500 line-clamp-2 leading-[1.4]">
+                          {formation.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-900/8">
+                      <span className="text-[11px] font-bold text-gray-500">{metaLabel}</span>
+                      <span className="inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-transform duration-150 group-hover:translate-x-0.5">
+                        Editar <Icons.ChevronRight size={14} />
+                      </span>
+                    </div>
                   </div>
                 </div>
-
-                {/* Publish badge + actions */}
-                <div className="flex items-center gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => handleTogglePublish(formation)}
-                    className={`text-xs px-2 py-1 rounded-full font-bold transition-colors ${formation.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                  >
-                    {formation.is_published ? 'Publicada' : 'Rascunho'}
-                  </button>
-                  <button
-                    onClick={() => { setDeletingId(formation.id); setShowDeleteModal(true); }}
-                    className="w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    <Icons.Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -393,17 +478,13 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
             </select>
           </div>
 
-          {/* Steps count + Duration */}
+          {/* Steps count (derived) + Duration */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Nº de etapas</label>
-              <input
-                type="number"
-                min={1}
-                value={formData.steps_count ?? 1}
-                onChange={e => setFormData(prev => ({ ...prev, steps_count: Math.max(1, Number(e.target.value)) }))}
-                className="w-full bg-gray-50 rounded-2xl p-4 text-gray-800 outline-none focus:ring-2 focus:ring-brand-primary/30"
-              />
+              <label className="block text-sm font-bold text-gray-700 mb-2">Nº de aulas</label>
+              <div className="w-full bg-gray-50 rounded-2xl p-4 text-gray-500 flex items-center">
+                {(formData.lessons ?? []).length} aula(s)
+              </div>
             </div>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">Duração</label>
@@ -464,16 +545,19 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
 
             {/* Add new asset */}
             <div className="p-3 border border-dashed border-gray-200 rounded-xl space-y-2">
+              <div className="flex gap-1.5">
+                {(['pdf', 'video', 'audio'] as const).map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setNewAsset(prev => ({ ...prev, type: t }))}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${newAsset.type === t ? 'bg-brand-primary text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                  >
+                    {t === 'pdf' ? 'PDF' : t === 'video' ? 'Vídeo' : 'Áudio'}
+                  </button>
+                ))}
+              </div>
               <div className="flex gap-2">
-                <select
-                  value={newAsset.type}
-                  onChange={e => setNewAsset(prev => ({ ...prev, type: e.target.value as MaterialAssetType }))}
-                  className="w-24 bg-gray-50 rounded-xl p-2 text-sm outline-none"
-                >
-                  <option value="pdf">PDF</option>
-                  <option value="video">Vídeo</option>
-                  <option value="audio">Áudio</option>
-                </select>
                 <input
                   type="text"
                   value={newAsset.title}
@@ -499,6 +583,89 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Aulas do Curso */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Aulas do curso</label>
+
+            {(formData.lessons ?? []).length > 0 && (
+              <div className="space-y-3 mb-3">
+                {(formData.lessons ?? []).map((lesson, index) => (
+                  <div key={lesson.id} className="p-3 bg-gray-50 rounded-xl space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 flex-shrink-0 rounded-full bg-brand-primary/10 text-brand-primary text-xs font-bold flex items-center justify-center">
+                        {index + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={lesson.title}
+                        onChange={e => updateLesson(index, 'title', e.target.value)}
+                        placeholder="Título da aula"
+                        className="flex-1 bg-white rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
+                      />
+                    </div>
+                    <textarea
+                      value={lesson.description ?? ''}
+                      onChange={e => updateLesson(index, 'description', e.target.value || null)}
+                      placeholder="Descrição da aula (opcional)"
+                      rows={2}
+                      className="w-full bg-white rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/30 resize-none"
+                    />
+                    <input
+                      type="url"
+                      value={lesson.video_url ?? ''}
+                      onChange={e => updateLesson(index, 'video_url', e.target.value || null)}
+                      placeholder="URL do vídeo (YouTube)"
+                      className="w-full bg-white rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
+                    />
+                    <FileUpload
+                      label="PDF da aula"
+                      value={lesson.pdf_url ?? ''}
+                      onChange={url => updateLesson(index, 'pdf_url', url || null)}
+                      folder="pdfs"
+                      accept="application/pdf"
+                      inputId={`lesson-pdf-${lesson.id}`}
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => moveLesson(index, -1)}
+                        disabled={index === 0}
+                        className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-brand-primary disabled:opacity-30 transition-colors"
+                      >
+                        <Icons.ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveLesson(index, 1)}
+                        disabled={index === (formData.lessons?.length ?? 0) - 1}
+                        className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-brand-primary disabled:opacity-30 transition-colors"
+                      >
+                        <Icons.ArrowDown size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeLesson(index)}
+                        className="ml-auto px-3 h-8 rounded-lg bg-white border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 text-sm font-bold transition-colors flex items-center gap-1"
+                      >
+                        <Icons.Trash2 size={14} />
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={addLesson}
+              className="w-full py-3 border border-dashed border-gray-200 rounded-xl text-sm font-bold text-brand-primary hover:bg-brand-primary/5 transition-colors flex items-center justify-center gap-2"
+            >
+              <Icons.Plus size={14} />
+              Adicionar aula
+            </button>
           </div>
 
         </div>

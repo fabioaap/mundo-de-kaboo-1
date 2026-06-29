@@ -34,6 +34,9 @@ interface AudioPlayerScreenProps {
   // When true (set on prev/next/related navigation), the freshly loaded track
   // starts playing automatically instead of waiting for a manual play press.
   autoplay?: boolean;
+  // When navigating within a playlist (prev/next, related click), the caller passes the
+  // current playlist so the player doesn't re-derive scope from the new track's collection.
+  initialPlaylistTracks?: MediaItemCard[];
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
 }
@@ -47,6 +50,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   assetOfflineAvailable,
   coverImage,
   autoplay,
+  initialPlaylistTracks,
   onNavigate,
   onBack,
 }) => {
@@ -259,6 +263,18 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
 
     const loadContext = async () => {
       try {
+        // Playlist passed explicitly by the caller (prev/next/related navigation) — use it
+        // directly so the player doesn't collapse scope to the new track's own collection.
+        if (initialPlaylistTracks && initialPlaylistTracks.length > 0) {
+          if (!isActive) return;
+          setPlaylistTracks(initialPlaylistTracks);
+          setRelatedTracks(initialPlaylistTracks.filter((t) => t.id !== mediaItemId).slice(0, 8));
+          const detail = mediaItemId ? await api.getMediaItem(mediaItemId) : null;
+          if (!isActive) return;
+          setTrackDescription(detail?.description ?? detail?.summary ?? collection.description ?? '');
+          return;
+        }
+
         const currentUrl = (assetUrl ?? '').trim();
 
         // Se a coleção tem outras faixas de música, escopa "Próximas" à coleção (WS-15).
@@ -631,6 +647,9 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       // Switching tracks within a playlist (prev/next, auto-advance, related click)
       // should keep playing — the user already chose to listen.
       autoplay: true,
+      // Preserve the current playlist scope so the next mount doesn't re-derive it
+      // from the new track's collection (which may be a single-track collection).
+      initialPlaylistTracks: playlistTracks,
     });
   };
 
@@ -647,7 +666,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const isMusicTrack = currentCategory === 'music' || (currentCategory === null && playlistIndex >= 0);
 
   // Prev/next track + auto-advance only apply to music tracks within the playlist.
-  const showTrackNav = isMusicTrack && playlistIndex >= 0 && playlistTracks.length > 1;
+  const showTrackNav = isMusicTrack && playlistIndex >= 0;
   // Speed control is for spoken content (narration/audiobook); music hides it.
   const showSpeedControl = !isMusicTrack;
   const prevTrack = showTrackNav && playlistIndex > 0 ? playlistTracks[playlistIndex - 1] : null;
@@ -663,12 +682,14 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const playButtonHitAreaClass = 'group relative inline-flex h-20 w-20 items-center justify-center rounded-full border border-transparent bg-transparent text-white outline-none transition-transform duration-150 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/75';
   const playButtonSurfaceClass = 'pointer-events-none flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full border-2 border-white/40 bg-white/20 shadow-2xl backdrop-blur-md transition-all duration-150 group-hover:scale-[1.05] group-hover:bg-white/30';
 
-  const renderRelatedTracksList = (cardClassName: string) => (
+  const renderRelatedTracksList = (cardClassName: string, showHeader = true) => (
     <>
-      <div className="px-1">
-        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Catálogo relacionado</p>
-        <h2 className="mt-1 text-sm font-black text-white">Sugestões da biblioteca</h2>
-      </div>
+      {showHeader && (
+        <div className="px-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Catálogo relacionado</p>
+          <h2 className="mt-1 text-sm font-black text-white">Sugestões da biblioteca</h2>
+        </div>
+      )}
 
       {relatedTracks.length === 0 && (
         <p className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/75">
@@ -915,7 +936,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
 
 
       {/* Main Content - two-column layout on desktop */}
-      <div className={`relative z-10 flex-1 overflow-hidden ${isMobileLandscape ? 'px-4 pb-4' : 'flex flex-col lg:flex-row'}`}>
+      <div className={`relative z-10 flex-1 overflow-hidden ${isMobileLandscape ? 'px-4 pb-4' : 'flex flex-col md:flex-row'}`}>
 
         {/* Player Column */}
         <div className={`min-w-0 flex-1 ${isMobileLandscape ? 'flex h-full items-center justify-center gap-5 overflow-hidden' : 'flex flex-col items-center justify-center overflow-y-auto'}`}>
@@ -1010,7 +1031,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                   aria-label="Faixa anterior"
                 >
                   <span className={transportButtonSurfaceClass}>
-                    <Icons.SkipBack size={20} fill="currentColor" strokeWidth={0} />
+                    <Icons.SkipBack size={20} strokeWidth={2} />
                   </span>
                 </button>
               )}
@@ -1069,7 +1090,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
                   aria-label="Próxima faixa"
                 >
                   <span className={transportButtonSurfaceClass}>
-                    <Icons.SkipForward size={20} fill="currentColor" strokeWidth={0} />
+                    <Icons.SkipForward size={20} strokeWidth={2} />
                   </span>
                 </button>
               )}
@@ -1122,20 +1143,26 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
           </div>
         )}
 
-        {/* Sidebar — catálogo relacionado */}
-        {!isMobile && (
+        {/* Sidebar — próximas músicas, sempre visível no desktop (paridade com VideoPlayerScreen) */}
+        <aside
+          className={`${relatedTracks.length === 0 ? 'hidden' : 'hidden md:flex md:flex-col'} w-[340px] shrink-0 my-3 mr-3 rounded-2xl border border-white/10 bg-black/28 backdrop-blur-md overflow-hidden`}
+        >
+          <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-3.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60">Próximas músicas</p>
+            <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-white/12 px-2 text-[11px] font-black text-white/70">
+              {relatedTracks.length}
+            </span>
+          </div>
           <div
-            className={`flex-shrink-0 overflow-y-auto transition-all duration-300 border-t lg:border-t-0 lg:border-l border-white/10 bg-black/25 backdrop-blur-md ${showSidebar
-              ? 'w-full h-72 lg:h-auto lg:w-80 xl:w-96'
-              : 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none border-0'
-              }`}
+            className="flex-1 space-y-1.5 overflow-y-auto p-3"
             style={{ scrollbarWidth: 'none' } as React.CSSProperties}
           >
-            <div className="min-w-[280px] space-y-3 p-4">
-              {renderRelatedTracksList('flex w-full items-center gap-3 rounded-xl border border-white/15 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10 text-white')}
-            </div>
+            {renderRelatedTracksList(
+              'flex w-full items-center gap-3 rounded-xl border border-white/12 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/10 text-white',
+              false
+            )}
           </div>
-        )}
+        </aside>
 
       </div>
 
