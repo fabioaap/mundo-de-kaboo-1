@@ -605,6 +605,13 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
                         className="flex-1 bg-white rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/30"
                       />
                     </div>
+                    <textarea
+                      value={lesson.description ?? ''}
+                      onChange={e => updateLesson(index, 'description', e.target.value || null)}
+                      placeholder="Descrição da aula (opcional)"
+                      rows={2}
+                      className="w-full bg-white rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-brand-primary/30 resize-none"
+                    />
                     <input
                       type="url"
                       value={lesson.video_url ?? ''}
