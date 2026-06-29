@@ -553,16 +553,19 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
 
             {/* Add new asset */}
             <div className="p-3 border border-dashed border-gray-200 rounded-xl space-y-2">
+              <div className="flex gap-1.5">
+                {(['pdf', 'video', 'audio'] as const).map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setNewAsset(prev => ({ ...prev, type: t }))}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${newAsset.type === t ? 'bg-brand-primary text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                  >
+                    {t === 'pdf' ? 'PDF' : t === 'video' ? 'Vídeo' : 'Áudio'}
+                  </button>
+                ))}
+              </div>
               <div className="flex gap-2">
-                <select
-                  value={newAsset.type}
-                  onChange={e => setNewAsset(prev => ({ ...prev, type: e.target.value as MaterialAssetType }))}
-                  className="w-28 bg-gray-50 rounded-xl px-3 py-2 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-brand-primary/30 cursor-pointer appearance-none"
-                >
-                  <option value="pdf">PDF</option>
-                  <option value="video">Vídeo</option>
-                  <option value="audio">Áudio</option>
-                </select>
                 <input
                   type="text"
                   value={newAsset.title}
