@@ -34,6 +34,9 @@ interface AudioPlayerScreenProps {
   // When true (set on prev/next/related navigation), the freshly loaded track
   // starts playing automatically instead of waiting for a manual play press.
   autoplay?: boolean;
+  // When navigating within a playlist (prev/next, related click), the caller passes the
+  // current playlist so the player doesn't re-derive scope from the new track's collection.
+  initialPlaylistTracks?: MediaItemCard[];
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
 }
@@ -47,6 +50,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   assetOfflineAvailable,
   coverImage,
   autoplay,
+  initialPlaylistTracks,
   onNavigate,
   onBack,
 }) => {
@@ -259,6 +263,18 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
 
     const loadContext = async () => {
       try {
+        // Playlist passed explicitly by the caller (prev/next/related navigation) — use it
+        // directly so the player doesn't collapse scope to the new track's own collection.
+        if (initialPlaylistTracks && initialPlaylistTracks.length > 0) {
+          if (!isActive) return;
+          setPlaylistTracks(initialPlaylistTracks);
+          setRelatedTracks(initialPlaylistTracks.filter((t) => t.id !== mediaItemId).slice(0, 8));
+          const detail = mediaItemId ? await api.getMediaItem(mediaItemId) : null;
+          if (!isActive) return;
+          setTrackDescription(detail?.description ?? detail?.summary ?? collection.description ?? '');
+          return;
+        }
+
         const currentUrl = (assetUrl ?? '').trim();
 
         // Se a coleção tem outras faixas de música, escopa "Próximas" à coleção (WS-15).
@@ -631,6 +647,9 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
       // Switching tracks within a playlist (prev/next, auto-advance, related click)
       // should keep playing — the user already chose to listen.
       autoplay: true,
+      // Preserve the current playlist scope so the next mount doesn't re-derive it
+      // from the new track's collection (which may be a single-track collection).
+      initialPlaylistTracks: playlistTracks,
     });
   };
 
@@ -647,7 +666,7 @@ export const AudioPlayerScreen: React.FC<AudioPlayerScreenProps> = ({
   const isMusicTrack = currentCategory === 'music' || (currentCategory === null && playlistIndex >= 0);
 
   // Prev/next track + auto-advance only apply to music tracks within the playlist.
-  const showTrackNav = isMusicTrack && playlistIndex >= 0 && playlistTracks.length > 1;
+  const showTrackNav = isMusicTrack && playlistIndex >= 0;
   // Speed control is for spoken content (narration/audiobook); music hides it.
   const showSpeedControl = !isMusicTrack;
   const prevTrack = showTrackNav && playlistIndex > 0 ? playlistTracks[playlistIndex - 1] : null;

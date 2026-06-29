@@ -1296,6 +1296,7 @@ const App: React.FC = () => {
             assetOfflineAvailable={currentParams?.assetOfflineAvailable}
             coverImage={currentParams?.coverImage as string | undefined}
             autoplay={Boolean(currentParams?.autoplay)}
+            initialPlaylistTracks={currentParams?.initialPlaylistTracks}
             onNavigate={navigate}
             onBack={goBack}
           />
