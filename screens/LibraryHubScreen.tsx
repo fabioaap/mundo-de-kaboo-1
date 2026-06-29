@@ -598,7 +598,7 @@ const adaptMediaCardToLibraryItem = (card: MediaItemCard): LibraryMockItem => {
     relatedCollection: card.collectionTitle ?? undefined,
     collectionId: card.collectionId ?? undefined,
     coverImage: card.thumbnailUrl ?? undefined,
-    progress: isVideo ? card.progressPercent : undefined,
+    progress: (isVideo || variant === 'formation') && card.progressPercent > 0 ? card.progressPercent : undefined,
     chips,
     ctaLabel: assetType === 'video' ? 'Assistir agora' : assetType === 'audio' ? 'Ouvir agora' : variant === 'formation' ? 'Ver percurso' : 'Abrir PDF',
     assetType,
