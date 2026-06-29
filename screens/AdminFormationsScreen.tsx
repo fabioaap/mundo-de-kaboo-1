@@ -349,12 +349,6 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
                           >
                             {formation.is_published ? 'Publicada' : 'Rascunho'}
                           </button>
-                          <button
-                            onClick={() => { setDeletingId(formation.id); setShowDeleteModal(true); }}
-                            className="w-5 h-5 rounded-full hover:bg-red-100 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors"
-                          >
-                            <Icons.Trash2 size={11} />
-                          </button>
                         </div>
                       </div>
 
