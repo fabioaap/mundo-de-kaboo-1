@@ -1453,15 +1453,6 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
     }
 
     if (isFormationsHub) {
-      const ILLUSTRATED_PALETTES = [
-        { bg: 'bg-violet-50', border: 'border-violet-200/60', badge: 'bg-violet-100 text-violet-700', gradient: 'from-violet-50' },
-        { bg: 'bg-rose-50', border: 'border-rose-200/60', badge: 'bg-rose-100 text-rose-700', gradient: 'from-rose-50' },
-        { bg: 'bg-amber-50', border: 'border-amber-200/60', badge: 'bg-amber-100 text-amber-700', gradient: 'from-amber-50' },
-        { bg: 'bg-sky-50', border: 'border-sky-200/60', badge: 'bg-sky-100 text-sky-700', gradient: 'from-sky-50' },
-        { bg: 'bg-emerald-50', border: 'border-emerald-200/60', badge: 'bg-emerald-100 text-emerald-700', gradient: 'from-emerald-50' },
-        { bg: 'bg-orange-50', border: 'border-orange-200/60', badge: 'bg-orange-100 text-orange-700', gradient: 'from-orange-50' },
-      ] as const;
-      const palette = ILLUSTRATED_PALETTES[itemIndex % ILLUSTRATED_PALETTES.length];
       const PreviewIcon = getLibraryBadgeIcon(item);
 
       return (
@@ -1469,7 +1460,7 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
           key={`${item.id}-${itemIndex}`}
           item={item}
           onOpen={openItem}
-          className={`group rounded-[1.6rem] border overflow-hidden shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] ${palette.border} ${palette.bg}`}
+          className="group rounded-[1.6rem] border border-gray-100 overflow-hidden shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 md:hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] bg-white"
         >
           <div className="relative flex flex-col min-h-[152px] p-4">
             {/* Cover image — absolute right */}
@@ -1481,13 +1472,13 @@ export const LibraryHubScreen: React.FC<LibraryHubScreenProps> = ({ screen, onNa
                   <PreviewIcon size={44} className="opacity-[0.12]" />
                 </div>
               )}
-              <div className={`absolute inset-0 bg-gradient-to-r ${palette.gradient} to-transparent`} />
+              <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent" />
             </div>
 
             {/* Left content */}
             <div className="pr-[44%] flex flex-col flex-1 gap-2">
               {item.eyebrow && (
-                <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] ${palette.badge}`}>
+                <span className="inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] bg-brand-primary/10 text-brand-primary">
                   {item.eyebrow}
                 </span>
               )}
