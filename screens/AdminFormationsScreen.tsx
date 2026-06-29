@@ -9,6 +9,15 @@ import { Formation, FormationLevel, FormationAsset, FormationLesson, MaterialAss
 
 const normalizeText = (v: string) => (v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
+const FORMATION_CARD_PALETTES = [
+  { bg: 'bg-violet-50', border: 'border-violet-200/60', badge: 'bg-violet-100 text-violet-700', gradient: 'from-violet-50' },
+  { bg: 'bg-rose-50', border: 'border-rose-200/60', badge: 'bg-rose-100 text-rose-700', gradient: 'from-rose-50' },
+  { bg: 'bg-amber-50', border: 'border-amber-200/60', badge: 'bg-amber-100 text-amber-700', gradient: 'from-amber-50' },
+  { bg: 'bg-sky-50', border: 'border-sky-200/60', badge: 'bg-sky-100 text-sky-700', gradient: 'from-sky-50' },
+  { bg: 'bg-emerald-50', border: 'border-emerald-200/60', badge: 'bg-emerald-100 text-emerald-700', gradient: 'from-emerald-50' },
+  { bg: 'bg-orange-50', border: 'border-orange-200/60', badge: 'bg-orange-100 text-orange-700', gradient: 'from-orange-50' },
+] as const;
+
 interface AdminFormationsScreenProps {
   onNavigate: (screen: ScreenName, params?: any) => void;
   onBack: () => void;
@@ -276,63 +285,74 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
           </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {filtered.map(formation => (
-              <div
-                key={formation.id}
-                className={`flex gap-3 p-3 rounded-2xl border transition-all cursor-pointer group ${editingId === formation.id ? 'border-brand-primary bg-brand-primary/5' : 'border-gray-100 hover:border-gray-200 bg-white hover:shadow-sm'}`}
-                onClick={() => openEdit(formation)}
-              >
-                {/* Cover 72×72 */}
-                <div className="w-[72px] h-[72px] rounded-xl bg-gray-100 flex-shrink-0 overflow-hidden">
-                  {formation.cover_image ? (
-                    <img src={formation.cover_image} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Icons.BookOpen size={22} className="text-gray-300" />
+            {filtered.map((formation, formationIndex) => {
+              const palette = FORMATION_CARD_PALETTES[formationIndex % FORMATION_CARD_PALETTES.length];
+              const isEditing = editingId === formation.id;
+              const metaLabel = formation.lessons?.length
+                ? `${formation.lessons.length} aula${formation.lessons.length !== 1 ? 's' : ''}${formation.duration_label ? ' · ' + formation.duration_label : ''}`
+                : formation.duration_label || 'Sem aulas';
+              return (
+                <div
+                  key={formation.id}
+                  className={`group rounded-[1.6rem] border overflow-hidden shadow-[0_12px_28px_rgba(93,31,88,0.05)] transition-all duration-200 cursor-pointer md:hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(93,31,88,0.08)] active:scale-[0.995] ${isEditing ? 'border-brand-primary ring-2 ring-brand-primary/20' : palette.border} ${palette.bg}`}
+                  onClick={() => openEdit(formation)}
+                >
+                  <div className="relative flex flex-col min-h-[152px] p-4">
+                    {/* Cover/icon — absolute right */}
+                    <div className="absolute right-0 top-0 bottom-0 w-[42%] pointer-events-none select-none">
+                      {formation.cover_image ? (
+                        <img src={formation.cover_image} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center">
+                          <Icons.BookOpen size={44} className="opacity-[0.12]" />
+                        </div>
+                      )}
+                      <div className={`absolute inset-0 bg-gradient-to-r ${palette.gradient} to-transparent`} />
                     </div>
-                  )}
-                </div>
 
-                {/* Content */}
-                <div className="flex flex-col flex-1 min-w-0">
-                  {/* Top row: type badge + publish toggle */}
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="text-[10px] bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-full font-black uppercase tracking-wide">
-                      Formação
-                    </span>
-                    <div onClick={e => e.stopPropagation()} className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleTogglePublish(formation)}
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-black transition-colors ${formation.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
-                      >
-                        {formation.is_published ? 'Publicada' : 'Rascunho'}
-                      </button>
-                      <button
-                        onClick={() => { setDeletingId(formation.id); setShowDeleteModal(true); }}
-                        className="w-6 h-6 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors"
-                      >
-                        <Icons.Trash2 size={12} />
-                      </button>
+                    {/* Left content */}
+                    <div className="pr-[44%] flex flex-col flex-1 gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.13em] ${palette.badge}`}>
+                          Formação
+                        </span>
+                        <div onClick={e => e.stopPropagation()} className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleTogglePublish(formation)}
+                            className={`text-[10px] px-2 py-0.5 rounded-full font-black transition-colors ${formation.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}
+                          >
+                            {formation.is_published ? 'Publicada' : 'Rascunho'}
+                          </button>
+                          <button
+                            onClick={() => { setDeletingId(formation.id); setShowDeleteModal(true); }}
+                            className="w-5 h-5 rounded-full hover:bg-red-100 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors"
+                          >
+                            <Icons.Trash2 size={11} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <h3 className="font-black text-gray-800 text-[1rem] leading-[1.2] tracking-[-0.02em] line-clamp-2">
+                        {formation.title}
+                      </h3>
+                      {formation.description && (
+                        <p className="text-xs text-gray-500 line-clamp-2 leading-5">
+                          {formation.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-900/8 pr-[44%]">
+                      <span className="text-[11px] font-bold text-gray-500">{metaLabel}</span>
+                      <span className="inline-flex items-center gap-1 text-sm font-bold text-brand-primary transition-transform duration-150 group-hover:translate-x-0.5">
+                        Editar <Icons.ChevronRight size={14} />
+                      </span>
                     </div>
                   </div>
-
-                  <p className="font-black text-gray-800 text-sm line-clamp-2 leading-snug">{formation.title}</p>
-                  <p className="text-gray-400 text-xs line-clamp-2 mt-0.5 leading-relaxed">{formation.description || 'Sem descrição'}</p>
-
-                  {/* Bottom row: meta + editar */}
-                  <div className="flex items-center justify-between mt-auto pt-1.5">
-                    <span className="text-[11px] text-gray-400 font-medium">
-                      {formation.lessons?.length
-                        ? `${formation.lessons.length} aula${formation.lessons.length !== 1 ? 's' : ''}${formation.duration_label ? ' · ' + formation.duration_label : ''}`
-                        : formation.duration_label || 'Sem aulas'}
-                    </span>
-                    <span className="text-[11px] text-brand-primary font-bold flex items-center gap-0.5">
-                      Editar <Icons.ChevronRight size={12} />
-                    </span>
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
