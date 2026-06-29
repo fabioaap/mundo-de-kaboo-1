@@ -557,7 +557,7 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
                 <select
                   value={newAsset.type}
                   onChange={e => setNewAsset(prev => ({ ...prev, type: e.target.value as MaterialAssetType }))}
-                  className="w-24 bg-gray-50 rounded-xl p-2 text-sm outline-none"
+                  className="w-28 bg-gray-50 rounded-xl px-3 py-2 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-brand-primary/30 cursor-pointer appearance-none"
                 >
                   <option value="pdf">PDF</option>
                   <option value="video">Vídeo</option>
