@@ -600,7 +600,7 @@ const adaptMediaCardToLibraryItem = (card: MediaItemCard): LibraryMockItem => {
     coverImage: card.thumbnailUrl ?? undefined,
     progress: isVideo ? card.progressPercent : undefined,
     chips,
-    ctaLabel: assetType === 'video' ? 'Assistir agora' : assetType === 'audio' ? 'Ouvir agora' : 'Abrir PDF',
+    ctaLabel: assetType === 'video' ? 'Assistir agora' : assetType === 'audio' ? 'Ouvir agora' : variant === 'formation' ? 'Ver percurso' : 'Abrir PDF',
     assetType,
     assetTitle: card.title,
     assetUrl: card.assetUrl ?? undefined,

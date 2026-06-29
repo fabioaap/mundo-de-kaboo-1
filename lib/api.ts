@@ -875,6 +875,41 @@ const buildMaterialsTableHubResponse = (materials: Material[]): MediaHubResponse
   };
 };
 
+const buildFormationLibraryItem = (formation: import('../types').Formation): LibraryMockItem => ({
+  id: formation.id,
+  variant: 'formation',
+  eyebrow: 'Formação',
+  title: formation.title,
+  description: formation.description ?? '',
+  meta: formation.duration_label ?? (formation.steps_count ? `${formation.steps_count} aulas` : ''),
+  ctaLabel: 'Ver percurso',
+  coverImage: formation.cover_image ?? undefined,
+});
+
+const buildFormationsTableHubResponse = (formations: import('../types').Formation[]): MediaHubResponse => {
+  const items = formations.map(buildFormationLibraryItem);
+  const [heroItem, ...shelfItems] = items;
+  return {
+    hub: 'formations',
+    hero: heroItem ? buildMockMediaItemCard('formations', heroItem) : null,
+    shelves: shelfItems.length > 0
+      ? [{
+        id: 'formations-standalone',
+        hub: 'formations',
+        type: 'rail',
+        title: '',
+        description: '',
+        items: shelfItems.map((item) => buildMockMediaItemCard('formations', item)),
+      }]
+      : [],
+    counts: {
+      total: items.length,
+      favorites: 0,
+      continueWatching: 0,
+    },
+  };
+};
+
 const buildMockMediaHubResponse = (hub: MediaHub): MediaHubResponse => {
   const mock = LIBRARY_HUB_MOCKS[hub as LibraryHubKind];
   const hero = mock.featured ? buildMockMediaItemCard(hub, mock.featured) : null;
@@ -2030,6 +2065,31 @@ export const api = {
         }
       } catch (materialsErr) {
         logger.warn('Falha ao mesclar materiais avulsos no hub:', materialsErr);
+      }
+    }
+
+    // Formações da tabela `formations` (módulo admin Formações) alimentam o hub Formações.
+    if (hub === 'formations' && isSupabaseConfigured && !devMockSession) {
+      try {
+        const formationsBrandId = await resolveActiveBrandId();
+        if (formationsBrandId) {
+          const { data: formationRows, error: formationsError } = await supabase
+            .from('formations')
+            .select('*')
+            .eq('brand_id', formationsBrandId)
+            .eq('is_published', true)
+            .order('published_at', { ascending: false });
+          if (formationsError) {
+            if (!isMissingRelationError(formationsError, 'formations')) {
+              logger.error('Erro ao buscar formações para o hub:', formationsError);
+            }
+          } else if (Array.isArray(formationRows) && formationRows.length > 0) {
+            const formationsResponse = buildFormationsTableHubResponse(formationRows as import('../types').Formation[]);
+            collectionBackedResponse = mergeMediaHubResponses(formationsResponse, collectionBackedResponse);
+          }
+        }
+      } catch (formationsErr) {
+        logger.warn('Falha ao mesclar formações no hub:', formationsErr);
       }
     }
 
