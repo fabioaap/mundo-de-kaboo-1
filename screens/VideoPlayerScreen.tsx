@@ -1014,7 +1014,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     return (
       <div
         ref={containerRef}
-        className={`fixed inset-0 z-50 bg-[#0f0f0f] text-white ${isFullscreen ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}
+        className={`fixed inset-0 z-50 ${isFullscreen ? 'overflow-hidden flex flex-col bg-black text-white' : 'overflow-y-auto bg-white bg-gradient-to-b from-brand-primary/10 via-white via-[18%] to-white text-gray-900'}`}
         role="dialog"
         aria-modal="true"
         aria-label="Player de vídeo"
@@ -1022,7 +1022,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
         <div className={isFullscreen ? 'flex-1 flex flex-col' : 'min-h-full pb-[max(1.5rem,env(safe-area-inset-bottom))]'}>
 
           {/* ── Sticky header ── */}
-          <header className={`sticky top-0 z-30 border-b border-white/[0.08] bg-[#0f0f0f]/95 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md${isFullscreen ? ' hidden' : ''}`}>
+          <header className={`sticky top-0 z-30 border-b border-brand-accent/30 bg-brand-primary/80 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-xl${isFullscreen ? ' hidden' : ''}`}>
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -1281,7 +1281,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                   </div>{/* end video area */}
 
                   {/* Controls bar — always visible, sits below the video in document flow */}
-                  <div className={`border-t border-white/[0.08] bg-black px-4 pb-4 pt-3${isFullscreen ? ' shrink-0' : ''}`}>
+                  <div className={`border-t border-brand-accent/30 bg-brand-primary/40 px-4 pb-4 pt-3${isFullscreen ? ' shrink-0' : ''}`}>
 
                     {/* Error banners */}
                     {playError && (
@@ -1399,16 +1399,16 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 {/* Title + meta + description */}
                 {!isFullscreen && <div className="mt-5 space-y-3 px-4 lg:px-0">
                   <div>
-                    <h2 className="text-base font-black leading-snug text-white lg:text-lg">
+                    <h2 className="text-base font-black leading-snug text-gray-900 lg:text-lg">
                       {resolvedTitle}
                     </h2>
-                    <p className="mt-1 text-sm text-white/50">{collection.title}</p>
+                    <p className="mt-1 text-sm text-gray-500">{collection.title}</p>
                   </div>
 
                   {itemDescription && (
-                    <div className="rounded-xl bg-white/[0.06] px-4 py-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/45">Descrição</p>
-                      <p className="mt-2 text-sm leading-6 text-white/80">{itemDescription}</p>
+                    <div className="rounded-xl bg-gray-100 px-4 py-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-gray-500">Descrição</p>
+                      <p className="mt-2 text-sm leading-6 text-gray-700">{itemDescription}</p>
                     </div>
                   )}
                 </div>}
@@ -1416,7 +1416,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                 {/* Related videos — mobile only (hidden on lg+, shown in sidebar there) */}
                 {!isFullscreen && relatedItems.length > 0 && (
                   <div className="mt-6 px-4 pb-2 lg:hidden">
-                    <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/50">
+                    <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-brand-accent">
                       Próximos vídeos
                     </p>
                     <div className="space-y-2">
@@ -1425,10 +1425,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                           key={item.id}
                           type="button"
                           onClick={() => openRelatedItem(item)}
-                          className="flex w-full items-center gap-3 rounded-2xl border border-white/[0.1] bg-white/[0.04] p-3 text-left transition-colors hover:bg-white/[0.08] active:scale-[0.99]"
+                          className="flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3 text-left transition-colors hover:bg-gray-100 active:scale-[0.99]"
                         >
                           <div
-                            className="relative h-[54px] w-[96px] shrink-0 overflow-hidden rounded-xl bg-white/10"
+                            className="relative h-[54px] w-[96px] shrink-0 overflow-hidden rounded-xl bg-gray-200"
                             style={item.thumbnailUrl ? {
                               backgroundImage: `url(${item.thumbnailUrl})`,
                               backgroundSize: 'cover',
@@ -1440,10 +1440,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                             </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="line-clamp-2 text-[13px] font-bold leading-5 text-white">{item.title}</p>
-                            <p className="mt-0.5 text-[11px] text-white/50">{item.collectionTitle ?? collection.title}</p>
+                            <p className="line-clamp-2 text-[13px] font-bold leading-5 text-gray-900">{item.title}</p>
+                            <p className="mt-0.5 text-[11px] text-gray-500">{item.collectionTitle ?? collection.title}</p>
                           </div>
-                          <Icons.ChevronRight size={16} className="shrink-0 text-white/45" />
+                          <Icons.ChevronRight size={16} className="shrink-0 text-gray-400" />
                         </button>
                       ))}
                     </div>
@@ -1454,7 +1454,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
               {/* ── Right column: related videos — desktop only ── */}
               {!isFullscreen && relatedItems.length > 0 && (
                 <aside className="hidden md:block w-[360px] shrink-0">
-                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-white/50">
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.16em] text-brand-accent">
                     Próximos vídeos
                   </p>
                   <div className="space-y-1">
@@ -1463,10 +1463,10 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                         key={item.id}
                         type="button"
                         onClick={() => openRelatedItem(item)}
-                        className="flex w-full items-start gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-white/[0.07] active:bg-white/[0.04]"
+                        className="flex w-full items-start gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-gray-100 active:bg-gray-200"
                       >
                         <div
-                          className="relative h-[94px] w-[168px] shrink-0 overflow-hidden rounded-lg bg-white/10"
+                          className="relative h-[94px] w-[168px] shrink-0 overflow-hidden rounded-lg bg-gray-200"
                           style={item.thumbnailUrl ? {
                             backgroundImage: `url(${item.thumbnailUrl})`,
                             backgroundSize: 'cover',
@@ -1478,8 +1478,8 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
                           </span>
                         </div>
                         <div className="min-w-0 flex-1 pt-0.5">
-                          <p className="line-clamp-2 text-[13px] font-bold leading-5 text-white">{item.title}</p>
-                          <p className="mt-1 text-[11px] font-medium text-white/50">{item.collectionTitle ?? collection.title}</p>
+                          <p className="line-clamp-2 text-[13px] font-bold leading-5 text-gray-900">{item.title}</p>
+                          <p className="mt-1 text-[11px] font-medium text-gray-500">{item.collectionTitle ?? collection.title}</p>
                         </div>
                       </button>
                     ))}
@@ -1516,7 +1516,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 bg-black flex overflow-hidden"
+      className="fixed inset-0 z-50 flex overflow-hidden bg-gradient-to-br from-brand-primary/40 to-black"
       role="dialog"
       aria-modal="true"
       aria-label="Player de vídeo"
@@ -2125,9 +2125,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
       {/* ── Info sidebar — flex sibling of the video area, NOT overlapping ── */}
       {showDesktopRelated && (
-      <aside className={`hidden lg:flex w-[340px] shrink-0 flex-col overflow-y-auto border-l border-white/10 bg-black/70 backdrop-blur-md`}>
+      <aside className={`hidden lg:flex w-[340px] shrink-0 flex-col overflow-y-auto border-l border-brand-accent/25 bg-brand-primary/50 backdrop-blur-xl`}>
         <div className="border-b border-white/10 px-4 py-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Informações</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-accent">Informações</p>
           <h2 className="mt-1 text-sm font-black text-white">{resolvedTitle}</h2>
         </div>
 
@@ -2140,7 +2140,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
 
         {relatedItems.length > 0 && (
           <div className="px-4 pb-2 pt-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-accent">Próximos vídeos</p>
           </div>
         )}
 
@@ -2181,9 +2181,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       </aside>
       )}{/* end Info sidebar */}
 
-      <section className={`pointer-events-auto absolute left-4 right-4 z-30 rounded-2xl border border-white/15 bg-black/55 p-3 backdrop-blur-md transition-all duration-300 lg:hidden ${isMobileLandscape ? 'opacity-0 pointer-events-none hidden' : showMobileQueue ? 'bottom-4 max-h-[52vh]' : isMobilePortrait ? 'bottom-4 max-h-[112px]' : 'bottom-20 max-h-[72px]'}`} onClick={(event) => event.stopPropagation()}>
+      <section className={`pointer-events-auto absolute left-4 right-4 z-30 rounded-2xl border border-brand-accent/25 bg-brand-primary/50 p-3 backdrop-blur-xl transition-all duration-300 lg:hidden ${isMobileLandscape ? 'opacity-0 pointer-events-none hidden' : showMobileQueue ? 'bottom-4 max-h-[52vh]' : isMobilePortrait ? 'bottom-4 max-h-[112px]' : 'bottom-20 max-h-[72px]'}`} onClick={(event) => event.stopPropagation()}>
         <div className="mb-2 flex items-center justify-between px-0.5">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/65">Próximos vídeos</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand-accent">Próximos vídeos</p>
           <button
             type="button"
             onClick={toggleMobileQueuePanel}
