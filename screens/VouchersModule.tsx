@@ -4,6 +4,7 @@ import { Button } from '../design-system';
 import { Toast } from '../components/Toast';
 import { CriticalConfirmationModal } from '../components/CriticalConfirmationModal';
 import { VouchersOnboardingBanner } from '../components/VouchersOnboardingBanner';
+import { PageHeader } from '../components/PageHeader';
 import { useToast } from '../hooks/useToast';
 import { isAdmin } from '../lib/auth';
 import { getCollectionDisplayCover } from '../lib/collectionPresentation';
@@ -221,8 +222,8 @@ const ModelsListView: React.FC<{
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-xl font-bold text-gray-800">Modelos de Voucher</h1>
+            <div className="flex items-center justify-between gap-3 mb-6">
+                <p className="text-sm text-gray-500">Modelos definem o que cada voucher libera ao ser resgatado.</p>
                 {isAdminUser && (
                     <Button onClick={handleCreateNew}>
                         <Icons.Plus className="w-4 h-4 mr-1" /> Novo modelo
@@ -998,7 +999,7 @@ const BatchesListView: React.FC<{
 
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
-            <h1 className="text-xl font-bold text-gray-800 mb-6">Lotes</h1>
+            <p className="text-sm text-gray-500 mb-5">Cada lote agrupa os códigos emitidos de um modelo.</p>
 
             <div className="flex flex-col sm:flex-row gap-3 mb-5">
                 <div className="relative flex-1">
@@ -1033,25 +1034,46 @@ const BatchesListView: React.FC<{
                 </div>
             ) : (
                 <div className="space-y-2">
-                    {filtered.map(batch => (
-                        <button
-                            key={batch.id}
-                            onClick={() => onSelectBatch(batch.id)}
-                            className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-brand-primary/40 transition-all"
-                        >
-                            <div className="flex items-center justify-between mb-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="font-medium text-gray-800">Lote #{batch.id.substring(0, 8)}</span>
-                                    <StatusBadge label={BATCH_STATUS_LABELS[batch.status] || batch.status} className={BATCH_STATUS_CLASSES[batch.status] || ''} />
+                    {filtered.map(batch => {
+                        const total = batch.quantity || 0;
+                        const redeemed = batch.redeemed_count || 0;
+                        const disabled = batch.disabled_count || 0;
+                        const available = batch.available_count ?? Math.max(0, total - redeemed - disabled);
+                        const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0);
+                        return (
+                            <button
+                                key={batch.id}
+                                onClick={() => onSelectBatch(batch.id)}
+                                className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-brand-primary/40 transition-all"
+                            >
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium text-gray-800">Lote #{batch.id.substring(0, 8)}</span>
+                                        <StatusBadge label={BATCH_STATUS_LABELS[batch.status] || batch.status} className={BATCH_STATUS_CLASSES[batch.status] || ''} />
+                                    </div>
+                                    <span className="text-xs text-gray-400">{new Date(batch.created_at).toLocaleDateString('pt-BR')}</span>
                                 </div>
-                                <span className="text-xs text-gray-400">{new Date(batch.created_at).toLocaleDateString('pt-BR')}</span>
-                            </div>
-                            <p className="text-sm text-gray-500">
-                                {batch.model_snapshot.name} · {batch.quantity} vouchers · {batch.redeemed_count || 0} resgatados
-                                {batch.label && <span className="ml-1 text-gray-400">· {batch.label}</span>}
-                            </p>
-                        </button>
-                    ))}
+                                <p className="text-sm text-gray-500">
+                                    {batch.model_snapshot.name}
+                                    {batch.label && <span className="ml-1 text-gray-400">· {batch.label}</span>}
+                                </p>
+                                {/* Consumo do lote: resgatados | disponíveis | desativados */}
+                                <div className="mt-2.5">
+                                    <div className="flex h-2 w-full overflow-hidden rounded-full bg-gray-100" role="img" aria-label={`${redeemed} resgatados, ${available} disponíveis, ${disabled} desativados de ${total}`}>
+                                        {redeemed > 0 && <div className="bg-emerald-500" style={{ width: `${pct(redeemed)}%` }} />}
+                                        {available > 0 && <div className="bg-brand-primary/30" style={{ width: `${pct(available)}%` }} />}
+                                        {disabled > 0 && <div className="bg-red-300" style={{ width: `${pct(disabled)}%` }} />}
+                                    </div>
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+                                        <span className="font-semibold text-emerald-600">{redeemed} resgatados</span>
+                                        <span className="text-gray-500">{available} disponíveis</span>
+                                        {disabled > 0 && <span className="text-red-500">{disabled} desativados</span>}
+                                        <span className="ml-auto text-gray-400">de {total}</span>
+                                    </div>
+                                </div>
+                            </button>
+                        );
+                    })}
                 </div>
             )}
         </div>
@@ -1435,7 +1457,7 @@ const CodesListView: React.FC = () => {
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
             {toast && <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />}
 
-            <h1 className="text-xl font-bold text-gray-800 mb-6">Códigos</h1>
+            <p className="text-sm text-gray-500 mb-5">Todos os códigos individuais e seu status de resgate.</p>
 
             {hasCodes && (
                 <div className="flex flex-col sm:flex-row gap-3 mb-5">
@@ -1511,7 +1533,7 @@ const CodesListView: React.FC = () => {
                                                 className={VOUCHER_STATUS_CLASSES[v.status] || 'bg-gray-200 text-gray-600'}
                                             />
                                         </td>
-                                        <td className="px-3 py-2 text-gray-400 text-xs">{v.batch_id ? `#${v.batch_id.substring(0, 8)}` : '—'}</td>
+                                        <td className="px-3 py-2 text-gray-600 text-xs font-mono">{v.batch_id ? `#${v.batch_id.substring(0, 8)}` : '—'}</td>
                                         <td className="px-3 py-2 text-gray-700 text-xs">{v.consumed_by_name || '—'}</td>
                                         <td className="px-3 py-2 text-gray-700 text-xs">{v.consumed_by_email || '—'}</td>
                                         <td className="px-3 py-2 text-gray-500 text-xs">{v.consumed_at ? new Date(v.consumed_at).toLocaleString('pt-BR') : '—'}</td>
@@ -1725,7 +1747,7 @@ const AuditListView: React.FC = () => {
 
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
-            <h1 className="text-xl font-bold text-gray-800 mb-6">Auditoria</h1>
+            <p className="text-sm text-gray-500 mb-5">Histórico de emissões e resgates de vouchers.</p>
 
             <div className="flex flex-col sm:flex-row gap-3 mb-5">
                 <select
@@ -1780,7 +1802,7 @@ const AuditListView: React.FC = () => {
                                                 className="bg-gray-100 text-gray-600"
                                             />
                                         </td>
-                                        <td className="px-3 py-2 font-mono text-xs text-gray-400">
+                                        <td className="px-3 py-2 font-mono text-xs text-gray-600">
                                             #{e.entity_id.substring(0, 8)}
                                         </td>
                                         <td className="px-3 py-2 text-xs text-gray-500 max-w-[200px] truncate" title={e.details ? Object.entries(e.details).map(([k, v]) => `${k}: ${v}`).join(', ') : '—'}>
@@ -1881,13 +1903,17 @@ export const VouchersModule: React.FC = () => {
 
     return (
         <div className="flex flex-col h-full">
+            <PageHeader title="Vouchers" />
             {/* Sub-tabs */}
             <div className="flex border-b border-gray-200 bg-white px-4" role="tablist" aria-label="Seções de vouchers">
                 {(['models', 'batches', 'codes', 'audit'] as VoucherSubView[]).map(tab => (
                     <button
                         key={tab}
                         role="tab"
+                        id={`vouchers-tab-${tab}`}
+                        aria-controls="vouchers-tabpanel"
                         aria-selected={subView === tab}
+                        tabIndex={subView === tab ? 0 : -1}
                         onClick={() => { setSubView(tab); setSelectedModelId(null); setSelectedBatchId(null); }}
                         className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors
               ${subView === tab ? 'text-brand-primary border-brand-primary' : 'text-gray-500 border-transparent hover:text-gray-700'}`}
@@ -1898,7 +1924,7 @@ export const VouchersModule: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto" role="tabpanel">
+            <div className="flex-1 overflow-y-auto" role="tabpanel" id="vouchers-tabpanel" aria-labelledby={`vouchers-tab-${subView}`}>
                 {subView === 'models' && (
                     <ModelsListView
                         onCreateNew={() => { setEditingModelId(null); setShowWizard(true); }}

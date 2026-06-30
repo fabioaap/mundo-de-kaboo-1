@@ -436,6 +436,7 @@ export interface VoucherBatch {
   /** Populated by aggregation */
   redeemed_count?: number;
   available_count?: number;
+  disabled_count?: number;
 }
 
 export interface VoucherModelSnapshot {

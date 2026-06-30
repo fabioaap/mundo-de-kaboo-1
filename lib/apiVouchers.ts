@@ -85,12 +85,15 @@ export async function getVoucherBatches(
 
     const redeemedByBatch: Record<string, number> = {};
     const availableByBatch: Record<string, number> = {};
+    const disabledByBatch: Record<string, number> = {};
     for (const row of voucherRows ?? []) {
         if (!row.batch_id) continue;
         if (row.status === 'redeemed') {
             redeemedByBatch[row.batch_id] = (redeemedByBatch[row.batch_id] ?? 0) + 1;
         } else if (row.status === 'active') {
             availableByBatch[row.batch_id] = (availableByBatch[row.batch_id] ?? 0) + 1;
+        } else if (row.status === 'disabled') {
+            disabledByBatch[row.batch_id] = (disabledByBatch[row.batch_id] ?? 0) + 1;
         }
     }
 
@@ -98,6 +101,7 @@ export async function getVoucherBatches(
         ...(b as unknown as VoucherBatch),
         redeemed_count: redeemedByBatch[b.id] ?? 0,
         available_count: availableByBatch[b.id] ?? 0,
+        disabled_count: disabledByBatch[b.id] ?? 0,
     }));
 }
 
@@ -126,7 +130,26 @@ export async function getVoucherCodes(
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data ?? []) as unknown as Voucher[];
+    const vouchers = (data ?? []) as unknown as Voucher[];
+
+    // Hydrate consumer name/email via SECURITY DEFINER RPC (profiles RLS blocks
+    // admins from reading other users' profiles directly — see migration
+    // 20260630000000_voucher_consumers_rpc). Fails open: table still renders.
+    const consumerIds = [...new Set(vouchers.map((v) => v.consumed_by_user_id).filter(Boolean))] as string[];
+    if (consumerIds.length > 0) {
+        const { data: consumers } = await supabase.rpc('get_voucher_consumers', { p_voucher_ids: vouchers.filter((v) => v.consumed_by_user_id).map((v) => v.id) });
+        if (consumers) {
+            const byVoucher = new Map((consumers as { voucher_id: string; consumer_name: string | null; consumer_email: string | null }[]).map((c) => [c.voucher_id, c]));
+            for (const v of vouchers) {
+                const c = byVoucher.get(v.id);
+                if (c) {
+                    v.consumed_by_name = c.consumer_name;
+                    v.consumed_by_email = c.consumer_email;
+                }
+            }
+        }
+    }
+    return vouchers;
 }
 
 export async function getAuditLog(brandId: string): Promise<AuditLogEntry[]> {
