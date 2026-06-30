@@ -63,11 +63,13 @@ flowchart TD
 
 ### A.1 — Abrir o módulo de Vouchers
 
-No painel de **Administração**, abra **Vouchers**. A tela tem 4 abas: **Modelos**, **Lotes**, **Códigos** e **Auditoria**.
+No painel de **Administração**, abra **Vouchers**. O módulo tem um cabeçalho **"Vouchers"** (PageHeader, consistente com o design system) acima de 4 abas: **Modelos**, **Lotes**, **Códigos** e **Auditoria**.
 
 | Módulo de Vouchers (Modelos) |
 |:---:|
 | ![Lista de modelos de voucher](/screenshots/voucher-admin-01-lista.png) |
+
+<!-- TODO(screenshot): recapturar voucher-admin-01-lista.png em 1440×900 mostrando o cabeçalho "Vouchers" (PageHeader) acima das 4 abas. -->
 
 > Um **modelo** define *o que* o voucher libera e por *quanto tempo*. Um **lote** gera os **códigos** a partir de um modelo.
 
@@ -104,16 +106,63 @@ Revise o resumo e clique em **Salvar e ativar** (ou **Salvar rascunho** se ainda
 
 ### A.5 — Emitir lote (gerar os códigos)
 
-Abra o modelo e clique em **Emitir lote**. Informe a **quantidade de vouchers** e uma **finalidade** (nota interna). Ao confirmar, o sistema gera os códigos (formato `KABOO-XXXXXXXX-0001`).
+Abra o modelo e clique em **Emitir lote**. Informe a **quantidade de vouchers** e uma **finalidade** (nota interna). Ao confirmar, o sistema gera os códigos no formato `KABOO-XXXXXXXX-YYYYYYYY`, onde `XXXXXXXX` identifica o lote e `YYYYYYYY` é um **sufixo aleatório** (8 caracteres hex).
+
+> 🔒 **Por que o sufixo é aleatório.** Anteriormente o sufixo era **sequencial** (`-0001`, `-0002`, …), o que permitia *enumeração*: quem conhecesse um código conseguia adivinhar os demais do lote. Desde junho/2026 o sufixo passou a ser aleatório (`gen_random_bytes` → ~4 bilhões de combinações por lote), inviabilizando o ataque. Migration: `supabase/migrations/20260629000000_fix_voucher_sequential_codes.sql`.
 
 | Emitir lote |
 |:---:|
 | ![Emitir lote](/screenshots/voucher-admin-05-emitir-lote.png) |
 
-### A.6 — Códigos e Auditoria
+### A.6 — Aba Lotes: acompanhar o consumo
 
-- **Códigos** — lista todos os códigos gerados, com status (ativo / resgatado / desativado) e busca.
-- **Auditoria** — registra cada ação (criação de modelo, emissão de lote, resgate) para rastreabilidade.
+Na aba **Lotes**, cada lote emitido aparece com uma **barra de consumo segmentada** e um breakdown textual logo abaixo:
+
+> **X resgatados · Y disponíveis · Z desativados · de N**
+
+Isso permite ver **num relance** quantos códigos já foram usados, quantos ainda estão livres e quantos foram desativados — sem precisar abrir a lista de códigos.
+
+| Segmento | Significado |
+|----------|-------------|
+| **Resgatados** | Códigos já consumidos por um usuário |
+| **Disponíveis** | Códigos ativos, ainda não resgatados |
+| **Desativados** | Códigos invalidados (não podem mais ser resgatados) |
+| **de N** | Total de códigos emitidos no lote |
+
+> ℹ️ **Status do lote ≠ estado dos códigos.** O *status* do lote (ex.: "Gerado") descreve a emissão; o **breakdown de consumo** descreve o estado individual dos códigos dentro dele. São informações distintas e complementares.
+
+<!-- TODO(screenshot): capturar novo screenshot da aba Lotes em 1440×900 mostrando a barra de consumo segmentada + breakdown "X resgatados · Y disponíveis · Z desativados · de N". -->
+
+### A.7 — Aba Códigos: quem resgatou cada código
+
+A aba **Códigos** lista todos os códigos gerados em uma tabela com as colunas:
+
+| Coluna | Conteúdo |
+|--------|----------|
+| **Código** | O código do voucher (ex.: `KABOO-XXXXXXXX-A24C3ACE`) |
+| **Status** | ativo / resgatado / desativado |
+| **Lote** | Lote de origem do código |
+| **Consumidor** | Nome de quem resgatou o código |
+| **E-mail** | E-mail de quem resgatou o código |
+| **Resgatado em** | Data/hora do resgate |
+
+As colunas **Consumidor** e **E-mail** mostram **quem resgatou** cada código, fechando o ciclo de rastreabilidade entre o lote emitido e o usuário final.
+
+<!-- TODO(screenshot): capturar novo screenshot da aba Códigos em 1440×900 mostrando as colunas Código, Status, Lote, Consumidor, E-mail, Resgatado em. -->
+
+> 🔒 **Nota técnica/segurança.** Os dados de Consumidor/E-mail vivem em `public.profiles`, cuja RLS (fix DB-01) só permite cada usuário ler o **próprio** perfil — admins **não** leem perfis de terceiros pelo client. Para a tabela de Códigos, esses dados são servidos pela RPC **`get_voucher_consumers`** (`SECURITY DEFINER`), que expõe o mínimo (nome + e-mail) **apenas** para vouchers de marcas que o chamador administra (autorização por `can_manage_brand`). A função **não afrouxa** a RLS de `profiles` — a regra "cada usuário lê só o próprio perfil" continua valendo no acesso direto à tabela.
+>
+> Migration: `supabase/migrations/20260630000000_voucher_consumers_rpc.sql`.
+
+### A.8 — Aba Auditoria: histórico de emissões e resgates
+
+A aba **Auditoria** registra cada ação para rastreabilidade, incluindo:
+
+- **Emissões de lote** (`batch_emitted`) — quando códigos são gerados a partir de um modelo.
+- **Resgates** (`Resgate + grants` / `redeem_grants`) — quando um usuário resgata um código e os `user_content_grants` correspondentes são criados.
+- Também: criação/atualização de modelos, mudanças de status e desativações.
+
+Os registros podem ser filtrados por tipo de entidade (**Modelo**, **Lote**, **Voucher**).
 
 ### Sequência — lado do Admin
 
@@ -262,6 +311,7 @@ flowchart LR
 | `audit_log` | Trilha de auditoria |
 | RPC `emit_voucher_batch` | Gera o lote + códigos |
 | RPC `redeem_voucher(p_code)` | Resgata e cria os grants |
+| RPC `get_voucher_consumers(p_voucher_ids)` | `SECURITY DEFINER`; retorna nome + e-mail de quem resgatou cada voucher, autorizado por `can_manage_brand`. Alimenta as colunas Consumidor/E-mail da aba Códigos sem afrouxar a RLS de `profiles`. |
 
 ### Permissões (RLS + GRANT)
 

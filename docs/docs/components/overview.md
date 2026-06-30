@@ -14,7 +14,8 @@ Todos os componentes estão na pasta `components/`.
 |------------|---------|-----------|
 | [`BottomNav`](./bottom-nav) | `BottomNav.tsx` | Navegação principal (inferior/lateral) |
 | [`CollectionModal`](./collection-modal) | `CollectionModal.tsx` | Modal de detalhes da coleção |
-| [`PageHeader`](./page-header) | `PageHeader.tsx` | Cabeçalho de telas com botão de voltar |
+| [`PageHeader`](./page-header) | `PageHeader.tsx` | Cabeçalho padrão dos módulos admin (voltar opcional) |
+| [Barra de Consumo de Lote](./batch-consumption-bar) | `screens/VouchersModule.tsx` | Barra segmentada de resgatados/disponíveis/desativados |
 | [`FileUpload`](./file-upload) | `FileUpload.tsx` | Upload de arquivo único com preview |
 | [`FlipbookViewer`](./flipbook-viewer) | `flipbook/` | Visualizador de PDF com efeito flipbook |
 | [`Toast`](./toast) | `Toast.tsx` | Notificações temporárias |
