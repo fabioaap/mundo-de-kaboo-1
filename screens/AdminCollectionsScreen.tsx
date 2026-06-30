@@ -398,8 +398,11 @@ const LIBRARY_AREA_LABEL: Record<LibraryAreaKey, string> = {
 
 const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory[]> = {
   books: ['reading'],
-  // Vídeos: animação + contação + acessível + uso guiado + videoaula + formação.
-  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
+  // Vídeos (área avulsa): só tipos de catálogo — animação + contação + videoaula + formação.
+  // Companion (Com Libras = accessible_video, Como Jogar = how_to_play) pertence a uma obra e
+  // é gerenciado DENTRO do kit/livro (seção de vídeo do editor de coleção, FIXED_MEDIA_SLOTS),
+  // não na área avulsa. Espelha COLLECTION_BACKED_HUB_CATEGORIES.videos.
+  videos: ['animation', 'story_video', 'video_lesson', 'formation'],
   // Músicas = só faixas de música. Audiolivro (storytelling) é narração de livro: gerido
   // dentro do editor do Livro, não nesta área. Ver docs/architecture/modelo-conteudo-e-hubs.md.
   music: ['music'],
@@ -440,7 +443,7 @@ const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCat
   books: ['reading'],
   // Deve espelhar LIBRARY_AREA_PRIMARY_SLOTS.videos — senão vídeos criados em
   // categorias ausentes aqui salvam no banco mas somem da lista do hub.
-  videos: ['animation', 'story_video', 'accessible_video', 'how_to_play', 'video_lesson', 'formation'],
+  videos: ['animation', 'story_video', 'video_lesson', 'formation'],
   music: ['music'],
   formations: ['teacher_guide', 'video_lesson'],
   // reading pertence exclusivamente a Livros; Materiais exibe apenas extra_material.
@@ -985,7 +988,21 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       return match ? match[1] : null;
     };
 
-    const flatItems = collections.flatMap((collection) => {
+    // Vídeo que pertence a uma obra (kit, ou livro com PDF) é acompanhamento: gerencia-se
+    // DENTRO da obra (Coleções/Livros), não na aba avulsa de Vídeos. Espelha isHubEligible
+    // da vitrine (lib/api.ts) para admin e vitrine ficarem coerentes — sem conteúdo de obra
+    // aparecendo como vídeo solto.
+    const isCompanionOwned = (collection: Collection): boolean => {
+      if (collection.collection_type === 'kit') return true;
+      if (collection.collection_type === 'book'
+        && (collection.collection_assets ?? []).some((a) => a.category === 'reading')) return true;
+      return false;
+    };
+    const sourceCollections = initialLibraryArea === 'videos'
+      ? collections.filter((collection) => !isCompanionOwned(collection))
+      : collections;
+
+    const flatItems = sourceCollections.flatMap((collection) => {
       const explicitCategories = new Set(
         (collection.collection_assets ?? [])
           .filter((a) => a.url?.trim())
@@ -1695,6 +1712,44 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       }
       return { ...prev, is_published: value };
     });
+  };
+
+  /**
+   * Publish toggle for the library-area editor (Vídeos/Músicas/Materiais).
+   *
+   * is_published is owned by the set_collection_asset_published RPC; the bulk save
+   * (updateCollection) deliberately re-reads it from the DB and ignores the form value
+   * (see api.ts). So `setCollectionPublished` + Salvar "succeeds" but never persists the
+   * flag — the item stays a draft. For an existing item we MUST persist via the RPC here.
+   * New/unsaved items keep the flag in formData until the first save (createCollection).
+   */
+  const handleLibraryAreaPublishToggle = async () => {
+    const primaryCats = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea!];
+    const primaryAsset = formData.collection_assets.find(
+      (a) => primaryCats.includes(a.category) && a.url?.trim(),
+    );
+    if (editingId && primaryAsset) {
+      const next = primaryAsset.is_published === false; // currently draft → publish
+      const ok = next
+        ? await api.publishAsset(editingId, primaryAsset.id)
+        : await api.unpublishAsset(editingId, primaryAsset.id);
+      if (!ok) {
+        showToast('Não foi possível alterar a publicação.', 'error');
+        return;
+      }
+      const nextAssets = formData.collection_assets.map((a) =>
+        primaryCats.includes(a.category) ? { ...a, is_published: next } : a,
+      );
+      const nextForm = { ...buildNextFormFromAssets(formData, nextAssets), is_published: next };
+      setFormData(nextForm);
+      // Publication already persisted via the RPC → rebase the baseline so the
+      // unsaved-changes guard doesn't prompt on close for a change already saved.
+      setOriginalFormData(nextForm);
+      showToast(next ? 'Publicado!' : 'Despublicado.', 'success');
+      loadCollections(true);
+      return;
+    }
+    setCollectionPublished(!formData.is_published);
   };
 
   /**
@@ -4314,7 +4369,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                             </div>
                             <button
                               type="button"
-                              onClick={() => setCollectionPublished(!formData.is_published)}
+                              onClick={handleLibraryAreaPublishToggle}
                               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.is_published ? 'bg-green-500' : 'bg-gray-300'}`}
                             >
                               <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${formData.is_published ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -4534,6 +4589,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       {isLibraryAreaMode && (() => {
                         const librarySlots = FIXED_MEDIA_SLOTS.filter((s) => LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea!].includes(s.category));
                         if (librarySlots.length <= 1) return null;
+                        // Vídeos: seletor de tipo removido — na dinâmica atual a categoria não decide
+                        // mais nada estrutural (hub/companion vêm da estrutura), só seria um rótulo.
+                        // Novo vídeo cai no default (1º slot); editar preserva a categoria existente.
+                        if (initialLibraryArea === 'videos') return null;
                         // When editing an existing item, detect the category from the existing asset;
                         // when creating new or after an explicit user choice, use selectedLibrarySlot.
                         const existingCategory = librarySlots.find((s) => !!getAssetByCategory(s.category)?.url)?.category;
@@ -4594,14 +4653,12 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       {(isLibraryAreaMode
                         ? FIXED_MEDIA_SLOTS.filter((s) => {
                             const slots = LIBRARY_AREA_PRIMARY_SLOTS[initialLibraryArea!];
+                            // Áreas de slot único (Músicas, Materiais): renderiza o card (upload do arquivo).
                             if (slots.length <= 1) return slots.includes(s.category);
-                            // Multi-slot: show URL input for the active category only (the dropdown above picks it)
-                            const existingCat = (slots as string[]).find((cat) =>
-                              formData.collection_assets.some((a) => a.category === cat && a.url?.trim())
-                            ) as FixedMediaSlotCategory | undefined;
-                            const activeCat: FixedMediaSlotCategory =
-                              selectedLibrarySlot ?? existingCat ?? (slots[0] as FixedMediaSlotCategory);
-                            return s.category === activeCat;
+                            // Vídeos (único multi-slot): card suprimido — era redundante. O campo
+                            // "Link do YouTube" no topo + o seletor "Tipo de mídia" já capturam URL
+                            // e categoria; o card só repetia ambos.
+                            return false;
                           })
                         : isBooksCatalogMode
                           ? FIXED_MEDIA_SLOTS.filter((s) => s.category === 'reading')
