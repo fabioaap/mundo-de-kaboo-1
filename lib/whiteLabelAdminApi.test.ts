@@ -105,6 +105,42 @@ describe('assertSafeWebhookUrl (SSRF guard — BE-03 / #59)', () => {
         expect(() => assertSafeWebhookUrl('https://[::ffff:127.0.0.1]/hook')).toThrow(/webhook_url_invalid/);
         expect(() => assertSafeWebhookUrl('https://[::ffff:169.254.169.254]/hook')).toThrow(/webhook_url_invalid/);
     });
+
+    // new URL() normaliza decimal/hex/octal para dotted-quad antes do hostname
+    // chegar no regex de IPv4 — confirmado empiricamente no ambiente node do vitest.
+    it('rejects decimal, hex, and octal loopback encodings (WHATWG URL normalizes to dotted-quad)', async () => {
+        const { assertSafeWebhookUrl } = await import('./whiteLabelAdminApi');
+        expect(() => assertSafeWebhookUrl('https://2130706433/hook')).toThrow(/webhook_url_invalid/);
+        expect(() => assertSafeWebhookUrl('https://0x7f000001/hook')).toThrow(/webhook_url_invalid/);
+        expect(() => assertSafeWebhookUrl('https://017700000001/hook')).toThrow(/webhook_url_invalid/);
+    });
+
+    it('rejects localhost by name, case-insensitively', async () => {
+        const { assertSafeWebhookUrl } = await import('./whiteLabelAdminApi');
+        expect(() => assertSafeWebhookUrl('https://localhost/hook')).toThrow(/webhook_url_invalid/);
+        expect(() => assertSafeWebhookUrl('https://LOCALHOST/hook')).toThrow(/webhook_url_invalid/);
+    });
+
+    // new URL() rejeita zone ids como inválidos (malformed), então isso já
+    // é bloqueado pelo catch — não chega a exercitar o regex de link-local.
+    it('rejects IPv6 link-local with a zone id (URL parser treats it as malformed)', async () => {
+        const { assertSafeWebhookUrl } = await import('./whiteLabelAdminApi');
+        expect(() => assertSafeWebhookUrl('https://[fe80::1%eth0]/hook')).toThrow(/webhook_url_invalid/);
+        expect(() => assertSafeWebhookUrl('https://[fe80::1%25eth0]/hook')).toThrow(/webhook_url_invalid/);
+    });
+
+    it('rejects loopback hostname with a trailing dot', async () => {
+        const { assertSafeWebhookUrl } = await import('./whiteLabelAdminApi');
+        expect(() => assertSafeWebhookUrl('https://127.0.0.1./hook')).toThrow(/webhook_url_invalid/);
+    });
+
+    it('rejects IPv4-mapped IPv6 for private ranges other than 127.0.0.1/169.254.169.254', async () => {
+        const { assertSafeWebhookUrl } = await import('./whiteLabelAdminApi');
+        expect(() => assertSafeWebhookUrl('https://[::ffff:10.0.0.1]/hook')).toThrow(/webhook_url_invalid/);
+        expect(() => assertSafeWebhookUrl('https://[::ffff:192.168.1.1]/hook')).toThrow(/webhook_url_invalid/);
+        expect(() => assertSafeWebhookUrl('https://[::ffff:a00:1]/hook')).toThrow(/webhook_url_invalid/);
+        expect(() => assertSafeWebhookUrl('https://[::ffff:c0a8:101]/hook')).toThrow(/webhook_url_invalid/);
+    });
 });
 
 // BE-05 (#59): caminho remoto (Supabase) — a coluna de cor não pode receber
