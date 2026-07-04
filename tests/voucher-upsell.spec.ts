@@ -106,9 +106,11 @@ test.describe('Voucher upsell gate — VIEWER with partial grants', () => {
         await expect(lockedCardTitleC).toBeVisible({ timeout: 15_000 });
         await lockedCardTitleC.click();
 
-        // The modal reopens — must be scoped to C, not stale content from B.
+        // The modal reopens for C — proving state was reset on dismiss rather than the
+        // component silently no-oping because it thinks this collection was "already
+        // handled". The modal's own content is generic (no collection title rendered
+        // inside it), so there's no per-collection DOM content to assert against here.
         await expect(upsellDialog).toBeVisible({ timeout: 10_000 });
-        await expect(page.getByText(UPSELL_HEADING, { exact: true })).toBeVisible();
-        await expect(page.getByText(COLLECTION_B.title, { exact: true })).toHaveCount(0);
+        await expect(upsellDialog.getByText(UPSELL_HEADING, { exact: true })).toBeVisible();
     });
 });
