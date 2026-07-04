@@ -27,6 +27,20 @@ export function extractBucketPath(fileUrl: string): string | null {
   }
 }
 
+// signCollectionsCovers (lib/api.ts) re-signs every collection's URLs on every
+// getCollections() call, including collections-cache hits (60s TTL there covers
+// the raw data, not the signing step) — without this cache, opening a screen
+// that calls getCollections() again (e.g. DetailsScreen resolving kit-linked
+// books) re-signs the entire catalog from scratch, causing a visible multi-
+// second delay for content that was already signed moments earlier. The actual
+// signed URL is valid for SIGNED_URL_EXPIRES_IN (7 days); caching it for 1 hour
+// is a wide safety margin while eliminating redundant network round-trips
+// within a session. Keyed by bucket:path; also dedupes concurrent in-flight
+// requests for the same object (e.g. parallel Promise.all over many assets).
+const SIGNED_URL_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+const signedUrlInFlight = new Map<string, Promise<string | null>>();
+
 /**
  * Generate a signed URL for a private-bucket object.
  *
@@ -51,16 +65,35 @@ export async function getSignedUrl(
     if (!objectPath) return null;
   }
 
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(objectPath, expiresIn);
-
-  if (error || !data?.signedUrl) {
-    logger.warn('[storage] createSignedUrl failed for', objectPath, error?.message);
-    return null;
+  const cacheKey = `${bucket}:${objectPath}`;
+  const cached = signedUrlCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.url;
   }
 
-  return data.signedUrl;
+  const inFlight = signedUrlInFlight.get(cacheKey);
+  if (inFlight) return inFlight;
+
+  const request = (async () => {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(objectPath!, expiresIn);
+
+    if (error || !data?.signedUrl) {
+      logger.warn('[storage] createSignedUrl failed for', objectPath, error?.message);
+      return null;
+    }
+
+    signedUrlCache.set(cacheKey, { url: data.signedUrl, expiresAt: Date.now() + SIGNED_URL_CACHE_TTL_MS });
+    return data.signedUrl;
+  })();
+
+  signedUrlInFlight.set(cacheKey, request);
+  try {
+    return await request;
+  } finally {
+    signedUrlInFlight.delete(cacheKey);
+  }
 }
 
 export interface UploadResult {
