@@ -13,6 +13,22 @@
 -- media_shelves has no brand column at all — add one (empty table, no backfill).
 ALTER TABLE public.media_shelves ADD COLUMN IF NOT EXISTS brand_id uuid REFERENCES public.brands(id);
 
+-- Issue #61 fix (2026-07-04): "empty table, no backfill" era verdade na ordem real
+-- de aplicação em prod, mas num rebuild limpo por timestamp de arquivo o seed
+-- (20260607120000, anterior a este) já insere 12 shelves sem brand_id antes daqui
+-- — e 20260620300020 trava NOT NULL nessa coluna mais adiante. Backfill pro brand
+-- kaboo (conteúdo demo, usado só em local/CI) fecha o gap. Sem efeito em prod: lá
+-- essas linhas já têm brand_id real, o WHERE brand_id IS NULL não encontra nada.
+UPDATE public.media_shelves
+SET brand_id = (SELECT id FROM public.brands WHERE slug = 'kaboo')
+WHERE brand_id IS NULL
+  AND id IN (
+    'b1000001-0001-4001-b001-000000000001', 'b1000001-0001-4001-b001-000000000002', 'b1000001-0001-4001-b001-000000000003',
+    'b1000002-0001-4001-b001-000000000001', 'b1000002-0001-4001-b001-000000000002', 'b1000002-0001-4001-b001-000000000003',
+    'b1000003-0001-4001-b001-000000000001', 'b1000003-0001-4001-b001-000000000002', 'b1000003-0001-4001-b001-000000000003',
+    'b1000004-0001-4001-b001-000000000001', 'b1000004-0001-4001-b001-000000000002', 'b1000004-0001-4001-b001-000000000003'
+  );
+
 -- 1) collection_resources: read scoped by the parent collection's brand.
 DROP POLICY IF EXISTS "Autenticados lêem recursos" ON public.collection_resources;
 CREATE POLICY "Usuarios leem recursos da sua marca" ON public.collection_resources
