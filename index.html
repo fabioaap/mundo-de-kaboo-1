@@ -18,11 +18,20 @@
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: blob: https://*.supabase.co https://img.youtube.com https://i.ytimg.com;
     media-src 'self' blob: https://*.supabase.co;
-    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://mcp.figma.com;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://mcp.figma.com https://www.youtube.com;
     frame-src https://www.youtube.com;
     object-src 'none';
     base-uri 'self';
   " />
+  <!-- Achado de review (2026-07-04): o webhook de alerting white-label
+       (lib/whiteLabelAdminApi.ts) faz fetch() do browser pra host ARBITRÁRIO
+       configurado pelo admin (Slack/n8n/etc.) — a CSP acima vai bloquear
+       qualquer host fora de connect-src, então esse recurso especificamente
+       degrada (some sem aviso) sob esta CSP. Não dá pra resolver só com
+       allowlist (o host é escolhido pelo admin, não fixo) — fica documentado
+       como limitação conhecida até decidir uma abordagem (relay via edge
+       function, ou aceitar a degradação). -->
+
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Mundo de Kaboo</title>
 
