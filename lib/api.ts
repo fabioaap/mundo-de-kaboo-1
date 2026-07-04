@@ -1931,6 +1931,29 @@ export const api = {
       });
 
       if (signUpError) {
+        // Match tolerante (não string exata): a checagem depende da wording do GoTrue
+        // (achado de review, 2026-07-04) — um upgrade que reescreva a mensagem faria este
+        // guard silenciosamente parar de ativar, sem quebrar teste nem typecheck.
+        if (/already registered/i.test(signUpError.message)) {
+          // Anti-enumeração (issue #59 / C5): sem isso, um atacante com QUALQUER voucher
+          // válido (a validação de voucher roda antes, e não é consumida aqui — só em
+          // redeemVoucher, mais abaixo) conseguiria sondar e-mails arbitrários e descobrir
+          // quais já têm conta, sem limite, sem gastar o voucher. Retorna exatamente a
+          // mesma resposta de um cadastro novo bem-sucedido (pendente de confirmação),
+          // pra tornar as duas respostas indistinguíveis do lado do cliente. O dono real
+          // da conta não é notificado por e-mail aqui de propósito — o endpoint de reset
+          // de senha deste projeto tem seu próprio vazamento de enumeração (confirmado ao
+          // vivo em 2026-07-04), então não é usado como mecanismo de aviso. Risco residual
+          // aceito (review): timing entre os dois ramos é comparável no fluxo real
+          // (confirmação de e-mail ligada) — ambos retornam logo após o signUp().
+          return {
+            success: true,
+            requiresLogin: true,
+            requiresEmailConfirmation: true,
+            email: input.email,
+            message: 'Conta criada. Confirme seu e-mail para concluir o cadastro e depois faça login para ativar seu codigo de acesso.'
+          };
+        }
         logger.error('Error signing up with voucher:', signUpError);
         return { success: false, error: signUpError.message };
       }
