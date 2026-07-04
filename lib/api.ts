@@ -285,7 +285,7 @@ const hydrateCollectionsPresentationFields = (collections: Collection[], charact
 // (they do not drop or rewrite them), so signed values survive re-hydration on a
 // cache round-trip. Hence: hydrate first, sign last.
 const signCoverField = async (value?: string | null): Promise<string | null | undefined> => {
-  if (!value) return value;
+  if (!value || !isSupabaseConfigured || devMockSession) return value;
   const signed = await getSignedUrl(value);
   return signed ?? value;
 };
