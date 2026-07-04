@@ -2,11 +2,18 @@
  * Kaboo Offline Service Worker
  *
  * Intercepts requests for cached media files (audio, video, PDF)
- * and serves them from kaboo-offline-v1 when offline.
+ * and serves them from the brand-scoped offline cache when offline.
  * Falls back to network for everything else.
  */
 
-const CACHE_NAME = 'kaboo-offline-v1';
+// Brand-scoped cache name. The registering page (index.tsx) passes the active brand as a
+// `?brand=` query param on the SW URL because this static file can't read the app's runtime
+// brand state. Must match getOfflineCacheName() in lib/offline.ts: 'kaboo' → no suffix,
+// any other brand → '-<slug>'. Keeps the dev/test GitHub Pages deploy (all brands on one
+// origin) from mixing one brand's offline media into another's cache.
+const CACHE_BASE = 'kaboo-offline-v1';
+const BRAND_SLUG = new URL(self.location.href).searchParams.get('brand') || 'kaboo';
+const CACHE_NAME = BRAND_SLUG === 'kaboo' ? CACHE_BASE : `${CACHE_BASE}-${BRAND_SLUG}`;
 
 // Only intercept Supabase storage requests (where media is hosted)
 const MEDIA_ORIGIN = 'supabase.co';
