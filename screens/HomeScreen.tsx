@@ -1246,10 +1246,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const handleCollectionClick = (collection: Collection) => {
     // O acesso por material é validado no gate central (App.navigate): coleções fora do
     // voucher abrem o modal de upsell (degustação) em vez dos detalhes. Sempre navegamos.
-    if (currentCollectionGroup === 'books' && isStandaloneReadableBook(collection)) {
-      onNavigate('player_book', { collectionId: collection.id });
-      return;
-    }
     onNavigate(screenName, { ...baseHomeParams, collectionId: collection.id });
   };
 
