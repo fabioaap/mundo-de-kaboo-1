@@ -41,7 +41,12 @@ const resolveSwBrandSlug = (): string =>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     const swUrl = `/sw.js?brand=${encodeURIComponent(resolveSwBrandSlug())}`;
-    navigator.serviceWorker.register(swUrl, { scope: '/' }).catch((err) => {
+    // updateViaCache: 'none' forces the browser to always fetch sw.js from the network for
+    // the update byte-compare, instead of the default ('imports') which lets a static host's
+    // HTTP cache (e.g. GitHub Pages, no custom cache-control) serve stale sw.js bytes to the
+    // comparison — making a real content change look like "no update" to an already-controlled
+    // tab, surviving even a hard refresh (which doesn't force-refetch the SW's own script).
+    navigator.serviceWorker.register(swUrl, { scope: '/', updateViaCache: 'none' }).catch((err) => {
       console.warn('Service Worker registration failed:', err);
     });
   });

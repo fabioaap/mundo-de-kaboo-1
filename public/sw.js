@@ -24,8 +24,18 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  // Take control of all clients immediately
-  event.waitUntil(clients.claim());
+  // Drop caches from a previous brand/version (e.g. the pre-brand-scoping 'kaboo-offline-v1'
+  // left behind by an older SW instance) so stale offline media never leaks across brands or
+  // piles up unbounded across dev/test's shared-origin GitHub Pages deploy.
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((key) => key.startsWith(CACHE_BASE) && key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
+    ).then(() => clients.claim())
+  );
 });
 
 self.addEventListener('fetch', (event) => {
