@@ -96,6 +96,15 @@ describe('assertSafeWebhookUrl (SSRF guard — BE-03 / #59)', () => {
         expect(() => assertSafeWebhookUrl('https://8.8.8.8/hook')).not.toThrow();
         expect(() => assertSafeWebhookUrl('https://172.32.0.1/hook')).not.toThrow();
     });
+
+    // Achado de review (2026-07-04): rotas de IPv6 que bypassavam a checagem original.
+    it('rejects IPv6 ULA, link-local, and IPv4-mapped internal addresses', async () => {
+        const { assertSafeWebhookUrl } = await import('./whiteLabelAdminApi');
+        expect(() => assertSafeWebhookUrl('https://[fd00::1]/hook')).toThrow(/webhook_url_invalid/);
+        expect(() => assertSafeWebhookUrl('https://[fe80::1]/hook')).toThrow(/webhook_url_invalid/);
+        expect(() => assertSafeWebhookUrl('https://[::ffff:127.0.0.1]/hook')).toThrow(/webhook_url_invalid/);
+        expect(() => assertSafeWebhookUrl('https://[::ffff:169.254.169.254]/hook')).toThrow(/webhook_url_invalid/);
+    });
 });
 
 // BE-05 (#59): caminho remoto (Supabase) — a coluna de cor não pode receber

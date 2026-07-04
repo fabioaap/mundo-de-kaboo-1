@@ -49,7 +49,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
   const containerRef = useModalA11y<HTMLDivElement>({ isOpen, onClose });
 
   // Reset state and manage body scroll when modal opens/closes
-  // NOTE: onClose intentionally excluded from deps — use onCloseRef instead
+  // NOTE: onClose intentionally excluded from deps (see dependency array below)
   useEffect(() => {
     let isCancelled = false;
 

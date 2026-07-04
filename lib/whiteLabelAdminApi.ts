@@ -294,8 +294,9 @@ export function assertSafeWebhookUrl(rawUrl: string): void {
     }
 
     // IPv4 literal → check loopback / private / link-local / 0.0.0.0
-    const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-    if (ipv4) {
+    const checkIPv4 = (ipv4Text: string): void => {
+        const ipv4 = ipv4Text.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+        if (!ipv4) return;
         const octets = ipv4.slice(1, 5).map((part) => Number(part));
         if (octets.some((o) => o > 255)) {
             throw new Error('webhook_url_invalid: IP inválido');
@@ -310,6 +311,31 @@ export function assertSafeWebhookUrl(rawUrl: string): void {
         if (isLoopback || isPrivate10 || isPrivate172 || isPrivate192 || isLinkLocal || isUnspecified) {
             throw new Error('webhook_url_invalid: endereço IP interno/privado não permitido');
         }
+    };
+    checkIPv4(host);
+
+    // IPv6: ULA (fc00::/7), link-local (fe80::/10), e o form IPv4-mapped
+    // (::ffff:a.b.c.d) — que reescreve a checagem de IPv4 acima em hex e
+    // passaria batido sem isto (achado de review, 2026-07-04).
+    const isIpv6Ula = /^f[cd][0-9a-f]{0,2}:/.test(host);
+    const isIpv6LinkLocal = /^fe[89ab][0-9a-f]:/.test(host);
+    if (isIpv6Ula || isIpv6LinkLocal) {
+        throw new Error('webhook_url_invalid: endereço IPv6 interno/privado não permitido');
+    }
+    // Forma dotted-quad (::ffff:127.0.0.1) OU a forma hex que o WHATWG URL parser
+    // realmente produz em hostname (::ffff:7f00:1 / ::ffff:a9fe:a9fe) — sem isto o
+    // check ficaria inócuo, já que new URL() sempre normaliza pra hex.
+    const ipv4MappedDotted = host.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+    if (ipv4MappedDotted) {
+        checkIPv4(ipv4MappedDotted[1]);
+        return;
+    }
+    const ipv4MappedHex = host.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (ipv4MappedHex) {
+        const g1 = parseInt(ipv4MappedHex[1], 16);
+        const g2 = parseInt(ipv4MappedHex[2], 16);
+        const octets = [(g1 >> 8) & 0xff, g1 & 0xff, (g2 >> 8) & 0xff, g2 & 0xff];
+        checkIPv4(octets.join('.'));
     }
 }
 
