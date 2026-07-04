@@ -606,5 +606,5 @@ FROM (VALUES
 ('d1000004-0001-4001-d001-000000000007', 'a1000004-0001-4001-a001-000000000007', '410acf81-6d7d-4569-85e4-02ed2fb28762', 'primary_source', 0, NOW())   -- Onde está Gaio guia
 
 ) AS v(id, media_item_id, collection_id, link_type, order_index, created_at)
-WHERE EXISTS (SELECT 1 FROM collections c WHERE c.id = v.collection_id)
+WHERE EXISTS (SELECT 1 FROM collections c WHERE c.id = v.collection_id::uuid)
 ON CONFLICT DO NOTHING;
