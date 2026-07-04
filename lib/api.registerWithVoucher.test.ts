@@ -97,5 +97,28 @@ describe('registerWithVoucher anti-enumeration (remote path, #59/C5)', () => {
         });
 
         expect(alreadyRegisteredResult).toEqual(newSignupResult);
+
+        expect(Object.keys(alreadyRegisteredResult).sort()).toEqual(Object.keys(newSignupResult).sort());
+    });
+
+    // A checagem atual usa só /already registered/i.test(message). GoTrue expõe também
+    // um .code estável ('user_already_exists') que não depende da wording da mensagem
+    // (pode variar por versão/locale). Se a mensagem real do servidor não contiver essa
+    // substring exata, o guard cai no ramo genérico e reabre o vazamento de enumeração.
+    it('still returns the pending-confirmation shape when only .code identifies the duplicate (message wording differs)', async () => {
+        const result = await registerWith({
+            data: { user: null, session: null },
+            error: {
+                message: 'A user with this email address has already been registered',
+                code: 'user_already_exists',
+                status: 422,
+            },
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.requiresEmailConfirmation).toBe(true);
+        expect(result.requiresLogin).toBe(true);
+        expect(result.error).toBeUndefined();
+        expect(result.message).toMatch(/Confirme seu e-mail/i);
     });
 });

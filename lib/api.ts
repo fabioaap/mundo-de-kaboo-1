@@ -1931,10 +1931,10 @@ export const api = {
       });
 
       if (signUpError) {
-        // Match tolerante (não string exata): a checagem depende da wording do GoTrue
-        // (achado de review, 2026-07-04) — um upgrade que reescreva a mensagem faria este
-        // guard silenciosamente parar de ativar, sem quebrar teste nem typecheck.
-        if (/already registered/i.test(signUpError.message)) {
+        // Checa .code (estável entre versões/locales do GoTrue) e o texto da mensagem
+        // (fallback tolerante) — cobre tanto wording futura quanto respostas antigas
+        // sem .code populado.
+        if (/already registered/i.test(signUpError.message) || signUpError.code === 'user_already_exists') {
           // Anti-enumeração (issue #59 / C5): sem isso, um atacante com QUALQUER voucher
           // válido (a validação de voucher roda antes, e não é consumida aqui — só em
           // redeemVoucher, mais abaixo) conseguiria sondar e-mails arbitrários e descobrir
