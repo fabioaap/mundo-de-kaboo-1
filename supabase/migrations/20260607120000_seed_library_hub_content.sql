@@ -572,7 +572,9 @@ SELECT v.id, v.media_item_id, v.collection_id, v.link_type, v.order_index, v.cre
 FROM (VALUES
 
 -- VIDEOS
-('d1000001-0001-4001-d001-000000000001', 'a1000001-0001-4001-a001-000000000001', '33efdbb5-abed-4037-9eed-bb7017d19f7a', 'primary_source', 0, NOW()),  -- Gaio Vento video
+-- Primeira linha castada explicitamente: fixa o tipo de cada coluna do VALUES
+-- (uuid/uuid/uuid/media_link_type/integer/timestamptz) pras demais 25 linhas.
+('d1000001-0001-4001-d001-000000000001'::uuid, 'a1000001-0001-4001-a001-000000000001'::uuid, '33efdbb5-abed-4037-9eed-bb7017d19f7a'::uuid, 'primary_source'::media_link_type, 0::integer, NOW()::timestamptz),  -- Gaio Vento video
 ('d1000001-0001-4001-d001-000000000002', 'a1000001-0001-4001-a001-000000000002', 'c9da6ab9-4eeb-4b23-a090-3e510139dedf', 'primary_source', 0, NOW()),  -- Carta animado
 ('d1000001-0001-4001-d001-000000000003', 'a1000001-0001-4001-a001-000000000003', 'c9da6ab9-4eeb-4b23-a090-3e510139dedf', 'primary_source', 0, NOW()),  -- Carta Libras
 ('d1000001-0001-4001-d001-000000000004', 'a1000001-0001-4001-a001-000000000004', 'c9da6ab9-4eeb-4b23-a090-3e510139dedf', 'primary_source', 0, NOW()),  -- Como jogar
@@ -605,6 +607,6 @@ FROM (VALUES
 ('d1000004-0001-4001-d001-000000000006', 'a1000004-0001-4001-a001-000000000006', 'a9e199ea-5e72-4665-a3d4-cce969f4f958', 'primary_source', 0, NOW()),  -- Desafio Cores guia
 ('d1000004-0001-4001-d001-000000000007', 'a1000004-0001-4001-a001-000000000007', '410acf81-6d7d-4569-85e4-02ed2fb28762', 'primary_source', 0, NOW())   -- Onde está Gaio guia
 
-) AS v(id uuid, media_item_id uuid, collection_id uuid, link_type media_link_type, order_index integer, created_at timestamptz)
+) AS v(id, media_item_id, collection_id, link_type, order_index, created_at)
 WHERE EXISTS (SELECT 1 FROM collections c WHERE c.id = v.collection_id)
 ON CONFLICT DO NOTHING;
