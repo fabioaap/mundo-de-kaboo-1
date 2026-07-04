@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icons } from './Icons';
 import { Collection, ScreenName } from '../types';
 import { DetailsScreen } from '../screens/DetailsScreen';
 import { ModalSkeleton } from './ModalSkeleton';
 import { api } from '../lib/api';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 // Holds the full drill-down stack at the moment a player is launched, so returning
 // from the player rebuilds the exact levels synchronously — no async refetch and no
@@ -44,13 +45,11 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
       onClose();
     }
   };
-  // Keep a stable ref to onClose so the escape handler always calls the latest version
-  // without causing Effect 1 to re-run (and reset state) on every parent render
-  const onCloseRef = useRef(onClose);
-  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  // Escape-to-close + Tab focus trap + initial focus, attached to the modal container.
+  const containerRef = useModalA11y<HTMLDivElement>({ isOpen, onClose });
 
   // Reset state and manage body scroll when modal opens/closes
-  // NOTE: onClose intentionally excluded from deps — use onCloseRef instead
+  // NOTE: onClose intentionally excluded from deps (see dependency array below)
   useEffect(() => {
     let isCancelled = false;
 
@@ -129,14 +128,7 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
   }, [isOpen, collection?.id, initialStackIds?.join('|')]);
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onCloseRef.current();
-      }
-    };
-
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
       // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
       // Reset states when modal opens
@@ -145,7 +137,6 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
@@ -193,7 +184,12 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
+      ref={containerRef}
+      tabIndex={-1}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Detalhes da coleção"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 outline-none"
       onClick={(e) => {
         // Close when clicking backdrop
         if (e.target === e.currentTarget) {

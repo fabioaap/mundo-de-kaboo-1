@@ -1,5 +1,7 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { deleteFile, getSignedUrl } from './storage';
+import { getOfflineStorageKey, getOfflineCacheName } from './offline';
+import { setActiveBrandSlug } from './activeBrand';
 import catalogSeed from '../data/catalog.seed.json';
 import { LIBRARY_HUB_MOCKS, LibraryHubKind, LibraryMockItem } from '../data/library-hubs';
 import {
@@ -104,6 +106,9 @@ const normalizeBrandId = (value?: string | null): string | null => {
 export const setActiveBrandForApi = (slug: string, brandId?: string | null): void => {
   _activeBrandSlugForApi = slug;
   _activeBrandIdForApi = normalizeBrandId(brandId);
+  // Mirror into the dependency-free holder so light modules (offline.ts) can scope
+  // their storage keys per brand without importing this module's heavy dep chain.
+  setActiveBrandSlug(slug);
 
   if (_activeBrandIdForApi && !_activeBrandIdForApi.startsWith('mock-')) {
     brandIdCacheBySlug.set(slug, _activeBrandIdForApi);
@@ -114,6 +119,11 @@ const getCollectionsCacheKey = (): string =>
   _activeBrandSlugForApi === 'kaboo'
     ? COLLECTIONS_CACHE_KEY
     : `${COLLECTIONS_CACHE_KEY}_${_activeBrandSlugForApi}`;
+
+const getProfileCacheKey = (): string =>
+  _activeBrandSlugForApi === 'kaboo'
+    ? PROFILE_CACHE_KEY
+    : `${PROFILE_CACHE_KEY}_${_activeBrandSlugForApi}`;
 
 const getActiveBrandScopeCacheKey = (): string => _activeBrandSlugForApi;
 
@@ -1427,7 +1437,7 @@ export const clearCollectionsCache = (): void => {
 // Clear profile cache
 export const clearProfileCache = (): void => {
   if (typeof window !== 'undefined') {
-    sessionStorage.removeItem(PROFILE_CACHE_KEY);
+    sessionStorage.removeItem(getProfileCacheKey());
   }
 };
 
@@ -1436,16 +1446,16 @@ export const clearProfileCache = (): void => {
 export const clearAllUserCache = (): void => {
   if (typeof window !== 'undefined') {
     // Clear sessionStorage caches
-    sessionStorage.removeItem(PROFILE_CACHE_KEY);
+    sessionStorage.removeItem(getProfileCacheKey());
     sessionStorage.removeItem(getCollectionsCacheKey());
     sessionStorage.removeItem(SESSION_KEY);
 
-    // Clear offline collections list (user-specific)
-    localStorage.removeItem('offline_collections');
+    // Clear offline collections list (user-specific, scoped to the active brand)
+    localStorage.removeItem(getOfflineStorageKey());
 
-    // Clear Cache API (offline assets)
+    // Clear Cache API (offline assets) for the active brand
     if ('caches' in window) {
-      caches.delete('kaboo-offline-v1').catch(err => {
+      caches.delete(getOfflineCacheName()).catch(err => {
         logger.error('Error clearing offline cache:', err);
       });
     }
@@ -1500,7 +1510,7 @@ const getCachedProfile = async (): Promise<UserProfile | null> => {
   if (typeof window === 'undefined') return null;
 
   try {
-    const cached = sessionStorage.getItem(PROFILE_CACHE_KEY);
+    const cached = sessionStorage.getItem(getProfileCacheKey());
     if (!cached) return null;
 
     const parsed = JSON.parse(cached);
@@ -1508,14 +1518,14 @@ const getCachedProfile = async (): Promise<UserProfile | null> => {
     // Verify it's from the current session
     if (parsed.sessionId !== getSessionId()) {
       // If session changed, clear old cache
-      sessionStorage.removeItem(PROFILE_CACHE_KEY);
+      sessionStorage.removeItem(getProfileCacheKey());
       return null;
     }
 
     if (!isSupabaseConfigured) {
       const currentMockUserId = getMockCurrentUserId();
       if (!currentMockUserId || parsed.userId !== currentMockUserId) {
-        sessionStorage.removeItem(PROFILE_CACHE_KEY);
+        sessionStorage.removeItem(getProfileCacheKey());
         return null;
       }
       return parsed.profile;
@@ -1525,7 +1535,7 @@ const getCachedProfile = async (): Promise<UserProfile | null> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || parsed.userId !== user.id) {
       // User ID doesn't match - clear cache
-      sessionStorage.removeItem(PROFILE_CACHE_KEY);
+      sessionStorage.removeItem(getProfileCacheKey());
       return null;
     }
 
@@ -1543,7 +1553,7 @@ export const getCachedProfileSync = (): UserProfile | null => {
   if (typeof window === 'undefined') return null;
 
   try {
-    const cached = sessionStorage.getItem(PROFILE_CACHE_KEY);
+    const cached = sessionStorage.getItem(getProfileCacheKey());
     if (!cached) return null;
 
     const parsed = JSON.parse(cached);
@@ -1552,14 +1562,14 @@ export const getCachedProfileSync = (): UserProfile | null => {
       if (!isSupabaseConfigured) {
         const currentMockUserId = getMockCurrentUserId();
         if (!currentMockUserId || parsed.userId !== currentMockUserId) {
-          sessionStorage.removeItem(PROFILE_CACHE_KEY);
+          sessionStorage.removeItem(getProfileCacheKey());
           return null;
         }
       }
       return parsed.profile;
     }
     // If session changed, clear old cache
-    sessionStorage.removeItem(PROFILE_CACHE_KEY);
+    sessionStorage.removeItem(getProfileCacheKey());
     return null;
   } catch (error) {
     logger.error('Error reading profile cache:', error);
@@ -1586,7 +1596,7 @@ const saveProfileCache = async (profile: UserProfile): Promise<void> => {
       sessionId: getSessionId(),
       timestamp: Date.now()
     };
-    sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(cacheData));
+    sessionStorage.setItem(getProfileCacheKey(), JSON.stringify(cacheData));
   } catch (error) {
     logger.error('Error saving profile cache:', error);
   }

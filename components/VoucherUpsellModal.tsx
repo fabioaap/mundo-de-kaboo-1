@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icons } from './Icons';
 import { Button } from '../design-system';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface VoucherUpsellModalProps {
     /** URL da loja para onde o CTA de compra direciona. */
@@ -14,6 +15,8 @@ interface VoucherUpsellModalProps {
  * comprar o pacote completo na loja.
  */
 export const VoucherUpsellModal: React.FC<VoucherUpsellModalProps> = ({ storeUrl, onClose }) => {
+    const containerRef = useModalA11y<HTMLDivElement>({ onClose });
+
     const handleBuy = () => {
         if (typeof window !== 'undefined') {
             window.open(storeUrl, '_blank', 'noopener,noreferrer');
@@ -22,7 +25,9 @@ export const VoucherUpsellModal: React.FC<VoucherUpsellModalProps> = ({ storeUrl
 
     return (
         <div
-            className="fixed inset-0 z-[60] flex items-end justify-center md:items-center"
+            ref={containerRef}
+            tabIndex={-1}
+            className="fixed inset-0 z-[60] flex items-end justify-center md:items-center outline-none"
             role="dialog"
             aria-modal="true"
             aria-label="Material não incluído no seu acesso"
