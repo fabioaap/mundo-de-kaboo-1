@@ -91,7 +91,7 @@ test.describe('JN-WL-001 — Acesso e estrutura geral', () => {
         await expect(page.getByRole('button', { name: 'Operações', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Menus', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Integrações de IA', exact: true })).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Auditoria', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Auditoria de menus', exact: true })).toBeVisible();
     });
 });
 
@@ -223,8 +223,9 @@ test.describe('JN-WL-005 — Navegação entre tabs', () => {
 
         // Seções de auditoria visíveis (single-brand: "Histórico de entregas" e
         // "Payload de alertas" foram removidos junto com o dispatch de alertas)
-        // Timeline operacional removida na refatoração 2026-06-25 (apenas Auditoria recente permanece)
-        await expect(page.getByRole('heading', { name: 'Auditoria recente' })).toBeVisible({ timeout: 5_000 });
+        // Timeline operacional removida na refatoração 2026-06-25; a aba foi depois
+        // escopada especificamente a toggles de menu ("Auditoria de menus")
+        await expect(page.getByRole('heading', { name: 'Auditoria de menus' })).toBeVisible({ timeout: 5_000 });
     });
 
     test('voltar para Identidade Visual restaura a view', async ({ page }) => {
@@ -502,9 +503,9 @@ test.describe('JN-WL-015 — Integrações de IA', () => {
 test.describe('JN-WL-016 — Auditoria e rollback', () => {
     test('aba Auditoria mostra estado vazio quando não há eventos (mock)', async ({ page }) => {
         await adminAtWhiteLabel(page);
-        await page.getByRole('button', { name: 'Auditoria', exact: true }).click();
+        await page.getByRole('button', { name: 'Auditoria de menus', exact: true }).click();
 
-        await expect(page.getByRole('heading', { name: 'Auditoria recente' })).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByRole('heading', { name: 'Auditoria de menus' })).toBeVisible({ timeout: 5_000 });
         // listWhiteLabelAudit() retorna [] em modo mock → estado vazio determinístico
         await expect(page.getByText('Sem eventos recentes para esta marca.')).toBeVisible();
     });
