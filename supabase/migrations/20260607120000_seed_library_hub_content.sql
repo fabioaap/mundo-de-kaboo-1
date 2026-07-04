@@ -484,6 +484,23 @@ INSERT INTO media_shelves (
 
 ON CONFLICT DO NOTHING;
 
+-- Issue #61 fix (2026-07-04): media_shelves.brand_id foi adicionado sem backfill
+-- por 20260615170000 (assumindo tabela vazia, verdade na ordem real de aplicação
+-- em prod) e depois travado NOT NULL por 20260620300020 — mas essas 12 linhas
+-- de seed (sem brand_id no INSERT acima) rodam ANTES dessas duas na ordem de
+-- timestamp, deixando brand_id NULL num rebuild limpo. Backfill pro brand kaboo
+-- (conteúdo demo de uso local/CI) fecha o gap sem afetar prod: lá essas linhas já
+-- têm brand_id de verdade, então o WHERE brand_id IS NULL não encontra nada.
+UPDATE public.media_shelves
+SET brand_id = (SELECT id FROM public.brands WHERE slug = 'kaboo')
+WHERE brand_id IS NULL
+  AND id IN (
+    'b1000001-0001-4001-b001-000000000001', 'b1000001-0001-4001-b001-000000000002', 'b1000001-0001-4001-b001-000000000003',
+    'b1000002-0001-4001-b001-000000000001', 'b1000002-0001-4001-b001-000000000002', 'b1000002-0001-4001-b001-000000000003',
+    'b1000003-0001-4001-b001-000000000001', 'b1000003-0001-4001-b001-000000000002', 'b1000003-0001-4001-b001-000000000003',
+    'b1000004-0001-4001-b001-000000000001', 'b1000004-0001-4001-b001-000000000002', 'b1000004-0001-4001-b001-000000000003'
+  );
+
 
 -- ─── 3. MEDIA SHELF ITEMS (28 rows) ───────────────────────────
 -- Unique constraint: (shelf_id, media_item_id)
