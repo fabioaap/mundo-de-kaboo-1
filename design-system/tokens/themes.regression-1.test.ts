@@ -25,7 +25,7 @@ describe('design system theme spacing tokens', () => {
 
     expect(spacing.semantic['page-x']).toBe('1.5rem');
     expect(styleValues.get('--space-page-x')).toBe('1.5rem');
-    expect(styleValues.get('--space-card-gap-desktop')).toBe('1.25rem');
+    expect(styleValues.get('--space-card-gap-desktop')).toBe('1.5rem');
     expect(attributes.get('data-brand')).toBe('central-coruja');
   });
 });
