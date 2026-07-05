@@ -27,14 +27,33 @@ self.addEventListener('activate', (event) => {
   // Drop caches from a previous brand/version (e.g. the pre-brand-scoping 'kaboo-offline-v1'
   // left behind by an older SW instance) so stale offline media never leaks across brands or
   // piles up unbounded across dev/test's shared-origin GitHub Pages deploy.
+  // There's only one SW per origin/scope, shared by every open tab regardless of that tab's own
+  // `?brand=`. So before deleting, check which brand-scoped caches other currently-open tabs are
+  // still using (derived from their URLs the same way CACHE_NAME is derived above) and spare those
+  // — otherwise a second brand's tab open concurrently would have its cache deleted out from under it.
+  // Known limitation, not fully closed: clients.matchAll() only sees clients that already exist by
+  // the time this runs. A brand-B tab mid-navigation (opened a few ms before activate fires) won't
+  // appear yet, so its cache could still be deleted. Narrows the window a lot; doesn't eliminate it.
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key.startsWith(CACHE_BASE) && key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
-    ).then(() => clients.claim())
+    Promise.all([caches.keys(), clients.matchAll({ includeUncontrolled: true })])
+      .then(([keys, activeClients]) => {
+        const activeCacheNames = new Set(
+          activeClients.map((client) => {
+            const clientBrandSlug = new URL(client.url).searchParams.get('brand') || 'kaboo';
+            return clientBrandSlug === 'kaboo' ? CACHE_BASE : `${CACHE_BASE}-${clientBrandSlug}`;
+          })
+        );
+
+        return Promise.all(
+          keys
+            .filter(
+              (key) =>
+                key.startsWith(CACHE_BASE) && key !== CACHE_NAME && !activeCacheNames.has(key)
+            )
+            .map((key) => caches.delete(key))
+        );
+      })
+      .then(() => clients.claim())
   );
 });
 

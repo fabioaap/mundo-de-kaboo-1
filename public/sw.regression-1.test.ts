@@ -3,7 +3,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
-const loadServiceWorker = (cacheKeys: string[], brand = 'kaboo') => {
+const loadServiceWorker = (cacheKeys: string[], brand = 'kaboo', activeClientUrls: string[] = []) => {
   const source = readFileSync(path.join(__dirname, 'sw.js'), 'utf-8');
 
   const listeners: Record<string, ((event: unknown) => void)[]> = {};
@@ -27,7 +27,10 @@ const loadServiceWorker = (cacheKeys: string[], brand = 'kaboo') => {
       },
       open: () => Promise.resolve({ match: () => Promise.resolve(undefined) }),
     },
-    clients: { claim },
+    clients: {
+      claim,
+      matchAll: () => Promise.resolve(activeClientUrls.map((url) => ({ url }))),
+    },
     URL,
   };
 
@@ -37,8 +40,18 @@ const loadServiceWorker = (cacheKeys: string[], brand = 'kaboo') => {
   return {
     deletedCaches,
     fireActivate: async () => {
-      const event = { waitUntil: (p: Promise<unknown>) => p };
-      await Promise.all((listeners.activate || []).map((handler) => handler(event)));
+      // Capture the promise(s) passed to waitUntil rather than relying on the handler's return
+      // value (it doesn't return waitUntil's argument, matching real SW semantics) — otherwise
+      // this would resolve before the vm-sandboxed promise chain actually finishes.
+      const waited: Promise<unknown>[] = [];
+      const event = {
+        waitUntil: (p: Promise<unknown>) => {
+          waited.push(p);
+          return p;
+        },
+      };
+      (listeners.activate || []).forEach((handler) => handler(event));
+      await Promise.all(waited);
     },
   };
 };
@@ -72,5 +85,24 @@ describe('sw.js activate handler', () => {
     await fireActivate();
 
     expect(deletedCaches).toEqual([]);
+  });
+
+  // Regression: only one SW is active per origin/scope, shared by every open tab. If a user has
+  // two tabs open for different brands (e.g. '?brand=central-coruja' + '?brand=outra-marca'),
+  // whichever tab's registration triggers `activate` must not delete the OTHER brand's cache
+  // while that other tab is still open and using it — even though it looks just as "stale" as a
+  // genuinely orphaned cache from the filter's point of view.
+  it('does not delete a stale-looking cache that another currently-open tab is still using', async () => {
+    const { deletedCaches, fireActivate } = loadServiceWorker(
+      ['kaboo-offline-v1', 'kaboo-offline-v1-outra-marca', 'kaboo-offline-v1-central-coruja'],
+      'central-coruja',
+      ['https://app.kaboo.test/?brand=outra-marca']
+    );
+
+    await fireActivate();
+
+    expect(deletedCaches).toContain('kaboo-offline-v1');
+    expect(deletedCaches).not.toContain('kaboo-offline-v1-outra-marca');
+    expect(deletedCaches).not.toContain('kaboo-offline-v1-central-coruja');
   });
 });
