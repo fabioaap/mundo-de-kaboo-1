@@ -106,6 +106,29 @@ async function seedConfirmedUserWithPendingVoucher(page: Page, options: {
         redeem_by: null,
         items: [{ collection_id: GRANT_COLLECTION_ID, title: GRANT_COLLECTION_TITLE }],
     };
+    // ensureSeed() (lib/mockVoucherData.ts) só pula o auto-seed padrão (que
+    // sobrescreveria kaboo_mock_batch_vouchers com os 50 códigos KABOO-AV001..050
+    // de demonstração, apagando nosso voucher customizado) se
+    // kaboo_mock_voucher_models já tiver algo. Precisamos seedar essa chave
+    // também, não só batches/batch_vouchers.
+    const models = [{
+        id: modelId,
+        name: modelSnapshot.name,
+        description: null,
+        package_type: modelSnapshot.package_type,
+        duration_months: VOUCHER_DURATION_MONTHS,
+        redeem_by: null,
+        status: 'active',
+        created_by: null,
+        created_at: now,
+        updated_at: now,
+    }];
+    const modelItems = [{
+        id: `model-item-e2e-${Date.now()}`,
+        model_id: modelId,
+        collection_id: GRANT_COLLECTION_ID,
+        created_at: now,
+    }];
     const batches = [{
         id: batchId,
         model_id: modelId,
@@ -141,18 +164,32 @@ async function seedConfirmedUserWithPendingVoucher(page: Page, options: {
     }];
 
     await page.addInitScript(
-        ({ usersJson, batchesJson, batchVouchersJson }) => {
+        ({ usersJson, modelsJson, modelItemsJson, batchesJson, batchVouchersJson }) => {
             window.localStorage.setItem('kaboo_mock_users', usersJson);
+            window.localStorage.setItem('kaboo_mock_voucher_models', modelsJson);
+            window.localStorage.setItem('kaboo_mock_voucher_model_items', modelItemsJson);
             window.localStorage.setItem('kaboo_mock_voucher_batches', batchesJson);
             window.localStorage.setItem('kaboo_mock_batch_vouchers', batchVouchersJson);
         },
         {
             usersJson: JSON.stringify(users),
+            modelsJson: JSON.stringify(models),
+            modelItemsJson: JSON.stringify(modelItems),
             batchesJson: JSON.stringify(batches),
             batchVouchersJson: JSON.stringify(batchVouchers),
         },
     );
 }
+
+// GAP CONFIRMADO NA FASE B (verificação real com Playwright): scenarios 1 e 2
+// originalmente esperavam a tela "Confirme seu e-mail" após o cadastro — mas em
+// modo mock, registerWithVoucher() (lib/api.ts ~1881-1886) chama
+// createMockUser({ ..., signIn: true }), que loga o usuário IMEDIATAMENTE,
+// sem etapa de confirmação de e-mail — comportamento deliberado do modo mock
+// (não há e-mail real pra confirmar em dev/E2E), diferente do fluxo real via
+// Supabase (que de fato exige confirmação). Os dois cenários abaixo testam o
+// que é genuinamente alcançável neste ambiente: o cadastro conclui e o usuário
+// cai autenticado na home, com o e-mail submetido refletido no perfil.
 
 test.describe('JTBD-VOU-CONSUMER-001 · Validação de voucher antes do cadastro', () => {
     test('voucher válido é aceito e o cadastro avança sem erro de código', async ({ page }) => {
@@ -164,30 +201,28 @@ test.describe('JTBD-VOU-CONSUMER-001 · Validação de voucher antes do cadastro
         // Este teste prova a validação de voucher pelo caminho REAL: submeter o
         // formulário de cadastro com um código válido não deve produzir o erro de
         // "código de acesso inválido" — a validação (api.validateVoucher, chamada no
-        // início de registerWithVoucher) passa silenciosamente e o fluxo prossegue
-        // para o e-mail de confirmação.
+        // início de registerWithVoucher) passa silenciosamente e o cadastro conclui.
         await goToRegisterStep(page);
         await fillRegistrationForm(page, { email: freshEmail('validate'), voucherCode: VOUCHER_CODE });
 
         await page.getByRole('button', { name: 'Criar Conta' }).click();
 
-        // Não deve haver erro de voucher inválido — deve navegar para a confirmação pendente.
+        // Não deve haver erro de voucher inválido — deve autenticar direto (modo mock).
         await expect(page.getByRole('alert')).toHaveCount(0);
-        await expect(page.getByRole('heading', { name: 'Confirme seu e-mail' })).toBeVisible({ timeout: 15_000 });
+        await waitForAuthenticatedScreen(page);
     });
 });
 
-test.describe('JTBD-VOU-CONSUMER-002 · Cadastro completo leva à confirmação de e-mail pendente', () => {
-    test('preencher e enviar o formulário de cadastro navega para a tela de confirmação pendente com o e-mail exibido', async ({ page }) => {
+test.describe('JTBD-VOU-CONSUMER-002 · Cadastro completo autentica com o e-mail correto', () => {
+    test('preencher e enviar o formulário de cadastro autentica o usuário com o e-mail submetido', async ({ page }) => {
         const email = freshEmail('signup');
         await goToRegisterStep(page);
         await fillRegistrationForm(page, { email, voucherCode: VOUCHER_CODE });
 
         await page.getByRole('button', { name: 'Criar Conta' }).click();
 
-        await expect(page.getByRole('heading', { name: 'Confirme seu e-mail' })).toBeVisible({ timeout: 15_000 });
-        await expect(page.getByText(email, { exact: true })).toBeVisible();
-        await expect(page.getByText(/Enviamos um link de confirma/i)).toBeVisible();
+        await waitForAuthenticatedScreen(page);
+        await expect(page.getByText(email, { exact: true })).toBeVisible({ timeout: 15_000 });
     });
 });
 
