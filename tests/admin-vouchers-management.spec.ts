@@ -25,7 +25,11 @@ import { waitForAuthenticatedScreen } from './helpers/navigation';
 
 // ─── Constantes ────────────────────────────────────────────
 
-const BASE_URL = '/?brand=central-coruja';
+// Kaboo (default brand, no ?brand= param) — the seeded mock voucher model/batch
+// ("Kit Aventura Kaboo") and the collections needed for wizard step 2 (content
+// selection) only exist for this brand in the mock catalog; Central Coruja has
+// zero seeded collections in this environment, which made step 2 unselectable.
+const BASE_URL = '/';
 
 // Modelo pré-semeado (lib/mockVoucherData.ts → ensureSeed()): ativo, com lote
 // já gerado. Usar este modelo evita depender do fluxo de criação (cenário 1)
@@ -44,13 +48,21 @@ const MAX_VOUCHER_BATCH_QUANTITY = 10000;
 // ─── Helpers ────────────────────────────────────────────────
 
 async function setupAdminAtVouchers(page: Page) {
+  // Deep-linking straight to the vouchers module via navState.adminModule races
+  // AdminScreen's own isAdmin()-gated visibleModules computation: on first mount
+  // isAdminUser is still false, so visibleModules briefly excludes 'vouchers',
+  // and AdminScreen's own fallback effect permanently resets activeModule to
+  // 'collections' before isAdminUser ever resolves true. Land on the default
+  // admin screen instead and click "Vouchers" like a real user would — this
+  // sidesteps the race entirely and is what an admin actually does anyway.
   await setupOperationalSession(page, {
     role: 'admin',
-    brandSlug: 'central-coruja',
+    brandSlug: 'kaboo',
     navState: { currentScreen: 'admin' },
-    initialUrl: `${BASE_URL}#admin?module=vouchers`,
+    initialUrl: `${BASE_URL}#admin`,
   });
   await waitForAuthenticatedScreen(page);
+  await page.getByRole('button', { name: 'Vouchers' }).click();
 }
 
 /** Localiza o dialog modal (Emitir lote / confirmação crítica). */
@@ -111,8 +123,12 @@ test.describe('JTBD-VOU-ADMIN-001 · Criar modelo de voucher (wizard 3 etapas)',
     await expect(page.getByText('Revisão do modelo')).toBeVisible();
     await page.getByRole('button', { name: 'Salvar e ativar' }).click();
 
-    // Volta para o detalhe do modelo recém-criado, então navega para a lista.
-    await goToModelsTab(page);
+    // ModelWizard.onDone seta selectedModelId, então o módulo renderiza direto o
+    // ModelDetailView do modelo recém-criado (sem as tabs) — não é o goToModelsTab
+    // que se aplica aqui. O breadcrumb "Modelos" do detalhe é um <button>, não um
+    // <tab>; clicar nele volta pra ModelsListView (subView continua 'models').
+    await expect(page.getByText(modelName, { exact: false }).first()).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: 'Modelos' }).click();
     await expect(page.getByText(modelName, { exact: false })).toBeVisible({ timeout: 10_000 });
   });
 });
@@ -141,9 +157,16 @@ test.describe('JTBD-VOU-ADMIN-002 · Emitir lote (quantidade válida)', () => {
     const totalCard = page.locator('.grid > div', { hasText: 'Total' });
     await expect(totalCard.locator('div').first()).toHaveText('25', { timeout: 10_000 });
 
-    // Confirma na lista de lotes que o novo lote (25 vouchers) está presente.
-    await goToBatchesTab(page);
-    await expect(page.getByText(/25 vouchers/)).toBeVisible({ timeout: 10_000 });
+    // Confirmar emissão navega direto pro BatchDetailView do novo lote (subView
+    // permanece 'batches' com selectedBatchId setado) — sem as tabs, então
+    // goToBatchesTab não se aplica aqui. O breadcrumb "Lotes" do detalhe é um
+    // <button>, não um <tab>; clicar nele volta pra BatchesListView.
+    await page.getByRole('button', { name: 'Lotes' }).click();
+    // Card de lote na lista mostra "X disponíveis / de Y" (não "Y vouchers") —
+    // "de 25" com "0 resgatados" identifica só o lote recém-criado, já que o
+    // lote pré-semeado é "de 50" com 3 resgatados.
+    await expect(page.getByText('0 resgatados')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('de 25')).toBeVisible();
   });
 });
 
@@ -202,8 +225,10 @@ test.describe('JTBD-VOU-ADMIN-003 · Validação de quantidade (Emitir lote)', (
     const quantityInput = dialog(page).locator('input[inputmode="numeric"]').first();
     await quantityInput.fill(String(MAX_VOUCHER_BATCH_QUANTITY));
 
-    // Sem erro de validação, confirmação habilitada.
-    await expect(dialog(page).getByText(errorText)).not.toBeVisible();
+    // A mesma frase de faixa válida aparece sempre — como hint (cinza) quando não
+    // há erro, e como o próprio erro (vermelho) quando há. Não dá pra usar a
+    // presença/ausência do texto pra provar "sem erro"; o botão habilitado é o
+    // sinal real.
     const confirmBtn = dialog(page).getByRole('button', { name: 'Confirmar emissão' });
     await expect(confirmBtn).toBeEnabled();
 
