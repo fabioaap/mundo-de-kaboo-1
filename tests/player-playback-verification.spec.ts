@@ -87,7 +87,9 @@ test.describe('JTBD-PLAY-002 · Vídeo auto-hospedado — reprodução realmente
 
     // O <video> não tem autoplay (confirmado lendo VideoPlayerScreen.tsx — nenhum atributo
     // autoPlay e nenhum .play() automático) — precisa do clique no botão central de play.
-    await page.getByRole('button', { name: 'Reproduzir' }).click();
+    // Há 2 botões "Reproduzir" na tela (overlay central grande + controle de
+    // transporte pequeno) — o primeiro (maior, h-20 w-20) é o overlay central.
+    await page.getByRole('button', { name: 'Reproduzir' }).first().click();
 
     // onPlaying (screens/VideoPlayerScreen.tsx) só dispara quando o browser genuinamente
     // decodificou frames suficientes. Faz polling em vez de assertar instantaneamente —
