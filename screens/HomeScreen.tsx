@@ -2126,7 +2126,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       collections={filteredCollections}
                       onCollectionClick={handleCollectionClick}
                       grants={contentGrants}
-                      tone="default"
+                      tone={isCorujaHomeLayout ? 'central-coruja' : 'default'}
                       subtitleFallback={currentCollectionGroup === 'books' ? `Livro digital do ${brandDisplayName}.` : undefined}
                     />
                   </div>
@@ -2168,7 +2168,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       collections={searchBackdropCollections}
                       onCollectionClick={handleCollectionClick}
                       grants={contentGrants}
-                      tone="default"
+                      tone={isCorujaHomeLayout ? 'central-coruja' : 'default'}
                       subtitleFallback={currentCollectionGroup === 'books' ? `Livro digital do ${brandDisplayName}.` : undefined}
                     />
                   </div>
@@ -2298,7 +2298,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     collections={filteredCollections}
                     onCollectionClick={handleCollectionClick}
                     grants={contentGrants}
-                    tone="default"
+                    tone={isCorujaHomeLayout ? 'central-coruja' : 'default'}
                     subtitleFallback={currentCollectionGroup === 'books' ? `Livro digital do ${brandDisplayName}.` : undefined}
                   />
                 </div>
