@@ -230,22 +230,22 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
               style={{ transform: 'translateZ(20px)' }}
             />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,245,214,0.03)_0%,rgba(19,35,52,0.02)_45%,rgba(7,12,24,0.30)_100%)]" />
-          </div>
-          {progress > 0 && (
-            <div className="absolute inset-x-0 bottom-0 z-10 p-3" style={{ transform: 'translateZ(32px)' }}>
-              <div className="rounded-full border border-[#d2c18f]/55 bg-[#20162a]/92 px-3 py-2 shadow-[0_18px_30px_rgba(7,19,30,0.24)]">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/12">
-                    <div
-                      className="h-full rounded-full bg-[linear-gradient(90deg,#f2bf43_0%,#f6d96f_45%,#62b05c_100%)]"
-                      style={{ width: `${progress}%` }}
-                    />
+            {/* Título/tema (e progresso) DENTRO do card, sobre um scrim na base da capa */}
+            <div className="absolute inset-x-0 bottom-0 z-[6] p-2.5 pt-9 bg-[linear-gradient(180deg,transparent,rgba(4,12,24,0.55)_40%,rgba(4,12,24,0.92))]">
+              <h3 className="line-clamp-2 text-[12.5px] font-black leading-tight text-[#FFF4E3] drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)]">{collection.title}</h3>
+              {collection.theme && collection.theme.trim() !== '' && (
+                <p className="mt-0.5 line-clamp-1 text-[11px] font-medium text-[#D4DCF0]">{collection.theme}</p>
+              )}
+              {progress > 0 && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/15">
+                    <div className="h-full rounded-full bg-[linear-gradient(90deg,#f2bf43_0%,#f6d96f_45%,#62b05c_100%)]" style={{ width: `${progress}%` }} />
                   </div>
                   <span className="text-[10px] font-black tracking-[0.08em] text-[#fff1bf]">{progress}%</span>
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
           {/* Light reflection */}
           {isActive && (
             <>
@@ -380,17 +380,6 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         </div>
       )}
 
-      {/* ─── Texto abaixo — Central Coruja ─── */}
-      {isCentralCorujaTone && collection.title && (
-        <h3 className="mb-1 text-[0.95rem] font-black leading-tight text-[#FFF4E3] line-clamp-2">
-          {collection.title}
-        </h3>
-      )}
-      {isCentralCorujaTone && collection.theme && collection.theme.trim() !== '' && (
-        <p className="mb-1 text-xs font-medium leading-relaxed text-[#D4DCF0] line-clamp-2">
-          {collection.theme}
-        </p>
-      )}
     </div>
   );
 };
