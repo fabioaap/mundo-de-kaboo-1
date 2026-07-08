@@ -94,7 +94,7 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
                 }
 
                 if (!result.success) {
-                    setErrorMsg('Seu cadastro foi criado, mas nao conseguimos aplicar o codigo automaticamente. Confira o codigo abaixo e tente novamente.');
+                    setErrorMsg('Seu cadastro foi criado, mas não conseguimos aplicar o código automaticamente. Confira o código abaixo e tente novamente.');
                     setLoading(false);
                     return;
                 }
@@ -115,7 +115,7 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
                     return;
                 }
 
-                setErrorMsg('Seu cadastro foi criado, mas nao conseguimos aplicar o codigo automaticamente. Confira o codigo abaixo e tente novamente.');
+                setErrorMsg('Seu cadastro foi criado, mas não conseguimos aplicar o código automaticamente. Confira o código abaixo e tente novamente.');
                 setLoading(false);
             });
 
@@ -146,16 +146,16 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
         if (status === 'pending_voucher') {
             const hasCachedCode = Boolean(getPendingSignupVoucher());
             if (hasCachedCode) {
-                return 'Sua conta foi criada, mas ainda precisa de um codigo de acesso para liberar a plataforma.';
+                return 'Sua conta foi criada, mas ainda precisa de um código de acesso para liberar a plataforma.';
             }
             return 'Você confirmou seu e-mail! Insira o código do voucher que você usou no cadastro para liberar seu acesso.';
         }
 
         if (profile?.access_expires_at) {
-            return `Seu acesso expirou em ${formatAccessDate(profile.access_expires_at)}. Informe um novo codigo para continuar usando a plataforma.`;
+            return `Seu acesso expirou em ${formatAccessDate(profile.access_expires_at)}. Informe um novo código para continuar usando a plataforma.`;
         }
 
-        return 'Seu acesso nao esta liberado no momento. Informe um novo codigo para continuar.';
+        return 'Seu acesso não está liberado no momento. Informe um novo código para continuar.';
     }, [profile?.access_expires_at, status]);
 
     const handleRedeem = async (e: React.FormEvent) => {
@@ -170,7 +170,7 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
 
         const result = await api.redeemVoucher(voucherCode);
         if (!result.success) {
-            setErrorMsg(result.message || 'Nao foi possivel ativar o codigo informado.');
+            setErrorMsg(result.message || 'Não foi possível ativar o código informado.');
             setLoading(false);
             return;
         }
@@ -215,10 +215,10 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
                             Acesso liberado
                         </p>
                         <h1 className="text-2xl font-black text-gray-900 leading-tight">
-                            {grantedCollections.length === 1 ? '1 conteudo liberado!' : `${grantedCollections.length} conteudos liberados!`}
+                            {grantedCollections.length === 1 ? '1 conteúdo liberado!' : `${grantedCollections.length} conteúdos liberados!`}
                         </h1>
                         <p className="mt-3 text-sm leading-relaxed text-gray-600">
-                            Seu codigo foi ativado com sucesso. Confira os conteudos disponiveis:
+                            Seu código foi ativado com sucesso. Confira os conteúdos disponíveis:
                         </p>
                     </div>
                     <div className="px-8 py-6 space-y-3 max-h-60 overflow-y-auto">
@@ -241,7 +241,7 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
                             fullWidth
                             onClick={() => onNavigate('home', { accessRenewed: true })}
                         >
-                            Comecar a explorar
+                            Começar a explorar
                         </Button>
                     </div>
                 </div>
@@ -252,10 +252,10 @@ export const AccessExpiredScreen: React.FC<AccessExpiredScreenProps> = ({
                             <Icons.AlertCircle size={30} />
                         </div>
                         <p className="text-xs font-black uppercase tracking-[0.24em] text-orange-500 mb-3">
-                            {status === 'pending_voucher' ? 'Ativacao pendente' : 'Acesso expirado'}
+                            {status === 'pending_voucher' ? 'Ativação pendente' : 'Acesso expirado'}
                         </p>
                         <h1 className="text-3xl font-black text-gray-900 leading-tight">
-                            Informe um novo codigo para continuar.
+                            Informe um novo código para continuar.
                         </h1>
                         <p className="mt-4 text-sm leading-relaxed text-gray-600">
                             {description}

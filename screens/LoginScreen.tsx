@@ -154,7 +154,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     try {
       const result = await api.validateVoucher(voucherCode);
       if (!result.success || !result.voucher) {
-        throw new Error(result.message || 'Nao foi possivel validar o voucher informado.');
+        throw new Error(result.message || 'Não foi possível validar o voucher informado.');
       }
       setValidatedVoucher(result.voucher);
       setVoucherCode(result.voucher.code);
@@ -195,7 +195,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
     try {
       if (step === 'register') {
         if (!voucherCode.trim()) {
-          throw new Error('Informe o codigo de acesso para continuar.');
+          throw new Error('Informe o código de acesso para continuar.');
         }
         if (!acceptedTerms) {
           throw new Error('Você precisa aceitar a política de privacidade para continuar.');
@@ -210,7 +210,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
           voucherCode,
         });
         if (!result.success) {
-          throw new Error(result.error || 'Nao foi possivel criar sua conta.');
+          throw new Error(result.error || 'Não foi possível criar sua conta.');
         }
         savePendingSignupVoucher(voucherCode);
         if (result.profile && onAuthSuccess) {
@@ -239,7 +239,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate, onAuthSucc
         // login
         const result = await api.signIn(email, password);
         if (!result.success) {
-          throw new Error(result.error || 'Nao foi possivel iniciar a sessao.');
+          throw new Error(result.error || 'Não foi possível iniciar a sessão.');
         }
         let currentProfile = result.profile;
         // Voucher pendente: prioriza o código persistido no PERFIL (sobrevive a troca de

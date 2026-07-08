@@ -5558,7 +5558,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                   {authBadge.label}
                                 </span>
                                 <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">
-                                  Vigencia: {formatAccessDate(user.access_expires_at)}
+                                  Vigência: {formatAccessDate(user.access_expires_at)}
                                 </span>
                               </div>
                             </div>

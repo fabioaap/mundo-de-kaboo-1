@@ -104,7 +104,7 @@ export const getAccessStatusLabel = (status: AccessStatus): string => {
         return 'Acesso expirado';
     }
 
-    return 'Aguardando codigo de acesso';
+    return 'Aguardando código de acesso';
 };
 
 /**

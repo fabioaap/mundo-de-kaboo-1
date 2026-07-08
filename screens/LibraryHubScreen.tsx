@@ -82,15 +82,15 @@ const buildBrandScopedLibraryConfig = (config: LibraryHubData, brandSlug: string
 const getLibraryEmptyStateMessage = (hub: LibraryHubKind, brandDisplayName: string): string => {
   switch (hub) {
     case 'videos':
-      return `Publique videos nas colecoes de ${brandDisplayName} para começar esta biblioteca.`;
+      return `Publique vídeos nas coleções de ${brandDisplayName} para começar esta biblioteca.`;
     case 'music':
-      return `Publique musicas nas colecoes de ${brandDisplayName} para começar esta biblioteca.`;
+      return `Publique músicas nas coleções de ${brandDisplayName} para começar esta biblioteca.`;
     case 'formations':
-      return `Publique guias e formacoes nas colecoes de ${brandDisplayName} para começar esta biblioteca.`;
+      return `Publique guias e formações nas coleções de ${brandDisplayName} para começar esta biblioteca.`;
     case 'materials':
-      return `Publique materiais nas colecoes de ${brandDisplayName} para começar esta biblioteca.`;
+      return `Publique materiais nas coleções de ${brandDisplayName} para começar esta biblioteca.`;
     default:
-      return 'Ainda nao ha conteudos publicados nesta biblioteca.';
+      return 'Ainda não há conteúdos publicados nesta biblioteca.';
   }
 };
 

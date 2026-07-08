@@ -1663,7 +1663,7 @@ export const api = {
     if (!data.session) {
       return {
         success: false,
-        error: 'Nao foi possivel iniciar a sessao.'
+        error: 'Não foi possível iniciar a sessão.'
       };
     }
 
@@ -1889,7 +1889,7 @@ export const api = {
       if (!creation.success || !creation.userId) {
         return {
           success: false,
-          error: creation.error || 'Nao foi possivel criar sua conta.'
+          error: creation.error || 'Não foi possível criar sua conta.'
         };
       }
 
@@ -1959,7 +1959,7 @@ export const api = {
       }
 
       if (!signUpData.user) {
-        return { success: false, error: 'Nao foi possivel criar a conta.' };
+        return { success: false, error: 'Não foi possível criar a conta.' };
       }
 
       // O perfil inicial é criado pelo trigger handle_new_user no banco.
@@ -1971,7 +1971,7 @@ export const api = {
           requiresLogin: true,
           requiresEmailConfirmation: true,
           email: input.email,
-          message: 'Conta criada. Confirme seu e-mail para concluir o cadastro e depois faça login para ativar seu codigo de acesso.'
+          message: 'Conta criada. Confirme seu e-mail para concluir o cadastro e depois faça login para ativar seu código de acesso.'
         };
       }
 
@@ -1984,7 +1984,7 @@ export const api = {
         logger.error('Error persisting session after sign up:', setSessionError);
         return {
           success: false,
-          error: 'Conta criada, mas nao foi possivel finalizar a ativacao automaticamente. Tente entrar novamente para continuar.'
+          error: 'Conta criada, mas não foi possível finalizar a ativação automaticamente. Tente entrar novamente para continuar.'
         };
       }
 
