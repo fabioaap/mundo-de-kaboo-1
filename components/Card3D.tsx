@@ -207,7 +207,9 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
               ? 'transform 0.1s ease-out'
               : (isActive ? 'transform 0.1s ease-out' : 'transform 0.35s ease-out'),
             touchAction: 'manipulation',
-            aspectRatio: '0.78 / 1',
+            // Capa quadrada (1:1) para o card Coruja manter o mesmo footprint do card
+            // padrão — o tema escuro muda a cor, não o tamanho do grid.
+            aspectRatio: '1 / 1',
             width: '100%',
             height: 'auto',
           }}
