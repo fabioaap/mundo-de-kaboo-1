@@ -1670,8 +1670,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
   const renderImmersiveHeroControls = (tone: 'coruja' | 'kaboo' = 'coruja') => {
     const isKabooTone = tone === 'kaboo';
     const searchInputClass = isKabooTone
-      ? 'h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-14 shadow-sm hover:border-brand-primary/24 focus:border-brand-primary'
-      : 'h-14 rounded-[28px] border-transparent bg-white/92 pl-11 pr-14 shadow-sm hover:border-transparent focus:border-brand-primary';
+      ? 'h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-24 md:pr-40 shadow-sm hover:border-brand-primary/24 focus:border-brand-primary'
+      : 'h-14 rounded-[28px] border-transparent bg-white/92 pl-11 pr-24 md:pr-40 shadow-sm hover:border-transparent focus:border-brand-primary';
     const passiveFilterClass = isKabooTone
       ? 'bg-white text-brand-primary border-gray-200 shadow-sm hover:border-brand-primary/24'
       : 'bg-white/95 text-brand-primary border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-brand-accent/60';
@@ -1694,45 +1694,49 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               onChange={(event) => setSearchTerm(event.target.value)}
               className={searchInputClass}
             />
-            {searchTerm && (
+            {/* Grupo à direita, DENTRO da barra: limpar + divisor + Filtros. Fica na mesma
+                altura da barra (acaba o desalinhamento) e alinha com as barras das outras
+                bibliotecas — o filtro vira um slot da própria barra, não um botão solto. */}
+            <div className="absolute right-1.5 top-1/2 z-10 flex -translate-y-1/2 items-center gap-1">
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                  title="Limpar busca"
+                >
+                  <Icons.X size={16} />
+                </button>
+              )}
+              <span className="mx-0.5 h-6 w-px bg-gray-200" aria-hidden="true" />
               <button
                 type="button"
-                onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 z-10 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/90 text-gray-500 backdrop-blur-sm transition-colors hover:text-gray-700"
-                title="Limpar busca"
+                onClick={() => openFilterDrawer()}
+                className={`inline-flex h-10 items-center gap-2 rounded-[20px] px-3 transition-all active:scale-95 ${activeFilterCount > 0 ? 'bg-brand-light text-white shadow-[0_10px_22px_rgba(93,30,118,0.30)]' : 'text-brand-primary hover:bg-brand-primary/[0.06]'}`}
+                title="Refinar busca"
               >
-                <Icons.X size={16} />
+                <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
+                <span className="hidden text-sm font-bold md:inline">Filtros</span>
+                {activeFilterCount > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white/25 px-1 text-[10px] font-black text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
               </button>
-            )}
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+          {isSearchExperience && (
             <button
               type="button"
-              onClick={() => openFilterDrawer()}
-              className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 transition-all active:scale-95 md:px-4 ${activeFilterCount > 0 ? 'border-brand-light bg-brand-light text-white shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : passiveFilterClass}`}
-              title="Refinar busca"
+              onClick={closeInlineSearch}
+              className="hidden shrink-0 md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 px-3 text-gray-500 backdrop-blur-sm transition-colors hover:text-gray-700"
+              title="Fechar busca"
             >
-              <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
-              <span className="hidden text-sm font-bold md:inline">Filtros</span>
-              {activeFilterCount > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[10px] font-black text-white">
-                  {activeFilterCount}
-                </span>
-              )}
+              <Icons.X size={16} />
+              <span className="text-sm font-bold">Fechar</span>
             </button>
-            {isSearchExperience && (
-              <button
-                type="button"
-                onClick={closeInlineSearch}
-                className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 px-3 text-gray-500 backdrop-blur-sm transition-colors hover:text-gray-700"
-                title="Fechar busca"
-              >
-                <Icons.X size={16} />
-                <span className="text-sm font-bold">Fechar</span>
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
         {!isSearchExperience && (
