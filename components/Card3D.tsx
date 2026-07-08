@@ -192,79 +192,16 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      {/* ══ CENTRAL CORUJA: moldura própria + tilt no mesmo elemento ══ */}
-      {isCentralCorujaTone && (
-        <div
-          ref={cardRef}
-          className="relative overflow-hidden w-full rounded-[28px] bg-transparent"
-          style={{
-            ...(isActive && { WebkitMaskImage: '-webkit-radial-gradient(white, black)' }),
-            transform: isActive
-              ? `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale3d(1, 1, 1)`
-              : undefined,
-            transformStyle: isActive ? 'preserve-3d' : 'flat',
-            transition: isMobile
-              ? 'transform 0.1s ease-out'
-              : (isActive ? 'transform 0.1s ease-out' : 'transform 0.35s ease-out'),
-            touchAction: 'manipulation',
-            // Capa quadrada (1:1) para o card Coruja manter o mesmo footprint do card
-            // padrão — o tema escuro muda a cor, não o tamanho do grid.
-            aspectRatio: '1 / 1',
-            width: '100%',
-            height: 'auto',
-          }}
-          onMouseMove={!isMobile ? handleMouseMove : undefined}
-          onMouseLeave={!isMobile ? handleMouseLeave : undefined}
-        >
-          <div className="absolute inset-0 rounded-[28px] bg-[radial-gradient(60%_40%_at_14%_100%,rgba(93,30,118,0.26),transparent_70%),radial-gradient(46%_28%_at_100%_0%,rgba(234,154,59,0.28),transparent_72%)]" />
-          <div
-            className="absolute inset-[5px] overflow-hidden rounded-[24px] border-[2.5px] border-brand-accent/90 bg-brand-primary shadow-[0_24px_44px_rgba(3,10,22,0.34)]"
-            style={{ transform: 'translateZ(16px)' }}
-          >
-            <img
-              src={displayCoverImage}
-              alt={collection.title}
-              className="h-full w-full object-cover bg-[#091525]"
-              loading="lazy"
-              decoding="async"
-              style={{ transform: 'translateZ(20px)' }}
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,245,214,0.03)_0%,rgba(19,35,52,0.02)_45%,rgba(7,12,24,0.30)_100%)]" />
-            {/* Título/tema (e progresso) DENTRO do card, sobre um scrim na base da capa */}
-            <div className="absolute inset-x-0 bottom-0 z-[6] p-2.5 pt-9 bg-[linear-gradient(180deg,transparent,rgba(4,12,24,0.55)_40%,rgba(4,12,24,0.92))]">
-              <h3 className="line-clamp-2 text-[12.5px] font-black leading-tight text-[#FFF4E3] drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)]">{collection.title}</h3>
-              {collection.theme && collection.theme.trim() !== '' && (
-                <p className="mt-0.5 line-clamp-1 text-[11px] font-medium text-[#D4DCF0]">{collection.theme}</p>
-              )}
-              {progress > 0 && (
-                <div className="mt-2 flex items-center gap-2">
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/15">
-                    <div className="h-full rounded-full bg-[linear-gradient(90deg,#f2bf43_0%,#f6d96f_45%,#62b05c_100%)]" style={{ width: `${progress}%` }} />
-                  </div>
-                  <span className="text-[10px] font-black tracking-[0.08em] text-[#fff1bf]">{progress}%</span>
-                </div>
-              )}
-            </div>
-          </div>
-          {/* Light reflection */}
-          {isActive && (
-            <>
-              <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(${135 + tilt.y * 2}deg, transparent 0%, rgba(255,255,255,0.3) ${50 + tilt.x * 0.5 + tilt.y * 0.5}%, transparent 100%)`, transform: `translateZ(25px) translateX(${tilt.y * 2}px) translateY(${tilt.x * 2}px)`, mixBlendMode: 'overlay' }} />
-              <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at ${50 + tilt.y * 1.5}% ${50 + tilt.x * 1.5}%, rgba(255,255,255,0.4) 0%, transparent 60%)`, transform: 'translateZ(30px)', mixBlendMode: 'soft-light' }} />
-            </>
-          )}
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#0f2335]/0 via-transparent to-white/10" />
-        </div>
-      )}
-
-      {/* ══ PADRÃO: moldura branca contém image square + texto ══ */}
-      {!isCentralCorujaTone && (
-        <div
-          ref={cardRef}
-          className="rounded-[16px] border border-brand-primary/10 bg-white p-2 shadow-[0_10px_24px_rgba(93,31,88,0.05)] transition-[border-color,box-shadow] duration-200 md:hover:-translate-y-1 hover:border-brand-primary/20 hover:shadow-[0_14px_24px_rgba(93,31,88,0.10)] active:scale-[0.995]"
-          onMouseMove={!isMobile ? handleMouseMove : undefined}
-          onMouseLeave={!isMobile ? handleMouseLeave : undefined}
-        >
+      {/* Card único: capa quadrada + textos abaixo, dentro do card. Cores tone-aware —
+          Coruja usa card escuro (glass) como as bibliotecas; demais marcas, branco. */}
+      <div
+        ref={cardRef}
+        className={`rounded-[16px] border p-2 transition-[border-color,box-shadow] duration-200 md:hover:-translate-y-1 active:scale-[0.995] ${isCentralCorujaTone
+          ? 'border-white/[0.08] bg-[rgba(12,26,52,0.55)] shadow-[0_8px_32px_rgba(3,10,22,0.28)] backdrop-blur-xl hover:border-white/[0.14] hover:shadow-[0_22px_42px_rgba(4,27,36,0.32)]'
+          : 'border-brand-primary/10 bg-white shadow-[0_10px_24px_rgba(93,31,88,0.05)] hover:border-brand-primary/20 hover:shadow-[0_14px_24px_rgba(93,31,88,0.10)]'}`}
+        onMouseMove={!isMobile ? handleMouseMove : undefined}
+        onMouseLeave={!isMobile ? handleMouseLeave : undefined}
+      >
           {/* Image square — recebe o tilt 3D */}
           <div
             className={`relative overflow-hidden rounded-[10px] border border-brand-primary/10 aspect-square ${collectionHeroCover ? 'bg-slate-100' : 'bg-[linear-gradient(180deg,#fdf9fe,#f6eff8)]'}`}
@@ -368,17 +305,16 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
 
           {/* ─── Texto dentro da moldura branca ─── */}
           <div className="mt-2.5 flex min-h-[56px] flex-col px-1 pb-1">
-            <h3 className="line-clamp-2 text-[13px] font-bold leading-[1.35] tracking-[-0.01em] text-brand-primary">
+            <h3 className={`line-clamp-2 text-[13px] font-bold leading-[1.35] tracking-[-0.01em] ${isCentralCorujaTone ? 'text-[#FFF4E3]' : 'text-brand-primary'}`}>
               {collection.title}
             </h3>
             {bookSummary && (
-              <p className="mt-1 line-clamp-2 text-[12px] leading-4 text-gray-500">
+              <p className={`mt-1 line-clamp-2 text-[12px] leading-4 ${isCentralCorujaTone ? 'text-[#D4DCF0]' : 'text-gray-500'}`}>
                 {bookSummary}
               </p>
             )}
           </div>
         </div>
-      )}
 
     </div>
   );
