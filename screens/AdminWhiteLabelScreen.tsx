@@ -159,6 +159,10 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         () => brands.find((brand) => brand.id === selectedBrandId) ?? null,
         [brands, selectedBrandId],
     );
+    // O parallax do hero só tem efeito na Central Coruja (fundo alternativo quando
+    // não há imagem de hero). Para as demais marcas o controle não faz nada, então
+    // não exibimos o card — evita controle inócuo no admin.
+    const parallaxSupported = selectedBrand?.slug === 'central-coruja';
 
     const handleSaveAIConfig = useCallback(async () => {
         if (!selectedBrandId || aiSaving) return;
@@ -894,6 +898,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                             </div>
                                         </div>
 
+                                        {parallaxSupported && (
                                         <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                                             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                                 <div>
@@ -930,6 +935,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                 })}
                                             </div>
                                         </div>
+                                        )}
 
                                         <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                                             <div className="flex items-start justify-between gap-4">
