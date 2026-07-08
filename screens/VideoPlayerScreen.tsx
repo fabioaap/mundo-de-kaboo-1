@@ -572,8 +572,19 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     e?.stopPropagation();
     resetControlsTimeout();
     if (isYouTubeSource) {
-      if (isPlaying) ytPostMessage('pauseVideo');
-      else ytPostMessage('playVideo');
+      if (isPlaying) {
+        ytPostMessage('pauseVideo');
+        // Reflete o estado na hora em vez de esperar o evento do YouTube (às vezes
+        // atrasado/perdido). Zera ytPrevCtRef pra o infoDelivery do seek seguinte não
+        // reativar "tocando" só porque o currentTime mudou.
+        setIsPlaying(false);
+        setPlayerState('paused');
+        ytPrevCtRef.current = -1;
+      } else {
+        ytPostMessage('playVideo');
+        setIsPlaying(true);
+        setPlayerState('playing');
+      }
       return;
     }
     if (!videoRef.current) return;
@@ -644,6 +655,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     if (isYouTubeSource) {
       ytPostMessage('seekTo', [time, true]);
       setCurrentTime(time);
+      ytPrevCtRef.current = -1;
       return;
     }
     if (videoRef.current) {
@@ -695,6 +707,9 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
       const newTime = Math.min(Math.max(currentTime + seconds, 0), duration);
       ytPostMessage('seekTo', [newTime, true]);
       setCurrentTime(newTime);
+      // O seek gera um infoDelivery com o novo currentTime; sem zerar aqui, a heurística
+      // "currentTime mudou logo está tocando" reativaria isPlaying mesmo pausado.
+      ytPrevCtRef.current = -1;
       return;
     }
     if (videoRef.current) {
