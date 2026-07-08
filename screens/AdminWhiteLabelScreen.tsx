@@ -605,6 +605,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     folder="extras"
                                                     accept="image/*"
                                                     collectionId={selectedBrandId}
+                                                    recommendedSize="512 × 512 px (quadrado, fundo transparente)"
                                                     disabled={loading || saving}
                                                 />
                                             </div>
@@ -617,6 +618,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     folder="extras"
                                                     accept="image/*"
                                                     collectionId={selectedBrandId}
+                                                    recommendedSize="1920 × 1080 px (16:9, paisagem)"
                                                     disabled={loading || saving}
                                                 />
                                             </div>
@@ -630,6 +632,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     folder="extras"
                                                     accept="image/*"
                                                     collectionId={selectedBrandId}
+                                                    recommendedSize="2400 × 1200 px (2:1, paisagem)"
                                                     disabled={loading || saving}
                                                 />
                                             </div>
