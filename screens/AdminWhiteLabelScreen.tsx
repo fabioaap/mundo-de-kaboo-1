@@ -21,18 +21,15 @@ import {
 import {
     getWhiteLabelBrandIdentity,
     canUseRemoteWhiteLabel,
-    getWhiteLabelPublicationState,
     getWhiteLabelFeatures,
     HeroParallaxMode,
     listWhiteLabelAudit,
     listWhiteLabelBrands,
-    publishWhiteLabelBrand,
     resolveHeroParallaxMode,
     setWhiteLabelBrandIdentity,
     setWhiteLabelFeature,
     WhiteLabelAuditEntry,
     WhiteLabelBrandRow,
-    WhiteLabelPublicationState,
     WhiteLabelBrandIdentity,
 } from '../lib/whiteLabelAdminApi';
 
@@ -102,7 +99,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const [heroParallaxMode, setHeroParallaxMode] = useState<HeroParallaxMode>('off');
     const [contentOfflineEnabled, setContentOfflineEnabled] = useState<boolean>(false);
     const [auditEntries, setAuditEntries] = useState<WhiteLabelAuditEntry[]>([]);
-    const [publicationState, setPublicationState] = useState<WhiteLabelPublicationState>({ version: 1, published_at: null });
     const [brandIdentity, setBrandIdentity] = useState<WhiteLabelBrandIdentity>(DEFAULT_BRAND_IDENTITY);
     const [brandIdentityBaseline, setBrandIdentityBaseline] = useState(() => serializeBrandIdentity(DEFAULT_BRAND_IDENTITY));
     const [activeTab, setActiveTab] = useState<'identidade' | 'operacoes' | 'menus' | 'auditoria' | 'ia'>('identidade');
@@ -278,14 +274,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         }
         setMenuFlags(nextMenuFlags);
         setMenuMusicEnabled(features['menu.music']?.enabled ?? true);
-
-        try {
-            const publication = await getWhiteLabelPublicationState(brandId);
-            setPublicationState(publication);
-        } catch (err) {
-            console.error('[AdminWhiteLabelScreen] publication state load error:', err);
-            setPublicationState({ version: 1, published_at: null });
-        }
 
         // Rollout, métricas, alerting, health check e timeline operacional foram
         // removidos da UI single-brand.
@@ -491,27 +479,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         } catch (err) {
             setError('Falha ao reverter alteração de feature flag.');
             console.error('[AdminWhiteLabelScreen] rollbackAuditEntry error:', err);
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const publishCurrentVersion = async () => {
-        if (!selectedBrandId || saving) {
-            return;
-        }
-
-        try {
-            setSaving(true);
-            setError(null);
-            const updated = await publishWhiteLabelBrand(selectedBrandId);
-            setPublicationState(updated);
-            await hydrateBrandFeatures(selectedBrandId);
-            showToast(`Marca publicada com sucesso! Versão ${updated.version} ativa.`, 'success');
-        } catch (err) {
-            setError('Falha ao publicar a versão atual da marca.');
-            showToast('Erro ao publicar marca.', 'error');
-            console.error('[AdminWhiteLabelScreen] publishCurrentVersion error:', err);
         } finally {
             setSaving(false);
         }
@@ -866,7 +833,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
                         {/* ═══ Tab: Operações ═══ */}
                         {activeTab === 'operacoes' && (
-                            <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
+                            <div className="grid gap-5">
                                 <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-5">
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                         <div>
@@ -986,33 +953,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     Baseline padrão
                                                 </Button>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-5">
-                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
-                                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                            <div>
-                                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">Publicação</p>
-                                                <h3 className="mt-1 text-lg font-bold text-gray-900">
-                                                    {publicationState.published_at ? `Versão v${publicationState.version} publicada` : 'Versão pronta para publicar'}
-                                                </h3>
-                                                <p className="mt-1 text-sm text-gray-500">
-                                                    {publicationState.published_at
-                                                        ? `Publicada em ${new Date(publicationState.published_at).toLocaleString('pt-BR')}`
-                                                        : 'A publicação registra data e versão automaticamente nesta integração.'}
-                                                </p>
-                                            </div>
-                                            <Button
-                                                variant="primary"
-                                                onClick={publishCurrentVersion}
-                                                disabled={loading || saving || !selectedBrand || !isAdminUser}
-                                                title={!isAdminUser ? 'Apenas administradores podem publicar' : undefined}
-                                                className="min-w-[160px]"
-                                            >
-                                                {publicationState.published_at ? 'Publicar nova versão' : 'Publicar agora'}
-                                            </Button>
                                         </div>
                                     </div>
                                 </div>
