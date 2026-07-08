@@ -104,7 +104,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const { slug: appBrandSlug, bootstrap: brandBootstrap } = useBrandConfig();
     const [brands, setBrands] = useState<WhiteLabelBrandRow[]>([]);
     const [selectedBrandId, setSelectedBrandId] = useState<string>('');
-    const [menuMusicEnabled, setMenuMusicEnabled] = useState<boolean>(true);
     const [menuFlags, setMenuFlags] = useState<Record<string, boolean>>({});
     const [heroParallaxEnabled, setHeroParallaxEnabled] = useState<boolean>(false);
     const [heroParallaxMode, setHeroParallaxMode] = useState<HeroParallaxMode>('off');
@@ -229,8 +228,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     }, [selectedBrandId, aiTesting, aiConfig, aiKeyInput, aiProvider, aiModel, showToast]);
 
     const activeFeatureCount = useMemo(
-        () => Number(menuMusicEnabled) + Number(heroParallaxEnabled) + Number(contentOfflineEnabled),
-        [contentOfflineEnabled, heroParallaxEnabled, menuMusicEnabled],
+        () => Number(heroParallaxEnabled) + Number(contentOfflineEnabled),
+        [contentOfflineEnabled, heroParallaxEnabled],
     );
     const isBrandIdentityDirty = useMemo(
         () => serializeBrandIdentity(brandIdentity) !== brandIdentityBaseline,
@@ -285,7 +284,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             nextMenuFlags[item.key] = features[`menu.${item.key}`]?.enabled ?? item.enabled;
         }
         setMenuFlags(nextMenuFlags);
-        setMenuMusicEnabled(features['menu.music']?.enabled ?? true);
 
         // Rollout, métricas, alerting, health check e timeline operacional foram
         // removidos da UI single-brand.
@@ -871,25 +869,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-3">
-                                        <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div>
-                                                    <p className="text-sm font-bold text-gray-900">Menu: Músicas</p>
-                                                    <p className="mt-1 text-sm text-gray-500">Liga ou desliga o item de menu de músicas para a marca.</p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    role="switch"
-                                                    aria-checked={menuMusicEnabled}
-                                                    onClick={() => persistFeature('menu.music', !menuMusicEnabled, {})}
-                                                    className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${menuMusicEnabled ? 'bg-brand-primary' : 'bg-gray-300'}`}
-                                                    disabled={loading || saving || !selectedBrand}
-                                                >
-                                                    <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${menuMusicEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
-                                                </button>
-                                            </div>
-                                        </div>
-
                                         {isCentralCorujaBrand && (
                                         <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                                             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
