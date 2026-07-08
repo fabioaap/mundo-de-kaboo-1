@@ -95,6 +95,17 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: '🎯 GTM / Growth',
+      collapsed: false,
+      items: [
+        'gtm/gtm-index',
+        'gtm/gtm-marketing-figma',
+        'gtm/gtm-code-backlog',
+        'gtm/gtm-figma-inventory',
+      ],
+    },
+    {
+      type: 'category',
       label: '🗺️ Roadmap',
       items: [
         'roadmap/index',
