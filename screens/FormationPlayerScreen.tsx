@@ -304,15 +304,27 @@ export const FormationPlayerScreen: React.FC<FormationPlayerScreenProps> = ({ fo
           <Icons.ChevronLeft size={16} />
           Anterior
         </button>
-        <button
-          type="button"
-          onClick={() => handleLessonChange(safeIndex + 1)}
-          disabled={isLast}
-          className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-5 py-2.5 text-sm font-black text-white transition-colors enabled:hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Próxima
-          <Icons.ChevronRight size={16} />
-        </button>
+        {isLast ? (
+          // Última aula: em vez de um "Próxima" morto (desabilitado), fecha o ciclo com
+          // um CTA de conclusão que devolve o usuário à biblioteca de Formações.
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-5 py-2.5 text-sm font-black text-white transition-colors hover:bg-brand-primary/90"
+          >
+            <Icons.CheckCircle size={16} />
+            Concluir curso
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => handleLessonChange(safeIndex + 1)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-5 py-2.5 text-sm font-black text-white transition-colors hover:bg-brand-primary/90"
+          >
+            Próxima
+            <Icons.ChevronRight size={16} />
+          </button>
+        )}
       </div>
     </>
   );
