@@ -204,7 +204,9 @@ export const Card3D: React.FC<Card3DProps> = ({ collection, onCollectionClick, l
       >
           {/* Image square — recebe o tilt 3D */}
           <div
-            className={`relative overflow-hidden rounded-[10px] border border-brand-primary/10 aspect-square ${collectionHeroCover ? 'bg-slate-100' : 'bg-[linear-gradient(180deg,#fdf9fe,#f6eff8)]'}`}
+            className={`relative overflow-hidden aspect-square ${isCentralCorujaTone
+              ? 'rounded-[12px] border-[2.5px] border-[#EA9A3B]/90 bg-[#0C1A34] shadow-[0_10px_24px_rgba(3,10,22,0.30)]'
+              : `rounded-[10px] border border-brand-primary/10 ${collectionHeroCover ? 'bg-slate-100' : 'bg-[linear-gradient(180deg,#fdf9fe,#f6eff8)]'}`}`}
             style={{
               ...(isActive && { WebkitMaskImage: '-webkit-radial-gradient(white, black)' }),
               transform: isActive
