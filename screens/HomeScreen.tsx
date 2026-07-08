@@ -1684,6 +1684,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
     const filterIdleClass = isKabooTone
       ? 'text-brand-primary hover:bg-brand-primary/[0.06]'
       : 'text-white/90 hover:bg-white/12';
+    // Card "stage shell" glass envolvendo barra + tabs, igual às bibliotecas Coruja
+    // (corujaStageShellClass). Kaboo não usa card.
+    const stageShellClass = isKabooTone
+      ? ''
+      : 'rounded-[1.35rem] px-4 py-3.5 md:px-5 border border-white/12 bg-[linear-gradient(180deg,rgba(7,32,42,0.78),rgba(4,27,36,0.72))] shadow-[0_20px_48px_rgba(4,27,36,0.24)] backdrop-blur-xl';
     const passiveFilterClass = isKabooTone
       ? 'bg-white text-brand-primary border-gray-200 shadow-sm hover:border-brand-primary/24'
       : 'bg-white/95 text-brand-primary border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-brand-accent/60';
@@ -1692,7 +1697,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       : 'bg-white/95 text-brand-primary border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white';
 
     return (
-      <div className="space-y-3 md:space-y-4">
+      <div className={`space-y-3 md:space-y-4 ${stageShellClass}`}>
         <div className="relative z-10 flex w-full flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative min-w-0 flex-1">
             <div className={`pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 ${searchIconClass}`}>
