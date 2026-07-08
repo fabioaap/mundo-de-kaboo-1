@@ -1951,7 +1951,7 @@ export const api = {
             requiresLogin: true,
             requiresEmailConfirmation: true,
             email: input.email,
-            message: 'Conta criada. Confirme seu e-mail para concluir o cadastro e depois faça login para ativar seu codigo de acesso.'
+            message: 'Conta criada. Confirme seu e-mail para concluir o cadastro e depois faça login para ativar seu código de acesso.'
           };
         }
         logger.error('Error signing up with voucher:', signUpError);
