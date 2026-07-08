@@ -197,8 +197,9 @@ export const CollectionModal: React.FC<CollectionModalProps> = ({
         }
       }}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-100" />
+      {/* Backdrop — clicar fora do modal fecha (o container externo fica coberto por
+          este overlay, então o handler de fechar precisa estar aqui, não só no pai) */}
+      <div onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-100" />
 
       {/* Modal Content */}
       <div className="relative w-full max-w-6xl h-[90dvh] max-h-[90dvh] md:h-[95dvh] md:max-h-[95dvh] bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-100 flex flex-col">
