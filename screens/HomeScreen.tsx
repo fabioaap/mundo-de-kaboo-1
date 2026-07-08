@@ -1669,9 +1669,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
   const renderImmersiveHeroControls = (tone: 'coruja' | 'kaboo' = 'coruja') => {
     const isKabooTone = tone === 'kaboo';
+    // Tom Coruja: barra "glass" escura, igual às bibliotecas (corujaSearchFieldClass),
+    // para o acervo e as bibliotecas lerem como a mesma ferramenta. Kaboo segue branco.
     const searchInputClass = isKabooTone
       ? 'h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-24 md:pr-40 shadow-sm hover:border-brand-primary/24 focus:border-brand-primary'
-      : 'h-14 rounded-[28px] border-transparent bg-white/92 pl-11 pr-24 md:pr-40 shadow-sm hover:border-transparent focus:border-brand-primary';
+      : 'h-14 rounded-[28px] border border-white/12 bg-white/10 pl-11 pr-24 md:pr-40 text-white placeholder:text-white/42 shadow-[0_12px_28px_rgba(4,27,36,0.18)] backdrop-blur-xl hover:border-white/20 focus:border-[#EA9A3B]/45';
+    // Controles internos da barra (ícone de busca, limpar, divisor, Filtros) por tom —
+    // no glass escuro precisam ser claros para manter contraste.
+    const searchIconClass = isKabooTone ? 'text-gray-400' : 'text-white/55';
+    const clearBtnClass = isKabooTone
+      ? 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
+      : 'text-white/60 hover:bg-white/12 hover:text-white';
+    const dividerClass = isKabooTone ? 'bg-gray-200' : 'bg-white/20';
+    const filterIdleClass = isKabooTone
+      ? 'text-brand-primary hover:bg-brand-primary/[0.06]'
+      : 'text-white/90 hover:bg-white/12';
     const passiveFilterClass = isKabooTone
       ? 'bg-white text-brand-primary border-gray-200 shadow-sm hover:border-brand-primary/24'
       : 'bg-white/95 text-brand-primary border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-brand-accent/60';
@@ -1683,7 +1695,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       <div className="space-y-3 md:space-y-4">
         <div className="relative z-10 flex w-full flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative min-w-0 flex-1">
-            <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+            <div className={`pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 ${searchIconClass}`}>
               <Icons.Search size={18} />
             </div>
             <Input
@@ -1702,17 +1714,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                 <button
                   type="button"
                   onClick={() => setSearchTerm('')}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors ${clearBtnClass}`}
                   title="Limpar busca"
                 >
                   <Icons.X size={16} />
                 </button>
               )}
-              <span className="mx-0.5 h-6 w-px bg-gray-200" aria-hidden="true" />
+              <span className={`mx-0.5 h-6 w-px ${dividerClass}`} aria-hidden="true" />
               <button
                 type="button"
                 onClick={() => openFilterDrawer()}
-                className={`inline-flex h-10 items-center gap-2 rounded-[20px] px-3 transition-all active:scale-95 ${activeFilterCount > 0 ? 'bg-brand-light text-white shadow-[0_10px_22px_rgba(93,30,118,0.30)]' : 'text-brand-primary hover:bg-brand-primary/[0.06]'}`}
+                className={`inline-flex h-10 items-center gap-2 rounded-[20px] px-3 transition-all active:scale-95 ${activeFilterCount > 0 ? 'bg-brand-light text-white shadow-[0_10px_22px_rgba(93,30,118,0.30)]' : filterIdleClass}`}
                 title="Refinar busca"
               >
                 <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
