@@ -1694,7 +1694,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
       : 'bg-white/95 text-brand-primary border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-brand-accent/60';
     const passiveTabClass = isKabooTone
       ? 'bg-white text-brand-primary border-gray-200 hover:bg-gray-50 hover:border-brand-primary/24'
-      : 'bg-white/95 text-brand-primary border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white';
+      : 'bg-white/10 text-white border-white/15 hover:bg-white/16';
 
     return (
       <div className={`space-y-3 md:space-y-4 ${stageShellClass}`}>
@@ -2238,7 +2238,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     <p className={`text-sm mt-1 line-clamp-1 ${isCorujaHomeLayout ? 'text-white/70' : 'text-gray-500'}`}>Pesquisando por “{searchTerm.trim()}”</p>
                   )}
                 </div>
-                <div className="relative flex items-center gap-1.5 rounded-full border border-gray-200/80 bg-white/90 px-2 py-1 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+                <div className={`relative flex items-center gap-1.5 rounded-full border px-2 py-1 ${isCorujaHomeLayout ? 'border-white/12 bg-white/10 shadow-[0_10px_24px_rgba(4,27,36,0.18)] backdrop-blur-xl' : 'border-gray-200/80 bg-white/90 shadow-[0_10px_24px_rgba(15,23,42,0.06)]'}`}>
                     {/* Chip Idade */}
                     {(() => {
                       const activeCount = activeFilters.age.filter(isAgeValue).length;
@@ -2251,7 +2251,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                               setDropdownAnchor({ x: rect.left, y: rect.bottom + 6 });
                               setOpenDropdown(isOpen ? null : 'age');
                             }}
-                            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${activeCount > 0 || isOpen ? 'bg-brand-primary text-white shadow-sm' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${activeCount > 0 || isOpen ? 'bg-brand-primary text-white shadow-sm' : isCorujaHomeLayout ? 'bg-white/10 text-white/80 hover:bg-white/16' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
                             title="Filtrar por idade"
                           >
                             <Icons.Baby size={12} />
@@ -2275,7 +2275,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                               setDropdownAnchor({ x: rect.left, y: rect.bottom + 6 });
                               setOpenDropdown(isOpen ? null : 'schoolYear');
                             }}
-                            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${activeCount > 0 || isOpen ? 'bg-brand-primary text-white shadow-sm' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${activeCount > 0 || isOpen ? 'bg-brand-primary text-white shadow-sm' : isCorujaHomeLayout ? 'bg-white/10 text-white/80 hover:bg-white/16' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
                             title="Filtrar por ano escolar"
                           >
                             <Icons.GraduationCap size={12} />
