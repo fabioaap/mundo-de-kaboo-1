@@ -22,6 +22,7 @@ interface FileUploadProps {
   showAsIcon?: boolean; // Show as file icon instead of URL input
   inputId?: string;
   previewSize?: FileUploadPreviewSize;
+  recommendedSize?: string; // Ex.: "512 × 512 px". Mostra dica de dimensão + placeholder de preview quando vazio.
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -37,6 +38,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   showAsIcon = false,
   inputId,
   previewSize = 'md',
+  recommendedSize,
   onFile,
 }) => {
   const [uploading, setUploading] = useState(false);
@@ -195,6 +197,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </div>
         )}
 
+        {/* Empty-state preview placeholder — mostra onde a imagem vai aparecer e a
+            dimensão recomendada quando ainda não há imagem. Clica para enviar. */}
+        {recommendedSize && !value && !showAsIcon && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={disabled || uploading}
+            className="mb-3 flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-6 text-gray-400 transition-colors hover:border-brand-primary/40 hover:text-brand-primary disabled:opacity-50"
+          >
+            <Icons.Upload size={22} />
+            <span className="text-xs font-bold">Nenhuma imagem enviada</span>
+            <span className="text-[11px]">Pré-visualização aparece aqui</span>
+          </button>
+        )}
+
         {/* File Icon Display (for PDF, Audio, Video when showAsIcon is true) */}
         {showAsIcon && value && (
           <div className="mb-3">
@@ -317,6 +334,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           {folder === 'video' && 'Formatos aceitos: MP4, WebM (máx. 500MB)'}
           {folder === 'extras' && 'Formatos aceitos: JPG, PNG, WebP e SVG (máx. 500MB)'}
         </p>
+        )}
+        {recommendedSize && (
+          <p className="mt-1 text-xs font-semibold text-brand-primary/80">Tamanho recomendado: {recommendedSize}</p>
         )}
       </div>
 

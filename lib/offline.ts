@@ -1,8 +1,31 @@
 import { Collection } from '../types';
 import { logger } from './logger';
+import { getActiveBrandSlug } from './activeBrand';
 
-const CACHE_NAME = 'kaboo-offline-v1';
-const STORAGE_KEY = 'offline_collections';
+const CACHE_NAME_BASE = 'kaboo-offline-v1';
+const STORAGE_KEY_BASE = 'offline_collections';
+
+// Both the Cache API name and the localStorage list are scoped per brand so the
+// dev/test deploy on GitHub Pages (all brands on the same origin, brand chosen via
+// `?brand=`) never mixes one brand's offline downloads with another's. In production
+// each brand is its own domain/Storage Account, so same-origin already isolates them,
+// but scoping keeps the behavior identical across environments. Follows the same
+// `kaboo` === no-suffix convention as the collection/profile session caches in api.ts.
+const brandSuffix = (): string => {
+  const slug = getActiveBrandSlug();
+  return slug === 'kaboo' ? '' : `_${slug}`;
+};
+
+export const getOfflineStorageKey = (): string => `${STORAGE_KEY_BASE}${brandSuffix()}`;
+
+// The Service Worker owns the actual media cache and can only read the brand from a
+// query param on its own URL (see registration in index.tsx). It hyphenates the suffix
+// (`kaboo-offline-v1-central-coruja`) to keep the cache name a valid single token; the
+// app side must build the exact same string so reads/writes hit the same cache.
+export const getOfflineCacheName = (): string => {
+  const slug = getActiveBrandSlug();
+  return slug === 'kaboo' ? CACHE_NAME_BASE : `${CACHE_NAME_BASE}-${slug}`;
+};
 
 type EnableOfflineOptions = {
   extraUrls?: Array<string | null | undefined>;
@@ -21,14 +44,14 @@ type OfflineDownloadStatus = {
 
 const getStoredOfflineCollectionIds = (): string[] => {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return JSON.parse(localStorage.getItem(getOfflineStorageKey()) || '[]');
   } catch {
     return [];
   }
 };
 
 const setStoredOfflineCollectionIds = (collectionIds: string[]): void => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(collectionIds));
+  localStorage.setItem(getOfflineStorageKey(), JSON.stringify(collectionIds));
 };
 
 const normalizeCacheUrl = (value?: string | null): string | null => {
@@ -113,7 +136,7 @@ export const offlineManager = {
     let cache: Cache;
 
     try {
-      cache = await caches.open(CACHE_NAME);
+      cache = await caches.open(getOfflineCacheName());
     } catch (error) {
       logger.error('Erro ao acessar Cache API:', error);
       throw new Error('Não foi possível preparar o download offline agora.');
@@ -174,7 +197,7 @@ export const offlineManager = {
     let cache: Cache;
 
     try {
-      cache = await caches.open(CACHE_NAME);
+      cache = await caches.open(getOfflineCacheName());
     } catch (error) {
       logger.warn('Erro ao consultar Cache API:', error);
       return {
@@ -230,7 +253,7 @@ export const offlineManager = {
     let cache: Cache;
 
     try {
-      cache = await caches.open(CACHE_NAME);
+      cache = await caches.open(getOfflineCacheName());
     } catch (error) {
       logger.warn('Erro ao acessar Cache API para remoção:', error);
       return;

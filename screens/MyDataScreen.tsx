@@ -120,7 +120,7 @@ export const MyDataScreen: React.FC<MyDataScreenProps> = ({ onBack }) => {
                 setMsg({
                     type: 'success',
                     text: formData.password
-                        ? 'Dados locais atualizados. Senha nao e aplicada no modo demonstracao.'
+                        ? 'Dados locais atualizados. Senha não é aplicada no modo demonstração.'
                         : 'Dados atualizados com sucesso!'
                 });
 

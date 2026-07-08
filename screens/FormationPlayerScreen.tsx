@@ -125,6 +125,7 @@ export const FormationPlayerScreen: React.FC<FormationPlayerScreenProps> = ({ fo
   const [activeLessonIndex, setActiveLessonIndex] = useState(0);
   const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
   const [progressPercent, setProgressPercent] = useState(0);
+  const [showCompletion, setShowCompletion] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -304,15 +305,27 @@ export const FormationPlayerScreen: React.FC<FormationPlayerScreenProps> = ({ fo
           <Icons.ChevronLeft size={16} />
           Anterior
         </button>
-        <button
-          type="button"
-          onClick={() => handleLessonChange(safeIndex + 1)}
-          disabled={isLast}
-          className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-5 py-2.5 text-sm font-black text-white transition-colors enabled:hover:bg-brand-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Próxima
-          <Icons.ChevronRight size={16} />
-        </button>
+        {isLast ? (
+          // Última aula: em vez de um "Próxima" morto (desabilitado), fecha o ciclo com
+          // um CTA de conclusão que devolve o usuário à biblioteca de Formações.
+          <button
+            type="button"
+            onClick={() => setShowCompletion(true)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-5 py-2.5 text-sm font-black text-white transition-colors hover:bg-brand-primary/90"
+          >
+            <Icons.CheckCircle size={16} />
+            Concluir curso
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => handleLessonChange(safeIndex + 1)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary px-5 py-2.5 text-sm font-black text-white transition-colors hover:bg-brand-primary/90"
+          >
+            Próxima
+            <Icons.ChevronRight size={16} />
+          </button>
+        )}
       </div>
     </>
   );
@@ -346,6 +359,45 @@ export const FormationPlayerScreen: React.FC<FormationPlayerScreenProps> = ({ fo
           </div>
         </aside>
       </div>
+
+      {showCompletion && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          role="dialog"
+          aria-label="Curso concluído"
+        >
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150"
+            onClick={onBack}
+          />
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#5D1F58] via-[#883E82] to-[#EA9A3B]" />
+            <div className="px-8 pb-8 pt-9 text-center">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-50 text-green-600 ring-1 ring-green-100">
+                <Icons.CheckCircle size={36} />
+              </div>
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-brand-primary/70">
+                Curso concluído
+              </p>
+              <h2 className="mt-2 text-2xl font-black leading-tight text-gray-900">
+                {formation.title}
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                Você concluiu todas as {lessons.length} {lessons.length === 1 ? 'aula' : 'aulas'} deste curso.
+                Continue explorando as formações para levar mais recursos para a sua prática.
+              </p>
+              <button
+                type="button"
+                onClick={onBack}
+                className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-primary px-6 py-3 text-sm font-black text-white transition-colors hover:bg-brand-primary/90"
+              >
+                Voltar às Formações
+                <Icons.ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

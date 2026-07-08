@@ -1,6 +1,6 @@
 # Documentação de React Hooks Customizados
 
-**Atualizado em**: 30/06/2026, 17:06:11
+**Atualizado em**: 08/07/2026, 18:07:54
 
 ## Índice
 
@@ -9,6 +9,7 @@
 - [useBrandConfig](#usebrandconfig)
 - [useDebounce](#usedebounce)
 - [useIsMobile](#useismobile)
+- [useModalA11y](#usemodala11y)
 - [useOfflineDownload](#useofflinedownload)
 - [useOrientation](#useorientation)
 - [useParallaxMotion](#useparallaxmotion)
@@ -80,6 +81,21 @@
 
 
 **Exports**: 
+
+---
+
+## useModalA11y
+
+**Arquivo**: `hooks/useModalA11y.ts`
+
+**Descrição**: /   Keyboard/focus accessibility for modals: closes on Escape, traps Tab/Shift+Tab focus inside the 
+
+
+```
+/   Keyboard/focus accessibility for modals: closes on Escape, traps Tab/Shift+Tab focus inside the container while open, moves initial focus into the modal on open, and restores focus to the previously-focused element on close.  Attach the returned ref to the modal's outermost container element. /
+```
+
+**Exports**: `useModalA11y`
 
 ---
 

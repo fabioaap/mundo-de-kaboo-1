@@ -5,6 +5,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#5D1F58" />
+  <!-- CSP via meta tag (issue #59, débito de docs/qa/AUDITORIA-FULLSTACK-2026-06-25.md): cobre o que
+       o browser permite fora de um header HTTP real. frame-ancestors, report-uri e sandbox são
+       ignorados aqui por spec — só valem como header HTTP, que exige Azure CDN/Front Door na frente
+       do Storage Static Website (não existe hoje, é infra nova — ver pesquisa registrada na issue).
+       HSTS/X-Frame-Options/X-Content-Type-Options/Permissions-Policy também exigem header HTTP e
+       ficam como débito até essa infra existir. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' https://mcp.figma.com https://www.youtube.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: blob: https://*.supabase.co https://img.youtube.com https://i.ytimg.com;
+    media-src 'self' blob: https://*.supabase.co;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://mcp.figma.com https://www.youtube.com;
+    frame-src https://www.youtube.com;
+    object-src 'none';
+    base-uri 'self';
+  " />
+  <!-- Achado de review (2026-07-04): o webhook de alerting white-label
+       (lib/whiteLabelAdminApi.ts) faz fetch() do browser pra host ARBITRÁRIO
+       configurado pelo admin (Slack/n8n/etc.) — a CSP acima vai bloquear
+       qualquer host fora de connect-src, então esse recurso especificamente
+       degrada (some sem aviso) sob esta CSP. Não dá pra resolver só com
+       allowlist (o host é escolhido pelo admin, não fixo) — fica documentado
+       como limitação conhecida até decidir uma abordagem (relay via edge
+       function, ou aceitar a degradação). -->
+
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Mundo de Kaboo</title>
 
@@ -25,10 +52,10 @@
   <meta name="msapplication-TileColor" content="#5D1F58" />
   <meta name="msapplication-TileImage" content="/favicon.ico" />
 
-  <!-- Google Fonts: Nunito -->
+  <!-- Google Fonts: fontes selecionáveis no admin white-label (Nunito é o padrão) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Poppins:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <style>
     /* Hide scrollbar for Chrome, Safari and Opera */

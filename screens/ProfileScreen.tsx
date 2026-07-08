@@ -205,7 +205,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
                 {getAccessStatusLabel(getProfileAccessStatus(profile))}
               </span>
               <span className="text-sm font-semibold text-gray-700">
-                Vigente ate {formatAccessDate(profile.access_expires_at)}
+                Vigente até {formatAccessDate(profile.access_expires_at)}
               </span>
             </div>
           )}

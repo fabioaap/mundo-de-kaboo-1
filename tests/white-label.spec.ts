@@ -91,7 +91,7 @@ test.describe('JN-WL-001 — Acesso e estrutura geral', () => {
         await expect(page.getByRole('button', { name: 'Operações', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Menus', exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Integrações de IA', exact: true })).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Auditoria', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Auditoria de menus', exact: true })).toBeVisible();
     });
 });
 
@@ -223,8 +223,9 @@ test.describe('JN-WL-005 — Navegação entre tabs', () => {
 
         // Seções de auditoria visíveis (single-brand: "Histórico de entregas" e
         // "Payload de alertas" foram removidos junto com o dispatch de alertas)
-        // Timeline operacional removida na refatoração 2026-06-25 (apenas Auditoria recente permanece)
-        await expect(page.getByRole('heading', { name: 'Auditoria recente' })).toBeVisible({ timeout: 5_000 });
+        // Timeline operacional removida na refatoração 2026-06-25; a aba foi depois
+        // escopada especificamente a toggles de menu ("Auditoria de menus")
+        await expect(page.getByRole('heading', { name: 'Auditoria de menus' })).toBeVisible({ timeout: 5_000 });
     });
 
     test('voltar para Identidade Visual restaura a view', async ({ page }) => {
@@ -244,27 +245,59 @@ test.describe('JN-WL-005 — Navegação entre tabs', () => {
 // JORNADA 6 — Tab Operações: Feature Flags
 // ===========================================================================
 test.describe('JN-WL-006 — Feature Flags', () => {
-    test('toggle de áudios está visível e funcional', async ({ page }) => {
+    test('toggle de Download Offline está visível e funcional', async ({ page }) => {
         await adminAtWhiteLabel(page);
         await page.getByRole('button', { name: 'Operações' }).click();
         await expect(page.getByRole('heading', { name: 'Feature Flags' })).toBeVisible({ timeout: 5_000 });
 
-        // Toggle "Menu: Músicas" está presente
-        await expect(page.getByText('Menu: Músicas')).toBeVisible();
-        const toggle = page.getByRole('switch', { name: /Músicas/i }).or(page.locator('button[role="switch"]').first());
-        await expect(toggle).toBeVisible();
+        // "Menu: Músicas" foi removido da aba Operações — o liga/desliga de menus
+        // agora vive só na aba "Menus" (ver JN-WL-006b). O toggle real que resta em
+        // Operações (fora do card condicional de Hero Parallax) é "Download Offline".
+        await expect(page.getByText('Download Offline')).toBeVisible();
+        const offlineToggle = page.locator('button[role="switch"]').first();
+        await expect(offlineToggle).toBeVisible();
 
         // Clicar no toggle deve alterar o estado
-        const wasChecked = await toggle.getAttribute('aria-checked');
-        await toggle.click();
+        const wasChecked = await offlineToggle.getAttribute('aria-checked');
+        await offlineToggle.click();
         // Aguardar a atualização do estado
         await page.waitForTimeout(1000);
-        const nowChecked = await toggle.getAttribute('aria-checked');
+        const nowChecked = await offlineToggle.getAttribute('aria-checked');
         expect(wasChecked).not.toBe(nowChecked);
     });
 
-    test('controles de parallax e seletor de modo estão presentes', async ({ page }) => {
+    test('toggle de menu Músicas está visível e funcional na aba Menus', async ({ page }) => {
         await adminAtWhiteLabel(page);
+        await page.getByRole('button', { name: 'Menus', exact: true }).click();
+        await expect(page.getByRole('heading', { name: 'Menus da navegação' })).toBeVisible({ timeout: 5_000 });
+
+        await expect(page.getByText('Músicas', { exact: true })).toBeVisible();
+        // Cada item de menu é renderizado como um card (div.rounded-2xl) com o label
+        // e o switch correspondente — localizamos o switch dentro do card de "Músicas".
+        const musicCard = page.locator('div.rounded-2xl', { hasText: 'Músicas' }).first();
+        const musicToggle = musicCard.locator('button[role="switch"]');
+        await expect(musicToggle).toBeVisible();
+
+        const wasChecked = await musicToggle.getAttribute('aria-checked');
+        await musicToggle.click();
+        await page.waitForTimeout(1000);
+        const nowChecked = await musicToggle.getAttribute('aria-checked');
+        expect(wasChecked).not.toBe(nowChecked);
+    });
+
+    // Hero Parallax só é renderizado quando a marca ativa é Central Coruja
+    // (isCentralCorujaBrand em AdminWhiteLabelScreen.tsx). Na marca default (Kaboo)
+    // usada por adminAtWhiteLabel(), o card não deve aparecer.
+    test('Hero Parallax NÃO aparece na aba Operações para a marca default (Kaboo)', async ({ page }) => {
+        await adminAtWhiteLabel(page);
+        await page.getByRole('button', { name: 'Operações' }).click();
+        await expect(page.getByRole('heading', { name: 'Feature Flags' })).toBeVisible({ timeout: 5_000 });
+
+        await expect(page.getByText('Hero Parallax')).toHaveCount(0);
+    });
+
+    test('controles de parallax e seletor de modo estão presentes para Central Coruja', async ({ page }) => {
+        await adminAtConfiguracoesForBrand(page, 'central-coruja');
         await page.getByRole('button', { name: 'Operações' }).click();
         await expect(page.getByText('Hero Parallax')).toBeVisible({ timeout: 5_000 });
 
@@ -285,13 +318,10 @@ test.describe('JN-WL-006 — Feature Flags', () => {
 // JORNADA 7 — Tab Operações: Publicação e Rollout
 // ===========================================================================
 test.describe('JN-WL-007 — Publicação e Rollout', () => {
-    test('seção de publicação mostra versão e botão publicar', async ({ page }) => {
-        await adminAtWhiteLabel(page);
-        await page.getByRole('button', { name: 'Operações' }).click();
-
-        await expect(page.getByRole('heading', { name: /Versão/ })).toBeVisible({ timeout: 5_000 });
-        await expect(page.getByRole('button', { name: /Publicar agora|Publicar nova versão/ })).toBeVisible();
-    });
+    // TODO(single-brand): o card "Publicação" (Versão vX publicada + botão
+    // "Publicar nova versão"/"Publicar agora") foi removido inteiramente da aba
+    // Operações nesta sessão — não há mais UI de publicação/versão a testar.
+    test.skip('seção de publicação mostra versão e botão publicar', async () => {});
 
     // TODO(single-brand): feature removida na refatoração 2026-06-15 — Rollout por Ondas
     // (pilot/group/general) foi removido da UI single-brand.
@@ -415,7 +445,8 @@ test.describe('JN-WL-013 — Tipografia e tokens de design', () => {
         // não mais de um seletor dentro do admin.
         await adminAtConfiguracoesForBrand(page, 'central-coruja');
 
-        await page.getByLabel('Família tipográfica').fill('Poppins, ui-sans-serif');
+        // Família tipográfica virou <select> (options fixas: Nunito/Poppins/Inter/Baloo 2)
+        await page.getByLabel('Família tipográfica').selectOption({ label: 'Poppins' });
         await page.getByLabel('Cor de sucesso').fill('#2F7D4D');
         await page.getByLabel('Radius XL').fill('1.125rem');
         await page.getByLabel('Radius 2XL').fill('1.75rem');
@@ -502,9 +533,9 @@ test.describe('JN-WL-015 — Integrações de IA', () => {
 test.describe('JN-WL-016 — Auditoria e rollback', () => {
     test('aba Auditoria mostra estado vazio quando não há eventos (mock)', async ({ page }) => {
         await adminAtWhiteLabel(page);
-        await page.getByRole('button', { name: 'Auditoria', exact: true }).click();
+        await page.getByRole('button', { name: 'Auditoria de menus', exact: true }).click();
 
-        await expect(page.getByRole('heading', { name: 'Auditoria recente' })).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByRole('heading', { name: 'Auditoria de menus' })).toBeVisible({ timeout: 5_000 });
         // listWhiteLabelAudit() retorna [] em modo mock → estado vazio determinístico
         await expect(page.getByText('Sem eventos recentes para esta marca.')).toBeVisible();
     });

@@ -21,20 +21,28 @@ import {
 import {
     getWhiteLabelBrandIdentity,
     canUseRemoteWhiteLabel,
-    getWhiteLabelPublicationState,
     getWhiteLabelFeatures,
     HeroParallaxMode,
     listWhiteLabelAudit,
     listWhiteLabelBrands,
-    publishWhiteLabelBrand,
     resolveHeroParallaxMode,
     setWhiteLabelBrandIdentity,
     setWhiteLabelFeature,
     WhiteLabelAuditEntry,
     WhiteLabelBrandRow,
-    WhiteLabelPublicationState,
     WhiteLabelBrandIdentity,
 } from '../lib/whiteLabelAdminApi';
+
+/** Fontes selecionáveis para a marca. `value` é a stack CSS completa gravada em
+ *  brand_settings.font_family e aplicada via --font-family-sans. Todas são carregadas
+ *  no index.html (Google Fonts), então o que a marca escolher sempre renderiza.
+ *  Nunito = padrão → value vazio deixa o app cair no DEFAULT_FONT_FAMILY. */
+const BRAND_FONT_OPTIONS: { label: string; value: string }[] = [
+    { label: 'Nunito (padrão)', value: '' },
+    { label: 'Poppins', value: "'Poppins', ui-rounded, system-ui, sans-serif" },
+    { label: 'Inter', value: "'Inter', ui-rounded, system-ui, sans-serif" },
+    { label: 'Baloo 2', value: "'Baloo 2', ui-rounded, system-ui, sans-serif" },
+];
 
 /** Labels canônicos dos itens de menu — fonte de verdade para o admin (independente do DB). */
 const NAV_CANONICAL_LABELS: Record<string, string> = {
@@ -96,13 +104,11 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     const { slug: appBrandSlug, bootstrap: brandBootstrap } = useBrandConfig();
     const [brands, setBrands] = useState<WhiteLabelBrandRow[]>([]);
     const [selectedBrandId, setSelectedBrandId] = useState<string>('');
-    const [menuMusicEnabled, setMenuMusicEnabled] = useState<boolean>(true);
     const [menuFlags, setMenuFlags] = useState<Record<string, boolean>>({});
     const [heroParallaxEnabled, setHeroParallaxEnabled] = useState<boolean>(false);
     const [heroParallaxMode, setHeroParallaxMode] = useState<HeroParallaxMode>('off');
     const [contentOfflineEnabled, setContentOfflineEnabled] = useState<boolean>(false);
     const [auditEntries, setAuditEntries] = useState<WhiteLabelAuditEntry[]>([]);
-    const [publicationState, setPublicationState] = useState<WhiteLabelPublicationState>({ version: 1, published_at: null });
     const [brandIdentity, setBrandIdentity] = useState<WhiteLabelBrandIdentity>(DEFAULT_BRAND_IDENTITY);
     const [brandIdentityBaseline, setBrandIdentityBaseline] = useState(() => serializeBrandIdentity(DEFAULT_BRAND_IDENTITY));
     const [activeTab, setActiveTab] = useState<'identidade' | 'operacoes' | 'menus' | 'auditoria' | 'ia'>('identidade');
@@ -159,6 +165,11 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         () => brands.find((brand) => brand.id === selectedBrandId) ?? null,
         [brands, selectedBrandId],
     );
+    // Controles visuais exclusivos da Central Coruja (parallax do hero e imagem de
+    // hero da home só têm efeito nessa marca). Para as demais, o consumidor não
+    // renderiza nada — então escondemos os campos no admin em vez de exibir controle
+    // inócuo.
+    const isCentralCorujaBrand = selectedBrand?.slug === 'central-coruja';
 
     const handleSaveAIConfig = useCallback(async () => {
         if (!selectedBrandId || aiSaving) return;
@@ -217,8 +228,8 @@ export const AdminWhiteLabelScreen: React.FC = () => {
     }, [selectedBrandId, aiTesting, aiConfig, aiKeyInput, aiProvider, aiModel, showToast]);
 
     const activeFeatureCount = useMemo(
-        () => Number(menuMusicEnabled) + Number(heroParallaxEnabled) + Number(contentOfflineEnabled),
-        [contentOfflineEnabled, heroParallaxEnabled, menuMusicEnabled],
+        () => Number(heroParallaxEnabled) + Number(contentOfflineEnabled),
+        [contentOfflineEnabled, heroParallaxEnabled],
     );
     const isBrandIdentityDirty = useMemo(
         () => serializeBrandIdentity(brandIdentity) !== brandIdentityBaseline,
@@ -273,15 +284,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
             nextMenuFlags[item.key] = features[`menu.${item.key}`]?.enabled ?? item.enabled;
         }
         setMenuFlags(nextMenuFlags);
-        setMenuMusicEnabled(features['menu.music']?.enabled ?? true);
-
-        try {
-            const publication = await getWhiteLabelPublicationState(brandId);
-            setPublicationState(publication);
-        } catch (err) {
-            console.error('[AdminWhiteLabelScreen] publication state load error:', err);
-            setPublicationState({ version: 1, published_at: null });
-        }
 
         // Rollout, métricas, alerting, health check e timeline operacional foram
         // removidos da UI single-brand.
@@ -492,27 +494,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         }
     };
 
-    const publishCurrentVersion = async () => {
-        if (!selectedBrandId || saving) {
-            return;
-        }
-
-        try {
-            setSaving(true);
-            setError(null);
-            const updated = await publishWhiteLabelBrand(selectedBrandId);
-            setPublicationState(updated);
-            await hydrateBrandFeatures(selectedBrandId);
-            showToast(`Marca publicada com sucesso! Versão ${updated.version} ativa.`, 'success');
-        } catch (err) {
-            setError('Falha ao publicar a versão atual da marca.');
-            showToast('Erro ao publicar marca.', 'error');
-            console.error('[AdminWhiteLabelScreen] publishCurrentVersion error:', err);
-        } finally {
-            setSaving(false);
-        }
-    };
-
 
     return (
         <div className="min-h-full bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_24%)] p-4 md:p-6">
@@ -588,15 +569,23 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                 <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="brand-font-family">
                                                     Família tipográfica
                                                 </label>
-                                                <input
+                                                <select
                                                     id="brand-font-family"
-                                                    type="text"
-                                                    value={brandIdentity.font_family}
+                                                    value={brandIdentity.font_family || ''}
                                                     onChange={(event) => updateBrandIdentityField('font_family', event.target.value)}
-                                                    placeholder="Ex.: Nunito, Poppins"
                                                     className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
                                                     disabled={loading || saving}
-                                                />
+                                                >
+                                                    {BRAND_FONT_OPTIONS.map((option) => (
+                                                        <option key={option.label} value={option.value} style={{ fontFamily: option.value || undefined }}>
+                                                            {option.label}
+                                                        </option>
+                                                    ))}
+                                                    {brandIdentity.font_family
+                                                        && !BRAND_FONT_OPTIONS.some((option) => option.value === brandIdentity.font_family) && (
+                                                        <option value={brandIdentity.font_family}>Atual: {brandIdentity.font_family}</option>
+                                                    )}
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
@@ -614,6 +603,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     folder="extras"
                                                     accept="image/*"
                                                     collectionId={selectedBrandId}
+                                                    recommendedSize="512 × 512 px (quadrado, fundo transparente)"
                                                     disabled={loading || saving}
                                                 />
                                             </div>
@@ -626,9 +616,11 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     folder="extras"
                                                     accept="image/*"
                                                     collectionId={selectedBrandId}
+                                                    recommendedSize="1920 × 1080 px (16:9, paisagem)"
                                                     disabled={loading || saving}
                                                 />
                                             </div>
+                                            {isCentralCorujaBrand && (
                                             <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 lg:col-span-2">
                                                 <FileUpload
                                                     inputId="brand-home-hero-upload"
@@ -638,9 +630,11 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     folder="extras"
                                                     accept="image/*"
                                                     collectionId={selectedBrandId}
+                                                    recommendedSize="2400 × 1200 px (2:1, paisagem)"
                                                     disabled={loading || saving}
                                                 />
                                             </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -862,7 +856,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
 
                         {/* ═══ Tab: Operações ═══ */}
                         {activeTab === 'operacoes' && (
-                            <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
+                            <div className="grid gap-5">
                                 <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm space-y-5">
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                         <div>
@@ -875,25 +869,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-3">
-                                        <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div>
-                                                    <p className="text-sm font-bold text-gray-900">Menu: Músicas</p>
-                                                    <p className="mt-1 text-sm text-gray-500">Liga ou desliga o item de menu de músicas para a marca.</p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    role="switch"
-                                                    aria-checked={menuMusicEnabled}
-                                                    onClick={() => persistFeature('menu.music', !menuMusicEnabled, {})}
-                                                    className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors ${menuMusicEnabled ? 'bg-brand-primary' : 'bg-gray-300'}`}
-                                                    disabled={loading || saving || !selectedBrand}
-                                                >
-                                                    <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${menuMusicEnabled ? 'translate-x-7' : 'translate-x-1'}`} />
-                                                </button>
-                                            </div>
-                                        </div>
-
+                                        {isCentralCorujaBrand && (
                                         <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                                             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                                 <div>
@@ -930,6 +906,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                 })}
                                             </div>
                                         </div>
+                                        )}
 
                                         <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                                             <div className="flex items-start justify-between gap-4">
@@ -980,33 +957,6 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     Baseline padrão
                                                 </Button>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-5">
-                                    <div className="rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm">
-                                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                            <div>
-                                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">Publicação</p>
-                                                <h3 className="mt-1 text-lg font-bold text-gray-900">
-                                                    {publicationState.published_at ? `Versão v${publicationState.version} publicada` : 'Versão pronta para publicar'}
-                                                </h3>
-                                                <p className="mt-1 text-sm text-gray-500">
-                                                    {publicationState.published_at
-                                                        ? `Publicada em ${new Date(publicationState.published_at).toLocaleString('pt-BR')}`
-                                                        : 'A publicação registra data e versão automaticamente nesta integração.'}
-                                                </p>
-                                            </div>
-                                            <Button
-                                                variant="primary"
-                                                onClick={publishCurrentVersion}
-                                                disabled={loading || saving || !selectedBrand || !isAdminUser}
-                                                title={!isAdminUser ? 'Apenas administradores podem publicar' : undefined}
-                                                className="min-w-[160px]"
-                                            >
-                                                {publicationState.published_at ? 'Publicar nova versão' : 'Publicar agora'}
-                                            </Button>
                                         </div>
                                     </div>
                                 </div>

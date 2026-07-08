@@ -11,6 +11,12 @@ const COLLECTION_B = {
     id: 'c6334710-6117-426f-995c-07be8d87d872',
     title: 'Mensageiro e a Canção Certa',
 };
+// C = a second locked collection (also NOT covered), used to prove the upsell
+// modal re-scopes correctly instead of leaking state from a prior trigger.
+const COLLECTION_C = {
+    id: '6a93b60f-b4e9-4fe6-9fed-7c6f7391745c',
+    title: 'Baratinha e Baratão no Labirinto do Eco',
+};
 
 const UPSELL_HEADING = 'Material não incluído';
 const BUY_BUTTON = 'Comprar na loja';
@@ -54,5 +60,57 @@ test.describe('Voucher upsell gate — VIEWER with partial grants', () => {
             page.getByRole('dialog', { name: 'Material não incluído no seu acesso' }),
         ).toHaveCount(0);
         await expect(page.getByRole('button', { name: BUY_BUTTON })).toHaveCount(0);
+    });
+
+    test('clicking "Comprar na loja" opens the store URL in a new tab', async ({ page, context }) => {
+        await setupViewerSessionWithGrants(page, {
+            grantedCollectionIds: [COLLECTION_A.id],
+        });
+
+        const lockedCardTitle = page.getByText(COLLECTION_B.title, { exact: true }).first();
+        await expect(lockedCardTitle).toBeVisible({ timeout: 15_000 });
+
+        await lockedCardTitle.click();
+
+        await expect(
+            page.getByRole('dialog', { name: 'Material não incluído no seu acesso' }),
+        ).toBeVisible({ timeout: 10_000 });
+
+        // storeUrl is brand/config-driven (brandBootstrap.settings.store_url, falling back to
+        // a per-brand constant) — not a fixed value the test can assert statically. Assert the
+        // new-tab navigation itself, not a specific URL.
+        const [newPage] = await Promise.all([
+            context.waitForEvent('page'),
+            page.getByRole('button', { name: BUY_BUTTON }).click(),
+        ]);
+        await newPage.waitForLoadState('domcontentloaded').catch(() => {});
+        expect(newPage.url()).not.toBe('about:blank');
+    });
+
+    test('dismissing the modal and clicking a different locked collection (C) re-opens it scoped to C', async ({ page }) => {
+        await setupViewerSessionWithGrants(page, {
+            grantedCollectionIds: [COLLECTION_A.id],
+        });
+
+        const lockedCardTitleB = page.getByText(COLLECTION_B.title, { exact: true }).first();
+        await expect(lockedCardTitleB).toBeVisible({ timeout: 15_000 });
+        await lockedCardTitleB.click();
+
+        const upsellDialog = page.getByRole('dialog', { name: 'Material não incluído no seu acesso' });
+        await expect(upsellDialog).toBeVisible({ timeout: 10_000 });
+
+        await page.getByRole('button', { name: 'Fechar' }).click();
+        await expect(upsellDialog).toHaveCount(0);
+
+        const lockedCardTitleC = page.getByText(COLLECTION_C.title, { exact: true }).first();
+        await expect(lockedCardTitleC).toBeVisible({ timeout: 15_000 });
+        await lockedCardTitleC.click();
+
+        // The modal reopens for C — proving state was reset on dismiss rather than the
+        // component silently no-oping because it thinks this collection was "already
+        // handled". The modal's own content is generic (no collection title rendered
+        // inside it), so there's no per-collection DOM content to assert against here.
+        await expect(upsellDialog).toBeVisible({ timeout: 10_000 });
+        await expect(upsellDialog.getByText(UPSELL_HEADING, { exact: true })).toBeVisible();
     });
 });

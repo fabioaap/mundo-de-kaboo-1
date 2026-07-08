@@ -3,6 +3,99 @@ import { logger } from './logger';
 
 const STORAGE_BUCKET = 'collections'; // Bucket name for collections files
 
+// Signed URL expiration: 7 days. The `collections` bucket is private (SEC-58),
+// so reads must go through createSignedUrl instead of getPublicUrl.
+export const SIGNED_URL_EXPIRES_IN = 604800; // 7 days in seconds
+
+/**
+ * Extract the in-bucket path from a legacy full Supabase Storage URL.
+ * Handles both the public form (`.../object/public/{bucket}/...`) and the
+ * signed form (`.../object/sign/{bucket}/...`). Returns null if the URL does
+ * not reference STORAGE_BUCKET or cannot be parsed. Mirrors the parse logic
+ * historically inlined in moveFile/deleteFile.
+ */
+export function extractBucketPath(fileUrl: string): string | null {
+  try {
+    const url = new URL(fileUrl);
+    const pathParts = url.pathname.split('/');
+    const bucketIndex = pathParts.indexOf(STORAGE_BUCKET);
+    if (bucketIndex === -1) return null;
+    const path = pathParts.slice(bucketIndex + 1).join('/');
+    return path ? decodeURIComponent(path) : null;
+  } catch {
+    return null;
+  }
+}
+
+// signCollectionsCovers (lib/api.ts) re-signs every collection's URLs on every
+// getCollections() call, including collections-cache hits (60s TTL there covers
+// the raw data, not the signing step) — without this cache, opening a screen
+// that calls getCollections() again (e.g. DetailsScreen resolving kit-linked
+// books) re-signs the entire catalog from scratch, causing a visible multi-
+// second delay for content that was already signed moments earlier. The actual
+// signed URL is valid for SIGNED_URL_EXPIRES_IN (7 days); caching it for 1 hour
+// is a wide safety margin while eliminating redundant network round-trips
+// within a session. Keyed by bucket:path; also dedupes concurrent in-flight
+// requests for the same object (e.g. parallel Promise.all over many assets).
+const SIGNED_URL_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+const signedUrlInFlight = new Map<string, Promise<string | null>>();
+
+/**
+ * Generate a signed URL for a private-bucket object.
+ *
+ * Accepts either a bucket + in-bucket path, or a single legacy full URL
+ * (public or signed) from which the path is re-extracted. Returns null on any
+ * failure (missing path, no permission, object not found) — callers treat null
+ * the same way they treated a missing image before, letting the UI fall back to
+ * its existing image-load-error handling.
+ */
+export async function getSignedUrl(
+  bucketOrUrl: string,
+  path?: string,
+  expiresIn: number = SIGNED_URL_EXPIRES_IN,
+): Promise<string | null> {
+  let bucket = bucketOrUrl;
+  let objectPath = path;
+
+  // Single-argument form: a legacy full URL. Re-derive bucket + path from it.
+  if (objectPath === undefined) {
+    objectPath = extractBucketPath(bucketOrUrl) ?? undefined;
+    bucket = STORAGE_BUCKET;
+    if (!objectPath) return null;
+  }
+
+  const cacheKey = `${bucket}:${objectPath}`;
+  const cached = signedUrlCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.url;
+  }
+
+  const inFlight = signedUrlInFlight.get(cacheKey);
+  if (inFlight) return inFlight;
+
+  const request = (async () => {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(objectPath!, expiresIn);
+
+    if (error || !data?.signedUrl) {
+      logger.warn('[storage] createSignedUrl failed for', objectPath, error?.message);
+      return null;
+    }
+
+    signedUrlCache.set(cacheKey, { url: data.signedUrl, expiresAt: Date.now() + SIGNED_URL_CACHE_TTL_MS });
+    return data.signedUrl;
+  })();
+
+  signedUrlInFlight.set(cacheKey, request);
+  try {
+    return await request;
+  } finally {
+    signedUrlInFlight.delete(cacheKey);
+  }
+}
+
 export interface UploadResult {
   url: string | null;
   error: string | null;
@@ -163,31 +256,27 @@ export async function uploadFile(
         if (retryError) {
           return { url: null, error: retryError.message };
         }
-        
-        const { data: retryUrlData } = supabase.storage
-          .from(STORAGE_BUCKET)
-          .getPublicUrl(newPath);
-        
+
+        const retrySignedUrl = await getSignedUrl(STORAGE_BUCKET, newPath);
+
         if (onProgress) {
           onProgress(100); // Complete
         }
-        
-        return { url: retryUrlData.publicUrl, error: null, originalFileName: file.name };
+
+        return { url: retrySignedUrl, error: null, originalFileName: file.name };
       }
       
       return { url: null, error: error.message || 'Erro desconhecido ao fazer upload' };
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(path);
+    // Get signed URL (bucket is private — SEC-58)
+    const signedUrl = await getSignedUrl(STORAGE_BUCKET, path);
 
     if (onProgress) {
       onProgress(100); // Complete
     }
 
-    return { url: urlData.publicUrl, error: null, originalFileName };
+    return { url: signedUrl, error: null, originalFileName };
   } catch (error: any) {
     logger.error('Upload exception:', error);
     return { url: null, error: error.message || 'Erro ao fazer upload do arquivo' };
@@ -204,10 +293,8 @@ export async function moveFile(
 ): Promise<string | null> {
   try {
     // Extract just the path within bucket from the full URL
-    const urlObj = new URL(fromUrl);
-    const pathParts = urlObj.pathname.split('/object/public/collections/');
-    if (pathParts.length < 2) return null;
-    const fromPath = pathParts[1];
+    const fromPath = extractBucketPath(fromUrl);
+    if (!fromPath) return null;
 
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
@@ -218,11 +305,8 @@ export async function moveFile(
       return null;
     }
 
-    // Return new public URL
-    const { data } = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(toPath);
-    return data.publicUrl;
+    // Return new signed URL (bucket is private — SEC-58)
+    return await getSignedUrl(STORAGE_BUCKET, toPath);
   } catch (err) {
     logger.error('[storage] moveFile exception:', err);
     return null;
@@ -235,16 +319,12 @@ export async function moveFile(
 export async function deleteFile(fileUrl: string): Promise<boolean> {
   try {
     // Extract path from URL
-    const url = new URL(fileUrl);
-    const pathParts = url.pathname.split('/');
-    const bucketIndex = pathParts.indexOf(STORAGE_BUCKET);
-    
-    if (bucketIndex === -1) {
+    const path = extractBucketPath(fileUrl);
+
+    if (!path) {
       logger.error('Invalid file URL');
       return false;
     }
-
-    const path = pathParts.slice(bucketIndex + 1).join('/');
 
     const { error } = await supabase.storage
       .from(STORAGE_BUCKET)

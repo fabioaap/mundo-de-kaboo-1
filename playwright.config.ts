@@ -2,6 +2,13 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
     testDir: './tests',
+    // Default testMatch also matches *.test.ts, which collides with vitest unit
+    // tests that legitimately live under tests/ (e.g. hooks.useBrandConfig...
+    // .regression.test.ts, picked up by vite.config.ts's own vitest include).
+    // Loading both test runners' `expect` in the same process crashes with
+    // "Cannot redefine property: Symbol($$jest-matchers-object)". Playwright
+    // specs in this repo are always named *.spec.ts — restrict to that.
+    testMatch: '**/*.spec.ts',
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,

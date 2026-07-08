@@ -1,5 +1,7 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { deleteFile } from './storage';
+import { deleteFile, getSignedUrl } from './storage';
+import { getOfflineStorageKey, getOfflineCacheName } from './offline';
+import { setActiveBrandSlug } from './activeBrand';
 import catalogSeed from '../data/catalog.seed.json';
 import { LIBRARY_HUB_MOCKS, LibraryHubKind, LibraryMockItem } from '../data/library-hubs';
 import {
@@ -104,6 +106,9 @@ const normalizeBrandId = (value?: string | null): string | null => {
 export const setActiveBrandForApi = (slug: string, brandId?: string | null): void => {
   _activeBrandSlugForApi = slug;
   _activeBrandIdForApi = normalizeBrandId(brandId);
+  // Mirror into the dependency-free holder so light modules (offline.ts) can scope
+  // their storage keys per brand without importing this module's heavy dep chain.
+  setActiveBrandSlug(slug);
 
   if (_activeBrandIdForApi && !_activeBrandIdForApi.startsWith('mock-')) {
     brandIdCacheBySlug.set(slug, _activeBrandIdForApi);
@@ -114,6 +119,11 @@ const getCollectionsCacheKey = (): string =>
   _activeBrandSlugForApi === 'kaboo'
     ? COLLECTIONS_CACHE_KEY
     : `${COLLECTIONS_CACHE_KEY}_${_activeBrandSlugForApi}`;
+
+const getProfileCacheKey = (): string =>
+  _activeBrandSlugForApi === 'kaboo'
+    ? PROFILE_CACHE_KEY
+    : `${PROFILE_CACHE_KEY}_${_activeBrandSlugForApi}`;
 
 const getActiveBrandScopeCacheKey = (): string => _activeBrandSlugForApi;
 
@@ -258,6 +268,88 @@ const hydrateCollectionPresentationFields = (collection: Collection, characters?
 
 const hydrateCollectionsPresentationFields = (collections: Collection[], characters?: Character[]): Collection[] => {
   return collections.map((collection) => hydrateCollectionPresentationFields(collection, characters));
+};
+
+// Swap a legacy `collections`-bucket public URL for a signed URL (SEC-58: the
+// bucket is now private). Non-bucket values (placeholder SVGs, seed assets,
+// external URLs, YouTube frames) yield null from getSignedUrl and pass through
+// unchanged, so the app keeps its `string | null` field contract. Callers of
+// getCollections/getCollectionById are already async, so this signing happens
+// once at the data layer — no screen/component changes.
+//
+// IMPORTANT: this MUST run AFTER hydrateCollectionPresentationFields. That
+// hydration calls inferCollectionAssets, which keys assets in a Map by raw URL
+// and matches the pdf_url/audio_url/video_url primary fields to their assets by
+// URL equality. Signing before hydration would change those keys and split the
+// merge. normalizeAsset/mergeAssetCandidate only trim url/cover_image/lyrics_url
+// (they do not drop or rewrite them), so signed values survive re-hydration on a
+// cache round-trip. Hence: hydrate first, sign last.
+const signCoverField = async (value?: string | null): Promise<string | null | undefined> => {
+  if (!value || !isSupabaseConfigured || devMockSession) return value;
+  const signed = await getSignedUrl(value);
+  return signed ?? value;
+};
+
+// Sign a list of storage URLs (e.g. extra_materials). Each entry keeps its
+// original value when it is not a `collections`-bucket URL (getSignedUrl → null).
+const signUrlList = async (urls: string[]): Promise<string[]> => {
+  return Promise.all(urls.map(async (url) => (await signCoverField(url)) ?? url));
+};
+
+// Sign every `collections`-bucket URL field on a single asset (url is required;
+// cover_image/lyrics_url are optional per-asset overrides).
+const signCollectionAsset = async (asset: CollectionAsset): Promise<CollectionAsset> => {
+  const [url, coverImage, lyricsUrl] = await Promise.all([
+    signCoverField(asset.url),
+    signCoverField(asset.cover_image),
+    signCoverField(asset.lyrics_url),
+  ]);
+
+  return {
+    ...asset,
+    url: url ?? asset.url,
+    ...(asset.cover_image !== undefined ? { cover_image: coverImage ?? asset.cover_image } : {}),
+    ...(asset.lyrics_url !== undefined ? { lyrics_url: lyricsUrl ?? asset.lyrics_url } : {}),
+  };
+};
+
+const signCollectionCovers = async (collection: Collection): Promise<Collection> => {
+  const [
+    coverImage,
+    kitCoverImage,
+    pdfUrl,
+    audioUrl,
+    videoUrl,
+    extraMaterials,
+    collectionAssets,
+  ] = await Promise.all([
+    signCoverField(collection.cover_image),
+    signCoverField(collection.kit_cover_image),
+    signCoverField(collection.pdf_url),
+    signCoverField(collection.audio_url),
+    signCoverField(collection.video_url),
+    collection.extra_materials
+      ? signUrlList(collection.extra_materials)
+      : Promise.resolve(collection.extra_materials),
+    collection.collection_assets
+      ? Promise.all(collection.collection_assets.map((asset) => signCollectionAsset(asset)))
+      : Promise.resolve(collection.collection_assets),
+  ]);
+
+  return {
+    ...collection,
+    cover_image: coverImage ?? collection.cover_image,
+    kit_cover_image: kitCoverImage ?? collection.kit_cover_image,
+    ...(collection.pdf_url !== undefined ? { pdf_url: pdfUrl ?? collection.pdf_url } : {}),
+    ...(collection.audio_url !== undefined ? { audio_url: audioUrl ?? collection.audio_url } : {}),
+    ...(collection.video_url !== undefined ? { video_url: videoUrl ?? collection.video_url } : {}),
+    ...(collection.extra_materials !== undefined ? { extra_materials: extraMaterials } : {}),
+    ...(collection.collection_assets !== undefined ? { collection_assets: collectionAssets } : {}),
+  };
+};
+
+const signCollectionsCovers = async (collections: Collection[]): Promise<Collection[]> => {
+  return Promise.all(collections.map((collection) => signCollectionCovers(collection)));
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1074,7 +1166,7 @@ const mergeMediaHubResponses = (primary: MediaHubResponse, secondary: MediaHubRe
   return mergedResponse;
 };
 
-const getMediaItemResolvedUrl = (item: MediaItemRow): string | null => {
+const getMediaItemResolvedUrl = async (item: MediaItemRow): Promise<string | null> => {
   const metadata = item.metadata ?? {};
   const metadataPlaybackUrl = typeof metadata.playback_url === 'string'
     ? metadata.playback_url
@@ -1084,12 +1176,9 @@ const getMediaItemResolvedUrl = (item: MediaItemRow): string | null => {
 
   if (item.provider === 'internal') {
     if (item.storage_bucket && item.storage_path && isSupabaseConfigured && !devMockSession) {
-      const { data } = supabase.storage
-        .from(item.storage_bucket)
-        .getPublicUrl(item.storage_path);
-
-      if (data.publicUrl) {
-        return data.publicUrl;
+      const signedUrl = await getSignedUrl(item.storage_bucket, item.storage_path);
+      if (signedUrl) {
+        return signedUrl;
       }
     }
 
@@ -1130,7 +1219,7 @@ const isDirectImageUrl = (value?: string | null): value is string => {
   return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(value);
 };
 
-const getMediaItemThumbnailUrl = (item: MediaItemRow): string | null => {
+const getMediaItemThumbnailUrl = async (item: MediaItemRow): Promise<string | null> => {
   const metadata = item.metadata ?? {};
   const metadataThumbnail = [
     metadata.thumbnail_url,
@@ -1144,12 +1233,9 @@ const getMediaItemThumbnailUrl = (item: MediaItemRow): string | null => {
   ].find((value): value is string => typeof value === 'string' && value.length > 0) ?? null;
 
   if (item.thumbnail_bucket && item.thumbnail_path && isSupabaseConfigured && !devMockSession) {
-    const { data } = supabase.storage
-      .from(item.thumbnail_bucket)
-      .getPublicUrl(item.thumbnail_path);
-
-    if (data.publicUrl) {
-      return data.publicUrl;
+    const signedUrl = await getSignedUrl(item.thumbnail_bucket, item.thumbnail_path);
+    if (signedUrl) {
+      return signedUrl;
     }
   }
 
@@ -1169,14 +1255,14 @@ const getMediaItemThumbnailUrl = (item: MediaItemRow): string | null => {
   return null;
 };
 
-const toMediaItemCard = (
+const toMediaItemCard = async (
   item: MediaItemRow,
   options?: {
     progressByItemId?: Record<string, { progressPercent: number; lastPositionSeconds: number }>;
     favoriteIds?: Set<string>;
     relatedCollections?: MediaRelatedCollection[];
   },
-): MediaItemCard => {
+): Promise<MediaItemCard> => {
   const progress = options?.progressByItemId?.[item.id];
   const primaryCollection = options?.relatedCollections?.[0];
 
@@ -1187,7 +1273,7 @@ const toMediaItemCard = (
     title: item.title,
     summary: item.summary ?? null,
     description: item.description ?? null,
-    thumbnailUrl: getMediaItemThumbnailUrl(item),
+    thumbnailUrl: await getMediaItemThumbnailUrl(item),
     durationSeconds: item.duration_seconds ?? null,
     featuredOrder: item.featured_order ?? 0,
     collectionId: primaryCollection?.collectionId ?? null,
@@ -1351,7 +1437,7 @@ export const clearCollectionsCache = (): void => {
 // Clear profile cache
 export const clearProfileCache = (): void => {
   if (typeof window !== 'undefined') {
-    sessionStorage.removeItem(PROFILE_CACHE_KEY);
+    sessionStorage.removeItem(getProfileCacheKey());
   }
 };
 
@@ -1360,16 +1446,16 @@ export const clearProfileCache = (): void => {
 export const clearAllUserCache = (): void => {
   if (typeof window !== 'undefined') {
     // Clear sessionStorage caches
-    sessionStorage.removeItem(PROFILE_CACHE_KEY);
+    sessionStorage.removeItem(getProfileCacheKey());
     sessionStorage.removeItem(getCollectionsCacheKey());
     sessionStorage.removeItem(SESSION_KEY);
 
-    // Clear offline collections list (user-specific)
-    localStorage.removeItem('offline_collections');
+    // Clear offline collections list (user-specific, scoped to the active brand)
+    localStorage.removeItem(getOfflineStorageKey());
 
-    // Clear Cache API (offline assets)
+    // Clear Cache API (offline assets) for the active brand
     if ('caches' in window) {
-      caches.delete('kaboo-offline-v1').catch(err => {
+      caches.delete(getOfflineCacheName()).catch(err => {
         logger.error('Error clearing offline cache:', err);
       });
     }
@@ -1424,7 +1510,7 @@ const getCachedProfile = async (): Promise<UserProfile | null> => {
   if (typeof window === 'undefined') return null;
 
   try {
-    const cached = sessionStorage.getItem(PROFILE_CACHE_KEY);
+    const cached = sessionStorage.getItem(getProfileCacheKey());
     if (!cached) return null;
 
     const parsed = JSON.parse(cached);
@@ -1432,14 +1518,14 @@ const getCachedProfile = async (): Promise<UserProfile | null> => {
     // Verify it's from the current session
     if (parsed.sessionId !== getSessionId()) {
       // If session changed, clear old cache
-      sessionStorage.removeItem(PROFILE_CACHE_KEY);
+      sessionStorage.removeItem(getProfileCacheKey());
       return null;
     }
 
     if (!isSupabaseConfigured) {
       const currentMockUserId = getMockCurrentUserId();
       if (!currentMockUserId || parsed.userId !== currentMockUserId) {
-        sessionStorage.removeItem(PROFILE_CACHE_KEY);
+        sessionStorage.removeItem(getProfileCacheKey());
         return null;
       }
       return parsed.profile;
@@ -1449,7 +1535,7 @@ const getCachedProfile = async (): Promise<UserProfile | null> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || parsed.userId !== user.id) {
       // User ID doesn't match - clear cache
-      sessionStorage.removeItem(PROFILE_CACHE_KEY);
+      sessionStorage.removeItem(getProfileCacheKey());
       return null;
     }
 
@@ -1467,7 +1553,7 @@ export const getCachedProfileSync = (): UserProfile | null => {
   if (typeof window === 'undefined') return null;
 
   try {
-    const cached = sessionStorage.getItem(PROFILE_CACHE_KEY);
+    const cached = sessionStorage.getItem(getProfileCacheKey());
     if (!cached) return null;
 
     const parsed = JSON.parse(cached);
@@ -1476,14 +1562,14 @@ export const getCachedProfileSync = (): UserProfile | null => {
       if (!isSupabaseConfigured) {
         const currentMockUserId = getMockCurrentUserId();
         if (!currentMockUserId || parsed.userId !== currentMockUserId) {
-          sessionStorage.removeItem(PROFILE_CACHE_KEY);
+          sessionStorage.removeItem(getProfileCacheKey());
           return null;
         }
       }
       return parsed.profile;
     }
     // If session changed, clear old cache
-    sessionStorage.removeItem(PROFILE_CACHE_KEY);
+    sessionStorage.removeItem(getProfileCacheKey());
     return null;
   } catch (error) {
     logger.error('Error reading profile cache:', error);
@@ -1510,7 +1596,7 @@ const saveProfileCache = async (profile: UserProfile): Promise<void> => {
       sessionId: getSessionId(),
       timestamp: Date.now()
     };
-    sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(cacheData));
+    sessionStorage.setItem(getProfileCacheKey(), JSON.stringify(cacheData));
   } catch (error) {
     logger.error('Error saving profile cache:', error);
   }
@@ -1577,7 +1663,7 @@ export const api = {
     if (!data.session) {
       return {
         success: false,
-        error: 'Nao foi possivel iniciar a sessao.'
+        error: 'Não foi possível iniciar a sessão.'
       };
     }
 
@@ -1803,7 +1889,7 @@ export const api = {
       if (!creation.success || !creation.userId) {
         return {
           success: false,
-          error: creation.error || 'Nao foi possivel criar sua conta.'
+          error: creation.error || 'Não foi possível criar sua conta.'
         };
       }
 
@@ -1845,12 +1931,35 @@ export const api = {
       });
 
       if (signUpError) {
+        // Checa .code (estável entre versões/locales do GoTrue) e o texto da mensagem
+        // (fallback tolerante) — cobre tanto wording futura quanto respostas antigas
+        // sem .code populado.
+        if (/already registered/i.test(signUpError.message) || signUpError.code === 'user_already_exists') {
+          // Anti-enumeração (issue #59 / C5): sem isso, um atacante com QUALQUER voucher
+          // válido (a validação de voucher roda antes, e não é consumida aqui — só em
+          // redeemVoucher, mais abaixo) conseguiria sondar e-mails arbitrários e descobrir
+          // quais já têm conta, sem limite, sem gastar o voucher. Retorna exatamente a
+          // mesma resposta de um cadastro novo bem-sucedido (pendente de confirmação),
+          // pra tornar as duas respostas indistinguíveis do lado do cliente. O dono real
+          // da conta não é notificado por e-mail aqui de propósito — o endpoint de reset
+          // de senha deste projeto tem seu próprio vazamento de enumeração (confirmado ao
+          // vivo em 2026-07-04), então não é usado como mecanismo de aviso. Risco residual
+          // aceito (review): timing entre os dois ramos é comparável no fluxo real
+          // (confirmação de e-mail ligada) — ambos retornam logo após o signUp().
+          return {
+            success: true,
+            requiresLogin: true,
+            requiresEmailConfirmation: true,
+            email: input.email,
+            message: 'Conta criada. Confirme seu e-mail para concluir o cadastro e depois faça login para ativar seu código de acesso.'
+          };
+        }
         logger.error('Error signing up with voucher:', signUpError);
         return { success: false, error: signUpError.message };
       }
 
       if (!signUpData.user) {
-        return { success: false, error: 'Nao foi possivel criar a conta.' };
+        return { success: false, error: 'Não foi possível criar a conta.' };
       }
 
       // O perfil inicial é criado pelo trigger handle_new_user no banco.
@@ -1862,7 +1971,7 @@ export const api = {
           requiresLogin: true,
           requiresEmailConfirmation: true,
           email: input.email,
-          message: 'Conta criada. Confirme seu e-mail para concluir o cadastro e depois faça login para ativar seu codigo de acesso.'
+          message: 'Conta criada. Confirme seu e-mail para concluir o cadastro e depois faça login para ativar seu código de acesso.'
         };
       }
 
@@ -1875,7 +1984,7 @@ export const api = {
         logger.error('Error persisting session after sign up:', setSessionError);
         return {
           success: false,
-          error: 'Conta criada, mas nao foi possivel finalizar a ativacao automaticamente. Tente entrar novamente para continuar.'
+          error: 'Conta criada, mas não foi possível finalizar a ativação automaticamente. Tente entrar novamente para continuar.'
         };
       }
 
@@ -1918,7 +2027,10 @@ export const api = {
       const cached = getCachedCollections();
       if (cached) {
         await loadRemoteCharacters();
-        return cached;
+        // Re-sign covers: a cache entry may predate SEC-58 (raw public URLs) or hold
+        // signed URLs approaching expiry. getSignedUrl re-extracts the path from either
+        // form, so signing is idempotent and safe on a cache hit.
+        return signCollectionsCovers(cached);
       }
     }
 
@@ -1931,7 +2043,8 @@ export const api = {
         : mockRaw;
       const filtered = filterCollectionsForBrand(stamped, _activeBrandSlugForApi, _activeBrandIdForApi, { adminMode });
       // Mirror the Supabase behaviour: vitrine only sees published collections.
-      const collections = adminMode ? filtered : filtered.filter(c => c.is_published);
+      const published = adminMode ? filtered : filtered.filter(c => c.is_published);
+      const collections = await signCollectionsCovers(published);
       // Only cache non-admin responses so the vitrine never reads admin-mode data.
       if (!adminMode) saveCollectionsCache(collections);
       return collections;
@@ -1964,11 +2077,11 @@ export const api = {
       return [];
     }
 
-    const collections = filterCollectionsForBrand(
+    const collections = await signCollectionsCovers(filterCollectionsForBrand(
       hydrateCollectionsPresentationFields((data || []) as Collection[], remoteCharacters ?? undefined),
       _activeBrandSlugForApi,
       activeBrandId,
-    );
+    ));
 
     // Only cache non-admin responses so the vitrine never reads admin-mode data
     // (admin fetches include unpublished collections which must not leak into the vitrine cache).
@@ -1987,7 +2100,8 @@ export const api = {
       // Stamp missing brand_id — mirrors getCollections mock path so the brand filter works.
       const brandId = _activeBrandIdForApi;
       const stamped = brandId && !mockCollection.brand_id ? { ...mockCollection, brand_id: brandId } : mockCollection;
-      return filterCollectionsForBrand([stamped], _activeBrandSlugForApi, _activeBrandIdForApi)[0] ?? null;
+      const scoped = filterCollectionsForBrand([stamped], _activeBrandSlugForApi, _activeBrandIdForApi)[0] ?? null;
+      return scoped ? signCollectionCovers(scoped) : null;
     }
 
     const activeBrandId = await resolveActiveBrandId();
@@ -2009,11 +2123,13 @@ export const api = {
 
     if (error || !data) return null;
 
-    return filterCollectionsForBrand(
+    const scoped = filterCollectionsForBrand(
       [hydrateCollectionPresentationFields(data as Collection, remoteCharacters ?? undefined)],
       _activeBrandSlugForApi,
       activeBrandId,
     )[0] ?? null;
+
+    return scoped ? signCollectionCovers(scoped) : null;
   },
 
   /**
@@ -2170,14 +2286,14 @@ export const api = {
 
     const itemRows = ((items || []) as MediaItemRow[]);
     const itemsById = new Map(itemRows.map((item) => [item.id, item]));
-    const hero = itemRows[0] ? toMediaItemCard(itemRows[0], { progressByItemId, favoriteIds }) : null;
+    const hero = itemRows[0] ? await toMediaItemCard(itemRows[0], { progressByItemId, favoriteIds }) : null;
 
-    const mappedShelves: MediaShelf[] = (shelves || []).map((shelf: any) => {
-      const itemsForShelf = (shelfItems || [])
+    const mappedShelves: MediaShelf[] = (await Promise.all((shelves || []).map(async (shelf: any) => {
+      const itemsForShelf = await Promise.all((shelfItems || [])
         .filter((entry: any) => entry.shelf_id === shelf.id)
         .map((entry: any) => itemsById.get(entry.media_item_id))
         .filter(Boolean)
-        .map((item) => toMediaItemCard(item as MediaItemRow, { progressByItemId, favoriteIds }));
+        .map((item) => toMediaItemCard(item as MediaItemRow, { progressByItemId, favoriteIds })));
 
       return {
         id: shelf.id,
@@ -2187,12 +2303,12 @@ export const api = {
         description: shelf.description,
         items: itemsForShelf,
       };
-    }).filter((shelf) => shelf.items.length > 0);
+    }))).filter((shelf) => shelf.items.length > 0);
 
-    const continueItems = continueItemIds
+    const continueItems = await Promise.all(continueItemIds
       .map((itemId) => itemsById.get(itemId))
       .filter(Boolean)
-      .map((item) => toMediaItemCard(item as MediaItemRow, { progressByItemId, favoriteIds }));
+      .map((item) => toMediaItemCard(item as MediaItemRow, { progressByItemId, favoriteIds })));
 
     const continueShelf = continueItems.length > 0
       ? {
@@ -2217,7 +2333,7 @@ export const api = {
         type: 'rail',
         title: '',
         description: '',
-        items: itemRows.map((item) => toMediaItemCard(item, { progressByItemId, favoriteIds })),
+        items: await Promise.all(itemRows.map((item) => toMediaItemCard(item, { progressByItemId, favoriteIds }))),
       }];
 
     const remoteResponse: MediaHubResponse = {
@@ -2347,7 +2463,7 @@ export const api = {
       : { progressByItemId: {}, favoriteIds: new Set<string>() };
 
     return {
-      ...toMediaItemCard(data as MediaItemRow, { progressByItemId, favoriteIds, relatedCollections }),
+      ...(await toMediaItemCard(data as MediaItemRow, { progressByItemId, favoriteIds, relatedCollections })),
       accessMode: (data as MediaItemRow).access_mode,
       metadata: ((data as MediaItemRow).metadata ?? {}) as Record<string, unknown>,
       relatedCollections,
@@ -2394,7 +2510,7 @@ export const api = {
 
     const row = data as MediaItemRow;
     const source: MediaPlaybackSource = {
-      url: getMediaItemResolvedUrl(row),
+      url: await getMediaItemResolvedUrl(row),
       provider: row.provider,
       mimeType: row.mime_type ?? null,
       externalRef: row.external_ref ?? null,
@@ -2759,7 +2875,9 @@ export const api = {
     // Clear cache after creation
     clearCollectionsCache();
 
-    return data;
+    // Sign covers on the returned row: it's a raw DB row (public URLs) and the
+    // caller may render it before the next getCollections re-fetch.
+    return data ? signCollectionCovers(data as Collection) : data;
   },
 
   /**
@@ -2873,7 +2991,9 @@ export const api = {
     // Clear cache after update
     clearCollectionsCache();
 
-    return data;
+    // Sign covers on the returned row: it's a raw DB row (public URLs) and the
+    // caller may render it before the next getCollections re-fetch.
+    return data ? signCollectionCovers(data as Collection) : data;
   },
 
   /**

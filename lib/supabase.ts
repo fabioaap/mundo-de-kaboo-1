@@ -174,7 +174,7 @@ const devSessionBridgeImportPromise: Promise<DevSessionBridgeImportResult> = (as
 
     return 'applied';
   } catch (error) {
-    console.warn('[Mundo de Kaboo] Falha ao importar sessao do bridge local:', error);
+    console.warn('[Mundo de Kaboo] Falha ao importar sessão do bridge local:', error);
     return 'miss';
   }
 })();
@@ -217,7 +217,7 @@ export async function maybeHandleDevSessionBridgeExport(): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.warn('[Mundo de Kaboo] Falha ao exportar sessao pelo bridge local:', error);
+    console.warn('[Mundo de Kaboo] Falha ao exportar sessão pelo bridge local:', error);
     window.location.replace(buildBridgeReturnUrl(returnTo, { status: 'miss' }));
     return true;
   }

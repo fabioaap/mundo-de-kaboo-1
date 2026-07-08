@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MediaHubResponse, MediaItemCard } from '../types';
 import { placeholderImageUrl } from './appPaths';
+import { getCollectionDisplayCover } from './collectionPresentation';
 
 const createStorageMock = (): Storage => {
   const store = new Map<string, string>();
@@ -67,6 +68,16 @@ describe('api collection-backed media hub bridge', () => {
     // Regression: BUG-007 — admin media shortcuts saved collection assets but the public library hub ignored them
     // Found by /qa on 2026-05-09
     // Report: .gstack/qa-reports/qa-report-sprint2-2026-05-09.md
+    //
+    // WS-2 note (2026-07-04): isHubEligible (lib/api.ts) now categorically excludes
+    // collection_type='kit' from every hub, and collection_type='book' whenever any
+    // asset has category='reading' (that content lives inside the book itself, never
+    // in a hub — see docs/architecture/modelo-conteudo-e-hubs.md). The seeded
+    // targetCollection (initialCollections[0]) is a kit, and this fixture originally
+    // included a 'reading' asset — both would make the whole collection hub-ineligible
+    // regardless of its other assets. Forced collection_type='book' and dropped the
+    // 'reading' asset (reading-in-hub is not a real scenario anymore; it's covered by
+    // book-reader tests instead) so the hub-eligible assets can still be verified.
     stubBrowserStorage();
     const { api } = await import('./api');
 
@@ -78,6 +89,15 @@ describe('api collection-backed media hub bridge', () => {
     }
 
     const updatedCollection = await api.updateCollection(targetCollection.id, {
+      collection_type: 'book',
+      // O seed desta collection tem pdf_url/audio_url preenchidos — syncCollectionWithAssets
+      // (lib/collectionAssets.ts) sempre injeta um asset sintético category='reading' a partir
+      // de pdf_url, mesmo que collection_assets não tenha nenhum. Isso tornaria a collection
+      // inelegível pra hub de novo (regra book+reading). Limpar os campos legados suprime a
+      // injeção sintética.
+      pdf_url: '',
+      audio_url: '',
+      video_url: '',
       collection_assets: [
         {
           id: 'bug-007-animation',
@@ -88,8 +108,10 @@ describe('api collection-backed media hub bridge', () => {
           scope: 'primary',
         },
         {
-          id: 'bug-007-storytelling',
-          category: 'storytelling',
+          // 'storytelling' (narração de livro) não aparece mais no hub Músicas — vive só
+          // dentro do livro (mesma regra de escopo do 'reading'). Só 'music' é hub-elegível.
+          id: 'bug-007-music',
+          category: 'music',
           media_type: 'audio',
           title: 'BUG-007 Audio',
           url: 'https://cdn.example.com/bug-007-audio.mp3',
@@ -110,14 +132,6 @@ describe('api collection-backed media hub bridge', () => {
           title: 'BUG-007 Videoaula',
           url: 'https://cdn.example.com/bug-007-videoaula.mp4',
           scope: 'library',
-        },
-        {
-          id: 'bug-007-reading',
-          category: 'reading',
-          media_type: 'document',
-          title: 'BUG-007 Leitura',
-          url: 'https://cdn.example.com/bug-007-leitura.pdf',
-          scope: 'primary',
         },
         {
           id: 'bug-007-extra',
@@ -142,14 +156,12 @@ describe('api collection-backed media hub bridge', () => {
     const audioCard = findHubCard(musicHub, 'BUG-007 Audio');
     const guideCard = findHubCard(formationsHub, 'BUG-007 Guia');
     const videoLessonCard = findHubCard(formationsHub, 'BUG-007 Videoaula');
-    const readingCard = findHubCard(materialsHub, 'BUG-007 Leitura');
     const extraCard = findHubCard(materialsHub, 'BUG-007 Extra');
 
     expect(videoCard?.collectionTitle).toBe(targetCollection.title);
     expect(audioCard?.collectionTitle).toBe(targetCollection.title);
     expect(guideCard?.collectionTitle).toBe(targetCollection.title);
     expect(videoLessonCard?.collectionTitle).toBe(targetCollection.title);
-    expect(readingCard?.collectionTitle).toBe(targetCollection.title);
     expect(extraCard?.collectionTitle).toBe(targetCollection.title);
 
     const audioPlayback = await api.resolveMediaPlayback(audioCard!.id);
@@ -161,13 +173,20 @@ describe('api collection-backed media hub bridge', () => {
     expect(videoLessonPlayback?.source.url).toBe('https://cdn.example.com/bug-007-videoaula.mp4');
 
     const guideItem = await api.getMediaItem(guideCard!.id);
-    const readingItem = await api.getMediaItem(readingCard!.id);
 
     expect(guideItem?.kind).toBe('training');
-    expect(readingItem?.kind).toBe('document');
   });
 
-  it('keeps asset titles and prefers the collection primary cover for collection-backed thumbnails', async () => {
+  // BUG-THUMB regressions: originally verified via getMediaHub, but WS-2 (ver
+  // docs/architecture/modelo-conteudo-e-hubs.md) tornou collection_type='kit'
+  // categoricamente inelegível pra qualquer hub (isHubEligible retorna false)
+  // — os assets de um kit vivem só na vitrine da própria coleção, nunca num
+  // hub. Testar via getMediaHub ficou estruturalmente impossível (findHubCard
+  // sempre retorna undefined pra um kit, não importa a capa). O que essas
+  // duas regressões realmente protegem — a lógica de fallback cover_image →
+  // kit_cover_image — ainda é código vivo (getCollectionDisplayCover), só que
+  // exercitado pela própria coleção, não pelo hub.
+  it('keeps the real primary cover for kit-type collections (not the hub)', async () => {
     stubBrowserStorage();
     const { api } = await import('./api');
 
@@ -175,31 +194,17 @@ describe('api collection-backed media hub bridge', () => {
     const targetCollection = initialCollections[0];
 
     if (!targetCollection) {
-      throw new Error('Expected a seeded collection to validate hub thumbnails');
+      throw new Error('Expected a seeded collection to validate cover fallback');
     }
 
-    await api.updateCollection(targetCollection.id, {
+    const updated = await api.updateCollection(targetCollection.id, {
       collection_type: 'kit',
       cover_image: 'https://cdn.example.com/primary-cover.jpg',
       kit_cover_image: 'https://cdn.example.com/secondary-kit-cover.jpg',
-      collection_assets: [
-        {
-          id: 'bug-thumb-priority-video',
-          category: 'animation',
-          media_type: 'video',
-          title: 'BUG-THUMB Video Principal',
-          url: 'https://cdn.example.com/bug-thumb-video.mp4',
-          scope: 'primary',
-        },
-      ],
     });
 
-    const videosHub = await api.getMediaHub('videos');
-    const videoCard = findHubCard(videosHub, 'BUG-THUMB Video Principal');
-
-    expect(videoCard?.title).toBe('BUG-THUMB Video Principal');
-    expect(videoCard?.collectionTitle).toBe(targetCollection.title);
-    expect(videoCard?.thumbnailUrl).toBe('https://cdn.example.com/primary-cover.jpg');
+    expect(updated).not.toBeNull();
+    expect(getCollectionDisplayCover(updated)).toBe('https://cdn.example.com/primary-cover.jpg');
   });
 
   it('falls back to the kit real cover when the collection primary cover is a placeholder', async () => {
@@ -210,30 +215,16 @@ describe('api collection-backed media hub bridge', () => {
     const targetCollection = initialCollections[0];
 
     if (!targetCollection) {
-      throw new Error('Expected a seeded collection to validate placeholder thumbnail fallback');
+      throw new Error('Expected a seeded collection to validate placeholder cover fallback');
     }
 
-    await api.updateCollection(targetCollection.id, {
+    const updated = await api.updateCollection(targetCollection.id, {
       collection_type: 'kit',
       cover_image: placeholderImageUrl,
       kit_cover_image: 'https://cdn.example.com/real-kit-cover.jpg',
-      collection_assets: [
-        {
-          id: 'bug-thumb-placeholder-video',
-          category: 'animation',
-          media_type: 'video',
-          title: 'BUG-THUMB Placeholder Fallback',
-          url: 'https://cdn.example.com/bug-thumb-placeholder-video.mp4',
-          scope: 'primary',
-        },
-      ],
     });
 
-    const videosHub = await api.getMediaHub('videos');
-    const videoCard = findHubCard(videosHub, 'BUG-THUMB Placeholder Fallback');
-
-    expect(videoCard?.title).toBe('BUG-THUMB Placeholder Fallback');
-    expect(videoCard?.collectionTitle).toBe(targetCollection.title);
-    expect(videoCard?.thumbnailUrl).toBe('https://cdn.example.com/real-kit-cover.jpg');
+    expect(updated).not.toBeNull();
+    expect(getCollectionDisplayCover(updated)).toBe('https://cdn.example.com/real-kit-cover.jpg');
   });
 });

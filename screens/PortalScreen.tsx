@@ -56,8 +56,8 @@ const cards: Array<{
         {
             id: 'kaboo',
             title: 'Kaboo',
-            eyebrow: 'Leitura, audio e video para aprender brincando',
-            description: 'Acesso principal da plataforma para professores e escolas que usam a experiencia original do Mundo de Kaboo.',
+            eyebrow: 'Leitura, áudio e vídeo para aprender brincando',
+            description: 'Acesso principal da plataforma para professores e escolas que usam a experiência original do Mundo de Kaboo.',
             cta: 'Entrar',
             logo: LOGO_URL,
             shellClassName: 'border-[#d7c1d8] bg-[radial-gradient(circle_at_top,_rgba(131,64,137,0.26),_rgba(255,255,255,0.98)_58%)] text-[#4A1948] shadow-[0_28px_80px_rgba(93,31,88,0.18)]',
@@ -66,8 +66,8 @@ const cards: Array<{
         {
             id: 'central-coruja',
             title: 'Central Coruja',
-            eyebrow: 'White label para operacao, catalogo e parceiros',
-            description: 'Entrada dedicada para a marca Central Coruja, com identidade, conteudo e configuracoes isoladas da experiencia Kaboo.',
+            eyebrow: 'White label para operação, catálogo e parceiros',
+            description: 'Entrada dedicada para a marca Central Coruja, com identidade, conteúdo e configurações isoladas da experiência Kaboo.',
             cta: 'Entrar',
             logo: '/central-coruja-logo.png',
             shellClassName: 'border-[#d7dcec] bg-[radial-gradient(circle_at_top,_rgba(12,26,52,0.18),_rgba(255,252,246,0.98)_58%)] text-[#0C1A34] shadow-[0_28px_80px_rgba(12,26,52,0.18)]',
@@ -76,8 +76,8 @@ const cards: Array<{
         {
             id: 'wiki',
             title: 'Wiki',
-            eyebrow: 'Documentacao, guias e criterios de go-live',
-            description: 'Base viva de referencia para diretoria, operacao e produto consultarem processos, backlog e releases com linguagem executiva.',
+            eyebrow: 'Documentação, guias e critérios de go-live',
+            description: 'Base viva de referência para diretoria, operação e produto consultarem processos, backlog e releases com linguagem executiva.',
             cta: 'Entrar',
             leftLogo: <WikiLogo />,
             shellClassName: 'border-[#d8d2c7] bg-[radial-gradient(circle_at_top,_rgba(255,244,214,0.92),_rgba(255,255,255,0.98)_58%)] text-[#362A1F] shadow-[0_28px_80px_rgba(54,42,31,0.14)]',
@@ -108,12 +108,12 @@ export const PortalScreen: React.FC = () => {
                     <div className="max-w-3xl">
                         <p className="text-xs font-black uppercase tracking-[0.34em] text-[#8A5A2B]">Portal de entrada</p>
                         <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-[#1B1B1B] sm:text-5xl">
-                            Escolha qual ambiente do ecossistema voce quer abrir.
+                            Escolha qual ambiente do ecossistema você quer abrir.
                         </h1>
                     </div>
                 </header>
 
-                <section className="mt-8 grid flex-1 gap-6 lg:grid-cols-3">
+                <section className="mt-8 grid gap-6 lg:grid-cols-3">
                     {cards.map((card, index) => {
                         return (
                             <button

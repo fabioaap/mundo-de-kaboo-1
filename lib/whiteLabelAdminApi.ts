@@ -268,8 +268,98 @@ const DEFAULT_BRAND_IDENTITY_BY_BRAND: Record<string, WhiteLabelBrandIdentity> =
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * SSRF guard for admin-configured webhook URLs (auditoria BE-03 / issue #59).
+ * The webhook is fetched directly from the browser, so a malicious/compromised
+ * brand admin could point it at internal infra (cloud metadata endpoint, private
+ * ranges, loopback). Block those hosts and any non-https scheme BEFORE any fetch.
+ * Throws Error('webhook_url_invalid: <reason>') on failure.
+ */
+export function assertSafeWebhookUrl(rawUrl: string): void {
+    let parsed: URL;
+    try {
+        parsed = new URL(rawUrl);
+    } catch {
+        throw new Error('webhook_url_invalid: URL malformada');
+    }
+
+    if (parsed.protocol !== 'https:') {
+        throw new Error('webhook_url_invalid: apenas https:// é permitido');
+    }
+
+    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+
+    if (host === 'localhost' || host.endsWith('.localhost') || host === '' || host === '::1') {
+        throw new Error('webhook_url_invalid: host de loopback não permitido');
+    }
+
+    // IPv4 literal → check loopback / private / link-local / 0.0.0.0
+    const checkIPv4 = (ipv4Text: string): void => {
+        const ipv4 = ipv4Text.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+        if (!ipv4) return;
+        const octets = ipv4.slice(1, 5).map((part) => Number(part));
+        if (octets.some((o) => o > 255)) {
+            throw new Error('webhook_url_invalid: IP inválido');
+        }
+        const [a, b] = octets;
+        const isLoopback = a === 127;
+        const isPrivate10 = a === 10;
+        const isPrivate172 = a === 172 && b >= 16 && b <= 31;
+        const isPrivate192 = a === 192 && b === 168;
+        const isLinkLocal = a === 169 && b === 254; // inclui 169.254.169.254 (metadata)
+        const isUnspecified = a === 0 && b === 0 && octets[2] === 0 && octets[3] === 0;
+        if (isLoopback || isPrivate10 || isPrivate172 || isPrivate192 || isLinkLocal || isUnspecified) {
+            throw new Error('webhook_url_invalid: endereço IP interno/privado não permitido');
+        }
+    };
+    checkIPv4(host);
+
+    // IPv6: ULA (fc00::/7), link-local (fe80::/10), e o form IPv4-mapped
+    // (::ffff:a.b.c.d) — que reescreve a checagem de IPv4 acima em hex e
+    // passaria batido sem isto (achado de review, 2026-07-04).
+    const isIpv6Ula = /^f[cd][0-9a-f]{0,2}:/.test(host);
+    const isIpv6LinkLocal = /^fe[89ab][0-9a-f]:/.test(host);
+    if (isIpv6Ula || isIpv6LinkLocal) {
+        throw new Error('webhook_url_invalid: endereço IPv6 interno/privado não permitido');
+    }
+    // Forma dotted-quad (::ffff:127.0.0.1) OU a forma hex que o WHATWG URL parser
+    // realmente produz em hostname (::ffff:7f00:1 / ::ffff:a9fe:a9fe) — sem isto o
+    // check ficaria inócuo, já que new URL() sempre normaliza pra hex.
+    const ipv4MappedDotted = host.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+    if (ipv4MappedDotted) {
+        checkIPv4(ipv4MappedDotted[1]);
+        return;
+    }
+    const ipv4MappedHex = host.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (ipv4MappedHex) {
+        const g1 = parseInt(ipv4MappedHex[1], 16);
+        const g2 = parseInt(ipv4MappedHex[2], 16);
+        const octets = [(g1 >> 8) & 0xff, g1 & 0xff, (g2 >> 8) & 0xff, g2 & 0xff];
+        checkIPv4(octets.join('.'));
+    }
+}
+
 function normalizeText(value: string | null | undefined): string {
     return value?.trim() ?? '';
+}
+
+// Aceita apenas cores hex (#RGB ou #RRGGBB, case-insensitive) — mesmo formato
+// produzido pelo ColorPicker e o único que suporta a concatenação de alpha
+// (`${cor}CC`) usada no preview/tema. Cores vazias/undefined/inválidas são
+// rejeitadas para impedir data-wipe silencioso da paleta (BE-05).
+const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+function isValidBrandColor(value: string | null | undefined): value is string {
+    return typeof value === 'string' && HEX_COLOR_PATTERN.test(value.trim());
+}
+
+// Retorna a cor recebida quando válida; caso contrário mantém o valor já salvo
+// (fallback), replicando o padrão de merge não-destrutivo usado para menu_config.
+function resolveBrandColor(incoming: string | null | undefined, current: string | null | undefined): string | null {
+    if (isValidBrandColor(incoming)) {
+        return incoming.trim();
+    }
+    return normalizeText(current) || null;
 }
 
 function buildMockBrandIdentity(brandId: string): WhiteLabelBrandIdentity {
@@ -457,13 +547,14 @@ export async function setWhiteLabelBrandIdentity(input: {
     }
 
     if (!canUseRemoteWhiteLabel()) {
+        const currentMockIdentity = buildMockBrandIdentity(input.brandId);
         writeMockBrandSettingsOverride(input.brandId, {
             display_name: normalizedDisplayName,
             logo_url: normalizedLogoUrl || null,
-            primary_color: input.primary_color,
-            light_color: input.light_color,
-            bg_color: input.bg_color,
-            accent_color: input.accent_color,
+            primary_color: resolveBrandColor(input.primary_color, currentMockIdentity.primary_color),
+            light_color: resolveBrandColor(input.light_color, currentMockIdentity.light_color),
+            bg_color: resolveBrandColor(input.bg_color, currentMockIdentity.bg_color),
+            accent_color: resolveBrandColor(input.accent_color, currentMockIdentity.accent_color),
             font_family: normalizedFontFamily || null,
             green_color: normalizedGreenColor || null,
             radius_xl: normalizedRadiusXl || null,
@@ -482,13 +573,20 @@ export async function setWhiteLabelBrandIdentity(input: {
     const nowIso = new Date().toISOString();
     const { data: currentSettings, error: currentSettingsError } = await supabase
         .from('brand_settings')
-        .select('menu_config, version')
+        .select('menu_config, version, primary_color, light_color, bg_color, accent_color')
         .eq('brand_id', input.brandId)
         .single();
 
     if (currentSettingsError) {
         throw currentSettingsError;
     }
+
+    // BE-05: cores inválidas/vazias caem para o valor já salvo em vez de sobrescrever
+    // — evita data-wipe da paleta quando o save dispara antes do form hidratar.
+    const resolvedPrimaryColor = resolveBrandColor(input.primary_color, currentSettings.primary_color as string | null);
+    const resolvedLightColor = resolveBrandColor(input.light_color, currentSettings.light_color as string | null);
+    const resolvedBgColor = resolveBrandColor(input.bg_color, currentSettings.bg_color as string | null);
+    const resolvedAccentColor = resolveBrandColor(input.accent_color, currentSettings.accent_color as string | null);
 
     const nextMenuConfig = mergeBrandLinks(
         mergeBrandDesignTokens(
@@ -518,10 +616,10 @@ export async function setWhiteLabelBrandIdentity(input: {
         .update({
             display_name: normalizedDisplayName,
             logo_url: normalizedLogoUrl || null,
-            primary_color: input.primary_color,
-            light_color: input.light_color,
-            bg_color: input.bg_color,
-            accent_color: input.accent_color,
+            primary_color: resolvedPrimaryColor,
+            light_color: resolvedLightColor,
+            bg_color: resolvedBgColor,
+            accent_color: resolvedAccentColor,
             font_family: normalizedFontFamily || null,
             menu_config: nextMenuConfig,
             version: Number(currentSettings.version ?? 1) + 1,
@@ -970,9 +1068,18 @@ export async function setWhiteLabelAlertingConfig(input: {
         throw new Error('reason_required_for_alerting_change');
     }
 
+    const normalizedWebhookUrl = input.webhook_url.trim();
+
+    // SSRF guard (BE-03 / #59): validate at write time so an unsafe webhook is
+    // never persisted. Only enforced when alerting is enabled with a URL set —
+    // an empty URL is allowed (clears/disables the webhook).
+    if (input.enabled && normalizedWebhookUrl) {
+        assertSafeWebhookUrl(normalizedWebhookUrl);
+    }
+
     const nextConfig: WhiteLabelAlertingConfig = {
         enabled: input.enabled,
-        webhook_url: input.webhook_url.trim(),
+        webhook_url: normalizedWebhookUrl,
         channel: input.channel.trim(),
         changes_24h_threshold: Math.max(1, Math.floor(input.changes_24h_threshold || 1)),
         notify_on_general_without_publish: input.notify_on_general_without_publish,
@@ -1075,6 +1182,10 @@ export async function dispatchWhiteLabelAlertTest(input: {
     if (!currentConfig.webhook_url) {
         throw new Error('webhook_url_required');
     }
+
+    // SSRF guard (BE-03 / #59): block before any fetch, including for configs
+    // persisted before the write-time validation existed.
+    assertSafeWebhookUrl(currentConfig.webhook_url);
 
     let nextDispatchStatus: WhiteLabelAlertingConfig['last_dispatch_status'] = 'success';
     let nextDispatchHttpStatus: number | null = 200;
@@ -1210,6 +1321,10 @@ export async function dispatchWhiteLabelOperationalAlerts(input: {
     if (!input.alertSignature.trim()) {
         throw new Error('alert_signature_required');
     }
+
+    // SSRF guard (BE-03 / #59): block before any fetch, including for configs
+    // persisted before the write-time validation existed.
+    assertSafeWebhookUrl(currentConfig.webhook_url);
 
     let nextDispatchStatus: WhiteLabelAlertingConfig['last_dispatch_status'] = 'success';
     let nextDispatchHttpStatus: number | null = 200;

@@ -1669,21 +1669,38 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
 
   const renderImmersiveHeroControls = (tone: 'coruja' | 'kaboo' = 'coruja') => {
     const isKabooTone = tone === 'kaboo';
+    // Tom Coruja: barra "glass" escura, igual às bibliotecas (corujaSearchFieldClass),
+    // para o acervo e as bibliotecas lerem como a mesma ferramenta. Kaboo segue branco.
     const searchInputClass = isKabooTone
-      ? 'h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-14 shadow-sm hover:border-brand-primary/24 focus:border-brand-primary'
-      : 'h-14 rounded-[28px] border-transparent bg-white/92 pl-11 pr-14 shadow-sm hover:border-transparent focus:border-brand-primary';
+      ? 'h-14 rounded-[28px] border border-gray-200 bg-white pl-11 pr-24 md:pr-40 shadow-sm hover:border-brand-primary/24 focus:border-brand-primary'
+      : 'h-14 rounded-[28px] border border-white/12 bg-white/10 pl-11 pr-24 md:pr-40 text-white placeholder:text-white/42 shadow-[0_12px_28px_rgba(4,27,36,0.18)] backdrop-blur-xl hover:border-white/20 focus:border-[#EA9A3B]/45';
+    // Controles internos da barra (ícone de busca, limpar, divisor, Filtros) por tom —
+    // no glass escuro precisam ser claros para manter contraste.
+    const searchIconClass = isKabooTone ? 'text-gray-400' : 'text-white/55';
+    const clearBtnClass = isKabooTone
+      ? 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
+      : 'text-white/60 hover:bg-white/12 hover:text-white';
+    const dividerClass = isKabooTone ? 'bg-gray-200' : 'bg-white/20';
+    const filterIdleClass = isKabooTone
+      ? 'text-brand-primary hover:bg-brand-primary/[0.06]'
+      : 'text-white/90 hover:bg-white/12';
+    // Card "stage shell" glass envolvendo barra + tabs, igual às bibliotecas Coruja
+    // (corujaStageShellClass). Kaboo não usa card.
+    const stageShellClass = isKabooTone
+      ? ''
+      : 'rounded-[1.35rem] px-4 py-3.5 md:px-5 border border-white/12 bg-[linear-gradient(180deg,rgba(7,32,42,0.78),rgba(4,27,36,0.72))] shadow-[0_20px_48px_rgba(4,27,36,0.24)] backdrop-blur-xl';
     const passiveFilterClass = isKabooTone
       ? 'bg-white text-brand-primary border-gray-200 shadow-sm hover:border-brand-primary/24'
       : 'bg-white/95 text-brand-primary border-white/50 shadow-[0_10px_22px_rgba(0,0,0,0.18)] hover:border-brand-accent/60';
     const passiveTabClass = isKabooTone
       ? 'bg-white text-brand-primary border-gray-200 hover:bg-gray-50 hover:border-brand-primary/24'
-      : 'bg-white/95 text-brand-primary border-white/50 shadow-[0_8px_16px_rgba(0,0,0,0.14)] hover:bg-white';
+      : 'bg-white/10 text-white border-white/15 hover:bg-white/16';
 
     return (
-      <div className="space-y-3 md:space-y-4">
+      <div className={`space-y-3 md:space-y-4 ${stageShellClass}`}>
         <div className="relative z-10 flex w-full flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative min-w-0 flex-1">
-            <div className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-gray-400">
+            <div className={`pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 ${searchIconClass}`}>
               <Icons.Search size={18} />
             </div>
             <Input
@@ -1694,45 +1711,49 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
               onChange={(event) => setSearchTerm(event.target.value)}
               className={searchInputClass}
             />
-            {searchTerm && (
+            {/* Grupo à direita, DENTRO da barra: limpar + divisor + Filtros. Fica na mesma
+                altura da barra (acaba o desalinhamento) e alinha com as barras das outras
+                bibliotecas — o filtro vira um slot da própria barra, não um botão solto. */}
+            <div className="absolute right-1.5 top-1/2 z-10 flex -translate-y-1/2 items-center gap-1">
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors ${clearBtnClass}`}
+                  title="Limpar busca"
+                >
+                  <Icons.X size={16} />
+                </button>
+              )}
+              <span className={`mx-0.5 h-6 w-px ${dividerClass}`} aria-hidden="true" />
               <button
                 type="button"
-                onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 z-10 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-white/90 text-gray-500 backdrop-blur-sm transition-colors hover:text-gray-700"
-                title="Limpar busca"
+                onClick={() => openFilterDrawer()}
+                className={`inline-flex h-10 items-center gap-2 rounded-[20px] px-3 transition-all active:scale-95 ${activeFilterCount > 0 ? 'bg-brand-light text-white shadow-[0_10px_22px_rgba(93,30,118,0.30)]' : filterIdleClass}`}
+                title="Refinar busca"
               >
-                <Icons.X size={16} />
+                <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
+                <span className="hidden text-sm font-bold md:inline">Filtros</span>
+                {activeFilterCount > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white/25 px-1 text-[10px] font-black text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
               </button>
-            )}
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+          {isSearchExperience && (
             <button
               type="button"
-              onClick={() => openFilterDrawer()}
-              className={`inline-flex h-10 items-center gap-2 rounded-[20px] border px-3 transition-all active:scale-95 md:px-4 ${activeFilterCount > 0 ? 'border-brand-light bg-brand-light text-white shadow-[0_12px_26px_rgba(93,30,118,0.35)]' : passiveFilterClass}`}
-              title="Refinar busca"
+              onClick={closeInlineSearch}
+              className="hidden shrink-0 md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 px-3 text-gray-500 backdrop-blur-sm transition-colors hover:text-gray-700"
+              title="Fechar busca"
             >
-              <Icons.Filter size={18} strokeWidth={activeFilterCount > 0 ? 2.5 : 2} />
-              <span className="hidden text-sm font-bold md:inline">Filtros</span>
-              {activeFilterCount > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1 text-[10px] font-black text-white">
-                  {activeFilterCount}
-                </span>
-              )}
+              <Icons.X size={16} />
+              <span className="text-sm font-bold">Fechar</span>
             </button>
-            {isSearchExperience && (
-              <button
-                type="button"
-                onClick={closeInlineSearch}
-                className="hidden md:inline-flex h-10 items-center gap-2 rounded-[20px] border border-white/30 bg-white/90 px-3 text-gray-500 backdrop-blur-sm transition-colors hover:text-gray-700"
-                title="Fechar busca"
-              >
-                <Icons.X size={16} />
-                <span className="text-sm font-bold">Fechar</span>
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
         {!isSearchExperience && (
@@ -2105,7 +2126,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       collections={filteredCollections}
                       onCollectionClick={handleCollectionClick}
                       grants={contentGrants}
-                      tone="default"
+                      tone={isCorujaHomeLayout ? 'central-coruja' : 'default'}
                       subtitleFallback={currentCollectionGroup === 'books' ? `Livro digital do ${brandDisplayName}.` : undefined}
                     />
                   </div>
@@ -2147,7 +2168,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                       collections={searchBackdropCollections}
                       onCollectionClick={handleCollectionClick}
                       grants={contentGrants}
-                      tone="default"
+                      tone={isCorujaHomeLayout ? 'central-coruja' : 'default'}
                       subtitleFallback={currentCollectionGroup === 'books' ? `Livro digital do ${brandDisplayName}.` : undefined}
                     />
                   </div>
@@ -2217,7 +2238,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     <p className={`text-sm mt-1 line-clamp-1 ${isCorujaHomeLayout ? 'text-white/70' : 'text-gray-500'}`}>Pesquisando por “{searchTerm.trim()}”</p>
                   )}
                 </div>
-                <div className="relative flex items-center gap-1.5 rounded-full border border-gray-200/80 bg-white/90 px-2 py-1 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+                <div className={`relative flex items-center gap-1.5 rounded-full border px-2 py-1 ${isCorujaHomeLayout ? 'border-white/12 bg-white/10 shadow-[0_10px_24px_rgba(4,27,36,0.18)] backdrop-blur-xl' : 'border-gray-200/80 bg-white/90 shadow-[0_10px_24px_rgba(15,23,42,0.06)]'}`}>
                     {/* Chip Idade */}
                     {(() => {
                       const activeCount = activeFilters.age.filter(isAgeValue).length;
@@ -2230,7 +2251,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                               setDropdownAnchor({ x: rect.left, y: rect.bottom + 6 });
                               setOpenDropdown(isOpen ? null : 'age');
                             }}
-                            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${activeCount > 0 || isOpen ? 'bg-brand-primary text-white shadow-sm' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${activeCount > 0 || isOpen ? 'bg-brand-primary text-white shadow-sm' : isCorujaHomeLayout ? 'bg-white/10 text-white/80 hover:bg-white/16' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
                             title="Filtrar por idade"
                           >
                             <Icons.Baby size={12} />
@@ -2254,7 +2275,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                               setDropdownAnchor({ x: rect.left, y: rect.bottom + 6 });
                               setOpenDropdown(isOpen ? null : 'schoolYear');
                             }}
-                            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${activeCount > 0 || isOpen ? 'bg-brand-primary text-white shadow-sm' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                            className={`flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-black uppercase tracking-[0.08em] transition-all ${activeCount > 0 || isOpen ? 'bg-brand-primary text-white shadow-sm' : isCorujaHomeLayout ? 'bg-white/10 text-white/80 hover:bg-white/16' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
                             title="Filtrar por ano escolar"
                           >
                             <Icons.GraduationCap size={12} />
@@ -2277,7 +2298,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, params, acce
                     collections={filteredCollections}
                     onCollectionClick={handleCollectionClick}
                     grants={contentGrants}
-                    tone="default"
+                    tone={isCorujaHomeLayout ? 'central-coruja' : 'default'}
                     subtitleFallback={currentCollectionGroup === 'books' ? `Livro digital do ${brandDisplayName}.` : undefined}
                   />
                 </div>

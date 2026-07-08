@@ -22,15 +22,26 @@
 -- │ 00000000-0000-0000-0000-000000000002│ brand_id da central-coruja│
 -- │ 00000000-0000-0000-0000-000000000010│ user_id do viewer_kaboo   │
 -- └─────────────────────────────────────────────────────────────────┘
+--
+-- Issue #54 fix (2026-07-04): este arquivo sempre usou RAISE NOTICE/EXCEPTION
+-- para reportar PASS/FAIL, o que NUNCA produz TAP válido no stdout (pg_prove
+-- só reconhece linhas emitidas via SELECT — NOTICE vai para stderr). Por isso
+-- o job rls-tests SEMPRE resultava "No plan found in TAP output" mesmo quando
+-- toda a lógica de segurança passava (nunca detectado antes porque o rebuild
+-- limpo nunca tinha chegado a rodar este arquivo — ver #61). Convertido pra
+-- TAP real: plan(9) + SELECT ok(...) por asserção + finish(). A lógica de
+-- cada teste (SET ROLE / UPDATE / RESET ROLE / verificação) é idêntica à
+-- original — só a forma de reportar o resultado mudou.
 -- ============================================================
 
 BEGIN;
+
+SELECT plan(9);
 
 DO $$
 BEGIN
   RAISE NOTICE '=== RLS Profiles Guard Test Suite (DB-01) ===';
   RAISE NOTICE 'Migração alvo: 20260626000000_t50_profiles_privilege_guard.sql';
-  RAISE NOTICE '';
 END $$;
 
 -- ============================================================
@@ -110,10 +121,7 @@ VALUES
 -- SEÇÃO 1: DB-01 guard — role freeze
 -- ============================================================
 
-DO $$
-BEGIN
-  RAISE NOTICE '--- SEÇÃO 1: DB-01 role freeze ---';
-END $$;
+SELECT diag('--- SEÇÃO 1: DB-01 role freeze ---');
 
 -- ── 1.1 viewer tenta auto-promover para admin ────────────────
 -- O trigger guard_profile_privilege_columns deve silenciosamente
@@ -144,60 +152,41 @@ BEGIN
   FROM public.profiles
   WHERE id = '00000000-0000-0000-0000-000000000010'::uuid;
 
-  IF v_role = 'viewer' THEN
-    RAISE NOTICE 'PASS [1.1]: auto-escalation de role bloqueada — role permanece viewer';
-  ELSE
-    RAISE EXCEPTION 'FAIL [1.1]: role foi alterado para % (esperado: viewer) — guard não está ativo!', v_role;
-  END IF;
+  PERFORM set_config('pgtap.t1_1', (v_role = 'viewer')::text, false);
+  PERFORM set_config('pgtap.t1_1_role', v_role, false);
 END $$;
+SELECT ok(
+  current_setting('pgtap.t1_1')::boolean,
+  format('auto-escalation de role bloqueada — role permanece viewer (obtido: %s)', current_setting('pgtap.t1_1_role'))
+);
 
 -- ── 1.2 trigger presente no catálogo ────────────────────────
-DO $$
-DECLARE
-  v_exists boolean;
-BEGIN
-  SELECT EXISTS(
+SELECT ok(
+  EXISTS(
     SELECT 1 FROM pg_trigger
     WHERE tgname = 'trg_guard_profile_privilege'
       AND tgrelid = 'public.profiles'::regclass
-  ) INTO v_exists;
-
-  IF v_exists THEN
-    RAISE NOTICE 'PASS [1.2]: trigger trg_guard_profile_privilege existe em profiles';
-  ELSE
-    RAISE EXCEPTION 'FAIL [1.2]: trigger trg_guard_profile_privilege NÃO encontrado — migração DB-01 não foi aplicada!';
-  END IF;
-END $$;
+  ),
+  'trigger trg_guard_profile_privilege existe em profiles'
+);
 
 -- ── 1.3 WITH CHECK presente na política de UPDATE ────────────
-DO $$
-DECLARE
-  v_has_check boolean;
-BEGIN
-  SELECT EXISTS(
+SELECT ok(
+  EXISTS(
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public'
       AND tablename  = 'profiles'
       AND cmd        = 'UPDATE'
       AND with_check IS NOT NULL
-  ) INTO v_has_check;
-
-  IF v_has_check THEN
-    RAISE NOTICE 'PASS [1.3]: política UPDATE em profiles tem WITH CHECK definido';
-  ELSE
-    RAISE EXCEPTION 'FAIL [1.3]: política UPDATE em profiles sem WITH CHECK — migração DB-01 não foi aplicada!';
-  END IF;
-END $$;
+  ),
+  'política UPDATE em profiles tem WITH CHECK definido'
+);
 
 -- ============================================================
 -- SEÇÃO 2: DB-01 guard — brand_id freeze (tenant-hopping)
 -- ============================================================
 
-DO $$
-BEGIN
-  RAISE NOTICE '';
-  RAISE NOTICE '--- SEÇÃO 2: DB-01 brand_id freeze ---';
-END $$;
+SELECT diag('--- SEÇÃO 2: DB-01 brand_id freeze ---');
 
 -- ── 2.1 viewer_kaboo tenta trocar brand_id para coruja ───────
 -- Deve ser silenciosamente revertido pelo trigger.
@@ -226,12 +215,12 @@ BEGIN
   FROM public.profiles
   WHERE id = '00000000-0000-0000-0000-000000000010'::uuid;
 
-  IF v_brand_id = '00000000-0000-0000-0000-000000000001'::uuid THEN
-    RAISE NOTICE 'PASS [2.1]: tenant-hopping bloqueado — brand_id permanece kaboo';
-  ELSE
-    RAISE EXCEPTION 'FAIL [2.1]: brand_id foi alterado para % (esperado: kaboo) — guard não está ativo!', v_brand_id;
-  END IF;
+  PERFORM set_config('pgtap.t2_1', (v_brand_id = '00000000-0000-0000-0000-000000000001'::uuid)::text, false);
 END $$;
+SELECT ok(
+  current_setting('pgtap.t2_1')::boolean,
+  'tenant-hopping bloqueado — brand_id permanece kaboo'
+);
 
 -- ── 2.2 viewer_kaboo tenta zerar brand_id (NULL) ─────────────
 -- Limpar brand_id depois de atribuído também deve ser bloqueado.
@@ -260,22 +249,18 @@ BEGIN
   FROM public.profiles
   WHERE id = '00000000-0000-0000-0000-000000000010'::uuid;
 
-  IF v_brand_id = '00000000-0000-0000-0000-000000000001'::uuid THEN
-    RAISE NOTICE 'PASS [2.2]: limpeza de brand_id bloqueada — brand_id permanece kaboo';
-  ELSE
-    RAISE EXCEPTION 'FAIL [2.2]: brand_id foi zerado/alterado para % — guard deve preservar brand_id já atribuído', v_brand_id;
-  END IF;
+  PERFORM set_config('pgtap.t2_2', (v_brand_id = '00000000-0000-0000-0000-000000000001'::uuid)::text, false);
 END $$;
+SELECT ok(
+  current_setting('pgtap.t2_2')::boolean,
+  'limpeza de brand_id bloqueada — brand_id permanece kaboo'
+);
 
 -- ============================================================
 -- SEÇÃO 3: DB-01 guard — atribuição inicial permitida (NULL→valor)
 -- ============================================================
 
-DO $$
-BEGIN
-  RAISE NOTICE '';
-  RAISE NOTICE '--- SEÇÃO 3: atribuição inicial brand_id (NULL → valor) ---';
-END $$;
+SELECT diag('--- SEÇÃO 3: atribuição inicial brand_id (NULL → valor) ---');
 
 -- ── 3.1 primeiro voucher: viewer sem brand_id recebe kaboo ───
 -- O guard permite NULL→valor. Simula o que redeem_voucher faz via
@@ -308,22 +293,18 @@ BEGIN
   FROM public.profiles
   WHERE id = '00000000-0000-0000-0000-000000000030'::uuid;
 
-  IF v_brand_id = '00000000-0000-0000-0000-000000000001'::uuid THEN
-    RAISE NOTICE 'PASS [3.1]: atribuição inicial (NULL → kaboo) permitida — redeem_voucher não vai quebrar';
-  ELSE
-    RAISE EXCEPTION 'FAIL [3.1]: atribuição inicial bloqueada — brand_id permanece % (esperado: kaboo) — guard demasiado restritivo!', v_brand_id;
-  END IF;
+  PERFORM set_config('pgtap.t3_1', (v_brand_id = '00000000-0000-0000-0000-000000000001'::uuid)::text, false);
 END $$;
+SELECT ok(
+  current_setting('pgtap.t3_1')::boolean,
+  'atribuição inicial (NULL → kaboo) permitida — redeem_voucher não vai quebrar'
+);
 
 -- ============================================================
 -- SEÇÃO 4: isolamento de leitura — formations e materials
 -- ============================================================
 
-DO $$
-BEGIN
-  RAISE NOTICE '';
-  RAISE NOTICE '--- SEÇÃO 4: SELECT cross-brand em formations/materials ---';
-END $$;
+SELECT diag('--- SEÇÃO 4: SELECT cross-brand em formations/materials ---');
 
 -- ── 4.1 viewer_kaboo não vê collections da coruja ───────────
 DO $$
@@ -347,12 +328,12 @@ BEGIN
   RESET ROLE;
   PERFORM set_config('request.jwt.claims', '', true);
 
-  IF v_count = 0 THEN
-    RAISE NOTICE 'PASS [4.1]: viewer_kaboo vê 0 collections da coruja';
-  ELSE
-    RAISE EXCEPTION 'FAIL [4.1]: viewer_kaboo viu % collections da coruja (vazamento cross-brand!)', v_count;
-  END IF;
+  PERFORM set_config('pgtap.t4_1', (v_count = 0)::text, false);
 END $$;
+SELECT ok(
+  current_setting('pgtap.t4_1')::boolean,
+  'viewer_kaboo vê 0 collections da coruja'
+);
 
 -- ── 4.2 viewer_kaboo não vê formations da coruja ────────────
 DO $$
@@ -376,12 +357,12 @@ BEGIN
   RESET ROLE;
   PERFORM set_config('request.jwt.claims', '', true);
 
-  IF v_count = 0 THEN
-    RAISE NOTICE 'PASS [4.2]: viewer_kaboo vê 0 formations da coruja';
-  ELSE
-    RAISE EXCEPTION 'FAIL [4.2]: viewer_kaboo viu % formations da coruja (vazamento cross-brand!)', v_count;
-  END IF;
+  PERFORM set_config('pgtap.t4_2', (v_count = 0)::text, false);
 END $$;
+SELECT ok(
+  current_setting('pgtap.t4_2')::boolean,
+  'viewer_kaboo vê 0 formations da coruja'
+);
 
 -- ── 4.3 viewer_kaboo não vê materials da coruja ─────────────
 DO $$
@@ -405,15 +386,14 @@ BEGIN
   RESET ROLE;
   PERFORM set_config('request.jwt.claims', '', true);
 
-  IF v_count = 0 THEN
-    RAISE NOTICE 'PASS [4.3]: viewer_kaboo vê 0 materials da coruja';
-  ELSE
-    RAISE EXCEPTION 'FAIL [4.3]: viewer_kaboo viu % materials da coruja (vazamento cross-brand!)', v_count;
-  END IF;
+  PERFORM set_config('pgtap.t4_3', (v_count = 0)::text, false);
 END $$;
+SELECT ok(
+  current_setting('pgtap.t4_3')::boolean,
+  'viewer_kaboo vê 0 materials da coruja'
+);
 
--- ── 4.4 viewer_kaboo VÊ formations da sua própria marca ─────
--- Garante que o isolamento não bloqueou o acesso legítimo.
+-- ── 4.4 viewer_kaboo VÊ formations da sua própria marca (diagnóstico, não é gate) ─
 DO $$
 DECLARE
   v_count int;
@@ -434,15 +414,11 @@ BEGIN
 
   RESET ROLE;
   PERFORM set_config('request.jwt.claims', '', true);
-
-  IF v_count > 0 THEN
-    RAISE NOTICE 'PASS [4.4]: viewer_kaboo vê % formations da kaboo (acesso legítimo OK)', v_count;
-  ELSE
-    RAISE NOTICE 'WARN [4.4]: viewer_kaboo vê 0 formations da kaboo — verificar política RLS de formations';
-  END IF;
+  PERFORM set_config('pgtap.t4_4_count', v_count::text, false);
 END $$;
+SELECT diag(format('[4.4] viewer_kaboo vê %s formations da kaboo (0 = verificar política RLS de formations)', current_setting('pgtap.t4_4_count')));
 
--- ── 4.5 viewer_kaboo VÊ materials da sua própria marca ──────
+-- ── 4.5 viewer_kaboo VÊ materials da sua própria marca (diagnóstico, não é gate) ──
 DO $$
 DECLARE
   v_count int;
@@ -463,33 +439,22 @@ BEGIN
 
   RESET ROLE;
   PERFORM set_config('request.jwt.claims', '', true);
-
-  IF v_count > 0 THEN
-    RAISE NOTICE 'PASS [4.5]: viewer_kaboo vê % materials da kaboo (acesso legítimo OK)', v_count;
-  ELSE
-    RAISE NOTICE 'WARN [4.5]: viewer_kaboo vê 0 materials da kaboo — verificar política RLS de materials';
-  END IF;
+  PERFORM set_config('pgtap.t4_5_count', v_count::text, false);
 END $$;
+SELECT diag(format('[4.5] viewer_kaboo vê %s materials da kaboo (0 = verificar política RLS de materials)', current_setting('pgtap.t4_5_count')));
 
 -- ============================================================
 -- SUMÁRIO FINAL
 -- ============================================================
 
-DO $$
-BEGIN
-  RAISE NOTICE '';
-  RAISE NOTICE '=== FIM DOS TESTES (DB-01 guard) ===';
-  RAISE NOTICE 'Se chegou aqui sem EXCEPTION, todos os testes críticos passaram.';
-  RAISE NOTICE 'WARN não são falhas — requerem atenção manual.';
-  RAISE NOTICE 'Executando ROLLBACK — nenhum dado foi persistido.';
-END $$;
+SELECT * FROM finish();
 
 ROLLBACK;
 
 -- ============================================================
 -- LEGENDA
 -- ============================================================
--- PASS  → controle funcionando conforme esperado
--- WARN  → situação ambígua — inspecionar manualmente
--- FAIL  → vulnerabilidade detectada — ação imediata necessária
+-- ok    → controle funcionando conforme esperado
+-- diag  → linha de diagnóstico (não é um gate de pass/fail)
+-- not ok → vulnerabilidade detectada — ação imediata necessária
 -- ============================================================
