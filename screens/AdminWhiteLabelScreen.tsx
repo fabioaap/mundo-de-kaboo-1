@@ -33,6 +33,17 @@ import {
     WhiteLabelBrandIdentity,
 } from '../lib/whiteLabelAdminApi';
 
+/** Fontes selecionáveis para a marca. `value` é a stack CSS completa gravada em
+ *  brand_settings.font_family e aplicada via --font-family-sans. Todas são carregadas
+ *  no index.html (Google Fonts), então o que a marca escolher sempre renderiza.
+ *  Nunito = padrão → value vazio deixa o app cair no DEFAULT_FONT_FAMILY. */
+const BRAND_FONT_OPTIONS: { label: string; value: string }[] = [
+    { label: 'Nunito (padrão)', value: '' },
+    { label: 'Poppins', value: "'Poppins', ui-rounded, system-ui, sans-serif" },
+    { label: 'Inter', value: "'Inter', ui-rounded, system-ui, sans-serif" },
+    { label: 'Baloo 2', value: "'Baloo 2', ui-rounded, system-ui, sans-serif" },
+];
+
 /** Labels canônicos dos itens de menu — fonte de verdade para o admin (independente do DB). */
 const NAV_CANONICAL_LABELS: Record<string, string> = {
     collections: 'Coleções',
@@ -155,10 +166,11 @@ export const AdminWhiteLabelScreen: React.FC = () => {
         () => brands.find((brand) => brand.id === selectedBrandId) ?? null,
         [brands, selectedBrandId],
     );
-    // O parallax do hero só tem efeito na Central Coruja (fundo alternativo quando
-    // não há imagem de hero). Para as demais marcas o controle não faz nada, então
-    // não exibimos o card — evita controle inócuo no admin.
-    const parallaxSupported = selectedBrand?.slug === 'central-coruja';
+    // Controles visuais exclusivos da Central Coruja (parallax do hero e imagem de
+    // hero da home só têm efeito nessa marca). Para as demais, o consumidor não
+    // renderiza nada — então escondemos os campos no admin em vez de exibir controle
+    // inócuo.
+    const isCentralCorujaBrand = selectedBrand?.slug === 'central-coruja';
 
     const handleSaveAIConfig = useCallback(async () => {
         if (!selectedBrandId || aiSaving) return;
@@ -559,15 +571,23 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                 <label className="mb-1.5 block text-xs font-semibold text-gray-500" htmlFor="brand-font-family">
                                                     Família tipográfica
                                                 </label>
-                                                <input
+                                                <select
                                                     id="brand-font-family"
-                                                    type="text"
-                                                    value={brandIdentity.font_family}
+                                                    value={brandIdentity.font_family || ''}
                                                     onChange={(event) => updateBrandIdentityField('font_family', event.target.value)}
-                                                    placeholder="Ex.: Nunito, Poppins"
                                                     className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 outline-none transition-colors focus:border-brand-primary/40"
                                                     disabled={loading || saving}
-                                                />
+                                                >
+                                                    {BRAND_FONT_OPTIONS.map((option) => (
+                                                        <option key={option.label} value={option.value} style={{ fontFamily: option.value || undefined }}>
+                                                            {option.label}
+                                                        </option>
+                                                    ))}
+                                                    {brandIdentity.font_family
+                                                        && !BRAND_FONT_OPTIONS.some((option) => option.value === brandIdentity.font_family) && (
+                                                        <option value={brandIdentity.font_family}>Atual: {brandIdentity.font_family}</option>
+                                                    )}
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
@@ -600,6 +620,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     disabled={loading || saving}
                                                 />
                                             </div>
+                                            {isCentralCorujaBrand && (
                                             <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 lg:col-span-2">
                                                 <FileUpload
                                                     inputId="brand-home-hero-upload"
@@ -612,6 +633,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                                     disabled={loading || saving}
                                                 />
                                             </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -865,7 +887,7 @@ export const AdminWhiteLabelScreen: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {parallaxSupported && (
+                                        {isCentralCorujaBrand && (
                                         <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                                             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                                 <div>
