@@ -22,7 +22,7 @@ O que falta **implementar** para fechar os gaps de GTM. Estado verificado no có
 | **GTM-05** 🗄️ | Campo `value_prop`/`tagline` por marca: migration + admin (Identidade Visual) + consumo no hero | migration `brand_settings`, `lib/whiteLabelAdminApi.ts`, `screens/AdminWhiteLabelScreen.tsx`, `hooks/useBrandConfig.ts`, `screens/HomeScreen.tsx` | 🎨 A2 | médio |
 | **G-MKT-10** 🗄️ | E-mails: reativar/parametrizar templates + passar `brand_id` no **envio** (o layout visual é Figma) | `supabase/config.toml:220-238`, templates (edge/SMTP), `lib/api.ts` (`resetPasswordForEmail`/`inviteUserByEmail`) | Figma EM1-5 | médio-alto |
 
-> **Fora deste backlog (são Figma/externos):** Landing Pages, captura de lead, posts de rede social — ver [Figma — artefatos fora da plataforma](./marketing-figma). Aqui fica só o que é **dentro da plataforma**.
+> **Fora deste backlog (são Figma/externos):** Landing Pages, captura de lead, posts de rede social — ver [Figma — artefatos fora da plataforma](./marketing-figma.md). Aqui fica só o que é **dentro da plataforma**.
 
 ## Ordem recomendada (destrava métricas cedo)
 
@@ -38,4 +38,4 @@ O que falta **implementar** para fechar os gaps de GTM. Estado verificado no có
 - ✅ **`store_url` existe** — campo em `brand_settings` (via `mergeBrandLinks` em `lib/whiteLabelAdminApi.ts`) e já consumido por `VoucherUpsellModal` ("Comprar na loja"). Logo GTM-01/02/A5 são fiação, não infra nova.
 - ✅ **Zero telemetria no app** — grep por `track(`/`analytics`/`posthog`/`gtag`/`mixpanel` só acha nos arquivos do site Docusaurus, nada em `screens/`/`lib/`/`components/`.
 - ✅ **Sem `value_prop`/`tagline`** em `brand_settings` nem no código do app.
-- ⚠️ Itens 🎨 dependem de design (ver [Marketing no Figma](./marketing-figma)) — implementar sem design fixo gera retrabalho.
+- ⚠️ Itens 🎨 dependem de design (ver [Marketing no Figma](./marketing-figma.md)) — implementar sem design fixo gera retrabalho.

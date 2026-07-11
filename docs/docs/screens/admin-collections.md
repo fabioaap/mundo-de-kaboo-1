@@ -13,6 +13,10 @@ sidebar_position: 10
 
 Tela de administração de coleções. Disponível apenas para usuários com papel `admin` ou `editor`. Permite criar, editar e excluir coleções de conteúdo educacional.
 
+| Gestão de coleções | Painel administrativo |
+|:---:|:---:|
+| ![Tela de administração de coleções](/screenshots/17-admin-collections.png) | ![Ponto de entrada do painel administrativo](/screenshots/09-admin.png) |
+
 ## Props
 
 ```typescript

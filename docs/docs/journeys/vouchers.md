@@ -69,7 +69,7 @@ No painel de **Administração**, abra **Vouchers**. O módulo tem um cabeçalho
 |:---:|
 | ![Lista de modelos de voucher](/screenshots/voucher-admin-01-lista.png) |
 
-<!-- TODO(screenshot): recapturar voucher-admin-01-lista.png em 1440×900 mostrando o cabeçalho "Vouchers" (PageHeader) acima das 4 abas. -->
+{/* TODO(screenshot): recapturar voucher-admin-01-lista.png em 1440×900 mostrando o cabeçalho "Vouchers" (PageHeader) acima das 4 abas. */}
 
 > Um **modelo** define *o que* o voucher libera e por *quanto tempo*. Um **lote** gera os **códigos** a partir de um modelo.
 
@@ -131,7 +131,7 @@ Isso permite ver **num relance** quantos códigos já foram usados, quantos aind
 
 > ℹ️ **Status do lote ≠ estado dos códigos.** O *status* do lote (ex.: "Gerado") descreve a emissão; o **breakdown de consumo** descreve o estado individual dos códigos dentro dele. São informações distintas e complementares.
 
-<!-- TODO(screenshot): capturar novo screenshot da aba Lotes em 1440×900 mostrando a barra de consumo segmentada + breakdown "X resgatados · Y disponíveis · Z desativados · de N". -->
+{/* TODO(screenshot): capturar novo screenshot da aba Lotes em 1440×900 mostrando a barra de consumo segmentada + breakdown "X resgatados · Y disponíveis · Z desativados · de N". */}
 
 ### A.7 — Aba Códigos: quem resgatou cada código
 
@@ -148,7 +148,7 @@ A aba **Códigos** lista todos os códigos gerados em uma tabela com as colunas:
 
 As colunas **Consumidor** e **E-mail** mostram **quem resgatou** cada código, fechando o ciclo de rastreabilidade entre o lote emitido e o usuário final.
 
-<!-- TODO(screenshot): capturar novo screenshot da aba Códigos em 1440×900 mostrando as colunas Código, Status, Lote, Consumidor, E-mail, Resgatado em. -->
+{/* TODO(screenshot): capturar novo screenshot da aba Códigos em 1440×900 mostrando as colunas Código, Status, Lote, Consumidor, E-mail, Resgatado em. */}
 
 > 🔒 **Nota técnica/segurança.** Os dados de Consumidor/E-mail vivem em `public.profiles`, cuja RLS (fix DB-01) só permite cada usuário ler o **próprio** perfil — admins **não** leem perfis de terceiros pelo client. Para a tabela de Códigos, esses dados são servidos pela RPC **`get_voucher_consumers`** (`SECURITY DEFINER`), que expõe o mínimo (nome + e-mail) **apenas** para vouchers de marcas que o chamador administra (autorização por `can_manage_brand`). A função **não afrouxa** a RLS de `profiles` — a regra "cada usuário lê só o próprio perfil" continua valendo no acesso direto à tabela.
 >

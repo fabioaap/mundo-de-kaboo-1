@@ -1,0 +1,72 @@
+name: Wiki Sync
+
+# Camada 1 (determinística):
+#  - No PR: gate de frescor (código mudou → doc precisa mudar) + build da wiki.
+#  - No merge para main (docs mudaram): re-indexa o RAG do assistente.
+#
+# Secrets necessários (Settings → Secrets and variables → Actions):
+#  - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  (para o re-index)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'docs/docs/**'
+
+# Token mínimo (só leitura do repo). Secrets só chegam ao job reindex (push).
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    if: github.event_name == 'pull_request'
+    name: Gate de frescor + build da wiki
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # histórico completo: gate (base...HEAD) + datas "última atualização"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Buscar branch base
+        run: git fetch origin ${{ github.base_ref }} --depth=0
+
+      - name: Gate de frescor (código sem doc → falha)
+        run: node scripts/wiki/doc-gate.mjs origin/${{ github.base_ref }}
+
+      - name: Instalar deps da wiki
+        working-directory: docs
+        run: npm ci
+
+      - name: Build da wiki (valida links quebrados)
+        working-directory: docs
+        run: npm run build
+
+  reindex:
+    if: github.event_name == 'push'
+    name: Re-indexar o assistente (RAG)
+    runs-on: ubuntu-latest
+    # Evita dois re-index sobrepostos (delete + insert poderiam interleaves).
+    concurrency:
+      group: wiki-reindex
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar deps (raiz — supabase-js)
+        run: npm ci
+
+      - name: Re-indexar wiki_chunks
+        run: node scripts/index-wiki.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

@@ -7,7 +7,7 @@ sidebar_position: 4
 # Inventário do app — referência
 
 Telas/componentes que **já existem em código** (brownfield). Referência do universo **de código** (dentro da
-plataforma). Os artefatos de Figma (fora do app) estão em [Figma — artefatos fora da plataforma](./marketing-figma).
+plataforma). Os artefatos de Figma (fora do app) estão em [Figma — artefatos fora da plataforma](./marketing-figma.md).
 
 **Legenda:** 🏷️×2 = 2 variantes de marca · 💰 = caminho de GTM · 🔒 = admin (tema único).
 

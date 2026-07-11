@@ -7,7 +7,7 @@ sidebar_position: 2
 # Figma — artefatos FORA da plataforma
 
 **Regra de corte:** aqui entra só o que vive **fora da plataforma** — **Landing Pages, e-mails e posts de rede social**
-(e criativos de campanha). Tudo que é dentro do app é código (ver [Backlog de código](./code-backlog)).
+(e criativos de campanha). Tudo que é dentro do app é código (ver [Backlog de código](./code-backlog.md)).
 
 **Legenda:** 🏷️×2 = precisa das 2 marcas (Kaboo + Central Coruja) · 🆕 não existe · ♻️ existe, refazer.
 

@@ -13,6 +13,10 @@ sidebar_position: 4
 
 A rota `search` continua existindo por compatibilidade de navegação e histórico, mas agora renderiza a mesma experiência de descoberta da home. O objetivo é abrir a home em modo de busca, com foco no campo principal e os mesmos filtros disponíveis no topo da tela.
 
+| Busca (campo em foco) | Busca com resultados |
+|:---:|:---:|
+| ![Tela de busca com o campo em foco](/screenshots/13-search.png) | ![Resultados da busca em grid](/screenshots/14-search-results.png) |
+
 ## Props
 
 ```typescript

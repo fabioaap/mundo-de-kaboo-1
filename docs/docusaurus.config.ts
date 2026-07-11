@@ -29,6 +29,16 @@ const config: Config = {
   url: docsSiteUrl,
   baseUrl: docsBaseUrl,
 
+  // Config do assistente da wiki (público — a anon key pode ir ao browser; a
+  // chave do LLM fica só no secret da Edge Function). Sem estas envs, o widget
+  // opera em modo demo (mock).
+  customFields: {
+    wikiAssistant: {
+      supabaseUrl: process.env.WIKI_SUPABASE_URL ?? '',
+      anonKey: process.env.WIKI_SUPABASE_ANON_KEY ?? '',
+    },
+  },
+
   organizationName: 'educacrossgit',
   projectName: 'Mundo-de-Kaboo-V2',
 
@@ -41,7 +51,21 @@ const config: Config = {
     },
   },
 
-  themes: ['@docusaurus/theme-mermaid'],
+  themes: [
+    '@docusaurus/theme-mermaid',
+    // Busca local offline (sem Algolia). Só funciona no build de produção.
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        language: ['pt', 'en'],
+        indexDocs: true,
+        docsRouteBasePath: '/docs',
+        highlightSearchTermsOnTargetPage: true,
+        searchResultLimits: 8,
+      },
+    ],
+  ],
 
   plugins: [
     'docusaurus-plugin-image-zoom',
@@ -63,6 +87,10 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           editUrl: `${docsRepoUrl}/edit/main/docs/`,
+          // "Última atualização em DATA por AUTOR" no rodapé de cada página,
+          // vindo do histórico do git de cada arquivo (automático).
+          showLastUpdateTime: true,
+          showLastUpdateAuthor: true,
         },
         blog: false,
         theme: {

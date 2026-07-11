@@ -23,9 +23,9 @@ Fonte canônica (o `AUDITORIA-UX-PRODUTO-2026-07-01.md` original nunca foi commi
 
 ## Sub-páginas
 
-- 🎨 [Figma — artefatos fora da plataforma](./marketing-figma) — **LP, e-mails, posts de rede social** (só o que vive fora do app).
-- 💻 [Backlog de código](./code-backlog) — tudo **dentro da plataforma** (banner, expirado, telemetria, value prop, paywall…).
-- 📋 [Inventário do app (referência)](./figma-inventory) — telas/componentes que já existem em código.
+- 🎨 [Figma — artefatos fora da plataforma](./marketing-figma.md) — **LP, e-mails, posts de rede social** (só o que vive fora do app).
+- 💻 [Backlog de código](./code-backlog.md) — tudo **dentro da plataforma** (banner, expirado, telemetria, value prop, paywall…).
+- 📋 [Inventário do app (referência)](./figma-inventory.md) — telas/componentes que já existem em código.
 
 > **Régua de corte:** fora da plataforma (LP/e-mail/social) = **Figma**. Dentro do app = **código**.
 
