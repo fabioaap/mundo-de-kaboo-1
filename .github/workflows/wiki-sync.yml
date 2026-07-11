@@ -34,7 +34,7 @@ jobs:
           node-version: 20
 
       - name: Buscar branch base
-        run: git fetch origin ${{ github.base_ref }} --depth=0
+        run: git fetch origin ${{ github.base_ref }}
 
       - name: Gate de frescor (código sem doc → falha)
         run: node scripts/wiki/doc-gate.mjs origin/${{ github.base_ref }}
