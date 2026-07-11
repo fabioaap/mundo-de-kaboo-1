@@ -15,6 +15,10 @@ sidebar_position: 8
 
 Tela de perfil do usuário autenticado. Exibe informações pessoais e opções de gerenciamento da conta.
 
+| Perfil | Perfil (detalhe) |
+|:---:|:---:|
+| ![Tela de perfil com status de acesso](/screenshots/15-profile.png) | ![Detalhe do perfil do usuário](/screenshots/10-perfil.png) |
+
 ### Props
 
 ```typescript
@@ -41,6 +45,8 @@ interface ProfileScreenProps {
 ### Descrição
 
 Tela de edição dos dados pessoais do usuário.
+
+![Tela Meus Dados com o formulário de edição da conta](/screenshots/16-my-data.png)
 
 ### Props
 

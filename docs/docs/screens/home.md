@@ -13,6 +13,8 @@ sidebar_position: 3
 
 Tela principal da aplicação e ponto central de descoberta do acervo. Exibe todas as coleções disponíveis para o usuário, incorpora a busca textual diretamente no topo da home, mantém filtros rápidos sempre visíveis e abre um modal com detalhes ao selecionar uma coleção.
 
+![Tela inicial (Home) com o grid de coleções](/screenshots/08-home.png)
+
 ## Props
 
 ```typescript

@@ -43,3 +43,17 @@ interface LoginScreenProps {
 |---------|----------|
 | `forgot_password` | Usuário clica em "Esqueci minha senha" |
 | `home` | Login bem-sucedido (via listener de auth) |
+
+## Telas do fluxo de acesso
+
+| Entrada | Voucher (vazio) | Voucher (validado) |
+|:---:|:---:|:---:|
+| ![Tela de entrada](/screenshots/01-entry.png) | ![Campo de voucher vazio](/screenshots/02-voucher-vazio.png) | ![Voucher validado](/screenshots/03-voucher-validado.png) |
+
+| Escolha de conta | Cadastro | Login com voucher |
+|:---:|:---:|:---:|
+| ![Escolha de conta (entrar ou cadastrar)](/screenshots/04-account-choice.png) | ![Formulário de cadastro](/screenshots/05-register.png) | ![Login com voucher aplicado](/screenshots/06-login-com-voucher.png) |
+
+| Login direto | Esqueci a senha |
+|:---:|:---:|
+| ![Login direto com e-mail e senha](/screenshots/07-login-direto.png) | ![Tela de recuperação de senha](/screenshots/11-forgot-password.png) |

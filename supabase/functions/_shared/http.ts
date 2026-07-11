@@ -9,8 +9,10 @@ const ALLOWED_ORIGINS = [
   'http://localhost:4100',
   'http://localhost:4101',
   'http://localhost:5173',
+  'http://localhost:4200', // wiki (Docusaurus dev)
   'http://127.0.0.1:4100',
   'http://127.0.0.1:4101',
+  'http://127.0.0.1:4200',
   // produção
   'https://mundodekaboo.educacross.dev',
   // Migração Azure (em andamento): adicionar o domínio definitivo quando publicado.
