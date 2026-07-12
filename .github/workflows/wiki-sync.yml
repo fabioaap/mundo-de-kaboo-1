@@ -25,6 +25,9 @@ jobs:
     if: github.event_name == 'pull_request'
     name: Gate de frescor + build da wiki
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # comentar o rascunho de changelog no PR (Camada 2)
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,8 +40,37 @@ jobs:
       - name: Buscar branch base
         run: git fetch origin ${{ github.base_ref }}
 
-      - name: Gate de frescor (código sem doc → falha)
+      - name: Gate de frescor (código sem doc)
+        id: gate
+        continue-on-error: true
         run: node scripts/wiki/doc-gate.mjs origin/${{ github.base_ref }}
+
+      # Camada 2 — se o gate reprovou, a IA rascunha o changelog e comenta no PR.
+      # A chave do LLM fica no Supabase; aqui só a anon key (pública, via vars).
+      - name: Rascunhar changelog (IA, via Supabase)
+        if: steps.gate.outcome == 'failure'
+        env:
+          WIKI_SUPABASE_URL: ${{ vars.WIKI_SUPABASE_URL }}
+          WIKI_SUPABASE_ANON_KEY: ${{ vars.WIKI_SUPABASE_ANON_KEY }}
+        run: node scripts/wiki/draft-changelog.mjs origin/${{ github.base_ref }}
+
+      - name: Comentar rascunho no PR
+        if: steps.gate.outcome == 'failure' && hashFiles('wiki-draft-changelog.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "🤖 **Gate da wiki:** este PR mexe em código sem atualizar a documentação."
+            echo ""
+            echo "Sugestão de entrada de changelog (revise e adicione em \`docs/docs/changelog/\`):"
+            echo ""
+            echo '```markdown'
+            cat wiki-draft-changelog.md
+            echo '```'
+            echo ""
+            echo "_🤖 Gerado por Claude Code (Camada 2 do doc-sync)_"
+          } > comment.md
+          gh pr comment ${{ github.event.pull_request.number }} --body-file comment.md
 
       - name: Instalar deps da wiki
         working-directory: docs
@@ -47,6 +79,12 @@ jobs:
       - name: Build da wiki (valida links quebrados)
         working-directory: docs
         run: npm run build
+
+      - name: Falhar se o gate reprovou
+        if: steps.gate.outcome == 'failure'
+        run: |
+          echo "Gate reprovou: adicione doc/changelog (veja o comentário no PR)."
+          exit 1
 
   reindex:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'

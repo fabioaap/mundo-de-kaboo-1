@@ -42,7 +42,11 @@ const sidebars: SidebarsConfig = {
         {
           type: 'category',
           label: '📝 Changelog Técnico',
-          items: ['changelog/index', 'changelog/2026-07-sessao-tema-e-admin'],
+          items: [
+            'changelog/index',
+            'changelog/2026-07-sessao-tema-e-admin',
+            'changelog/2026-07-doc-sync-flow',
+          ],
         },
         {
           type: 'category',
