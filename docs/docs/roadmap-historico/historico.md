@@ -195,3 +195,40 @@ e suíte BDD. Estado verificado no código pós-PR #81 (2026-07-08).
 
 > Falta de fiação de GTM verificada pós-PR #81 (telemetria zero no app, `store_url` existe mas não
 > está ligado ao banner de renovação) — ver [A fazer / Backlog](./roadmap#gtm--aquisição-e-conversão).
+
+## 2026-07 (PRs #82 e #83) — Wiki, Assistente de IA e doc-sync
+
+Rodada focada em **documentação viva**: reorganização da wiki, um assistente de IA que responde
+sobre a plataforma, e um flow que mantém a doc atualizada quando o código muda.
+
+### Wiki reorganizada (PR #82)
+
+- **Documentação por público** (Desenvolvimento / Produto / Operação / Público) — regras de negócio,
+  usabilidade por módulo, roadmap/histórico, telas com **49 screenshots**, changelog, marca/tema, testes.
+- **Busca local offline** (Docusaurus, sem Algolia) + **data de "última atualização"** por página (git).
+
+### Assistente de IA na wiki (PR #82)
+
+- **RAG lexical** (full-text pt-BR) sobre a documentação → **Edge Function `wiki-assistant`** +
+  tabela `wiki_chunks` + indexador (`scripts/index-wiki.mjs`). Provedor **Groq** (agnóstico,
+  OpenAI-compatible); chave só no servidor.
+- **Widget** com histórico de sessão, fontes clicáveis, markdown e busca com fallback. Corrigido o
+  índice pra parar de citar backlog arquivado (abril) como atual.
+
+### Doc-sync — flow que mantém a wiki atualizada (PRs #82 e #83)
+
+- **Camada 1:** gate de frescor no PR (código sem doc → falha) + re-index automático no merge
+  (`.github/workflows/wiki-sync.yml`, `scripts/wiki/doc-gate.mjs`).
+- **Camada 2:** quando o gate reprova, a IA **rascunha o changelog** do diff e comenta no PR
+  (`wiki-draft` + `scripts/wiki/draft-changelog.mjs`) — a chave do LLM fica só no Supabase.
+
+### Segurança
+
+- Revisão de segurança (@dev): XSS de link corrigido (whitelist de scheme), cap fail-closed, erro do
+  provedor não ecoado ao cliente, `permissions`/`concurrency` no workflow. **Nenhuma chave secreta
+  exposta** — anon key é pública por design; service role e chave do LLM só server-side. Detalhes em
+  [Flow de doc-sync](../changelog/2026-07-doc-sync-flow).
+
+> **Pendências pra ativar em CI** (ações de config, não código): secrets `SUPABASE_URL` +
+> `SUPABASE_SERVICE_ROLE_KEY` (re-index) e variables públicas `WIKI_SUPABASE_URL` +
+> `WIKI_SUPABASE_ANON_KEY` (Camada 2). Ver [A fazer / Backlog](./roadmap).

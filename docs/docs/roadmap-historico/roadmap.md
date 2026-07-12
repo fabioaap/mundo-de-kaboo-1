@@ -16,6 +16,21 @@ entregue está em [Feito / Entregue](./historico); o que falta especificamente p
 Salvo indicação, itens de dados/estrutura tocam **as duas marcas** (mesmo banco); mudanças no
 acervo/branding da Central Coruja exigem **aprovação separada** do dono da marca.
 
+## Documentação viva / doc-sync (recém-entregue — ativar e evoluir)
+
+O sistema (wiki + assistente + doc-sync) já está na `main` (ver [Feito](./historico)). Falta:
+
+- 🔴 **Ativar o CI** (config, não código): secrets `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`
+  (re-index no merge) e variables públicas `WIKI_SUPABASE_URL` + `WIKI_SUPABASE_ANON_KEY` (Camada 2).
+  Sem isso, o re-index automático e o rascunho por IA ficam em standby (o gate já funciona).
+- 🟡 **Camada 2 — evoluir para auto-commit:** hoje a IA **comenta** o rascunho no PR; o próximo nível
+  é **commitar** no PR (com revisão humana). Exige permissão de escrita + cuidado com loop de CI.
+- 🟡 **RAG semântico (pgvector):** subir da busca lexical para embeddings — respostas mais precisas
+  (hoje às vezes rankeia um doc parecido). Aditivo, não muda o widget nem a função.
+- 🟢 **Defesa de custo:** baixar `WIKI_LLM_DAILY_CAP` e/ou rate-limit por IP na função.
+- 🟢 **Silenciar o bot de docs em PR:** ajustar `update-docs.yml` pra não comentar/comitar em PR
+  (elimina o ruído de `action_required` no head).
+
 ## Mídia canônica (estrutural, 📋 diferido)
 
 A espinha dorsal de vários itens abaixo. Hoje cada mídia vive como JSON embutido em
