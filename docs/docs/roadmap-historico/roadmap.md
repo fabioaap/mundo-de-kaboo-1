@@ -27,7 +27,6 @@ O sistema (wiki + assistente + doc-sync) já está na `main` (ver [Feito](./hist
   é **commitar** no PR (com revisão humana). Exige permissão de escrita + cuidado com loop de CI.
 - 🟡 **RAG semântico (pgvector):** subir da busca lexical para embeddings — respostas mais precisas
   (hoje às vezes rankeia um doc parecido). Aditivo, não muda o widget nem a função.
-- 🟢 **Defesa de custo:** baixar `WIKI_LLM_DAILY_CAP` e/ou rate-limit por IP na função.
 - 🟢 **Silenciar o bot de docs em PR:** ajustar `update-docs.yml` pra não comentar/comitar em PR
   (elimina o ruído de `action_required` no head).
 
