@@ -32,7 +32,7 @@ feature flags). Para o que ainda falta, ver [A fazer / Backlog](./roadmap) e
 
 - Login e cadastro por e-mail/senha (v1.2).
 - Voucher temporal: resgate, renovação, expiração (v1.2).
-- Duração de voucher 1/3/6/9/12 meses (v1.2).
+- Duração de voucher de **1 a 12 meses** (5 presets + duração custom 1-12) (v1.2).
 - Content grants: liberação de conteúdo por voucher (v1.2).
 - Convite de colaboradores / invite flow (v1.2).
 
@@ -45,7 +45,7 @@ feature flags). Para o que ainda falta, ver [A fazer / Backlog](./roadmap) e
 
 ### Detalhe da coleção
 
-- Leitor de PDF (flipbook) + modo texto acessível (v1.2).
+- Leitor de PDF (flipbook) (v1.2). O **modo texto acessível** segue **pendente** (não implementado — text-layer desativado, ver ISS-13/`ReaderModeSwitch`).
 - CTAs tipados (Leitura, Contação, Animado, Libras, Como Jogar, Videoaula) (v1.2).
 - Biblioteca estruturada de Materiais da Coleção (v1.2).
 - Tooltip BNCC rico (1.397 habilidades) + Tooltip CASEL rico (5 competências) (v1.2).
@@ -85,7 +85,10 @@ feature flags). Para o que ainda falta, ver [A fazer / Backlog](./roadmap) e
   via `useBrandConfig`; rotas por slug; isolamento Kaboo × Central Coruja.
 - Backbone de mídia privada (storage por marca) (v1.3).
 - Controle de acesso por marca (RLS por brand) (v1.3).
-- Flag de conteúdo offline por item de catálogo (v1.3, 2026-05-13).
+- Integrações de IA por marca — chave cifrada no servidor, seleção de provider/modelo e teste de
+  conexão (`AdminWhiteLabelScreen.tsx:1022-1187`, `getWhiteLabelAIConfig`/`setWhiteLabelAIConfig`/`testWhiteLabelAIConnection`, migration `20260612000...`).
+- Flag de conteúdo offline por item de catálogo (v1.3, 2026-05-13). Evoluiu (PR #81) para um
+  **interruptor-mestre global** (não mais por item) — `AdminWhiteLabelScreen`.
 
 ### QA / Testes
 
@@ -126,7 +129,7 @@ feature flags). Para o que ainda falta, ver [A fazer / Backlog](./roadmap) e
 ### Saúde da base
 
 - ✅ Typecheck: **0 erros** (eram 43, corrigidos em 2026-06-14).
-- ⚠️ Unit tests: 94/95 (1 falha pré-existente não relacionada a vouchers, em investigação).
+- ✅ **133/133 testes passando, 0 falhas** (verificado em 2026-07-12 rodando `npm run test:unit` — 28 arquivos, 133 testes). A suíte cresceu de 95→133 e a falha pré-existente não existe mais.
 - ✅ Refatoração single-brand (Configurações) verificada sem regressão; `AdminWhiteLabelScreen`
   100% brand-agnostic; front travado em Kaboo via `VITE_BRAND_SLUG` autoritativo.
 
@@ -204,7 +207,7 @@ sobre a plataforma, e um flow que mantém a doc atualizada quando o código muda
 ### Wiki reorganizada (PR #82)
 
 - **Documentação por público** (Desenvolvimento / Produto / Operação / Público) — regras de negócio,
-  usabilidade por módulo, roadmap/histórico, telas com **49 screenshots**, changelog, marca/tema, testes.
+  usabilidade por módulo, roadmap/histórico, telas com **33 screenshots**, changelog, marca/tema, testes.
 - **Busca local offline** (Docusaurus, sem Algolia) + **data de "última atualização"** por página (git).
 
 ### Assistente de IA na wiki (PR #82)

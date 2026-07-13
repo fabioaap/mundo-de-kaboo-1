@@ -94,15 +94,21 @@ produção + pelo dono do produto:
 
 ## Vitrine / Remoção de mocks (📋 diferido, alta prioridade pós-MVP)
 
-A vitrine pública (`LibraryHubScreen`) de Áudios/Vídeos/Formações/Materiais é **100% mock**
-(`data/library-hubs/*.mock.ts`): rails, chips editoriais ("Roda", "Acolhimento"), stat cards ("03
-faixas"), progress bars falsas e 8 `collectionId`s hardcoded. Auditoria completa em
-`backlog-remocao-mocks-vitrine`.
+A descrição "100% mock" está **desatualizada** (verificado no código). A vitrine pública
+(`LibraryHubScreen`) de Áudios/Vídeos/Formações/Materiais é hoje **dirigida por dados AO VIVO**:
+`shouldUseMediaApi=true` fixo (`LibraryHubScreen.tsx:912`), os itens vêm de `api.getMediaHub()`
+(`:966`) e os rails vêm dos shelves da API (`:1103`, `:1628`). Os arquivos
+`data/library-hubs/*.mock.ts` **ainda existem mas são código morto** (não alimentam a renderização —
+podem ser deletados). Auditoria completa em `backlog-remocao-mocks-vitrine`.
 
-- 🔴 **Decisão de produto (bloqueia a Fase 2):** rails curados manualmente vs automáticos vs híbrido.
-- 🟡 **Fase 1** — stat cards dinâmicos (contagem real via `api.getCollections`).
-- 🟡 **Fase 2** — rails dinâmicos sem estrutura editorial hardcoded (refatorar `LibraryHubScreen`).
-- 📋 **Fase 3** — curadoria configurável no admin (nova tabela + UI).
+- 🔴 **Decisão de produto:** rails curados manualmente vs automáticos vs híbrido.
+- ✅ **Fase 1** — stat cards dinâmicos: **moot** — não há stat cards renderizados hoje (foram
+  removidos).
+- 🟢 **Fase 2** — rails dinâmicos sem estrutura editorial hardcoded: **majoritariamente feita**
+  (resíduo hardcoded = só rótulos de chip).
+- 📋 **Fase 3** — curadoria configurável no admin (nova tabela + UI). Segue aberta.
+- 🟢 **Deletar os `*.mock.ts`** (`data/library-hubs/*.mock.ts`) — dead code, não alimenta a
+  renderização.
 - 🟡 **Remover dados fake de vouchers** (`lib/mockVoucherData.ts`, `lib/mockData.ts`) quando o
   fallback não for mais necessário.
 
@@ -116,7 +122,7 @@ precisa de design no Figma antes · 🗄️ precisa migration/DB. Fonte: `gtm/co
 | **GTM-03** | Camada de telemetria (`lib/analytics.ts`) + eventos (play/leitura, conclusão, upsell, renovação, resgate) | 🔴 alta | Sem isso nada é mensurável. **Zero telemetria no app hoje.** |
 | **GTM-01** 🔌 | Botão CTA "Renovar/Comprar" no banner de pré-expiração → abre `store_url` (hoje só "Fechar") | 🔴 alta | `store_url` já existe; é fiação. Maior ROI. |
 | **GTM-02** 🔌 | Caminho de recompra na tela de acesso expirado → botão pra `store_url` | 🔴 alta | idem GTM-01. |
-| **MKT-B3** 🎨 | Badge de cadeado / paywall em conteúdo bloqueado nas bibliotecas | 🟡 média | Gancho de conversão no meio do funil. |
+| **MKT-B3** ✅ | Badge de cadeado / paywall em conteúdo bloqueado — **JÁ FEITO**: `Card3D` tem prop `locked` (overlay de cadeado) + gate central `App.tsx:883` abre `VoucherUpsellModal` (`components/VoucherUpsellModal.tsx`) com "Comprar na loja" via `store_url` (`App.tsx:1462`) | ✅ feito | Ressalva: badge visual só na **Home**, ainda não na `LibraryHubScreen`. |
 | **MKT-C4** 🎨 | Estados do banner por urgência (dias restantes / expira hoje / expirado) | 🟡 média | — |
 | **MKT-B2** 🎨 | Empty states com CTA (biblioteca vazia → explorar/adquirir) | 🟡 média | — |
 | **GTM-05** 🗄️🎨 | Campo `value_prop`/`tagline` por marca (migration + admin + hero) | 🟡 média | Não existe hoje. |
@@ -131,11 +137,15 @@ Fonte: `backlog-gaps-testes-usabilidade`. Muitos já foram fechados (ver histór
 
 - 🔴 **G1 — Cloudflare Access bloqueia usuários externos** (prod exige `@educacross.com.br`). Config
   Cloudflare, fora do código. Bloqueia qualquer usuário real / evento.
-- 🟡 **G10 — Verificação de acesso não é real-time** durante a sessão (expiração só reflete após
-  reload) — polling/Realtime em `lib/access.ts`.
-- 🟡 **G11 — Formações/Materiais escondidos no "Mais" do BottomNav mobile** — avaliar promover a item
-  primário ou badge numérico.
-- 🟡 **G12 — Sidebar de vídeos relacionados ausente em 768–1024px** (`VideoPlayerScreen`).
+- ✅ **G10 — Verificação de acesso real-time** — **JÁ FEITO.** Implementado em `App.tsx:797`
+  (`setInterval` 60s + subscription Realtime de `profiles` + `setTimeout` no momento exato da
+  expiração), com a migration `20260606000100_profiles_realtime_publication.sql`. O roadmap apontava
+  o arquivo errado (`lib/access.ts`).
+- 🟡 **G11 — Formações/Materiais escondidos no "Mais" do BottomNav mobile** — PARCIAL: o **badge
+  numérico** (uma das 2 alternativas propostas) **já existe** (`BottomNav.tsx:226`); falta só a
+  promoção a item primário.
+- ✅ **G12 — Sidebar de vídeos relacionados em 768–1024px** — **JÁ FEITO**: renderiza a partir do
+  breakpoint `md` (`VideoPlayerScreen.tsx:1091` `md:flex-row`, `:1470` `hidden md:block`).
 - 🟢 **G4** posição de leitura do PDF não é salva · **G5** sem loader no player de áudio durante
   buffer · **G6** botões Ler/Ouvir/Assistir aparecem sem ativo · **G7** busca da Home não indexa
   Formações e Materiais.
@@ -156,7 +166,8 @@ Fonte: `backlog-gaps-testes-usabilidade`. Muitos já foram fechados (ver histór
 - 🟡 **Auto-conclusão de aula por progresso do vídeo (≥90%)** via YouTube IFrame API — hoje o
   professor marca manualmente (MVP funcional). Adiar até validar abandono.
 - 🟢 **Decisão:** "Baratinha e Baratão no Labirinto do Eco" existe como book + kit — manter os dois?
-- 🟢 Atualizar copyright do rodapé para 2026 (verificar se já aplicado).
+- ✅ Atualizar copyright do rodapé para 2026 — **FEITO/obsoleto**: o rodapé usa ano dinâmico
+  `new Date().getFullYear()` (`components/BottomNav.tsx:44`).
 
 ## Mídia — bugs conhecidos (média)
 
@@ -192,11 +203,14 @@ aprovação separada.
 ## Testes (tech-debt)
 
 - 🟡 **~50 testes E2E desatualizados** após a refatoração single-brand/admin (2026-06-15) —
-  `white-label.spec.ts`, `admin-collections-usability*`, `central-coruja-*-jtbd` referenciam UI
-  removida. Precisam ser atualizados (não são bugs de feature).
-- 🟡 **Playwright E2E só roda local** (não no CI) — regressões passam em deploys.
-- 🟢 `npx playwright test` puro quebra ao carregar um vitest dentro de `tests/` — estreitar
-  `testMatch` para `*.spec.ts`.
+  parcialmente superado: `white-label.spec.ts` **já foi realinhado à UI single-brand** e roda como
+  **gate obrigatório no CI** (logo passa). Rever os demais (`admin-collections-usability*`,
+  `central-coruja-*-jtbd`, que referenciam UI removida — não são bugs de feature).
+- 🟡 **Playwright E2E só roda parcialmente no CI** — parcialmente superado: `.github/workflows/ci.yml`
+  roda os jobs `e2e-brand-isolation` (`playwright test white-label auth-guard`) + `rls-tests` (pgTAP)
+  em todo PR. Falta só rodar a suíte E2E **completa** no CI.
+- ✅ `npx playwright test` puro quebra ao carregar um vitest dentro de `tests/` — **JÁ FEITO:**
+  `playwright.config.ts:5-11` já tem `testMatch: '**/*.spec.ts'` (com comentário).
 
 ## Futuro / v2.0 (fora do gate de go-live)
 
