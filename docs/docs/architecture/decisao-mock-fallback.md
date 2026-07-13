@@ -13,7 +13,7 @@ sidebar_position: 8
 |---|---|
 | **Status** | 🟡 Proposto — aguardando decisão |
 | **Data** | 2026-07-12 |
-| **Itens de backlog** | [Vitrine / Remoção de mocks](../roadmap-historico/roadmap#vitrine--remoção-de-mocks) · [Doc-sync / limpeza](../roadmap-historico/roadmap) |
+| **Itens de backlog** | [Vitrine / Remoção de mocks](../roadmap-historico/roadmap) · [Doc-sync / limpeza](../roadmap-historico/roadmap) |
 
 ## ⚠️ São dois mocks diferentes — não confundir
 
@@ -72,7 +72,7 @@ de admin. O mock preenche esse vazio visual.
 
 ### Recomendação (Mock B)
 **Product debt real — manter como item de produto** (não rebaixar). É o que o backlog
-[Vitrine / Remoção de mocks](../roadmap-historico/roadmap#vitrine--remoção-de-mocks) descreve, em fases:
+[Vitrine / Remoção de mocks](../roadmap-historico/roadmap) descreve, em fases:
 1. Stat cards dinâmicos (contagem real).
 2. Rails dinâmicos sem estrutura editorial hardcoded.
 3. Curadoria configurável no admin (tabela + UI) — depende de decisão de produto (curadoria manual

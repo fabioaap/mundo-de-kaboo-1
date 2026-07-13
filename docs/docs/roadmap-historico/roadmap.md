@@ -37,6 +37,16 @@ A espinha dorsal de vários itens abaixo. Hoje cada mídia vive como JSON embuti
 `collections.collection_assets`, **sem identidade própria** — deduplicada só por URL. O mesmo
 arquivo aparece em coleções diferentes com título/descrição divergentes.
 
+:::note Status verificado (2026-07-12) — não confundir com o backbone de mídia
+Duas coisas parecidas, mas diferentes:
+- **Backbone de mídia** (`media_items` + hubs de Vídeos/Áudios/Formações/Materiais) — ✅ **entregue**
+  (ver [Feito](./historico)). É o catálogo dos hubs (base do "mini YouTube").
+- **Mídia canônica** (tabela `media_assets` + `source_key`, desacoplar do `collection_assets` JSON) —
+  ❌ **nunca iniciada**. Checado exaustivamente em **todo o histórico git** (28 worktrees, 29 branches
+  remotas, `git log --all`): `media_assets` **nunca virou migration** e `source_key` **nunca existiu**
+  em `supabase/` — o termo só aparece como **proposta** nestes docs de backlog.
+:::
+
 - 📋 **Identidade canônica de mídia** (`media_assets` + `collection_media_assets`) — dedup **por
   marca** com ID único por arquivo (`source_key` = caminho no storage ou `youtube:<id>`, não a URL
   crua). Migração aditiva (só cria tabelas e faz backfill; não apaga a JSONB nem os campos legados).
