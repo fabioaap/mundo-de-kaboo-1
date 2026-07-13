@@ -33,8 +33,8 @@ aberto. Fonte: `checklist-go-live-v1-3`.
 
 | Gate | O que precisa estar fechado | Status atual |
 |---|---|---|
-| **Catálogo real da Central Coruja** | ≥3 coleções, 2 personagens, 1 ativo por tipo, visíveis na marca correta | ~ parcial — 18 coleções ✅, **0 personagens** 🔴, **0 viewer** 🔴, vídeo no limite ⚠️ (ver [checklist](../operacao/checklist-catalogo-coruja)) |
-| **QA visual final dos hubs** | Hubs de vídeos/formações da Coruja validados com conteúdo real (thumbnails, títulos, navegação, estados vazios) | 🔴 aberto — depende do catálogo + viewer |
+| **Catálogo real da Central Coruja** | ≥3 coleções, 2 personagens, 1 ativo por tipo, visíveis na marca correta | ✅ atendido (banco de prod, 2026-07-13) — **57 coleções publicadas**, **12 personagens**, **23 leituras + 42 vídeos**; viewer brand-agnostic. Resta publicar 12 coleções restantes (ver [checklist](../operacao/checklist-catalogo-coruja)) |
+| **QA visual final dos hubs** | Hubs de vídeos/formações da Coruja validados com conteúdo real (thumbnails, títulos, navegação, estados vazios) | 🟡 conteúdo já existe; falta o passe visual final em browser real (specs E2E JTBD de vídeo/áudio/livro já no repo) |
 | **Isolamento por marca homologado** | Backend/storage com separação correta Kaboo × Coruja, sem vazamento | ✅ APROVADO 2026-06-15 (ver [homologação](../operacao/homologacao-isolamento-marca)) |
 | **Vouchers ponta a ponta** | Geração → distribuição → resgate → operação com a gráfica, sem mock | 🟡 código integrado; falta o fluxo real com a gráfica |
 | **Ambiente real pronto** | Variáveis, auth, permissões, storage e rotinas mínimas de suporte revisadas | ~ runbook criado; ver pendências de hardening |
@@ -45,7 +45,7 @@ aberto. Fonte: `checklist-go-live-v1-3`.
 
 ## Pendências abertas para fechar a release
 
-1. Inserir o **catálogo real da Central Coruja** (personagens + viewer + reforçar vídeo).
+1. **Publicar as 12 coleções restantes** da Central Coruja (57 de 69 já publicadas; personagens, leitura e vídeo já cadastrados).
 2. Fechar o **QA visual final** dos hubs de vídeos e formações com conteúdo real, em browser real.
 3. Validar **vouchers ponta a ponta** com a gráfica.
 4. Fechar **conta Empatia, build nativo e caminho de lojas**.
