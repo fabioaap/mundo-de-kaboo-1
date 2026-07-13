@@ -12,16 +12,16 @@ sidebar_position: 8
 | Campo | Valor |
 |---|---|
 | **Status** | 🟡 Proposto — aguardando decisão |
-| **Data** | 2026-07-12 |
+| **Data** | 2026-07-13 (revisado após auditoria de código) |
 | **Itens de backlog** | [Vitrine / Remoção de mocks](../roadmap-historico/roadmap) · [Doc-sync / limpeza](../roadmap-historico/roadmap) |
 
 ## ⚠️ São dois mocks diferentes — não confundir
 
 | | **Mock A — fallback de dados** | **Mock B — vitrine de mídia** |
 |---|---|---|
-| **Onde** | `lib/mockData.ts`, `lib/mockVoucherData.ts`, `data/catalog.seed.json`, `devMockSession` em `lib/api.ts` | `data/library-hubs` (`LIBRARY_HUB_MOCKS`), consumido em `screens/LibraryHubScreen.tsx` |
-| **Aparece pro usuário em prod?** | ❌ **Não** — gated por `import.meta.env.DEV` (`lib/api.ts:133`) | ⚠️ **Sim, parcialmente** — a estrutura editorial (rails, chips, stat cards) é hardcoded e sem gate de DEV (`LibraryHubScreen.tsx:901`) |
-| **Natureza** | Tech-debt interno (dev/testes/resiliência) | **Product debt** — curadoria fake |
+| **Onde** | `lib/mockData.ts`, `lib/mockVoucherData.ts`, `data/catalog.seed.json`, `devMockSession` em `lib/api.ts` | `data/library-hubs` (`LIBRARY_HUB_MOCKS`), importado em `screens/LibraryHubScreen.tsx` |
+| **Aparece pro usuário em prod?** | ❌ **Não** — gated por `import.meta.env.DEV` (`lib/api.ts:133`) | ❌ **Não como conteúdo** — a vitrine é data-driven: `shouldUseMediaApi = true` fixo (`LibraryHubScreen.tsx:912`), itens vêm de `api.getMediaHub`. Sobra só título/filtros de config estática + código morto |
+| **Natureza** | Tech-debt interno (dev/testes/resiliência) | **Faxina de código morto** (o `mockFlattenedItems` nunca roda) |
 
 ---
 
@@ -55,31 +55,44 @@ resiliência. **Não é "deletar 2 arquivos".**
 
 ---
 
-## Mock B — Estrutura editorial da vitrine de mídia
+## Mock B — Resíduo do `LIBRARY_HUB_MOCKS` na vitrine
 
-`screens/LibraryHubScreen.tsx` (hubs de Áudios/Vídeos/Formações/Materiais) monta os **rails,
-chips editoriais** ("Roda", "Acolhimento"), **stat cards** ("03 faixas") e progress bars a partir de
-`LIBRARY_HUB_MOCKS` (`data/library-hubs`), **hardcoded e sem gate de DEV** (`LibraryHubScreen.tsx:901`).
+> **⚠️ Correção (2026-07-13):** versões anteriores deste ADR diziam que a estrutura editorial
+> hardcoded aparecia pro usuário em produção. **O código desmente isso.** A vitrine passou a ser
+> data-driven; o mock virou majoritariamente código morto. Registrado aqui para não se re-investigar.
 
-**Nuance importante:** a tela também tem adapters de dados reais
-(`flattenMediaHubResponseToLibraryItems`, `adaptMediaCardToLibraryItem`). Quando o **backbone de
-mídia** (`media_items` + `media_shelves`) tem conteúdo publicado para o hub, os itens/rails vêm do
-banco; **quando não tem, cai na estrutura hardcoded** — que então aparece pro usuário em produção.
+`screens/LibraryHubScreen.tsx` (hubs de Áudios/Vídeos/Formações/Materiais) importa `LIBRARY_HUB_MOCKS`
+(`data/library-hubs`), mas a fonte de dados é **fixada em real**:
 
-### Por que existe
-A curadoria (quais rails, com que nome, quais itens em destaque) ainda não tem fonte de dados nem UI
-de admin. O mock preenche esse vazio visual.
+```ts
+const shouldUseMediaApi = true; // LibraryHubScreen.tsx:912
+```
 
-### Recomendação (Mock B)
-**Product debt real — manter como item de produto** (não rebaixar). É o que o backlog
-[Vitrine / Remoção de mocks](../roadmap-historico/roadmap) descreve, em fases:
-1. Stat cards dinâmicos (contagem real).
-2. Rails dinâmicos sem estrutura editorial hardcoded.
-3. Curadoria configurável no admin (tabela + UI) — depende de decisão de produto (curadoria manual
-   vs automática vs híbrida).
+Com isso os **itens, rails e cards** vêm sempre de `api.getMediaHub` (backbone `media_items` +
+`media_shelves`). Os arrays só cairiam em `mockFlattenedItems` no ramo `!shouldUseMediaApi`
+(`:994`, `:997`) — que **nunca executa**.
+
+### O que o mock ainda alimenta (resíduo, não conteúdo)
+- `config.title` — texto do **título do hub** no header (`:1687`)
+- `config.quickFilters` — rótulos de filtro de **fallback** (`:1060`)
+- `mockFlattenedItems` — computado mas **morto** (`:928`)
+
+### Fallback de resiliência (legítimo, não é curadoria fake)
+Se a API não responde, `mediaSourceStatus === 'fallback'` exibe o aviso
+*"Exibindo catálogo de apoio enquanto os dados remotos não respondem"* (`:1848-1851`).
+É rede de segurança de dados — não a "curadoria editorial fake" que o ADR temia.
+
+### Recomendação (Mock B) — rebaixado para faxina
+**Não é mais product-debt.** Vira **limpeza de código morto**, sem risco de produto:
+1. Remover o import/uso de `LIBRARY_HUB_MOCKS` e o `mockFlattenedItems`.
+2. Migrar `config.title` / `config.quickFilters` para constante local (ou vir do backbone).
+3. Deletar `data/library-hubs` quando nada mais o referenciar.
+
+A **curadoria configurável no admin** (quais rails, ordem, destaques) segue como item de **produto**
+legítimo no [roadmap](../roadmap-historico/roadmap) — mas é evolução, não correção de mock.
 
 ## Consequências
 
 - **Mock A:** manter não tem custo de produto; remover exige cuidado (testes + resiliência).
-- **Mock B:** enquanto não for feito, hubs de mídia **sem conteúdo publicado** mostram curadoria
-  fake em produção. Priorizar conforme a estratégia de conteúdo das marcas.
+- **Mock B:** a vitrine já é data-driven — **nenhuma curadoria fake em prod**. O que resta é código
+  morto de baixo risco; limpar quando conveniente.
