@@ -71,6 +71,18 @@ Subsistema de descoberta + player para Vídeos e Músicas fora do modelo legado 
 de dados (`media_items`, `media_collection_links`, `media_shelves`, etc.) já existe; a leitura já é
 brand-escopada (ver homologação). Backlog pronto para sprint em `backlog-executavel-mini-youtube-spotify`.
 
+:::note Status confirmado no app rodando (2026-07-12)
+A épica está **muito mais entregue** do que o marcador "diferido" sugere — confirmado no app em
+produção + pelo dono do produto:
+- ✅ **Entregue e em uso:** backbone, **admin de mídia** (criar, upload, publicar, editar — módulos
+  Vídeos/Músicas/Formações/Materiais em `AdminCollectionsScreen`), hubs, players com
+  **continue-watching** (`user_media_progress`) e **favoritos** (`user_media_favorites`).
+- 📋 **Falta:** **proteção avançada de mídia** (streaming segmentado HLS/DASH, watermark) — no radar,
+  pós-MVP; e **telemetria de reprodução** — avaliar **GA4** (eventos custom / medição de vídeo do
+  YouTube) para o agregado, com atenção a **LGPD** (dados de crianças). Tabela `media_play_*` só se
+  precisar de dado auditável/consultável dentro do app.
+:::
+
 - 📋 **P0.1 Backbone de mídia** · **P0.2 Adapter de leitura** · **P0.3 Admin de mídia** (CRUD,
   publish/archive, validação de provider) · **P0.4/P0.6 Hubs** de Vídeos e Músicas · **P0.5/P0.7
   Players** com continuidade/fila leve.
