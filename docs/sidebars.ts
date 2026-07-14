@@ -34,6 +34,7 @@ const sidebars: SidebarsConfig = {
             'architecture/deploy-environments',
             'architecture/decisao-mock-fallback',
         'architecture/higiene-de-conteudo',
+        'architecture/coruja-vs-kaboo',
           ],
         },
         {
