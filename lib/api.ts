@@ -2081,6 +2081,7 @@ export const api = {
       hydrateCollectionsPresentationFields((data || []) as Collection[], remoteCharacters ?? undefined),
       _activeBrandSlugForApi,
       activeBrandId,
+      { adminMode, fromRemote: true },
     ));
 
     // Only cache non-admin responses so the vitrine never reads admin-mode data
