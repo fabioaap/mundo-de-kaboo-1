@@ -50,9 +50,22 @@ aberto. Fonte: `checklist-go-live-v1-3`.
 3. **Decisão de produto:** publicar ou não *A Cor do Sentir* e *Onde está Gaio?* no Kaboo (movidos da Coruja em 2026-07-14, hoje em rascunho). Os PDFs **abrem** (HTTP 200), mas ficam no projeto Supabase legado `uuaiacefzdmsdbsvsuoj` — o certo a médio prazo é **migrar os arquivos para o bucket de produção** antes de publicar.
 4. Validar **vouchers ponta a ponta** com a gráfica.
 5. Fechar **conta Empatia, build nativo e caminho de lojas**.
-6. **Ligar o offline** no Kaboo (interruptor-mestre) após validação.
+6. **Ligar o offline** no Kaboo (interruptor-mestre) após validação. **Estado verificado 2026-07-14:
+   ainda DESLIGADO** — a flag `content.offline` tem `default_enabled = false` e o Kaboo **não tem
+   override** (a Coruja tem override explícito `false`). Confirmado no código em
+   `hooks/useBrandConfig.ts:108`.
 7. **Flipar o bucket `collections`** para privado (SEC-58 / T2) na próxima janela de deploy.
 8. Rodar a **Release manual** e registrar a **aprovação de go-live** (produto + operação + técnica).
+
+:::warning Itens que "parecem" resolvidos mas não estão (rechecados em 2026-07-14)
+Os dois abaixo foram rechecados **direto no banco de produção** e continuam **abertos**:
+- *A Cor do Sentir* e *Onde está Gaio?* seguem `is_published = false`, com PDF no projeto Supabase
+  legado (item 3).
+- O **offline do Kaboo continua OFF** (item 6).
+
+Já o tech-debt do backup Kaboo (`public/kaboo-assets/`, 162 MB) **foi resolvido** — a pasta não
+existe mais. Ver [backlog](./roadmap).
+:::
 
 > **Manutenção (não bloqueia release):** as tabelas de backup `*_backup_20260714` (criadas antes da
 > higiene do catálogo da Coruja) podem ser removidas a partir de **2026-08-14**, se nada tiver sido

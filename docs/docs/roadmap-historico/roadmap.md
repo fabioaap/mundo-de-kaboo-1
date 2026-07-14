@@ -197,11 +197,23 @@ Fonte: `backlog-gaps-testes-usabilidade`. Muitos já foram fechados (ver histór
 Fonte: `backlog-organizacao-projeto-desempenho`. Grupo A não toca a Central Coruja; Grupo B exige
 aprovação separada.
 
-- 🟡 **A** — Backup Kaboo em `public/kaboo-assets/` (162 MB untracked) → mover para
-  `supabase/backups/storage/`; remover/esvaziar `.gitattributes` LFS órfão; podar branches
-  mergeadas; revisar remotes `fork`/`origin-legacy`.
-- 🔴 **B1** — PDFs Central Coruja em `public/central-coruja/pdfs/` (~183 MB **commitados**, entram no
-  build) → avaliar Supabase Storage / Git LFS. **Requer aprovação da Central Coruja.**
+- ✅ **A (backup Kaboo)** — **RESOLVIDO**: `public/kaboo-assets/` **não existe mais** (verificado em
+  2026-07-14). Restam os itens menores do grupo A: `.gitattributes` LFS órfão, podar branches
+  mergeadas, revisar remotes `fork`/`origin-legacy`.
+- 🔴 **B1** — PDFs Central Coruja em `public/central-coruja/pdfs/` — **pior do que o registrado, e
+  provavelmente peso morto puro** (medido em 2026-07-14):
+
+  | Fato | Valor |
+  |---|---|
+  | Tamanho real | **180 MB** em **8 arquivos** |
+  | Estado no git | **Versionados** (`git ls-files` confirma) — não são untracked |
+  | Referenciados no código? | **Não.** `grep` por `central-coruja/pdfs` só acha menções nestes docs de backlog |
+  | O app usa? | **Não.** O `pdf_url` das 8 coleções aponta para o **Supabase Storage**, não para `/public` |
+
+  Ou seja: 180 MB entram no build a cada deploy **sem serem servidos a ninguém**. A ação provável é
+  **deletar do repositório** (não "migrar para o Storage" — já estão lá). **Requer confirmação da
+  Central Coruja** antes de remover, e o histórico do git continuará pesado (exige `filter-repo` se
+  quiserem recuperar o espaço de verdade).
 - 🟡 **B** — Ambiente de staging; Playwright E2E no CI; bundle splitting (`lib/api.ts` ~104 KB).
 
 ## Ativos no projeto Supabase legado (novo — 2026-07-14)
