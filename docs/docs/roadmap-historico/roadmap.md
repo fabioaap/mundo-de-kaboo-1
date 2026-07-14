@@ -16,11 +16,35 @@ entregue está em [Feito / Entregue](./historico); o que falta especificamente p
 Salvo indicação, itens de dados/estrutura tocam **as duas marcas** (mesmo banco); mudanças no
 acervo/branding da Central Coruja exigem **aprovação separada** do dono da marca.
 
+## Documentação viva / doc-sync (recém-entregue — ativar e evoluir)
+
+O sistema (wiki + assistente + doc-sync) já está na `main` (ver [Feito](./historico)). Falta:
+
+- 🔴 **Ativar o CI** (config, não código): secrets `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`
+  (re-index no merge) e variables públicas `WIKI_SUPABASE_URL` + `WIKI_SUPABASE_ANON_KEY` (Camada 2).
+  Sem isso, o re-index automático e o rascunho por IA ficam em standby (o gate já funciona).
+- 🟡 **Camada 2 — evoluir para auto-commit:** hoje a IA **comenta** o rascunho no PR; o próximo nível
+  é **commitar** no PR (com revisão humana). Exige permissão de escrita + cuidado com loop de CI.
+- 🟡 **RAG semântico (pgvector):** subir da busca lexical para embeddings — respostas mais precisas
+  (hoje às vezes rankeia um doc parecido). Aditivo, não muda o widget nem a função.
+- 🟢 **Silenciar o bot de docs em PR:** ajustar `update-docs.yml` pra não comentar/comitar em PR
+  (elimina o ruído de `action_required` no head).
+
 ## Mídia canônica (estrutural, 📋 diferido)
 
 A espinha dorsal de vários itens abaixo. Hoje cada mídia vive como JSON embutido em
 `collections.collection_assets`, **sem identidade própria** — deduplicada só por URL. O mesmo
 arquivo aparece em coleções diferentes com título/descrição divergentes.
+
+:::note Status verificado (2026-07-12) — não confundir com o backbone de mídia
+Duas coisas parecidas, mas diferentes:
+- **Backbone de mídia** (`media_items` + hubs de Vídeos/Áudios/Formações/Materiais) — ✅ **entregue**
+  (ver [Feito](./historico)). É o catálogo dos hubs (base do "mini YouTube").
+- **Mídia canônica** (tabela `media_assets` + `source_key`, desacoplar do `collection_assets` JSON) —
+  ❌ **nunca iniciada**. Checado exaustivamente em **todo o histórico git** (28 worktrees, 29 branches
+  remotas, `git log --all`): `media_assets` **nunca virou migration** e `source_key` **nunca existiu**
+  em `supabase/` — o termo só aparece como **proposta** nestes docs de backlog.
+:::
 
 - 📋 **Identidade canônica de mídia** (`media_assets` + `collection_media_assets`) — dedup **por
   marca** com ID único por arquivo (`source_key` = caminho no storage ou `youtube:<id>`, não a URL
@@ -47,6 +71,18 @@ Subsistema de descoberta + player para Vídeos e Músicas fora do modelo legado 
 de dados (`media_items`, `media_collection_links`, `media_shelves`, etc.) já existe; a leitura já é
 brand-escopada (ver homologação). Backlog pronto para sprint em `backlog-executavel-mini-youtube-spotify`.
 
+:::note Status confirmado no app rodando (2026-07-12)
+A épica está **muito mais entregue** do que o marcador "diferido" sugere — confirmado no app em
+produção + pelo dono do produto:
+- ✅ **Entregue e em uso:** backbone, **admin de mídia** (criar, upload, publicar, editar — módulos
+  Vídeos/Músicas/Formações/Materiais em `AdminCollectionsScreen`), hubs, players com
+  **continue-watching** (`user_media_progress`) e **favoritos** (`user_media_favorites`).
+- 📋 **Falta:** **proteção avançada de mídia** (streaming segmentado HLS/DASH, watermark) — no radar,
+  pós-MVP; e **telemetria de reprodução** — avaliar **GA4** (eventos custom / medição de vídeo do
+  YouTube) para o agregado, com atenção a **LGPD** (dados de crianças). Tabela `media_play_*` só se
+  precisar de dado auditável/consultável dentro do app.
+:::
+
 - 📋 **P0.1 Backbone de mídia** · **P0.2 Adapter de leitura** · **P0.3 Admin de mídia** (CRUD,
   publish/archive, validação de provider) · **P0.4/P0.6 Hubs** de Vídeos e Músicas · **P0.5/P0.7
   Players** com continuidade/fila leve.
@@ -58,15 +94,21 @@ brand-escopada (ver homologação). Backlog pronto para sprint em `backlog-execu
 
 ## Vitrine / Remoção de mocks (📋 diferido, alta prioridade pós-MVP)
 
-A vitrine pública (`LibraryHubScreen`) de Áudios/Vídeos/Formações/Materiais é **100% mock**
-(`data/library-hubs/*.mock.ts`): rails, chips editoriais ("Roda", "Acolhimento"), stat cards ("03
-faixas"), progress bars falsas e 8 `collectionId`s hardcoded. Auditoria completa em
-`backlog-remocao-mocks-vitrine`.
+A descrição "100% mock" está **desatualizada** (verificado no código). A vitrine pública
+(`LibraryHubScreen`) de Áudios/Vídeos/Formações/Materiais é hoje **dirigida por dados AO VIVO**:
+`shouldUseMediaApi=true` fixo (`LibraryHubScreen.tsx:912`), os itens vêm de `api.getMediaHub()`
+(`:966`) e os rails vêm dos shelves da API (`:1103`, `:1628`). Os arquivos
+`data/library-hubs/*.mock.ts` **ainda existem mas são código morto** (não alimentam a renderização —
+podem ser deletados). Auditoria completa em `backlog-remocao-mocks-vitrine`.
 
-- 🔴 **Decisão de produto (bloqueia a Fase 2):** rails curados manualmente vs automáticos vs híbrido.
-- 🟡 **Fase 1** — stat cards dinâmicos (contagem real via `api.getCollections`).
-- 🟡 **Fase 2** — rails dinâmicos sem estrutura editorial hardcoded (refatorar `LibraryHubScreen`).
-- 📋 **Fase 3** — curadoria configurável no admin (nova tabela + UI).
+- 🔴 **Decisão de produto:** rails curados manualmente vs automáticos vs híbrido.
+- ✅ **Fase 1** — stat cards dinâmicos: **moot** — não há stat cards renderizados hoje (foram
+  removidos).
+- 🟢 **Fase 2** — rails dinâmicos sem estrutura editorial hardcoded: **majoritariamente feita**
+  (resíduo hardcoded = só rótulos de chip).
+- 📋 **Fase 3** — curadoria configurável no admin (nova tabela + UI). Segue aberta.
+- 🟢 **Deletar os `*.mock.ts`** (`data/library-hubs/*.mock.ts`) — dead code, não alimenta a
+  renderização.
 - 🟡 **Remover dados fake de vouchers** (`lib/mockVoucherData.ts`, `lib/mockData.ts`) quando o
   fallback não for mais necessário.
 
@@ -80,7 +122,7 @@ precisa de design no Figma antes · 🗄️ precisa migration/DB. Fonte: `gtm/co
 | **GTM-03** | Camada de telemetria (`lib/analytics.ts`) + eventos (play/leitura, conclusão, upsell, renovação, resgate) | 🔴 alta | Sem isso nada é mensurável. **Zero telemetria no app hoje.** |
 | **GTM-01** 🔌 | Botão CTA "Renovar/Comprar" no banner de pré-expiração → abre `store_url` (hoje só "Fechar") | 🔴 alta | `store_url` já existe; é fiação. Maior ROI. |
 | **GTM-02** 🔌 | Caminho de recompra na tela de acesso expirado → botão pra `store_url` | 🔴 alta | idem GTM-01. |
-| **MKT-B3** 🎨 | Badge de cadeado / paywall em conteúdo bloqueado nas bibliotecas | 🟡 média | Gancho de conversão no meio do funil. |
+| **MKT-B3** ✅ | Badge de cadeado / paywall em conteúdo bloqueado — **JÁ FEITO**: `Card3D` tem prop `locked` (overlay de cadeado) + gate central `App.tsx:883` abre `VoucherUpsellModal` (`components/VoucherUpsellModal.tsx`) com "Comprar na loja" via `store_url` (`App.tsx:1462`) | ✅ feito | Ressalva: badge visual só na **Home**, ainda não na `LibraryHubScreen`. |
 | **MKT-C4** 🎨 | Estados do banner por urgência (dias restantes / expira hoje / expirado) | 🟡 média | — |
 | **MKT-B2** 🎨 | Empty states com CTA (biblioteca vazia → explorar/adquirir) | 🟡 média | — |
 | **GTM-05** 🗄️🎨 | Campo `value_prop`/`tagline` por marca (migration + admin + hero) | 🟡 média | Não existe hoje. |
@@ -95,11 +137,15 @@ Fonte: `backlog-gaps-testes-usabilidade`. Muitos já foram fechados (ver histór
 
 - 🔴 **G1 — Cloudflare Access bloqueia usuários externos** (prod exige `@educacross.com.br`). Config
   Cloudflare, fora do código. Bloqueia qualquer usuário real / evento.
-- 🟡 **G10 — Verificação de acesso não é real-time** durante a sessão (expiração só reflete após
-  reload) — polling/Realtime em `lib/access.ts`.
-- 🟡 **G11 — Formações/Materiais escondidos no "Mais" do BottomNav mobile** — avaliar promover a item
-  primário ou badge numérico.
-- 🟡 **G12 — Sidebar de vídeos relacionados ausente em 768–1024px** (`VideoPlayerScreen`).
+- ✅ **G10 — Verificação de acesso real-time** — **JÁ FEITO.** Implementado em `App.tsx:797`
+  (`setInterval` 60s + subscription Realtime de `profiles` + `setTimeout` no momento exato da
+  expiração), com a migration `20260606000100_profiles_realtime_publication.sql`. O roadmap apontava
+  o arquivo errado (`lib/access.ts`).
+- 🟡 **G11 — Formações/Materiais escondidos no "Mais" do BottomNav mobile** — PARCIAL: o **badge
+  numérico** (uma das 2 alternativas propostas) **já existe** (`BottomNav.tsx:226`); falta só a
+  promoção a item primário.
+- ✅ **G12 — Sidebar de vídeos relacionados em 768–1024px** — **JÁ FEITO**: renderiza a partir do
+  breakpoint `md` (`VideoPlayerScreen.tsx:1091` `md:flex-row`, `:1470` `hidden md:block`).
 - 🟢 **G4** posição de leitura do PDF não é salva · **G5** sem loader no player de áudio durante
   buffer · **G6** botões Ler/Ouvir/Assistir aparecem sem ativo · **G7** busca da Home não indexa
   Formações e Materiais.
@@ -120,7 +166,8 @@ Fonte: `backlog-gaps-testes-usabilidade`. Muitos já foram fechados (ver histór
 - 🟡 **Auto-conclusão de aula por progresso do vídeo (≥90%)** via YouTube IFrame API — hoje o
   professor marca manualmente (MVP funcional). Adiar até validar abandono.
 - 🟢 **Decisão:** "Baratinha e Baratão no Labirinto do Eco" existe como book + kit — manter os dois?
-- 🟢 Atualizar copyright do rodapé para 2026 (verificar se já aplicado).
+- ✅ Atualizar copyright do rodapé para 2026 — **FEITO/obsoleto**: o rodapé usa ano dinâmico
+  `new Date().getFullYear()` (`components/BottomNav.tsx:44`).
 
 ## Mídia — bugs conhecidos (média)
 
@@ -153,14 +200,31 @@ aprovação separada.
   build) → avaliar Supabase Storage / Git LFS. **Requer aprovação da Central Coruja.**
 - 🟡 **B** — Ambiente de staging; Playwright E2E no CI; bundle splitting (`lib/api.ts` ~104 KB).
 
+## Ativos no projeto Supabase legado (novo — 2026-07-14)
+
+- 🟡 **PDFs hospedados em `uuaiacefzdmsdbsvsuoj.supabase.co`** — projeto Supabase **antigo**, distinto do
+  de produção (`yevysgqlnhonhkczkyhu`). Descoberto na higiene do catálogo da Coruja: os livros do Kaboo
+  importados por backfill apontavam para lá. Os arquivos **respondem HTTP 200 hoje**, mas dependem de um
+  projeto que pode ser desligado a qualquer momento.
+
+  **Escopo exato (banco de prod, 2026-07-14):** **12 coleções** referenciam esse host — 10 na
+  `central-coruja` e 2 no `kaboo`. **Nenhuma publicada.** Ou seja: **nada no ar depende do projeto
+  legado** — o risco está contido nos rascunhos.
+
+  **Ação (não bloqueia go-live):** migrar esses arquivos para o bucket de produção e reescrever as URLs.
+  Só então publicar *A Cor do Sentir* e *Onde está Gaio?* no Kaboo.
+
 ## Testes (tech-debt)
 
 - 🟡 **~50 testes E2E desatualizados** após a refatoração single-brand/admin (2026-06-15) —
-  `white-label.spec.ts`, `admin-collections-usability*`, `central-coruja-*-jtbd` referenciam UI
-  removida. Precisam ser atualizados (não são bugs de feature).
-- 🟡 **Playwright E2E só roda local** (não no CI) — regressões passam em deploys.
-- 🟢 `npx playwright test` puro quebra ao carregar um vitest dentro de `tests/` — estreitar
-  `testMatch` para `*.spec.ts`.
+  parcialmente superado: `white-label.spec.ts` **já foi realinhado à UI single-brand** e roda como
+  **gate obrigatório no CI** (logo passa). Rever os demais (`admin-collections-usability*`,
+  `central-coruja-*-jtbd`, que referenciam UI removida — não são bugs de feature).
+- 🟡 **Playwright E2E só roda parcialmente no CI** — parcialmente superado: `.github/workflows/ci.yml`
+  roda os jobs `e2e-brand-isolation` (`playwright test white-label auth-guard`) + `rls-tests` (pgTAP)
+  em todo PR. Falta só rodar a suíte E2E **completa** no CI.
+- ✅ `npx playwright test` puro quebra ao carregar um vitest dentro de `tests/` — **JÁ FEITO:**
+  `playwright.config.ts:5-11` já tem `testMatch: '**/*.spec.ts'` (com comentário).
 
 ## Futuro / v2.0 (fora do gate de go-live)
 

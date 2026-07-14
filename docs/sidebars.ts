@@ -32,6 +32,7 @@ const sidebars: SidebarsConfig = {
             'architecture/media-backbone',
             'architecture/colecao-artefatos',
             'architecture/deploy-environments',
+            'architecture/decisao-mock-fallback',
           ],
         },
         {

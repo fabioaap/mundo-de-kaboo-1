@@ -32,7 +32,7 @@ feature flags). Para o que ainda falta, ver [A fazer / Backlog](./roadmap) e
 
 - Login e cadastro por e-mail/senha (v1.2).
 - Voucher temporal: resgate, renovação, expiração (v1.2).
-- Duração de voucher 1/3/6/9/12 meses (v1.2).
+- Duração de voucher de **1 a 12 meses** (5 presets + duração custom 1-12) (v1.2).
 - Content grants: liberação de conteúdo por voucher (v1.2).
 - Convite de colaboradores / invite flow (v1.2).
 
@@ -45,7 +45,7 @@ feature flags). Para o que ainda falta, ver [A fazer / Backlog](./roadmap) e
 
 ### Detalhe da coleção
 
-- Leitor de PDF (flipbook) + modo texto acessível (v1.2).
+- Leitor de PDF (flipbook) (v1.2). O **modo texto acessível** segue **pendente** (não implementado — text-layer desativado, ver ISS-13/`ReaderModeSwitch`).
 - CTAs tipados (Leitura, Contação, Animado, Libras, Como Jogar, Videoaula) (v1.2).
 - Biblioteca estruturada de Materiais da Coleção (v1.2).
 - Tooltip BNCC rico (1.397 habilidades) + Tooltip CASEL rico (5 competências) (v1.2).
@@ -85,7 +85,10 @@ feature flags). Para o que ainda falta, ver [A fazer / Backlog](./roadmap) e
   via `useBrandConfig`; rotas por slug; isolamento Kaboo × Central Coruja.
 - Backbone de mídia privada (storage por marca) (v1.3).
 - Controle de acesso por marca (RLS por brand) (v1.3).
-- Flag de conteúdo offline por item de catálogo (v1.3, 2026-05-13).
+- Integrações de IA por marca — chave cifrada no servidor, seleção de provider/modelo e teste de
+  conexão (`AdminWhiteLabelScreen.tsx:1022-1187`, `getWhiteLabelAIConfig`/`setWhiteLabelAIConfig`/`testWhiteLabelAIConnection`, migration `20260612000...`).
+- Flag de conteúdo offline por item de catálogo (v1.3, 2026-05-13). Evoluiu (PR #81) para um
+  **interruptor-mestre global** (não mais por item) — `AdminWhiteLabelScreen`.
 
 ### QA / Testes
 
@@ -126,7 +129,7 @@ feature flags). Para o que ainda falta, ver [A fazer / Backlog](./roadmap) e
 ### Saúde da base
 
 - ✅ Typecheck: **0 erros** (eram 43, corrigidos em 2026-06-14).
-- ⚠️ Unit tests: 94/95 (1 falha pré-existente não relacionada a vouchers, em investigação).
+- ✅ **133/133 testes passando, 0 falhas** (verificado em 2026-07-12 rodando `npm run test:unit` — 28 arquivos, 133 testes). A suíte cresceu de 95→133 e a falha pré-existente não existe mais.
 - ✅ Refatoração single-brand (Configurações) verificada sem regressão; `AdminWhiteLabelScreen`
   100% brand-agnostic; front travado em Kaboo via `VITE_BRAND_SLUG` autoritativo.
 
@@ -140,8 +143,37 @@ feature flags). Para o que ainda falta, ver [A fazer / Backlog](./roadmap) e
   `AdminWhiteLabelScreen` (Kaboo → Empatia Editora; Central Coruja → Universo Educacross).
 - ~ **Hardening operacional** — runbook criado + hardening de DB aplicado. Ver
   [Runbook Operacional](../operacao/runbook-operacional).
-- ~ **Catálogo real da Central Coruja** — parcial: 18 coleções publicadas; falta personagens +
-  viewer + reforçar vídeo. Ver [Checklist Catálogo Coruja](../operacao/checklist-catalogo-coruja).
+- ✅ **Catálogo real da Central Coruja** — populado em produção e **higienizado em 2026-07-14**:
+  **42 coleções publicadas**, **12 personagens próprios** (Belinha, Cacau, Chico, Doutor Nocturnus,
+  Eugênio, Eve, Filó, Júnior, Mestre Sereno, Nitche, Professora Clara, Zeca), **23 com leitura (PDF)**
+  e **42 com vídeo**. O viewer de leitura é brand-agnostic (funciona para a Coruja sem gate de marca).
+  Ver [Checklist Catálogo Coruja](../operacao/checklist-catalogo-coruja).
+
+  > **Correção 2026-07-13:** versões anteriores diziam "18 coleções, 0 personagens, 0 viewer" — números
+  > stale herdados de doc antigo. A consulta ao banco de produção (marca `central-coruja`) desmente:
+  > o conteúdo é criado via CMS direto no prod e não aparecia nos seeds/migrations versionados.
+
+- ✅ **Higiene do catálogo da Central Coruja (2026-07-14)** — auditoria do banco de produção derrubou a
+  premissa de que "faltavam 12 coleções para publicar". Não faltava conteúdo: **sobrava lixo**.
+
+  **O que estava errado:**
+  - Um kit intitulado **"Teste "** estava **publicado e era o primeiro card** da vitrine.
+  - **"Nasceu Belinha!"** estava duplicado (2 cópias publicadas) e havia uma casca vazia
+    ("Uhuhu! Nasceu Belinha!", sem PDF e sem vídeo).
+  - **12 livros do Kaboo** estavam gravados sob a marca `central-coruja`, com PDFs apontando para um
+    **projeto Supabase legado** (`uuaiacefzdmsdbsvsuoj`). Origem: a migration
+    `20260525000200_backfill_central_coruja_legacy_books.sql`, que atribuiu coleções órfãs à Coruja
+    **casando por título** e arrastou conteúdo do Kaboo junto.
+
+  **O que foi feito** (tudo com backup em `*_backup_20260714` e travas `NOT EXISTS` nas 5 FKs `CASCADE`):
+  despublicados o kit "Teste", a duplicata e a casca vazia; despublicados os 10 livros do Kaboo que já
+  existiam na marca correta; **movidos para o Kaboo** os 2 que só existiam na Coruja
+  (*A Cor do Sentir*, *Onde está Gaio?*); apagados os registros de teste e 5 duplicatas puras de LIVE.
+  Publicadas: **57 → 42**. Gate de QA: 6/6.
+
+  > ⚠️ **Achado de mecanismo:** o filtro de higiene escondia esse lixo **também do admin**
+  > (`contentHygiene.ts`), tornando-o invisível **e ingerenciável** — foi por isso que passou despercebido.
+  > Corrigido no PR #85.
 
 ### Correções de voucher (2026-06-15)
 
@@ -195,3 +227,40 @@ e suíte BDD. Estado verificado no código pós-PR #81 (2026-07-08).
 
 > Falta de fiação de GTM verificada pós-PR #81 (telemetria zero no app, `store_url` existe mas não
 > está ligado ao banner de renovação) — ver [A fazer / Backlog](./roadmap#gtm--aquisição-e-conversão).
+
+## 2026-07 (PRs #82 e #83) — Wiki, Assistente de IA e doc-sync
+
+Rodada focada em **documentação viva**: reorganização da wiki, um assistente de IA que responde
+sobre a plataforma, e um flow que mantém a doc atualizada quando o código muda.
+
+### Wiki reorganizada (PR #82)
+
+- **Documentação por público** (Desenvolvimento / Produto / Operação / Público) — regras de negócio,
+  usabilidade por módulo, roadmap/histórico, telas com **33 screenshots**, changelog, marca/tema, testes.
+- **Busca local offline** (Docusaurus, sem Algolia) + **data de "última atualização"** por página (git).
+
+### Assistente de IA na wiki (PR #82)
+
+- **RAG lexical** (full-text pt-BR) sobre a documentação → **Edge Function `wiki-assistant`** +
+  tabela `wiki_chunks` + indexador (`scripts/index-wiki.mjs`). Provedor **Groq** (agnóstico,
+  OpenAI-compatible); chave só no servidor.
+- **Widget** com histórico de sessão, fontes clicáveis, markdown e busca com fallback. Corrigido o
+  índice pra parar de citar backlog arquivado (abril) como atual.
+
+### Doc-sync — flow que mantém a wiki atualizada (PRs #82 e #83)
+
+- **Camada 1:** gate de frescor no PR (código sem doc → falha) + re-index automático no merge
+  (`.github/workflows/wiki-sync.yml`, `scripts/wiki/doc-gate.mjs`).
+- **Camada 2:** quando o gate reprova, a IA **rascunha o changelog** do diff e comenta no PR
+  (`wiki-draft` + `scripts/wiki/draft-changelog.mjs`) — a chave do LLM fica só no Supabase.
+
+### Segurança
+
+- Revisão de segurança (@dev): XSS de link corrigido (whitelist de scheme), cap fail-closed, erro do
+  provedor não ecoado ao cliente, `permissions`/`concurrency` no workflow. **Nenhuma chave secreta
+  exposta** — anon key é pública por design; service role e chave do LLM só server-side. Detalhes em
+  [Flow de doc-sync](../changelog/2026-07-doc-sync-flow).
+
+> **Pendências pra ativar em CI** (ações de config, não código): secrets `SUPABASE_URL` +
+> `SUPABASE_SERVICE_ROLE_KEY` (re-index) e variables públicas `WIKI_SUPABASE_URL` +
+> `WIKI_SUPABASE_ANON_KEY` (Camada 2). Ver [A fazer / Backlog](./roadmap).
