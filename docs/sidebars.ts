@@ -33,6 +33,7 @@ const sidebars: SidebarsConfig = {
             'architecture/colecao-artefatos',
             'architecture/deploy-environments',
             'architecture/decisao-mock-fallback',
+        'architecture/higiene-de-conteudo',
           ],
         },
         {
