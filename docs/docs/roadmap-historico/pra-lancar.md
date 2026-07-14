@@ -33,8 +33,8 @@ aberto. Fonte: `checklist-go-live-v1-3`.
 
 | Gate | O que precisa estar fechado | Status atual |
 |---|---|---|
-| **Catálogo real da Central Coruja** | ≥3 coleções, 2 personagens, 1 ativo por tipo, visíveis na marca correta | ✅ atendido (banco de prod, 2026-07-13) — **57 coleções publicadas**, **12 personagens**, **23 leituras + 42 vídeos**; viewer brand-agnostic. Resta publicar 12 coleções restantes (ver [checklist](../operacao/checklist-catalogo-coruja)) |
-| **QA visual final dos hubs** | Hubs de vídeos/formações da Coruja validados com conteúdo real (thumbnails, títulos, navegação, estados vazios) | 🟡 conteúdo já existe; falta o passe visual final em browser real (specs E2E JTBD de vídeo/áudio/livro já no repo) |
+| **Catálogo real da Central Coruja** | ≥3 coleções, 2 personagens, 1 ativo por tipo, visíveis na marca correta | ✅ atendido e **higienizado** (banco de prod, 2026-07-14) — **42 coleções publicadas**, **12 personagens**, **23 leituras + 42 vídeos**; viewer brand-agnostic. Sem lixo publicado (gate 6/6). Não falta conteúdo a publicar |
+| **QA visual final dos hubs** | Hubs de vídeos/formações da Coruja validados com conteúdo real (thumbnails, títulos, navegação, estados vazios) | 🟡 vitrine de Coleções e Livros validada em browser real (2026-07-14, contra o banco de prod). Falta o passe nos hubs de **vídeos, músicas, formações e materiais** |
 | **Isolamento por marca homologado** | Backend/storage com separação correta Kaboo × Coruja, sem vazamento | ✅ APROVADO 2026-06-15 (ver [homologação](../operacao/homologacao-isolamento-marca)) |
 | **Vouchers ponta a ponta** | Geração → distribuição → resgate → operação com a gráfica, sem mock | 🟡 código integrado; falta o fluxo real com a gráfica |
 | **Ambiente real pronto** | Variáveis, auth, permissões, storage e rotinas mínimas de suporte revisadas | ~ runbook criado; ver pendências de hardening |
@@ -45,13 +45,18 @@ aberto. Fonte: `checklist-go-live-v1-3`.
 
 ## Pendências abertas para fechar a release
 
-1. **Publicar as 12 coleções restantes** da Central Coruja (57 de 69 já publicadas; personagens, leitura e vídeo já cadastrados).
-2. Fechar o **QA visual final** dos hubs de vídeos e formações com conteúdo real, em browser real.
-3. Validar **vouchers ponta a ponta** com a gráfica.
-4. Fechar **conta Empatia, build nativo e caminho de lojas**.
-5. **Ligar o offline** no Kaboo (interruptor-mestre) após validação.
-6. **Flipar o bucket `collections`** para privado (SEC-58 / T2) na próxima janela de deploy.
-7. Rodar a **Release manual** e registrar a **aprovação de go-live** (produto + operação + técnica).
+1. Fechar o **QA visual final** dos hubs de **vídeos, músicas, formações e materiais** da Coruja em browser real (Coleções e Livros já validados em 2026-07-14).
+2. **Decisão editorial do dono da marca** (Central Coruja): destino dos 4 vídeos "legenda em inglês" (Zeca, Eve, Nitche, Clara) e da "LIVE 08/09 – Professora Lee" — hoje em rascunho.
+3. **Decisão de produto:** publicar ou não *A Cor do Sentir* e *Onde está Gaio?* no Kaboo (movidos da Coruja em 2026-07-14, hoje em rascunho). Os PDFs **abrem** (HTTP 200), mas ficam no projeto Supabase legado `uuaiacefzdmsdbsvsuoj` — o certo a médio prazo é **migrar os arquivos para o bucket de produção** antes de publicar.
+4. Validar **vouchers ponta a ponta** com a gráfica.
+5. Fechar **conta Empatia, build nativo e caminho de lojas**.
+6. **Ligar o offline** no Kaboo (interruptor-mestre) após validação.
+7. **Flipar o bucket `collections`** para privado (SEC-58 / T2) na próxima janela de deploy.
+8. Rodar a **Release manual** e registrar a **aprovação de go-live** (produto + operação + técnica).
+
+> **Manutenção (não bloqueia release):** as tabelas de backup `*_backup_20260714` (criadas antes da
+> higiene do catálogo da Coruja) podem ser removidas a partir de **2026-08-14**, se nada tiver sido
+> reportado como perdido. Guardá-las por mais tempo não tem custo relevante.
 
 ## Fora deste gate (não bloqueiam o go-live)
 

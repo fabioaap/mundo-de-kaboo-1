@@ -143,16 +143,37 @@ feature flags). Para o que ainda falta, ver [A fazer / Backlog](./roadmap) e
   `AdminWhiteLabelScreen` (Kaboo → Empatia Editora; Central Coruja → Universo Educacross).
 - ~ **Hardening operacional** — runbook criado + hardening de DB aplicado. Ver
   [Runbook Operacional](../operacao/runbook-operacional).
-- ✅ **Catálogo real da Central Coruja** — populado em produção (verificado no banco em 2026-07-13):
-  **69 coleções (57 publicadas)** — 65 livros + 4 kits —, **12 personagens próprios** (Belinha, Cacau,
-  Chico, Doutor Nocturnus, Eugênio, Eve, Filó, Júnior, Mestre Sereno, Nitche, Professora Clara, Zeca),
-  **23 com leitura (PDF)** e **42 com vídeo**. O viewer de leitura é brand-agnostic (funciona para a
-  Coruja sem gate de marca). Resta apenas **publicar as 12 coleções restantes** + QA visual final.
+- ✅ **Catálogo real da Central Coruja** — populado em produção e **higienizado em 2026-07-14**:
+  **42 coleções publicadas**, **12 personagens próprios** (Belinha, Cacau, Chico, Doutor Nocturnus,
+  Eugênio, Eve, Filó, Júnior, Mestre Sereno, Nitche, Professora Clara, Zeca), **23 com leitura (PDF)**
+  e **42 com vídeo**. O viewer de leitura é brand-agnostic (funciona para a Coruja sem gate de marca).
   Ver [Checklist Catálogo Coruja](../operacao/checklist-catalogo-coruja).
 
   > **Correção 2026-07-13:** versões anteriores diziam "18 coleções, 0 personagens, 0 viewer" — números
   > stale herdados de doc antigo. A consulta ao banco de produção (marca `central-coruja`) desmente:
   > o conteúdo é criado via CMS direto no prod e não aparecia nos seeds/migrations versionados.
+
+- ✅ **Higiene do catálogo da Central Coruja (2026-07-14)** — auditoria do banco de produção derrubou a
+  premissa de que "faltavam 12 coleções para publicar". Não faltava conteúdo: **sobrava lixo**.
+
+  **O que estava errado:**
+  - Um kit intitulado **"Teste "** estava **publicado e era o primeiro card** da vitrine.
+  - **"Nasceu Belinha!"** estava duplicado (2 cópias publicadas) e havia uma casca vazia
+    ("Uhuhu! Nasceu Belinha!", sem PDF e sem vídeo).
+  - **12 livros do Kaboo** estavam gravados sob a marca `central-coruja`, com PDFs apontando para um
+    **projeto Supabase legado** (`uuaiacefzdmsdbsvsuoj`). Origem: a migration
+    `20260525000200_backfill_central_coruja_legacy_books.sql`, que atribuiu coleções órfãs à Coruja
+    **casando por título** e arrastou conteúdo do Kaboo junto.
+
+  **O que foi feito** (tudo com backup em `*_backup_20260714` e travas `NOT EXISTS` nas 5 FKs `CASCADE`):
+  despublicados o kit "Teste", a duplicata e a casca vazia; despublicados os 10 livros do Kaboo que já
+  existiam na marca correta; **movidos para o Kaboo** os 2 que só existiam na Coruja
+  (*A Cor do Sentir*, *Onde está Gaio?*); apagados os registros de teste e 5 duplicatas puras de LIVE.
+  Publicadas: **57 → 42**. Gate de QA: 6/6.
+
+  > ⚠️ **Achado de mecanismo:** o filtro de higiene escondia esse lixo **também do admin**
+  > (`contentHygiene.ts`), tornando-o invisível **e ingerenciável** — foi por isso que passou despercebido.
+  > Corrigido no PR #85.
 
 ### Correções de voucher (2026-06-15)
 

@@ -200,6 +200,20 @@ aprovação separada.
   build) → avaliar Supabase Storage / Git LFS. **Requer aprovação da Central Coruja.**
 - 🟡 **B** — Ambiente de staging; Playwright E2E no CI; bundle splitting (`lib/api.ts` ~104 KB).
 
+## Ativos no projeto Supabase legado (novo — 2026-07-14)
+
+- 🟡 **PDFs hospedados em `uuaiacefzdmsdbsvsuoj.supabase.co`** — projeto Supabase **antigo**, distinto do
+  de produção (`yevysgqlnhonhkczkyhu`). Descoberto na higiene do catálogo da Coruja: os livros do Kaboo
+  importados por backfill apontavam para lá. Os arquivos **respondem HTTP 200 hoje**, mas dependem de um
+  projeto que pode ser desligado a qualquer momento.
+
+  **Escopo exato (banco de prod, 2026-07-14):** **12 coleções** referenciam esse host — 10 na
+  `central-coruja` e 2 no `kaboo`. **Nenhuma publicada.** Ou seja: **nada no ar depende do projeto
+  legado** — o risco está contido nos rascunhos.
+
+  **Ação (não bloqueia go-live):** migrar esses arquivos para o bucket de produção e reescrever as URLs.
+  Só então publicar *A Cor do Sentir* e *Onde está Gaio?* no Kaboo.
+
 ## Testes (tech-debt)
 
 - 🟡 **~50 testes E2E desatualizados** após a refatoração single-brand/admin (2026-06-15) —
