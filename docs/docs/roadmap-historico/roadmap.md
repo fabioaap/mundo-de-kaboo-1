@@ -158,8 +158,12 @@ Fonte: `backlog-gaps-testes-usabilidade`. Muitos já foram fechados (ver histór
 - 🟡 **Filtros avançados das bibliotecas com dados ao vivo** — `LibraryHubScreen` deriva filtros do
   `catalog.seed.json` (estático); plumbar as coleções reais.
 - 🟡 **Tags obrigatórias no card de coleção:** idade recomendada (família) + ano escolar (escola).
-- 🟡 **Mesclar versões parciais** (só-PDF + só-áudio) de *Gaio e o Vento da Coragem*, *Kaboo e a
-  Carta Misteriosa*, *Mensageiro e a Canção Certa*, *Onde está Gaio?* (Kaboo).
+- ✅ **Mesclar versões parciais (só-PDF + só-áudio)** — **JÁ FEITO**: verificado no banco de produção
+  (2026-07-14), *Gaio e o Vento da Coragem*, *Kaboo e a Cartas Misteriosa*, *Mensageiro e a Canção
+  Certa* já têm PDF **e** áudio no mesmo registro, sem duplicata de título na marca Kaboo (0
+  duplicatas). *"Onde está Gaio?"* não é mais o mesmo caso: o registro do Kaboo é outro, movido da
+  Central Coruja em 2026-07-14 (rascunho, PDF no projeto Supabase legado — ver
+  [débito do projeto legado](#ativos-no-projeto-supabase-legado-novo--2026-07-14)).
 - 🟡 **"Idade adequada" (Home) é estático 0–12** — não data-driven; oferece idades sem conteúdo.
 - 🟡 **Padronizar cards de coleção para 1:1** (crop/zoom estilo foto de perfil).
 - 🟡 **Taxonomia/categorias de vídeo** (formação, contação, desenho, treinamento).
