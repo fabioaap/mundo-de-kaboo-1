@@ -99,7 +99,7 @@ export const filterCollectionsForBrand = (
   collections: Collection[],
   brandSlug: string,
   brandId?: string | null,
-  options?: { adminMode?: boolean },
+  options?: { adminMode?: boolean; fromRemote?: boolean },
 ): Collection[] => {
   const brandScopedCollections = collections.filter((collection) => matchesBrandScope(collection, brandSlug, brandId));
 
@@ -108,10 +108,13 @@ export const filterCollectionsForBrand = (
   }
 
   // Admin mode sees all brand-scoped collections including ones with test-like titles.
-  // Only seeded Kaboo collections and those with /mock/ cover images are always excluded.
+  // Seed ids are excluded only for local seed/mock data: on the remote path a seed id means a
+  // real row that a legacy backfill wrote into this brand, and hiding it leaves the admin unable
+  // to see or clean it (the vitrine still drops it below, via isMockOrTestCollection).
   if (options?.adminMode) {
     return brandScopedCollections.filter((collection) =>
-      !SEEDED_COLLECTION_IDS.has(collection.id) && !collection.cover_image?.startsWith('/mock/'),
+      (options.fromRemote || !SEEDED_COLLECTION_IDS.has(collection.id))
+      && !collection.cover_image?.startsWith('/mock/'),
     );
   }
 
