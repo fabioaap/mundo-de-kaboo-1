@@ -35,6 +35,7 @@ import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '
 import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollectionCharacters } from '../lib/characters';
 import { COLLECTION_ASSET_META, inferCollectionAssets, promoteCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
 import { extractSourceCollectionId, getCollectionDisplayCover, getCollectionTypeMeta, getLibraryAssetCoverImage, getYoutubeThumbnail, isCollectionHubEligible, isStandaloneReadableBook, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
+import { isEffectivelyPublished } from '../lib/adminPublishStatus';
 import { VideoFramePicker } from '../components/VideoFramePicker';
 import { extractAudioCoverArt } from '../lib/extractAudioCoverArt';
 import { uploadFile } from '../lib/storage';
@@ -199,6 +200,13 @@ const normalizeSearchableText = (...values: Array<string | null | undefined>) =>
 const cleanVideoSupportingCopy = (value?: string | null) => {
   return (value ?? '').replace(/^(vídeo|video)\s*•\s*/i, '').trim();
 };
+
+// An asset only counts as published to the end user when its OWNING collection
+// is also published — an unpublished collection hides everything inside it,
+// regardless of the asset's own is_published flag. Use this everywhere the admin
+// decides the effective publish status of a library-asset row.
+const isItemEffectivelyPublished = (item: LibraryAssetListItem): boolean =>
+  isEffectivelyPublished(item.collection.is_published, item.asset.is_published);
 
 const getDistinctVideoPreviewText = (item: LibraryAssetListItem) => {
   const cleanedValue = cleanVideoSupportingCopy(item.previewText);
@@ -1091,14 +1099,14 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   }, [libraryAssetItems, searchFilter, levelFilter, sortOrder]);
 
   // Library-area listing after applying the publish-status tab (Publicados vs. Não publicados).
-  // In library-area mode, filter by the individual asset's is_published flag
-  // (undefined/null counts as published for backward-compat).
+  // Effective publish status requires BOTH the asset AND its owning collection to be
+  // published — an unpublished collection means nothing inside it is live.
   const visibleLibraryAssets = React.useMemo(
     () =>
       filteredLibraryAssets.filter((item) =>
         publishStatusFilter === 'published'
-          ? item.asset.is_published !== false
-          : item.asset.is_published === false
+          ? isItemEffectivelyPublished(item)
+          : !isItemEffectivelyPublished(item)
       ),
     [filteredLibraryAssets, publishStatusFilter]
   );
@@ -2720,12 +2728,13 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     let published = 0;
     let draft = 0;
     if (isAssetLibraryAreaMode) {
-      // In library-area mode, count by the individual asset's is_published flag.
+      // Count by EFFECTIVE publish status (asset + owning collection both published).
+      // An asset in an unpublished collection is a draft, even if its own flag is true.
       // publishedInLibrary: quantos dos publicados realmente aparecem na biblioteca
       // pública (o resto vive dentro da obra — kit/livro com PDF). WS-2 transparência.
       let publishedInLibrary = 0;
       for (const item of filteredLibraryAssets) {
-        if (item.asset.is_published !== false) {
+        if (isItemEffectivelyPublished(item)) {
           published += 1;
           if (isCollectionHubEligible(item.collection)) publishedInLibrary += 1;
         } else draft += 1;
@@ -3034,21 +3043,24 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           const isVideoAssetCard = item.asset.media_type === 'video';
                           const isAudioAssetCard = item.asset.media_type === 'audio';
                           const videoPreviewText = isVideoAssetCard ? getDistinctVideoPreviewText(item) : item.previewText;
+                          const effectivelyPublished = isItemEffectivelyPublished(item);
                           // Transparência WS-2: item publicado cujo conteúdo vive DENTRO da obra
                           // (kit ou livro com PDF) e por isso nunca aparece na biblioteca pública.
-                          const isPublishedInsideWork = item.asset.is_published !== false
+                          // Só faz sentido para itens efetivamente publicados — um rascunho (por
+                          // coleção despublicada) não é "publicado dentro da obra".
+                          const isPublishedInsideWork = effectivelyPublished
                             && !isCollectionHubEligible(item.collection);
 
                           return (
                             <div key={item.key} className="relative">
-                              {/* Publish status badges — reflect the individual asset's status */}
+                              {/* Publish status badges — reflect the EFFECTIVE status (asset + collection) */}
                               <div className="absolute top-2 left-2 z-20 flex flex-col items-start gap-1">
                                 <span className={`pointer-events-none text-xs font-semibold px-2 py-0.5 rounded-full ${
-                                  item.asset.is_published !== false
+                                  effectivelyPublished
                                     ? 'bg-green-100 text-green-800'
                                     : 'bg-amber-100 text-amber-800'
                                 }`}>
-                                  {item.asset.is_published !== false ? 'Publicado' : 'Rascunho'}
+                                  {effectivelyPublished ? 'Publicado' : 'Rascunho'}
                                 </span>
                                 {isPublishedInsideWork && (
                                   <span
