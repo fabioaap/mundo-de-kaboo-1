@@ -91,6 +91,19 @@ produção + pelo dono do produto:
 - 📋 **P1.4 Hardening de proteção de mídia privada** — bucket privado, URL assinada curta, entrega
   segmentada (HLS/DASH), watermark opcional. Pós-MVP; multi-DRM comercial fica opcional, não
   pré-requisito.
+- 🔴 **`media_items` está 100% em rascunho — os hubs do Kaboo estão quase vazios** (achado de
+  2026-07-14). A tabela tem **26 entradas, todas com `status = 'draft'`**; nenhuma publicada. Como
+  **só o Kaboo lê `media_items`** (a Coruja monta os hubs a partir das coleções — ver
+  [Coruja × Kaboo](../architecture/coruja-vs-kaboo)), o efeito aparece só no Kaboo:
+
+  | Hub | Kaboo | Central Coruja |
+  |---|---|---|
+  | Vídeos | **2** | 20 |
+  | Músicas | **0** | 8 |
+
+  O conteúdo **existe** (19 coleções do Kaboo com vídeo, 19 com áudio) — ele só não sobe para as
+  bibliotecas, que é justamente a promessa do "mini YouTube / mini Spotify". **Ação:** publicar as
+  entradas de `media_items` e verificar se o admin de mídia realmente as publica.
 
 ## Vitrine / Remoção de mocks (📋 diferido, alta prioridade pós-MVP)
 
