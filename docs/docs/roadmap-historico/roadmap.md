@@ -91,19 +91,29 @@ produção + pelo dono do produto:
 - 📋 **P1.4 Hardening de proteção de mídia privada** — bucket privado, URL assinada curta, entrega
   segmentada (HLS/DASH), watermark opcional. Pós-MVP; multi-DRM comercial fica opcional, não
   pré-requisito.
-- 🔴 **`media_items` está 100% em rascunho — os hubs do Kaboo estão quase vazios** (achado de
-  2026-07-14). A tabela tem **26 entradas, todas com `status = 'draft'`**; nenhuma publicada. Como
-  **só o Kaboo lê `media_items`** (a Coruja monta os hubs a partir das coleções — ver
-  [Coruja × Kaboo](../architecture/coruja-vs-kaboo)), o efeito aparece só no Kaboo:
+- 🟡 **`media_items` só tem seed de demonstração — NÃO publicar** (investigado 2026-07-15).
+  A tabela tem **26 entradas, todas `status = 'draft'`**, todas de **07/06/2026** (um único seed),
+  **nenhuma ligada a coleção**. E, decisivo, as **fontes são placeholder ou mortas**:
 
-  | Hub | Kaboo | Central Coruja |
-  |---|---|---|
-  | Vídeos | **2** | 20 |
-  | Músicas | **0** | 8 |
+  | Fonte da mídia | O que é |
+  |---|---|
+  | `https://kaboo.dev/content/pending` | **Placeholder** literal — "conteúdo pendente" |
+  | `uuaiacefzdmsdbsvsuoj.supabase.co/...` | Projeto Supabase **legado** (ver item abaixo) |
+  | `yevysgqlnhonhkczkyhu.supabase.co/...` | Prod, mas parte do mesmo lote de demo |
 
-  O conteúdo **existe** (19 coleções do Kaboo com vídeo, 19 com áudio) — ele só não sobe para as
-  bibliotecas, que é justamente a promessa do "mini YouTube / mini Spotify". **Ação:** publicar as
-  entradas de `media_items` e verificar se o admin de mídia realmente as publica.
+  Títulos são genéricos de demo ("Canções para começar a escutar devagar"). **Estão em rascunho
+  corretamente:** publicá-los mostraria **links quebrados** ao usuário.
+
+  > **Correção de rumo:** versões anteriores deste backlog diziam 🔴 "publicar as media_items". Isso
+  > estava **errado** — teria surfaçado stubs quebrados em produção. A tabela `media_items` (backbone
+  > do "mini YouTube/Spotify") existe e funciona, mas **nunca recebeu conteúdo real** — só o seed de
+  > demo. Como **só o Kaboo lê `media_items`** (a Coruja monta os hubs a partir das coleções — ver
+  > [Coruja × Kaboo](../architecture/coruja-vs-kaboo)), os hubs do Kaboo ficam com o que vem das
+  > coleções (2 vídeos, 0 músicas), não com esse seed.
+
+  **Ação real (não "publicar"):** a épica "mini YouTube/Spotify" precisa de **ingestão de conteúdo
+  real** para `media_items` (curadoria + upload/link válido), não de um toggle de publicação. E o seed
+  de demo (26 stubs) pode ser **removido** numa faxina — é lixo invisível, mas lixo.
 
 ## Vitrine / Remoção de mocks (📋 diferido, alta prioridade pós-MVP)
 
