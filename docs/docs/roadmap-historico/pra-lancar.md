@@ -33,8 +33,8 @@ aberto. Fonte: `checklist-go-live-v1-3`.
 
 | Gate | O que precisa estar fechado | Status atual |
 |---|---|---|
-| **Catálogo real da Central Coruja** | ≥3 coleções, 2 personagens, 1 ativo por tipo, visíveis na marca correta | ✅ atendido e **higienizado** (banco de prod, 2026-07-14) — **42 coleções publicadas**, **12 personagens**, **23 leituras + 42 vídeos**; viewer brand-agnostic. Sem lixo publicado (gate 6/6). Não falta conteúdo a publicar |
-| **QA visual final dos hubs** | Hubs de vídeos/formações da Coruja validados com conteúdo real (thumbnails, títulos, navegação, estados vazios) | 🟡 vitrine de Coleções e Livros validada em browser real (2026-07-14, contra o banco de prod). Falta o passe nos hubs de **vídeos, músicas, formações e materiais** |
+| **Catálogo real da Central Coruja** | ≥3 coleções, 2 personagens, 1 ativo por tipo, visíveis na marca correta | ✅ atendido e **higienizado** (banco de prod, 2026-07-14) — **42 coleções publicadas**, **12 personagens**; viewer brand-agnostic. Sem lixo publicado (gate 6/6). Não falta conteúdo a publicar |
+| **QA visual final dos hubs** | Hubs da Coruja validados com conteúdo real (thumbnails, títulos, navegação, estados vazios) | ✅ validado em browser real (2026-07-14, contra o banco de prod): Coleções, Livros, **Vídeos (20)** e **Músicas (8)**. **Formações e Materiais aparecem vazios — mas isso NÃO é falta de conteúdo:** os Materiais são **bloqueados no código** para a Coruja (`filterCentralMaterialsForBrand`). Ver [Coruja × Kaboo](../architecture/coruja-vs-kaboo) |
 | **Isolamento por marca homologado** | Backend/storage com separação correta Kaboo × Coruja, sem vazamento | ✅ APROVADO 2026-06-15 (ver [homologação](../operacao/homologacao-isolamento-marca)) |
 | **Vouchers ponta a ponta** | Geração → distribuição → resgate → operação com a gráfica, sem mock | 🟡 código integrado; falta o fluxo real com a gráfica |
 | **Ambiente real pronto** | Variáveis, auth, permissões, storage e rotinas mínimas de suporte revisadas | ~ runbook criado; ver pendências de hardening |
