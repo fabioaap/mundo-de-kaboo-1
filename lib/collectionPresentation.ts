@@ -131,6 +131,29 @@ export const getCollectionFormatKinds = (
   ].filter(Boolean) as CollectionFormatKind[];
 };
 
+/**
+ * true = o conteúdo de mídia desta coleção aparece nas bibliotecas (hubs) globais.
+ * false = fica preso à obra e nunca vira entrada de hub. WS-2.
+ *
+ * Fonte da verdade única, reutilizada pela vitrine (lib/api.ts) e pelo admin de mídia.
+ * Usa o campo bruto `collection_type` (não o tipo inferido) para preservar exatamente
+ * o comportamento histórico da regra de hub.
+ *  - Kits: nunca aparecem em hub — seu conteúdo pertence à vitrine da coleção.
+ *  - Books com PDF (reading): seus assets ficam dentro da obra, não em nenhum hub.
+ */
+export const isCollectionHubEligible = (
+  collection: Pick<Collection, 'collection_type' | 'collection_assets'>
+): boolean => {
+  if (collection.collection_type === 'kit') return false;
+  if (
+    collection.collection_type === 'book' &&
+    (collection.collection_assets ?? []).some((asset) => asset.category === 'reading')
+  ) {
+    return false;
+  }
+  return true;
+};
+
 export const isStandaloneReadableBook = (
   collection?: Partial<Collection> | null
 ): boolean => {
