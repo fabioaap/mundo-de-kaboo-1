@@ -112,8 +112,13 @@ produção + pelo dono do produto:
   > coleções (2 vídeos, 0 músicas), não com esse seed.
 
   **Ação real (não "publicar"):** a épica "mini YouTube/Spotify" precisa de **ingestão de conteúdo
-  real** para `media_items` (curadoria + upload/link válido), não de um toggle de publicação. E o seed
-  de demo (26 stubs) pode ser **removido** numa faxina — é lixo invisível, mas lixo.
+  real** para `media_items` (curadoria + upload/link válido), não de um toggle de publicação.
+
+  > ⚠️ **A faxina dos 26 stubs NÃO é um delete limpo** (verificado 2026-07-15). `media_items` tem 5 FKs
+  > `CASCADE`, e os stubs têm dependências: **6 linhas de `user_media_progress`** e **7 de
+  > `media_collection_links`** apontam para eles. Deletar cascatearia nesses (progresso provavelmente é
+  > de admin/teste do demo, mas precisa confirmar quem criou). Fazer com backup + checagem de deps,
+  > nunca `DELETE` cego.
 
 ## Vitrine / Remoção de mocks (📋 diferido, alta prioridade pós-MVP)
 
