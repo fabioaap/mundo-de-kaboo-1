@@ -10,6 +10,7 @@ import {
   extractSourceCollectionId,
   isStandaloneReadableBook,
   getVisiblePrimaryCollectionAssets,
+  isCollectionHubEligible,
   normalizeSingleKitBookIds,
   shouldShowKitLinkedBooksPanel,
 } from './collectionPresentation';
@@ -88,6 +89,34 @@ describe('getCollectionFormatKinds', () => {
         { id: 'audio', category: 'storytelling', media_type: 'audio', title: 'Contação', url: '/audio.mp3', scope: 'primary' },
       ],
     } as any)).toEqual(['reading', 'audio']);
+  });
+});
+
+describe('isCollectionHubEligible', () => {
+  it('excludes kits from the public hubs', () => {
+    expect(isCollectionHubEligible({ collection_type: 'kit', collection_assets: [] })).toBe(false);
+  });
+
+  it('excludes books that carry a reading (PDF) asset — content stays inside the work', () => {
+    expect(isCollectionHubEligible({
+      collection_type: 'book',
+      collection_assets: [
+        { id: 'reading', category: 'reading', media_type: 'document', title: 'Leitura', url: '/reading.pdf', scope: 'primary' },
+      ],
+    })).toBe(false);
+  });
+
+  it('includes books without a reading asset', () => {
+    expect(isCollectionHubEligible({
+      collection_type: 'book',
+      collection_assets: [
+        { id: 'video', category: 'animation', media_type: 'video', title: 'Animado', url: '/video.mp4', scope: 'primary' },
+      ],
+    })).toBe(true);
+  });
+
+  it('includes a normal collection with no assets', () => {
+    expect(isCollectionHubEligible({ collection_type: 'book', collection_assets: [] })).toBe(true);
   });
 });
 

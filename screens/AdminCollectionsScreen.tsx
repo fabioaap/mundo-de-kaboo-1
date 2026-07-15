@@ -34,7 +34,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollectionCharacters } from '../lib/characters';
 import { COLLECTION_ASSET_META, inferCollectionAssets, promoteCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
-import { extractSourceCollectionId, getCollectionDisplayCover, getCollectionTypeMeta, getLibraryAssetCoverImage, getYoutubeThumbnail, isStandaloneReadableBook, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
+import { extractSourceCollectionId, getCollectionDisplayCover, getCollectionTypeMeta, getLibraryAssetCoverImage, getYoutubeThumbnail, isCollectionHubEligible, isStandaloneReadableBook, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
 import { VideoFramePicker } from '../components/VideoFramePicker';
 import { extractAudioCoverArt } from '../lib/extractAudioCoverArt';
 import { uploadFile } from '../lib/storage';
@@ -992,12 +992,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     // DENTRO da obra (Coleções/Livros), não na aba avulsa de Vídeos. Espelha isHubEligible
     // da vitrine (lib/api.ts) para admin e vitrine ficarem coerentes — sem conteúdo de obra
     // aparecendo como vídeo solto.
-    const isCompanionOwned = (collection: Collection): boolean => {
-      if (collection.collection_type === 'kit') return true;
-      if (collection.collection_type === 'book'
-        && (collection.collection_assets ?? []).some((a) => a.category === 'reading')) return true;
-      return false;
-    };
+    const isCompanionOwned = (collection: Collection): boolean => !isCollectionHubEligible(collection);
     const sourceCollections = initialLibraryArea === 'videos'
       ? collections.filter((collection) => !isCompanionOwned(collection))
       : collections;
@@ -2726,11 +2721,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
     let draft = 0;
     if (isAssetLibraryAreaMode) {
       // In library-area mode, count by the individual asset's is_published flag.
+      // publishedInLibrary: quantos dos publicados realmente aparecem na biblioteca
+      // pública (o resto vive dentro da obra — kit/livro com PDF). WS-2 transparência.
+      let publishedInLibrary = 0;
       for (const item of filteredLibraryAssets) {
-        if (item.asset.is_published !== false) published += 1;
-        else draft += 1;
+        if (item.asset.is_published !== false) {
+          published += 1;
+          if (isCollectionHubEligible(item.collection)) publishedInLibrary += 1;
+        } else draft += 1;
       }
-      return { published, draft };
+      return { published, draft, publishedInLibrary };
     }
     let base = [...scopedCollections];
     if (searchFilter.trim()) {
@@ -2747,7 +2747,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       if (collection.is_published) published += 1;
       else draft += 1;
     }
-    return { published, draft };
+    // publishedInLibrary só é significativo em modo biblioteca; aqui espelha published.
+    return { published, draft, publishedInLibrary: published };
   }, [isAssetLibraryAreaMode, initialLibraryArea, filteredLibraryAssets, scopedCollections, searchFilter, levelFilter]);
 
   // Only show permission error if we've finished checking and user doesn't have permission
@@ -2992,6 +2993,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                     })}
                   </div>
 
+                  {/* Transparência WS-2: nem todo publicado entra na biblioteca pública —
+                      itens dentro de kits/livros com PDF ficam presos à obra. */}
+                  {isAssetLibraryAreaMode
+                    && publishStatusFilter === 'published'
+                    && publishStatusCounts.publishedInLibrary < publishStatusCounts.published && (
+                    <p className="mt-2 text-xs text-gray-500">
+                      {publishStatusCounts.publishedInLibrary} de {publishStatusCounts.published} publicados aparecem na biblioteca — os demais vivem dentro do livro/kit.
+                    </p>
+                  )}
+
                   {/* Lista de conteúdo */}
                   {isAssetLibraryAreaMode ? (
                     visibleLibraryAssets.length === 0 ? (
@@ -3023,17 +3034,32 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                           const isVideoAssetCard = item.asset.media_type === 'video';
                           const isAudioAssetCard = item.asset.media_type === 'audio';
                           const videoPreviewText = isVideoAssetCard ? getDistinctVideoPreviewText(item) : item.previewText;
+                          // Transparência WS-2: item publicado cujo conteúdo vive DENTRO da obra
+                          // (kit ou livro com PDF) e por isso nunca aparece na biblioteca pública.
+                          const isPublishedInsideWork = item.asset.is_published !== false
+                            && !isCollectionHubEligible(item.collection);
 
                           return (
                             <div key={item.key} className="relative">
-                              {/* Publish status badge — reflects the individual asset's status */}
-                              <span className={`absolute top-2 left-2 z-20 pointer-events-none text-xs font-semibold px-2 py-0.5 rounded-full ${
-                                item.asset.is_published !== false
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-amber-100 text-amber-800'
-                              }`}>
-                                {item.asset.is_published !== false ? 'Publicado' : 'Rascunho'}
-                              </span>
+                              {/* Publish status badges — reflect the individual asset's status */}
+                              <div className="absolute top-2 left-2 z-20 flex flex-col items-start gap-1">
+                                <span className={`pointer-events-none text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                  item.asset.is_published !== false
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {item.asset.is_published !== false ? 'Publicado' : 'Rascunho'}
+                                </span>
+                                {isPublishedInsideWork && (
+                                  <span
+                                    title="Publicado, mas não aparece na biblioteca — o conteúdo vive dentro do livro/kit."
+                                    className="inline-flex items-center gap-1 cursor-help text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800"
+                                  >
+                                    <Icons.BookOpen size={12} />
+                                    Dentro da obra
+                                  </span>
+                                )}
+                              </div>
 
                               {/* Actions moved to preview modal */}
 

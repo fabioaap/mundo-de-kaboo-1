@@ -80,7 +80,7 @@ import {
   normalizeVoucherCode,
 } from './access';
 import { getActiveGrantsForUser, hasGrantForCollection } from './mockVoucherData';
-import { extractSourceCollectionId, getCollectionDisplayCover, normalizeSingleKitBookIds } from './collectionPresentation';
+import { extractSourceCollectionId, getCollectionDisplayCover, isCollectionHubEligible, normalizeSingleKitBookIds } from './collectionPresentation';
 
 // Cache management for collections
 const COLLECTIONS_CACHE_KEY = 'kaboo_collections_cache';
@@ -780,17 +780,11 @@ const getCollectionBackedItemsForHub = (hub: MediaHub, collections: Collection[]
   // Kits: nunca aparecem em hub — seu conteúdo pertence à vitrine da coleção.
   // Books com PDF (reading): seus assets (vídeo, música, material) ficam dentro da obra,
   // não aparecem em nenhum hub. Materiais avulsos do admin vêm da tabela `materials`.
-  const isHubEligible = (collection: Collection): boolean => {
-    if (collection.collection_type === 'kit') return false;
-    if (collection.collection_type === 'book' &&
-        (collection.collection_assets ?? []).some((a) => a.category === 'reading')) return false;
-    return true;
-  };
-
+  // Regra centralizada em collectionPresentation.isCollectionHubEligible (fonte única).
   const collectionsById = new Map(collections.map((collection) => [collection.id, collection]));
 
   const pairs = collections
-    .filter(isHubEligible)
+    .filter(isCollectionHubEligible)
     .flatMap((collection) => (collection.collection_assets ?? [])
       // On the public storefront, hide assets that were explicitly unpublished (is_published=false).
       // undefined/null means published (backward-compat with assets created before per-asset flags).
