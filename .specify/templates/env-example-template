@@ -1,0 +1,124 @@
+# ==========================================
+# Variáveis de Ambiente - [NOME_DO_PROJETO]
+# ==========================================
+
+# ==========================================
+# INSTRUÇÕES DE USO
+# ==========================================
+# 1. Copie este arquivo para .env
+# 2. Substitua os valores de exemplo pelos reais
+# 3. NUNCA commite o arquivo .env no Git
+# 4. Adicione novas variáveis aqui conforme necessário
+
+# ==========================================
+# Configurações Gerais
+# ==========================================
+
+# Ambiente de execução (development, staging, production)
+NODE_ENV=development
+
+# Porta da aplicação
+PORT=3000
+
+# URL base da aplicação
+APP_URL=http://localhost:3000
+
+# ==========================================
+# Database
+# ==========================================
+
+# PostgreSQL
+DATABASE_URL=postgresql://user:password@localhost:5432/database_name
+
+# Ou MySQL
+# DATABASE_URL=mysql://user:password@localhost:3306/database_name
+
+# Ou MongoDB
+# MONGODB_URI=mongodb://localhost:27017/database_name
+
+# ==========================================
+# APIs Externas
+# ==========================================
+
+# Exemplo: Serviço de email
+# SMTP_HOST=smtp.example.com
+# SMTP_PORT=587
+# SMTP_USER=your-email@example.com
+# SMTP_PASS=your-password
+
+# Exemplo: API de pagamento
+# STRIPE_PUBLIC_KEY=pk_test_xxxxxxxxxxxxx
+# STRIPE_SECRET_KEY=sk_test_xxxxxxxxxxxxx
+
+# Exemplo: Armazenamento
+# AWS_ACCESS_KEY_ID=your-access-key
+# AWS_SECRET_ACCESS_KEY=your-secret-key
+# AWS_REGION=us-east-1
+# AWS_S3_BUCKET=your-bucket-name
+
+# ==========================================
+# Autenticação
+# ==========================================
+
+# JWT
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_EXPIRES_IN=7d
+
+# OAuth (Exemplo: Google)
+# GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+# GOOGLE_CLIENT_SECRET=your-client-secret
+
+# OAuth (Exemplo: GitHub)
+# GITHUB_CLIENT_ID=your-github-client-id
+# GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# ==========================================
+# Cache e Sessões
+# ==========================================
+
+# Redis
+REDIS_URL=redis://localhost:6379
+# REDIS_PASSWORD=your-redis-password (se aplicável)
+
+# Session Secret
+SESSION_SECRET=your-super-secret-session-key-change-this
+
+# ==========================================
+# Logging e Monitoramento
+# ==========================================
+
+# Log Level (error, warn, info, debug)
+LOG_LEVEL=debug
+
+# Sentry (Exemplo)
+# SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
+
+# ==========================================
+# Rate Limiting
+# ==========================================
+
+# Requisições por minuto por IP
+RATE_LIMIT_MAX=100
+RATE_LIMIT_WINDOW_MS=60000
+
+# ==========================================
+# CORS
+# ==========================================
+
+# Origens permitidas (separadas por vírgula)
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+
+# ==========================================
+# Feature Flags
+# ==========================================
+
+# Habilitar features experimentais
+# ENABLE_EXPERIMENTAL_FEATURES=false
+
+# ==========================================
+# Específico do Projeto
+# ==========================================
+
+# Adicione variáveis específicas do seu projeto abaixo
+# EXAMPLE_API_KEY=your-api-key
+# EXAMPLE_CONFIG=some-value

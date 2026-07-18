@@ -1,0 +1,86 @@
+# ==========================================
+# Python Agent Autonomy Tools
+# ==========================================
+# Ferramentas para dar autonomia aos agentes com acesso a:
+# - Sistema de arquivos
+# - CLI/Terminal
+# - Navegadores web
+# - APIs e integrações
+
+# ==========================================
+# File System & OS Operations
+# ==========================================
+pathlib2>=2.3.7          # Operações de path multiplataforma
+watchdog>=3.0.0          # Monitorar mudanças em arquivos/diretórios
+gitpython>=3.1.40        # Interagir com repositórios Git
+python-dotenv>=1.0.0     # Carregar variáveis de ambiente
+
+# ==========================================
+# CLI & Terminal Automation
+# ==========================================
+click>=8.1.7             # Criar CLIs poderosas
+rich>=13.7.0             # Terminal com formatação rica
+typer>=0.9.0             # CLI moderna baseada em type hints
+prompt-toolkit>=3.0.43   # Input interativo avançado
+sh>=2.0.6                # Executar comandos shell de forma pythonica
+
+# ==========================================
+# Browser Automation
+# ==========================================
+playwright>=1.40.0       # Automação de browser moderna (recomendado)
+selenium>=4.16.0         # Automação de browser tradicional
+webdriver-manager>=4.0.1 # Gerenciar drivers do Selenium automaticamente
+
+# ==========================================
+# Agent Frameworks & AI Integration
+# ==========================================
+langchain>=0.1.0         # Framework para aplicações com LLMs
+langchain-community>=0.0.10  # Integrações da comunidade
+langchain-core>=0.1.10   # Core do LangChain
+openai>=1.6.1            # API da OpenAI (GPT-4, etc)
+anthropic>=0.8.0         # API da Anthropic (Claude)
+
+# ==========================================
+# Web Scraping & Data Extraction
+# ==========================================
+beautifulsoup4>=4.12.2   # Parse HTML/XML
+lxml>=4.9.4              # Parser XML/HTML rápido
+requests>=2.31.0         # HTTP requests
+httpx>=0.26.0            # HTTP client async/sync
+
+# ==========================================
+# Data Processing & Analysis
+# ==========================================
+pandas>=2.1.4            # Análise de dados
+pyyaml>=6.0.1            # Parse YAML
+toml>=0.10.2             # Parse TOML
+jsonschema>=4.20.0       # Validação de JSON schemas
+
+# ==========================================
+# Testing & Quality
+# ==========================================
+pytest>=7.4.3            # Framework de testes
+pytest-playwright>=0.4.3 # Integração Playwright com pytest
+pytest-asyncio>=0.21.1   # Suporte async no pytest
+pytest-cov>=4.1.0        # Coverage de testes
+
+# ==========================================
+# Utilities
+# ==========================================
+python-slugify>=8.0.1    # Criar slugs de texto
+colorama>=0.4.6          # Cores no terminal (Windows compatibility)
+tqdm>=4.66.1             # Progress bars
+regex>=2023.12.25        # Regex avançado
+
+# ==========================================
+# Optional: Advanced Features
+# ==========================================
+# Descomente se precisar destes recursos
+
+# chromadb>=0.4.18       # Vector database para RAG
+# tiktoken>=0.5.2        # Tokenizer da OpenAI
+# faiss-cpu>=1.7.4       # Similarity search (CPU)
+# transformers>=4.36.0   # Modelos de ML da Hugging Face
+# pillow>=10.1.0         # Processamento de imagens
+# opencv-python>=4.8.1   # Computer vision
+# pyautogui>=0.9.54      # Automação de GUI desktop
