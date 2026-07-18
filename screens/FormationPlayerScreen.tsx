@@ -1,7 +1,45 @@
 import React, { useEffect, useState } from 'react';
 import { Icons } from '../components/Icons';
 import { api } from '../lib/api';
-import { Formation, FormationLesson, ScreenName } from '../types';
+import { Formation, FormationAsset, FormationLesson, MaterialAssetType, ScreenName } from '../types';
+
+const ASSET_TYPE_ICONS: Record<MaterialAssetType, React.FC<any>> = {
+  pdf: Icons.FileText,
+  video: Icons.Video,
+  audio: Icons.Headphones,
+};
+
+const CourseAssets: React.FC<{ assets: FormationAsset[] }> = ({ assets }) => {
+  if (assets.length === 0) return null;
+
+  return (
+    <div className="mt-8">
+      <h3 className="mb-3 text-sm font-black uppercase tracking-[0.16em] text-brand-primary/60">
+        Materiais do curso
+      </h3>
+      <ul className="flex flex-col gap-2">
+        {assets.map((asset, idx) => {
+          const Icon = ASSET_TYPE_ICONS[asset.type] ?? Icons.FileText;
+          return (
+            <li key={`${asset.url}-${idx}`}>
+              <a
+                href={asset.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="flex items-center gap-3 rounded-2xl border border-brand-primary/10 bg-white px-3.5 py-3 text-left transition-colors hover:border-brand-primary/25 hover:bg-brand-primary/[0.03]"
+              >
+                <Icon size={16} className="shrink-0 text-brand-primary/70" />
+                <span className="min-w-0 flex-1 truncate text-sm font-bold text-gray-700">{asset.title}</span>
+                <Icons.ExternalLink size={14} className="shrink-0 text-brand-primary/40" />
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+};
 
 interface FormationPlayerScreenProps {
   formationId: string;
@@ -235,6 +273,11 @@ export const FormationPlayerScreen: React.FC<FormationPlayerScreenProps> = ({ fo
           <h1 className="text-lg font-black text-gray-800">{formation.title}</h1>
           <p className="max-w-md text-sm text-gray-500">Este curso não possui aulas ainda.</p>
         </div>
+        {(formation.assets ?? []).length > 0 && (
+          <div className="px-6 pb-6 md:px-8">
+            <CourseAssets assets={formation.assets ?? []} />
+          </div>
+        )}
       </div>
     );
   }
@@ -345,6 +388,11 @@ export const FormationPlayerScreen: React.FC<FormationPlayerScreenProps> = ({ fo
             </h3>
             <LessonList lessons={lessons} activeIndex={safeIndex} completedIds={completedLessonIds} onSelect={handleLessonChange} />
           </div>
+
+          {/* Materiais do curso — mobile (abaixo da lista de aulas, sempre visível) */}
+          <div className="md:hidden">
+            <CourseAssets assets={formation.assets ?? []} />
+          </div>
         </div>
 
         {/* Painel lateral de aulas — desktop */}
@@ -356,6 +404,7 @@ export const FormationPlayerScreen: React.FC<FormationPlayerScreenProps> = ({ fo
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-4">
             <LessonList lessons={lessons} activeIndex={safeIndex} completedIds={completedLessonIds} onSelect={handleLessonChange} />
+            <CourseAssets assets={formation.assets ?? []} />
           </div>
         </aside>
       </div>

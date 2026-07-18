@@ -520,7 +520,7 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
 
           {/* Assets */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Assets (vídeos e PDFs)</label>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Materiais do curso (PDF)</label>
 
             {/* Existing assets */}
             {(formData.assets ?? []).length > 0 && (
@@ -543,45 +543,34 @@ export const AdminFormationsScreen: React.FC<AdminFormationsScreenProps> = () =>
               </div>
             )}
 
-            {/* Add new asset */}
+            {/* Adicionar PDF — só upload de arquivo, pode adicionar vários */}
             <div className="p-3 border border-dashed border-gray-200 rounded-xl space-y-2">
-              <div className="flex gap-1.5">
-                {(['pdf', 'video', 'audio'] as const).map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setNewAsset(prev => ({ ...prev, type: t }))}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${newAsset.type === t ? 'bg-brand-primary text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                  >
-                    {t === 'pdf' ? 'PDF' : t === 'video' ? 'Vídeo' : 'Áudio'}
-                  </button>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newAsset.title}
-                  onChange={e => setNewAsset(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Título do asset"
-                  className="flex-1 bg-gray-50 rounded-xl p-2 text-sm outline-none"
-                />
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={newAsset.url}
-                  onChange={e => setNewAsset(prev => ({ ...prev, url: e.target.value }))}
-                  placeholder="URL do arquivo"
-                  className="flex-1 bg-gray-50 rounded-xl p-2 text-sm outline-none"
-                />
-                <button
-                  onClick={addAsset}
-                  disabled={!newAsset.url.trim() || !newAsset.title.trim()}
-                  className="px-3 py-2 bg-brand-primary/10 text-brand-primary rounded-xl text-sm font-bold hover:bg-brand-primary/20 disabled:opacity-40 transition-colors"
-                >
-                  <Icons.Plus size={14} />
-                </button>
-              </div>
+              <p className="text-xs text-gray-500">
+                PDFs gerais da formação (apostila, guia do curso, material de apoio). Ficam disponíveis para o aluno <strong>fora das aulas</strong>. Você pode adicionar mais de um.
+              </p>
+              <input
+                type="text"
+                value={newAsset.title}
+                onChange={e => setNewAsset(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Título do PDF (ex.: Apostila do curso)"
+                className="w-full bg-gray-50 rounded-xl p-2 text-sm outline-none"
+              />
+              <FileUpload
+                label="Arquivo PDF"
+                value={newAsset.url}
+                onChange={url => setNewAsset(prev => ({ ...prev, url, type: 'pdf' }))}
+                folder="pdfs"
+                accept="application/pdf"
+                inputId="new-formation-asset-pdf"
+                hideUrlInput
+              />
+              <button
+                onClick={addAsset}
+                disabled={!newAsset.url.trim() || !newAsset.title.trim()}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-brand-primary/10 text-brand-primary rounded-xl text-sm font-bold hover:bg-brand-primary/20 disabled:opacity-40 transition-colors"
+              >
+                <Icons.Plus size={14} /> Adicionar PDF
+              </button>
             </div>
           </div>
 
