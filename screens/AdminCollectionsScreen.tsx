@@ -33,7 +33,7 @@ import { placeholderImageUrl, isPlaceholderImageUrl } from '../lib/appPaths';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatAccessDate, getAccessStatusLabel, getProfileAccessStatus } from '../lib/access';
 import { normalizeCharacterLookupKey, resolveCharacterNamesFromIds, syncCollectionCharacters } from '../lib/characters';
-import { COLLECTION_ASSET_META, inferCollectionAssets, promoteCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
+import { COLLECTION_ASSET_META, VIDEO_TAG_DISPLAY_ORDER, inferCollectionAssets, promoteCollectionAssets, syncCollectionWithAssets } from '../lib/collectionAssets';
 import { extractSourceCollectionId, getCollectionDisplayCover, getCollectionTypeMeta, getLibraryAssetCoverImage, getYoutubeThumbnail, isCollectionHubEligible, isStandaloneReadableBook, normalizeSingleKitBookIds } from '../lib/collectionPresentation';
 import { isEffectivelyPublished } from '../lib/adminPublishStatus';
 import { VideoFramePicker } from '../components/VideoFramePicker';
@@ -246,6 +246,7 @@ const getLibraryAssetIcon = (asset: CollectionAsset): keyof typeof Icons => {
     case 'animation':
     case 'accessible_video':
     case 'how_to_play':
+    case 'training':
     case 'video_lesson':
     case 'formation':
     case 'story_video':
@@ -359,6 +360,15 @@ const FIXED_MEDIA_SLOTS: FixedMediaSlot[] = [
     descriptionPlaceholder: 'Descreva o foco do vídeo de como jogar.',
   },
   {
+    category: 'training',
+    label: COLLECTION_ASSET_META.training.label,
+    folder: 'video',
+    accept: 'video/*',
+    allowMetadata: true,
+    titlePlaceholder: 'Ex.: Treinamento para educadores',
+    descriptionPlaceholder: 'Descreva o foco deste vídeo de treinamento.',
+  },
+  {
     category: 'video_lesson',
     label: COLLECTION_ASSET_META.video_lesson.label,
     folder: 'video',
@@ -414,10 +424,26 @@ const LIBRARY_AREA_PRIMARY_SLOTS: Record<LibraryAreaKey, CollectionAssetCategory
   // Músicas = só faixas de música. Audiolivro (storytelling) é narração de livro: gerido
   // dentro do editor do Livro, não nesta área. Ver docs/architecture/modelo-conteudo-e-hubs.md.
   music: ['music'],
-  formations: ['teacher_guide', 'video_lesson'],
-  // Materiais = extra_material apenas; reading pertence exclusivamente a Livros.
-  materials: ['extra_material'],
+  formations: ['video_lesson'],
+  // Materiais reúne apoio avulso (extra_material) + Guia do Professor (teacher_guide).
+  // Espelha COLLECTION_BACKED_HUB_CATEGORIES: teacher_guide mora em Materiais, não Formações.
+  materials: ['extra_material', 'teacher_guide'],
 };
+
+// Categoria do material dentro da seção "Materiais da Coleção" (editor de livro/coleção):
+// dirigido por dados para permitir novas opções sem alterar a UI. Default = "Sem categoria"
+// (extra_material). "Guia do Professor" (teacher_guide) passa a ser escolhível por material,
+// sem mover arquivo nenhum — é só metadado que decide o hub de destino (ver COLLECTION_BACKED_HUB_CATEGORIES).
+const MATERIAL_CATEGORY_OPTIONS: { value: 'extra_material' | 'teacher_guide'; label: string }[] = [
+  { value: 'extra_material', label: 'Sem categoria' },
+  { value: 'teacher_guide', label: 'Guia do Professor' },
+];
+const MATERIAL_FAMILY_CATEGORIES: CollectionAssetCategory[] = MATERIAL_CATEGORY_OPTIONS.map((option) => option.value);
+
+// Ordena os slots de vídeo pela ordem canônica de exibição (VIDEO_TAG_DISPLAY_ORDER,
+// definida em lib/collectionAssets.ts) usada no seletor "Tag" dentro da obra.
+const sortByVideoTagOrder = (slots: FixedMediaSlot[]): FixedMediaSlot[] =>
+  [...slots].sort((a, b) => VIDEO_TAG_DISPLAY_ORDER.indexOf(a.category) - VIDEO_TAG_DISPLAY_ORDER.indexOf(b.category));
 
 // Maps each asset category to a semantic media type label and color for the slot header badge.
 const SLOT_MEDIA_TYPE: Record<CollectionAssetCategory, { label: string; color: string }> = {
@@ -427,6 +453,7 @@ const SLOT_MEDIA_TYPE: Record<CollectionAssetCategory, { label: string; color: s
   animation:      { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
   accessible_video: { label: 'Vídeo', color: 'bg-rose-50 text-rose-600 border-rose-200' },
   how_to_play:    { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
+  training:       { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
   video_lesson:   { label: 'Vídeo',    color: 'bg-rose-50 text-rose-600 border-rose-200' },
   teacher_guide:  { label: 'Material', color: 'bg-amber-50 text-amber-600 border-amber-200' },
   extra_material: { label: 'Material', color: 'bg-amber-50 text-amber-600 border-amber-200' },
@@ -442,8 +469,9 @@ const CATEGORY_REGISTER_HINT: Partial<Record<CollectionAssetCategory, string>> =
   reading: 'na área de Livros',
   accessible_video: 'na área de Vídeos (variante Libras)',
   how_to_play: 'na área de Vídeos (Como Jogar)',
+  training: 'na área de Vídeos (Treinamento)',
   video_lesson: 'na área de Formações',
-  teacher_guide: 'na área de Formações',
+  teacher_guide: 'na área de Materiais',
   extra_material: 'na área de Materiais',
 };
 
@@ -453,9 +481,9 @@ const LIBRARY_AREA_LISTING_CATEGORIES: Record<LibraryAreaKey, CollectionAssetCat
   // categorias ausentes aqui salvam no banco mas somem da lista do hub.
   videos: ['animation', 'story_video', 'video_lesson', 'formation'],
   music: ['music'],
-  formations: ['teacher_guide', 'video_lesson'],
-  // reading pertence exclusivamente a Livros; Materiais exibe apenas extra_material.
-  materials: ['extra_material'],
+  formations: ['video_lesson'],
+  // reading pertence exclusivamente a Livros; Materiais exibe extra_material + teacher_guide.
+  materials: ['extra_material', 'teacher_guide'],
 };
 
 const LIBRARY_AREA_UI_META: Record<LibraryAreaKey, {
@@ -1606,11 +1634,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
           return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
         })()
       : '';
-    const groupTags = FIXED_MEDIA_SLOTS.filter((s) =>
+    const groupTags = sortByVideoTagOrder(FIXED_MEDIA_SLOTS.filter((s) =>
       COLLECTION_ASSET_META[s.category].mediaType === group
       && !(group === 'video' && (s.category === 'video_lesson' || s.category === 'formation'))
       && !(isBooksCatalogMode && group === 'audio' && s.category !== 'storytelling')
-    );
+    ));
     return (
     <>
       <div>
@@ -1793,7 +1821,7 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
   const hasDownloadableMaterial = downloadablePrimaryAssets.length > 0;
   const collectionDownloadAvailable = downloadablePrimaryAssets.every((a) => a.download_available !== false);
 
-  const extraMaterialAssets = formData.collection_assets.filter((asset) => asset.category === 'extra_material');
+  const extraMaterialAssets = formData.collection_assets.filter((asset) => MATERIAL_FAMILY_CATEGORIES.includes(asset.category));
   const isExtraMaterialsHighlighted = highlightedAssetCategory === 'extra_material'
     || (highlightedAssetId ? extraMaterialAssets.some((asset) => asset.id === highlightedAssetId) : false);
   const highlightedAsset = highlightedAssetId
@@ -1910,8 +1938,8 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
   const setExtraMaterialUrls = (urls: string[]) => {
     setFormData((currentFormData) => {
-      const currentExtraMaterialAssets = currentFormData.collection_assets.filter((asset) => asset.category === 'extra_material');
-      const assetsWithoutExtras = currentFormData.collection_assets.filter((asset) => asset.category !== 'extra_material');
+      const currentExtraMaterialAssets = currentFormData.collection_assets.filter((asset) => MATERIAL_FAMILY_CATEGORIES.includes(asset.category));
+      const assetsWithoutExtras = currentFormData.collection_assets.filter((asset) => !MATERIAL_FAMILY_CATEGORIES.includes(asset.category));
 
       const nextExtraAssets = urls.reduce<CollectionAsset[]>((assets, url, index) => {
         const trimmedUrl = url.trim();
@@ -1920,10 +1948,15 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
         }
 
         const currentAsset = currentExtraMaterialAssets.find((asset) => asset.url === trimmedUrl);
+        // Preserve the previously chosen category (e.g. teacher_guide) when the material
+        // stays in the list; new materials default to "Sem categoria" (extra_material).
+        const category = (currentAsset && MATERIAL_FAMILY_CATEGORIES.includes(currentAsset.category))
+          ? currentAsset.category
+          : 'extra_material';
 
         assets.push({
-          id: currentAsset?.id || createAssetId('extra_material'),
-          category: 'extra_material' as const,
+          id: currentAsset?.id || createAssetId(category),
+          category,
           media_type: currentAsset?.media_type || inferAssetMediaTypeFromUrl(trimmedUrl),
           title: currentAsset?.title?.trim() || normalizeAssetTitle(trimmedUrl, `Material Extra ${index + 1}`),
           url: trimmedUrl,
@@ -1936,6 +1969,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
       }, []);
 
       return buildNextFormFromAssets(currentFormData, [...assetsWithoutExtras, ...nextExtraAssets]);
+    });
+  };
+
+  // Troca a categoria de um material já cadastrado (metadata-only — não move arquivo).
+  const updateMaterialCategory = (assetId: string, category: 'extra_material' | 'teacher_guide') => {
+    setFormData((currentFormData) => {
+      const nextAssets = currentFormData.collection_assets.map((asset) =>
+        asset.id === assetId ? { ...asset, category, media_type: COLLECTION_ASSET_META[category].mediaType } : asset
+      );
+      return buildNextFormFromAssets(currentFormData, nextAssets);
     });
   };
 
@@ -3692,11 +3735,11 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
 
                     {/* Vídeo e Áudio do Livro — modelo lista (N de cada tipo) */}
                     {(['video', 'audio'] as const).map((group) => {
-                      const groupTags = FIXED_MEDIA_SLOTS.filter((s) =>
+                      const groupTags = sortByVideoTagOrder(FIXED_MEDIA_SLOTS.filter((s) =>
                         COLLECTION_ASSET_META[s.category].mediaType === group
                         && !(group === 'video' && (s.category === 'video_lesson' || s.category === 'formation'))
                         && !(group === 'audio' && s.category !== 'storytelling')
-                      );
+                      ));
                       const items = formData.collection_assets.filter((a) => COLLECTION_ASSET_META[a.category]?.mediaType === group && a.url?.trim());
                       const isAdding = addingMediaGroup === group;
                       const TypeIcon = group === 'video' ? Icons.Video : Icons.Music2;
@@ -3885,6 +3928,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                 <Icons.FileText size={18} />
                               </span>
                               <p className="min-w-0 flex-1 truncate text-sm text-gray-700">{asset.title || 'Material'}</p>
+                              <select
+                                value={asset.category}
+                                onChange={(e) => updateMaterialCategory(asset.id, e.target.value as 'extra_material' | 'teacher_guide')}
+                                aria-label="Categoria do material"
+                                className="flex-none rounded-lg border border-gray-200 bg-white py-1.5 px-2 text-xs text-gray-600 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                              >
+                                {MATERIAL_CATEGORY_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                              </select>
                               <button
                                 type="button"
                                 onClick={() => setExtraMaterialUrls(materialUrls.filter((u) => u !== asset.url))}
@@ -4980,10 +5033,10 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                       {/* Modo coleção: Vídeo e Áudio agrupados (adicionar mídia + tag) */}
                       {isCollectionsCatalogMode && (['video', 'audio'] as const).map((group) => {
                         // Tags oferecidas na obra (exclui Videoaula/Formação — categorias de hub).
-                        const groupTags = FIXED_MEDIA_SLOTS.filter((s) =>
+                        const groupTags = sortByVideoTagOrder(FIXED_MEDIA_SLOTS.filter((s) =>
                           COLLECTION_ASSET_META[s.category].mediaType === group
                           && !(group === 'video' && (s.category === 'video_lesson' || s.category === 'formation'))
-                        );
+                        ));
                         const items = formData.collection_assets.filter((a) => COLLECTION_ASSET_META[a.category].mediaType === group && a.url?.trim());
                         const isAdding = addingMediaGroup === group;
                         const TypeIcon = group === 'video' ? Icons.Video : Icons.Music2;
@@ -5159,6 +5212,16 @@ export const AdminCollectionsScreen = forwardRef<AdminCollectionsHandle, AdminCo
                                   <Icons.FileText size={18} />
                                 </span>
                                 <p className="min-w-0 flex-1 truncate text-sm text-gray-700">{asset.title || 'Material'}</p>
+                                <select
+                                  value={asset.category}
+                                  onChange={(e) => updateMaterialCategory(asset.id, e.target.value as 'extra_material' | 'teacher_guide')}
+                                  aria-label="Categoria do material"
+                                  className="flex-none rounded-lg border border-gray-200 bg-white py-1.5 px-2 text-xs text-gray-600 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20"
+                                >
+                                  {MATERIAL_CATEGORY_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                  ))}
+                                </select>
                                 <button
                                   type="button"
                                   onClick={() => setExtraMaterialUrls(materialUrls.filter((u) => u !== asset.url))}

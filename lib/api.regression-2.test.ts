@@ -154,7 +154,9 @@ describe('api collection-backed media hub bridge', () => {
 
     const videoCard = findHubCard(videosHub, 'BUG-007 Video');
     const audioCard = findHubCard(musicHub, 'BUG-007 Audio');
-    const guideCard = findHubCard(formationsHub, 'BUG-007 Guia');
+    // teacher_guide (Guia do Professor) mudou de hub: mora em Materiais, não Formações
+    // — evita duplicar o mesmo material nos dois hubs (decisão do dono, 2026-07-17).
+    const guideCard = findHubCard(materialsHub, 'BUG-007 Guia');
     const videoLessonCard = findHubCard(formationsHub, 'BUG-007 Videoaula');
     const extraCard = findHubCard(materialsHub, 'BUG-007 Extra');
 
@@ -174,7 +176,9 @@ describe('api collection-backed media hub bridge', () => {
 
     const guideItem = await api.getMediaItem(guideCard!.id);
 
-    expect(guideItem?.kind).toBe('training');
+    // Em Materiais, guias do professor são tratados como documento (variant 'material'),
+    // não como 'training' — esse kind fica reservado à apresentação do hub Formações.
+    expect(guideItem?.kind).toBe('document');
   });
 
   // BUG-THUMB regressions: originally verified via getMediaHub, but WS-2 (ver

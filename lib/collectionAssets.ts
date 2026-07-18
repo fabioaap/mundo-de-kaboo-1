@@ -20,12 +20,25 @@ export const COLLECTION_ASSET_META: Record<CollectionAssetCategory, CollectionAs
     animation: { label: 'Desenho Animado', mediaType: 'video', scope: 'primary' },
     accessible_video: { label: 'Com Libras', mediaType: 'video', scope: 'primary' },
     how_to_play: { label: 'Como Jogar', mediaType: 'video', scope: 'library' },
+    training: { label: 'Treinamento', mediaType: 'video', scope: 'library' },
     video_lesson: { label: 'Videoaula', mediaType: 'video', scope: 'library' },
     formation: { label: 'Formação', mediaType: 'video', scope: 'library' },
     story_video: { label: 'Contação de Histórias', mediaType: 'video', scope: 'primary' },
     teacher_guide: { label: 'Guia do Professor', mediaType: 'document', scope: 'library' },
     extra_material: { label: 'Material Extra', mediaType: 'document', scope: 'library' },
 };
+
+// Ordem fixa do seletor "Tag" de vídeo exibido DENTRO de uma obra (kit/livro).
+// US1.1: Contação de Histórias, Desenho Animado, Treinamento, Com Libras, Como Jogar.
+// video_lesson/formation nunca aparecem aqui (são categorias de hub avulso).
+// Exportada para permitir teste da ordem exata (mapeando cada categoria → COLLECTION_ASSET_META[cat].label).
+export const VIDEO_TAG_DISPLAY_ORDER: CollectionAssetCategory[] = [
+    'story_video',
+    'animation',
+    'training',
+    'accessible_video',
+    'how_to_play',
+];
 
 const COLLECTION_ASSET_ORDER: CollectionAssetCategory[] = [
     'reading',
@@ -35,6 +48,7 @@ const COLLECTION_ASSET_ORDER: CollectionAssetCategory[] = [
     'accessible_video',
     'story_video',
     'how_to_play',
+    'training',
     'video_lesson',
     'formation',
     'teacher_guide',
@@ -46,6 +60,7 @@ const LEGACY_VIDEO_PRIORITY: CollectionAssetCategory[] = [
     'story_video',
     'accessible_video',
     'how_to_play',
+    'training',
     'video_lesson',
     'formation',
 ];
@@ -127,7 +142,7 @@ const inferCategoryFromContext = (params: {
     const { url, title, scope, mediaType, fallbackCategory } = params;
     const normalizedSource = normalizeSearchText(url, title);
 
-    if (scope === 'library' || fallbackCategory === 'how_to_play' || fallbackCategory === 'video_lesson' || fallbackCategory === 'teacher_guide' || fallbackCategory === 'extra_material') {
+    if (scope === 'library' || fallbackCategory === 'how_to_play' || fallbackCategory === 'training' || fallbackCategory === 'video_lesson' || fallbackCategory === 'teacher_guide' || fallbackCategory === 'extra_material') {
         if (normalizedSource.includes('guia')) {
             return 'teacher_guide';
         }

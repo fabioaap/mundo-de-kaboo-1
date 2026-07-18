@@ -347,7 +347,7 @@ export const VideoPlayerScreen: React.FC<VideoPlayerScreenProps> = ({
     // The hub re-fetch below will update the list correctly in the background.
     setItemDescription('');
 
-    const VIDEO_ASSET_CATEGORIES = new Set(['animation', 'accessible_video', 'story_video', 'how_to_play', 'video_lesson', 'formation']);
+    const VIDEO_ASSET_CATEGORIES = new Set(['animation', 'accessible_video', 'story_video', 'how_to_play', 'training', 'video_lesson', 'formation']);
 
     const loadContext = async () => {
       try {

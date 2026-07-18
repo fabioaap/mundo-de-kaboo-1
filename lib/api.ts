@@ -511,10 +511,13 @@ const COLLECTION_BACKED_HUB_CATEGORIES: Record<MediaHub, CollectionAssetCategory
   // Apenas faixas de música no hub "Músicas". Narração de livro (storytelling) é áudio
   // com dono (1 faixa/livro) e fica acessível dentro do livro — não na exploração do hub.
   music: ['music'],
-  formations: ['teacher_guide', 'video_lesson'],
-  // reading (PDF do livro) pertence EXCLUSIVAMENTE ao hub Livros — Materiais é só
-  // material de apoio (extra_material). Alinhado ao admin (LIBRARY_AREA_LISTING_CATEGORIES).
-  materials: ['extra_material'],
+  // teacher_guide (Guia do Professor) mora em Materiais, não em Formações — evita duplicar
+  // o mesmo material nos dois hubs. Decisão do dono do produto (2026-07-17).
+  formations: ['video_lesson'],
+  // reading (PDF do livro) pertence EXCLUSIVAMENTE ao hub Livros — Materiais reúne apoio
+  // avulso (extra_material) e o Guia do Professor (teacher_guide). Alinhado ao admin
+  // (LIBRARY_AREA_LISTING_CATEGORIES).
+  materials: ['extra_material', 'teacher_guide'],
 };
 
 const buildCollectionAssetMediaItemId = (hub: MediaHub, collectionId: string, assetId: string): string => {

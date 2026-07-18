@@ -151,7 +151,8 @@ export type CollectionAssetCategory =
   | 'formation'
   | 'story_video'
   | 'teacher_guide'
-  | 'extra_material';
+  | 'extra_material'
+  | 'training';
 
 export interface CollectionAsset {
   id: string;
