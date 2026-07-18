@@ -22,7 +22,6 @@
     "update-docs": "node scripts/update-docs.mjs",
     "cleanup:dedupe-assets": "node scripts/dedupe-collection-assets.mjs",
     "sprint:chart": "node scripts/update-sprint-chart.mjs",
-    "aiox": "node bin/aiox.js",
     "storybook": "storybook dev -p 6007",
     "build-storybook": "storybook build"
   },
